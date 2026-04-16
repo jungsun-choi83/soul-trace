@@ -1,0 +1,96 @@
+{
+  "languageToggle": {
+    "kr": "KR",
+    "en": "EN"
+  },
+  "hero": {
+    "eyebrow": "Eternal Beam Pre-Marketing",
+    "title": "Soul Trace",
+    "subtitle": "Walk through five gentle questions about your memories together. We will read your answers, reflect your companion’s spirit, and return a warm letter from the future."
+  },
+  "form": {
+    "emailPlaceholder": "Email (used to sync with Eternal Beam)",
+    "petNamePlaceholder": "Your companion’s name",
+    "sceneryPlaceholder": "A place or scene they loved most",
+    "privacyConsent": "The information you provide will be kept securely for Eternal Beam device setup and personalized services."
+  },
+  "questionHeader": {
+    "label": "QUESTION",
+    "of": "/"
+  },
+  "buttons": {
+    "prev": "Previous",
+    "next": "Next question",
+    "generate": "Create AI letter",
+    "generating": "Creating your letter..."
+  },
+  "result": {
+    "eyebrow": "Soul Trace Result",
+    "letterHeading": "A letter to you from the future",
+    "recordEmail": "Saved email",
+    "ctaEternalBeam": "Meet them again in light",
+    "saveImage": "Save to phone",
+    "keepForever": "Keep forever",
+    "instagramPrepare": "Prepare image (step 1)",
+    "instagramShare": "Share to Instagram (step 2)",
+    "preparingImage": "Preparing image...",
+    "retryTest": "Start again",
+    "instagramHint": "Step 1 is done. Tap the same button again to open the share sheet. On desktop, your image may download and Instagram will open in a new tab.",
+    "sceneLoading": "Loading your scene…",
+    "hardwareTeaser": "We’ve held this letter in Eternal Beam’s light. In May, meet again in the light."
+  },
+  "share": {
+    "title": "Soul Trace letter",
+    "text": "Sharing a Soul Trace letter from our companion."
+  },
+  "errors": {
+    "fillAll": "Please answer every question.",
+    "invalidEmail": "Please enter a valid email address.",
+    "profileIncomplete": "Please enter your companion’s name and a favorite scenery.",
+    "privacyRequired": "Please accept the privacy notice so we can securely keep your information for Eternal Beam setup and personalized services.",
+    "generateFailed": "Could not create your letter.",
+    "unknown": "Something went wrong.",
+    "saveImageFailed": "Could not save the image:",
+    "saveImageGeneric": "An error occurred while saving the image.",
+    "blobFailed": "Could not create the image.",
+    "prepareShareFailed": "Something went wrong while preparing to share.",
+    "shareFailed": "Something went wrong while sharing."
+  },
+  "questions": [
+    {
+      "promptText": "When did your companion’s energy shine the brightest?",
+      "emphasisBefore": "When did your companion’s ",
+      "emphasis": "brightest energy",
+      "emphasisAfter": " shine through the most?",
+      "placeholder": "e.g. Every morning when they wagged hello at the door"
+    },
+    {
+      "promptText": "What scent or place did they love on walks?",
+      "emphasisBefore": "What ",
+      "emphasis": "scent or place",
+      "emphasisAfter": " did they love most on walks?",
+      "placeholder": "e.g. The park path after rain, earth and grass"
+    },
+    {
+      "promptText": "How did they show love to you most often?",
+      "emphasisBefore": "How did they show ",
+      "emphasis": "love",
+      "emphasisAfter": " to you most often?",
+      "placeholder": "e.g. Resting their chin on your knee"
+    },
+    {
+      "promptText": "Which expression of theirs stays clearest in your mind?",
+      "emphasisBefore": "Which ",
+      "emphasis": "expression",
+      "emphasisAfter": " of theirs stays clearest in your mind?",
+      "placeholder": "e.g. Eyes widening at the treat bag rustle"
+    },
+    {
+      "promptText": "What message might they want to leave with you last?",
+      "emphasisBefore": "What ",
+      "emphasis": "last message",
+      "emphasisAfter": " might they want to leave with you?",
+      "placeholder": "e.g. Please smile more than you cry for me"
+    }
+  ]
+}

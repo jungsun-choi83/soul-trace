@@ -1,3 +1,6 @@
+import en from "@/locales/en.json";
+import ko from "@/locales/ko.json";
+import type { Locale } from "@/lib/i18n";
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
@@ -8,6 +11,7 @@ type AnswerInput = {
 };
 
 type RequestBody = {
+  locale?: string;
   userEmail?: string;
   petName?: string;
   preferredScenery?: string;
@@ -21,8 +25,32 @@ type ParsedResponse = {
   letter: string;
 };
 
-const SYSTEM_PROMPT =
-  "너는 무지개다리를 건넌 강아지야. 주인이 입력한 추억을 바탕으로 아주 따뜻하고 사랑스러운 편지를 써줘.";
+const ERR = { ko: ko.errors, en: en.errors };
+
+function err(locale: Locale, key: keyof typeof ko.errors, status: number) {
+  return NextResponse.json({ error: ERR[locale][key] }, { status });
+}
+
+const SYSTEM_PROMPT_BASE =
+  "You are a dog who has crossed the rainbow bridge. Write from the heart using the guardian's memories.";
+
+const DALLE_BASE_PROMPT = `A cohesive, ethereal, and artistic background for a pet memorial letter. The style must be minimalistic, cinematic, and filled with soft, golden light. The imagery should subtly reflect the pet's personality and memories based on the user's answers (e.g., a calm forest for a quiet pet, a bright beach for an energetic pet). NO TEXT, NO LOGOS. Just a peaceful, heavenly atmosphere with wide-angle perspective.`;
+
+function buildDallePrompt(
+  formattedAnswers: string,
+  petName: string,
+  preferredScenery: string,
+): string {
+  return [
+    DALLE_BASE_PROMPT,
+    "",
+    "Use the following guardian memories only as subtle visual inspiration (never depict any written text in the image):",
+    formattedAnswers,
+    "",
+    `Companion name (emotional inspiration only, never render as text): ${petName}`,
+    `Favorite scenery mentioned (mood reference): ${preferredScenery}`,
+  ].join("\n");
+}
 
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -30,19 +58,20 @@ export async function POST(request: Request) {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "OPENAI_API_KEY 환경 변수가 설정되지 않았습니다." },
+      { error: "OPENAI_API_KEY is not configured." },
       { status: 500 },
     );
   }
   if (!supabaseUrl || !supabaseServiceKey) {
     return NextResponse.json(
-      { error: "Supabase 환경 변수가 설정되지 않았습니다." },
+      { error: "Supabase environment variables are not configured." },
       { status: 500 },
     );
   }
 
   try {
     const body = (await request.json()) as RequestBody;
+    const locale: Locale = body.locale === "en" ? "en" : "ko";
     const userEmail = body.userEmail?.trim().toLowerCase() ?? "";
     const petName = body.petName?.trim() ?? "";
     const preferredScenery = body.preferredScenery?.trim() ?? "";
@@ -51,67 +80,86 @@ export async function POST(request: Request) {
     const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail);
 
     if (!isEmailValid) {
-      return NextResponse.json(
-        { error: "유효한 이메일 주소를 입력해주세요." },
-        { status: 400 },
-      );
+      return err(locale, "invalidEmail", 400);
     }
     if (!petName || !preferredScenery) {
-      return NextResponse.json(
-        { error: "아이 이름과 선호 풍경을 입력해주세요." },
-        { status: 400 },
-      );
+      return err(locale, "profileIncomplete", 400);
     }
     if (!privacyConsent) {
-      return NextResponse.json(
-        {
-          error:
-            "입력하신 정보는 나중에 이터널빔 기계 설정 및 맞춤형 서비스 제공을 위해 안전하게 보관됩니다 항목에 동의가 필요합니다.",
-        },
-        { status: 400 },
-      );
+      return err(locale, "privacyRequired", 400);
     }
 
     if (!Array.isArray(answers) || answers.length !== 5) {
       return NextResponse.json(
-        { error: "질문 답변 5개가 필요합니다." },
+        { error: locale === "ko" ? "질문 답변 5개가 필요합니다." : "Five answers are required." },
         { status: 400 },
       );
     }
 
     const formattedAnswers = answers
-      .map((item, index) => `${index + 1}. 질문: ${item.question}\n답변: ${item.answer}`)
+      .map((item, index) => `${index + 1}. Q: ${item.question}\nA: ${item.answer}`)
       .join("\n\n");
 
+    const languageInstruction =
+      locale === "ko"
+        ? [
+            "선택된 언어가 한국어이면 모든 출력 값을 한국어로 작성해줘.",
+            "한국어일 때는 아주 따뜻하고 정중한 말투를 사용해줘.",
+            "편지(letter)는 한국어로 약 450~550자 분량으로 작성해줘.",
+          ].join("\n")
+        : [
+            "If the selected language is English, write every output value in English.",
+            "In English, keep a warm, intimate, gentle tone—never cold or corporate.",
+            "The letter should be about 400–600 characters in English.",
+          ].join("\n");
+
     const openai = new OpenAI({ apiKey });
-    const completion = await openai.chat.completions.create({
+
+    const letterPromise = openai.chat.completions.create({
       model: "gpt-4o",
       response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: SYSTEM_PROMPT,
+          content: [SYSTEM_PROMPT_BASE, languageInstruction].join("\n\n"),
         },
         {
           role: "user",
           content: [
-            "다음의 5개 답변을 바탕으로 반려견의 성향(MBTI 스타일)을 분석해줘.",
-            "출력은 반드시 JSON 한 개만 반환하고 아래 키를 정확히 지켜줘.",
-            "- personalityType: 짧고 감성적인 성향 이름 (예: 햇살같은 탐험가형)",
-            "- personalitySummary: 2~3문장 분석",
-            "- letter: 450~550자 분량의 한국어 편지",
+            "Analyze the companion's personality in an MBTI-like poetic style based on the 5 answers.",
+            "Return JSON only with these exact keys: personalityType, personalitySummary, letter.",
+            languageInstruction,
             "",
-            "[보호자 답변]",
+            "[Guardian answers]",
             formattedAnswers,
           ].join("\n"),
         },
       ],
     });
 
+    const imagePrompt = buildDallePrompt(formattedAnswers, petName, preferredScenery);
+    const imagePromise = openai.images.generate({
+      model: "dall-e-3",
+      prompt: imagePrompt,
+      n: 1,
+      size: "1792x1024",
+      quality: "hd",
+    });
+
+    const [letterSettled, imageSettled] = await Promise.allSettled([
+      letterPromise,
+      imagePromise,
+    ]);
+
+    if (letterSettled.status === "rejected") {
+      throw letterSettled.reason;
+    }
+
+    const completion = letterSettled.value;
     const content = completion.choices[0]?.message?.content;
     if (!content) {
       return NextResponse.json(
-        { error: "AI 응답이 비어 있습니다." },
+        { error: locale === "ko" ? "AI 응답이 비어 있습니다." : "Empty AI response." },
         { status: 502 },
       );
     }
@@ -119,9 +167,16 @@ export async function POST(request: Request) {
     const parsed = JSON.parse(content) as ParsedResponse;
     if (!parsed.personalityType || !parsed.personalitySummary || !parsed.letter) {
       return NextResponse.json(
-        { error: "AI 응답 형식이 올바르지 않습니다." },
+        { error: locale === "ko" ? "AI 응답 형식이 올바르지 않습니다." : "Invalid AI response shape." },
         { status: 502 },
       );
+    }
+
+    let heroImageUrl: string | null = null;
+    if (imageSettled.status === "fulfilled") {
+      const rows = imageSettled.value.data;
+      const url = rows?.[0]?.url;
+      heroImageUrl = url ?? null;
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -135,13 +190,19 @@ export async function POST(request: Request) {
         personality_type: parsed.personalityType,
         generated_letter: parsed.letter,
         preferred_scenery: preferredScenery,
+        hero_image_url: heroImageUrl,
       },
       { onConflict: "user_email" },
     );
 
     if (profileError) {
       return NextResponse.json(
-        { error: `프로필 저장 중 오류가 발생했습니다: ${profileError.message}` },
+        {
+          error:
+            locale === "ko"
+              ? `프로필 저장 중 오류가 발생했습니다: ${profileError.message}`
+              : `Could not save profile: ${profileError.message}`,
+        },
         { status: 500 },
       );
     }
@@ -159,7 +220,12 @@ export async function POST(request: Request) {
       .eq("user_email", userEmail);
     if (deleteError) {
       return NextResponse.json(
-        { error: `기존 답변 정리 중 오류가 발생했습니다: ${deleteError.message}` },
+        {
+          error:
+            locale === "ko"
+              ? `기존 답변 정리 중 오류가 발생했습니다: ${deleteError.message}`
+              : `Could not reset previous answers: ${deleteError.message}`,
+        },
         { status: 500 },
       );
     }
@@ -169,15 +235,23 @@ export async function POST(request: Request) {
       .insert(answerRows);
     if (answerSaveError) {
       return NextResponse.json(
-        { error: `답변 저장 중 오류가 발생했습니다: ${answerSaveError.message}` },
+        {
+          error:
+            locale === "ko"
+              ? `답변 저장 중 오류가 발생했습니다: ${answerSaveError.message}`
+              : `Could not save answers: ${answerSaveError.message}`,
+        },
         { status: 500 },
       );
     }
 
-    return NextResponse.json(parsed);
+    return NextResponse.json({
+      ...parsed,
+      heroImageUrl,
+    });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "편지 생성 중 알 수 없는 오류가 발생했습니다.";
+      error instanceof Error ? error.message : "Unknown error while generating the letter.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

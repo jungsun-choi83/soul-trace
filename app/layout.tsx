@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Marcellus } from "next/font/google";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const marcellus = Marcellus({
@@ -23,18 +24,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="ko"
-      className={`${marcellus.variable} h-full antialiased`}
-    >
+    <html lang="ko" className={`${marcellus.variable} h-full antialiased`}>
       <head>
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
+          href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Noto+Serif+KR:wght@200;300&display=swap"
           rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
         />
       </head>
-      <body className="min-h-full flex flex-col bg-black text-white">{children}</body>
+      <body className="font-ko min-h-full flex flex-col bg-black text-[#FFFFFF]">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

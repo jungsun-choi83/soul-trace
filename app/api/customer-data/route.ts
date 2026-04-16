@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
   const { data: profile, error: profileError } = await supabase
     .from("soul_trace_profiles")
-    .select("user_email, pet_name, personality_type, generated_letter, preferred_scenery")
+    .select("user_email, pet_name, personality_type, generated_letter, preferred_scenery, hero_image_url")
     .eq("user_email", email)
     .single();
 

@@ -1,59 +1,52 @@
 "use client";
 
+import { LanguageToggle } from "@/components/language-toggle";
+import { useLocale } from "@/components/locale-provider";
+import type { Locale } from "@/lib/i18n";
 import { toBlob, toPng } from "html-to-image";
-import { useRef, useState } from "react";
-
-type Question = {
-  id: string;
-  prompt: string;
-  placeholder: string;
-};
+import { useEffect, useRef, useState } from "react";
 
 type GeneratedResult = {
   personalityType: string;
   personalitySummary: string;
   letter: string;
+  heroImageUrl: string | null;
 };
 
-const QUESTIONS: Question[] = [
-  {
-    id: "q1",
-    prompt: "아이의 가장 밝았던 에너지는 어떤 순간에 반짝였나요?",
-    placeholder: "예: 아침마다 꼬리를 흔들며 인사하던 순간",
-  },
-  {
-    id: "q2",
-    prompt: "아이가 가장 좋아했던 산책길의 냄새나 장소는 어디였나요?",
-    placeholder: "예: 비 온 뒤 흙냄새가 나는 공원 입구",
-  },
-  {
-    id: "q3",
-    prompt: "아이가 당신에게 자주 보여주던 사랑의 표현은 무엇이었나요?",
-    placeholder: "예: 소파에 먼저 올라와 기대앉던 습관",
-  },
-  {
-    id: "q4",
-    prompt: "지금도 가장 선명하게 떠오르는 아이의 표정은 어떤 모습인가요?",
-    placeholder: "예: 간식을 기다리며 눈이 동그래지던 얼굴",
-  },
-  {
-    id: "q5",
-    prompt: "아이가 당신에게 마지막으로 남기고 싶어할 메시지는 무엇일까요?",
-    placeholder: "예: 엄마, 나 때문에 울지 말고 웃어줘",
-  },
-];
+/** 첫 그래프클러스터(드롭캡)와 나머지 본문 분리 — 선행 공백은 유지 */
+function splitLetterForDropCap(letter: string): { first: string; rest: string } {
+  const trimmed = letter.trimStart();
+  const leading = letter.slice(0, letter.length - trimmed.length);
+  if (!trimmed) {
+    return { first: "", rest: letter };
+  }
+  const graphemes =
+    typeof Intl !== "undefined" && "Segmenter" in Intl
+      ? [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(trimmed)].map(
+          (s) => s.segment,
+        )
+      : [...trimmed];
+  const first = graphemes[0] ?? "";
+  const restBody = graphemes.slice(1).join("");
+  return { first, rest: leading + restBody };
+}
 
-const CAPTURE_OPTIONS = {
-  cacheBust: true,
-  pixelRatio: 2,
-  backgroundColor: "#000000",
-  // Avoid CORS-protected stylesheet parsing errors from external font CSS.
-  skipFonts: true,
-} as const;
+function getCaptureOptions(locale: Locale, skipFonts: boolean, pixelRatio = 2) {
+  return {
+    cacheBust: true,
+    pixelRatio,
+    backgroundColor: "#000000",
+    skipFonts,
+    useCORS: true,
+  } as const;
+}
 
 export default function Home() {
+  const { locale, t, messages } = useLocale();
+  const questions = messages.questions;
+
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<string[]>(() => Array(QUESTIONS.length).fill(""));
+  const [answers, setAnswers] = useState<string[]>(() => Array(questions.length).fill(""));
   const [userEmail, setUserEmail] = useState("");
   const [petName, setPetName] = useState("");
   const [preferredScenery, setPreferredScenery] = useState("");
@@ -61,12 +54,21 @@ export default function Home() {
   const [result, setResult] = useState<GeneratedResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  /** Web Share API는 사용자 제스처 직후에만 허용되므로, 이미지는 1차 클릭에서 만들고 2차 클릭에서 공유합니다. */
   const [shareableFile, setShareableFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [heroLoaded, setHeroLoaded] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
 
-  const isLastQuestion = step === QUESTIONS.length - 1;
+  useEffect(() => {
+    if (!result) return;
+    if (!result.heroImageUrl) {
+      setHeroLoaded(true);
+      return;
+    }
+    setHeroLoaded(false);
+  }, [result]);
+
+  const isLastQuestion = step === questions.length - 1;
   const isAnswerValid = answers[step]?.trim().length > 0;
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim());
   const isProfileValid =
@@ -80,7 +82,7 @@ export default function Home() {
 
   const goNext = () => {
     if (!isAnswerValid) return;
-    setStep((prev) => Math.min(prev + 1, QUESTIONS.length - 1));
+    setStep((prev) => Math.min(prev + 1, questions.length - 1));
   };
 
   const goPrev = () => {
@@ -89,11 +91,11 @@ export default function Home() {
 
   const submitAnswers = async () => {
     if (!answers.every((answer) => answer.trim())) {
-      setError("모든 문항을 채워주세요.");
+      setError(t("errors.fillAll"));
       return;
     }
     if (!isProfileValid) {
-      setError("이메일, 아이 이름, 기억 풍경, 개인정보 동의 항목을 모두 입력해주세요.");
+      setError(t("errors.profileIncomplete"));
       return;
     }
 
@@ -101,8 +103,8 @@ export default function Home() {
     setError(null);
 
     try {
-      const payload = QUESTIONS.map((question, index) => ({
-        question: question.prompt,
+      const payload = questions.map((question, index) => ({
+        question: question.promptText,
         answer: answers[index].trim(),
       }));
 
@@ -112,6 +114,7 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          locale,
           userEmail: userEmail.trim(),
           petName: petName.trim(),
           preferredScenery: preferredScenery.trim(),
@@ -122,23 +125,41 @@ export default function Home() {
 
       if (!response.ok) {
         const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(errorData?.error ?? "편지 생성에 실패했습니다.");
+        throw new Error(errorData?.error ?? t("errors.generateFailed"));
       }
 
       const data = (await response.json()) as GeneratedResult;
-      setResult(data);
+      setResult({
+        ...data,
+        heroImageUrl: data.heroImageUrl ?? null,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : t("errors.unknown"));
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const captureToPng = async (skipFonts: boolean, pixelRatio = 2) => {
+    if (!captureRef.current) return "";
+    return toPng(captureRef.current, getCaptureOptions(locale, skipFonts, pixelRatio));
+  };
+
+  const captureToBlob = async (skipFonts: boolean, pixelRatio = 2) => {
+    if (!captureRef.current) return null;
+    return toBlob(captureRef.current, getCaptureOptions(locale, skipFonts, pixelRatio));
   };
 
   const handleDownloadImage = async () => {
     if (!captureRef.current) return;
     try {
       setError(null);
-      const dataUrl = await toPng(captureRef.current, CAPTURE_OPTIONS);
+      let dataUrl: string;
+      try {
+        dataUrl = await captureToPng(false, 3);
+      } catch {
+        dataUrl = await captureToPng(true, 3);
+      }
       const anchor = document.createElement("a");
       anchor.download = "soul-trace-letter.png";
       anchor.href = dataUrl;
@@ -146,33 +167,36 @@ export default function Home() {
     } catch (err) {
       setError(
         err instanceof Error
-          ? `이미지 저장에 실패했습니다: ${err.message}`
-          : "이미지 저장 중 오류가 발생했습니다.",
+          ? `${t("errors.saveImageFailed")} ${err.message}`
+          : t("errors.saveImageGeneric"),
       );
     }
   };
 
-  /** 1단계: 비동기로 PNG 생성 (여기서는 share 호출 금지) */
   const prepareInstagramShare = async () => {
     if (!captureRef.current) return;
     setIsSharing(true);
     setError(null);
     try {
-      const blob = await toBlob(captureRef.current, CAPTURE_OPTIONS);
+      let blob: Blob | null;
+      try {
+        blob = await captureToBlob(false);
+      } catch {
+        blob = await captureToBlob(true);
+      }
       if (!blob) {
-        throw new Error("이미지를 생성하지 못했습니다.");
+        throw new Error(t("errors.blobFailed"));
       }
       const file = new File([blob], "soul-trace-letter.png", { type: "image/png" });
       setShareableFile(file);
     } catch (err) {
       setShareableFile(null);
-      setError(err instanceof Error ? err.message : "공유 준비 중 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : t("errors.prepareShareFailed"));
     } finally {
       setIsSharing(false);
     }
   };
 
-  /** 2단계: 동기적으로만 share (사용자 클릭 직후 호출) */
   const openInstagramShare = () => {
     if (!shareableFile) return;
     setError(null);
@@ -180,8 +204,8 @@ export default function Home() {
       if (typeof navigator !== "undefined" && navigator.share) {
         if (navigator.canShare?.({ files: [shareableFile] })) {
           void navigator.share({
-            title: "Soul Trace 편지",
-            text: "우리 아이가 남긴 Soul Trace 편지를 공유합니다.",
+            title: t("share.title"),
+            text: t("share.text"),
             files: [shareableFile],
           });
           return;
@@ -195,7 +219,7 @@ export default function Home() {
       URL.revokeObjectURL(url);
       window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "공유 중 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : t("errors.shareFailed"));
     }
   };
 
@@ -209,7 +233,7 @@ export default function Home() {
 
   const resetTest = () => {
     setStep(0);
-    setAnswers(Array(QUESTIONS.length).fill(""));
+    setAnswers(Array(questions.length).fill(""));
     setUserEmail("");
     setPetName("");
     setPreferredScenery("");
@@ -219,192 +243,265 @@ export default function Home() {
     setError(null);
   };
 
+  const q = questions[step];
+
+  const canCaptureArtwork = !result?.heroImageUrl || heroLoaded;
+
   if (result) {
+    const { first: dropCap, rest: letterRest } = splitLetterForDropCap(result.letter);
+
     return (
-      <main className="flex min-h-screen items-center justify-center px-5 py-10 md:px-8">
-        <section className="w-full max-w-3xl space-y-6">
-          <div
-            ref={captureRef}
-            className="rounded-3xl border border-[#D4AF37]/50 bg-[#090909] p-7 shadow-[0_0_60px_rgba(212,175,55,0.14)] md:p-10"
-          >
-            <p className="font-title text-sm uppercase tracking-[0.24em] text-[#D4AF37]">
-              Soul Trace Result
-            </p>
-            <h1 className="font-title mt-4 text-4xl leading-tight text-[#F7F2E7] md:text-5xl">
-              {result.personalityType}
-            </h1>
-            <p className="mt-4 text-sm leading-7 text-[#D5CCB5] md:text-base">
-              {result.personalitySummary}
-            </p>
+      <>
+        <LanguageToggle />
+        <main className="min-h-screen bg-black pb-10 pt-14 md:pt-16">
+          <section className="mx-auto w-full max-w-3xl space-y-8 px-4 sm:px-6">
+            <div
+              ref={captureRef}
+              className="relative min-h-[100vh] w-full overflow-hidden rounded-sm shadow-[0_0_80px_rgba(212,175,55,0.12)]"
+            >
+              <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                {result.heroImageUrl ? (
+                  <img
+                    src={result.heroImageUrl}
+                    alt=""
+                    crossOrigin="anonymous"
+                    className="ken-burns-img absolute inset-0 h-full w-full min-h-full min-w-full object-cover"
+                    onLoad={() => setHeroLoaded(true)}
+                    onError={() => setHeroLoaded(true)}
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#2a2314] via-[#0d0b06] to-black" />
+                )}
+              </div>
 
-            <div className="mt-8 rounded-2xl border border-[#D4AF37]/30 bg-black/40 p-6 md:p-8">
-              <p className="font-title mb-4 text-lg text-[#D4AF37]">
-                엄마/아빠에게 전하는 미래의 편지
-              </p>
-              <p className="whitespace-pre-line text-[15px] leading-8 text-[#F7F2E7] md:text-base">
-                {result.letter}
-              </p>
-            <p className="mt-6 text-xs tracking-[0.04em] text-[#b8ac8c]">
-              기록 이메일: {userEmail}
-            </p>
+              <div
+                className="absolute inset-0 bg-[rgba(0,0,0,0.4)]"
+                aria-hidden
+              />
+
+              <div className="relative z-10 flex min-h-[100vh] flex-col justify-center px-4 py-12 sm:px-8 sm:py-16 md:px-10 md:py-20">
+                <div
+                  className={`mx-auto w-full max-w-xl ${locale === "ko" ? "result-hero-text-ko font-ko" : "result-hero-text-en font-display-en"}`}
+                >
+                  <div className="stationery-outer p-5 sm:p-7 md:p-9">
+                    <p className="font-display-en gold-foil-accent text-[10px] uppercase tracking-[0.35em] sm:text-xs">
+                      {t("result.eyebrow")}
+                    </p>
+                    <h1
+                      className={`gold-foil-heading mt-5 text-2xl font-extralight leading-snug sm:text-3xl md:text-4xl ${locale === "en" ? "font-display-en" : "font-ko"}`}
+                    >
+                      {result.personalityType}
+                    </h1>
+                    <p
+                      className={`mt-4 text-sm font-extralight leading-relaxed text-[#E8DCC8] sm:text-base ${locale === "ko" ? "font-ko" : "font-display-en"}`}
+                    >
+                      {result.personalitySummary}
+                    </p>
+
+                    <div className="stationery-paper mt-8 p-5 sm:p-7 md:p-8">
+                      <div className="stationery-paper-inner space-y-4">
+                        <p
+                          className={`gold-foil-on-paper text-sm font-light sm:text-base ${locale === "ko" ? "font-ko" : "font-display-en"}`}
+                        >
+                          {t("result.letterHeading")}
+                        </p>
+                        <p
+                          className={`letter-dropcap-wrap letter-body-paper whitespace-pre-line text-[15px] font-extralight leading-[1.9] sm:text-base ${locale === "ko" ? "font-ko" : "font-display-en"}`}
+                        >
+                          {dropCap ? (
+                            <>
+                              <span className="drop-cap">{dropCap}</span>
+                              {letterRest}
+                            </>
+                          ) : (
+                            result.letter
+                          )}
+                        </p>
+                        <p
+                          className={`hardware-teaser-paper border-t border-[rgba(90,82,72,0.2)] pt-5 text-center text-[11px] font-extralight leading-relaxed sm:text-xs ${locale === "ko" ? "font-ko" : "font-display-en"}`}
+                        >
+                          {t("result.hardwareTeaser")}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <a
-            href="https://eternalbeam.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-title block w-full rounded-2xl border border-[#D4AF37] bg-[#D4AF37] px-6 py-4 text-center text-xl text-black transition hover:bg-[#c69a1e]"
-          >
-            아이를 빛으로 다시 만나는 법
-          </a>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <button
-              type="button"
-              onClick={handleDownloadImage}
-              className="rounded-xl border border-[#D4AF37]/70 px-4 py-3 text-sm text-[#F7F2E7] transition hover:bg-[#D4AF37]/10"
-            >
-              편지 이미지 저장
-            </button>
-            <button
-              type="button"
-              onClick={onInstagramButtonClick}
-              disabled={isSharing}
-              className="rounded-xl border border-[#D4AF37] bg-[#D4AF37] px-4 py-3 text-sm text-black transition hover:bg-[#c69a1e] disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {isSharing
-                ? "이미지 준비 중..."
-                : shareableFile
-                  ? "인스타에서 공유하기 (2단계)"
-                  : "인스타용 이미지 준비 (1단계)"}
-            </button>
-            <button
-              type="button"
-              onClick={resetTest}
-              className="rounded-xl border border-white/25 px-4 py-3 text-sm text-white transition hover:bg-white/10"
-            >
-              테스트 다시하기
-            </button>
-          </div>
-          {shareableFile && !isSharing ? (
-            <p className="text-center text-xs leading-6 text-[#b8ac8c]">
-              1단계가 끝났습니다. 같은 버튼을 한 번 더 눌러 공유 창을 여세요. (PC에서는 이미지 저장 후
-              인스타가 열릴 수 있어요)
+            <p className="font-ko text-center text-xs font-extralight text-[#EDE4D3]">
+              {t("result.recordEmail")}: {userEmail}
             </p>
-          ) : null}
-          {error ? <p className="text-sm text-red-300">{error}</p> : null}
-        </section>
-      </main>
+
+            {!canCaptureArtwork ? (
+              <p className="font-ko text-center text-xs text-[#D4AF37]">
+                {t("result.sceneLoading")}
+              </p>
+            ) : null}
+
+            <a
+              href="https://eternalbeam.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-ko block w-full rounded-2xl bg-[#b89a2e] px-6 py-4 text-center text-lg font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928]"
+            >
+              {t("result.ctaEternalBeam")}
+            </a>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <button
+                type="button"
+                onClick={handleDownloadImage}
+                disabled={!canCaptureArtwork || isSharing}
+                className="font-ko rounded-xl border-[0.5px] border-[rgba(212,175,55,0.45)] bg-transparent px-4 py-3 text-sm font-light text-[#F3EAD8] transition hover:bg-[rgba(212,175,55,0.06)] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {t("result.keepForever")}
+              </button>
+              <button
+                type="button"
+                onClick={onInstagramButtonClick}
+                disabled={!canCaptureArtwork || isSharing}
+                className="font-ko rounded-xl bg-[#b89a2e] px-4 py-3 text-sm font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {isSharing
+                  ? t("result.preparingImage")
+                  : shareableFile
+                    ? t("result.instagramShare")
+                    : t("result.instagramPrepare")}
+              </button>
+              <button
+                type="button"
+                onClick={resetTest}
+                className="font-ko rounded-xl border-[0.5px] border-[rgba(255,255,255,0.25)] bg-transparent px-4 py-3 text-sm font-light text-[#F3EAD8] transition hover:bg-[rgba(255,255,255,0.04)]"
+              >
+                {t("result.retryTest")}
+              </button>
+            </div>
+            {shareableFile && !isSharing ? (
+              <p className="font-ko text-center text-xs font-extralight leading-6 text-[#EDE4D3]">
+                {t("result.instagramHint")}
+              </p>
+            ) : null}
+            {error ? <p className="text-center text-sm text-red-300">{error}</p> : null}
+          </section>
+        </main>
+      </>
     );
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-5 py-10 md:px-8">
-      <section className="w-full max-w-2xl">
-        <div className="mb-8 text-center">
-          <p className="font-title text-sm uppercase tracking-[0.22em] text-[#D4AF37]">
-            Eternal Beam Pre-Marketing
-          </p>
-          <h1 className="font-title mt-4 text-5xl text-[#F7F2E7] md:text-6xl">Soul Trace</h1>
-          <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-[#D5CCB5] md:text-base">
-            아이와의 추억을 따라가며 5개의 질문에 답해보세요. 당신의 기억을 바탕으로 아이의
-            성향을 분석하고, AI가 따뜻한 미래의 편지를 전해드립니다.
-          </p>
-        </div>
+    <>
+      <LanguageToggle />
+      <main className="flex min-h-screen items-center justify-center px-5 pb-14 pt-16 md:px-8 md:pb-16 md:pt-20">
+        <section className="w-full max-w-2xl">
+          <div className="animate-fade-in mb-10 text-center">
+            <p className="font-display-en text-xs uppercase text-[#D4AF37]">{t("hero.eyebrow")}</p>
+            <h1 className="font-display-en mt-6 text-4xl text-[#FFFFFF] md:text-5xl">
+              {t("hero.title")}
+            </h1>
+            <p className="font-ko mx-auto mt-5 max-w-xl text-sm font-extralight leading-8 text-[#F3EAD8] md:text-base">
+              {t("hero.subtitle")}
+            </p>
+          </div>
 
-        <article className="rounded-3xl border border-[#D4AF37]/50 bg-[#090909] p-6 shadow-[0_0_60px_rgba(212,175,55,0.14)] md:p-10">
-          <div className="mb-8 grid gap-3 md:grid-cols-2">
-            <input
-              type="email"
-              value={userEmail}
-              onChange={(event) => setUserEmail(event.target.value)}
-              placeholder="이메일 주소 (기계 연동 키)"
-              className="w-full rounded-xl border border-[#D4AF37]/35 bg-black/50 px-4 py-3 text-sm text-[#F7F2E7] outline-none transition focus:border-[#D4AF37]"
-            />
-            <input
-              type="text"
-              value={petName}
-              onChange={(event) => setPetName(event.target.value)}
-              placeholder="아이 이름"
-              className="w-full rounded-xl border border-[#D4AF37]/35 bg-black/50 px-4 py-3 text-sm text-[#F7F2E7] outline-none transition focus:border-[#D4AF37]"
-            />
-            <input
-              type="text"
-              value={preferredScenery}
-              onChange={(event) => setPreferredScenery(event.target.value)}
-              placeholder="아이가 가장 좋아했던 풍경"
-              className="w-full rounded-xl border border-[#D4AF37]/35 bg-black/50 px-4 py-3 text-sm text-[#F7F2E7] outline-none transition focus:border-[#D4AF37] md:col-span-2"
-            />
-            <label className="md:col-span-2 flex items-start gap-3 rounded-xl border border-white/20 bg-black/40 p-3">
+          <article className="rounded-3xl border-[0.5px] border-[rgba(212,175,55,0.3)] bg-transparent p-6 md:p-10">
+            <div className="mb-8 grid gap-3 md:grid-cols-2">
               <input
-                type="checkbox"
-                checked={privacyConsent}
-                onChange={(event) => setPrivacyConsent(event.target.checked)}
-                className="mt-0.5 h-4 w-4 accent-[#D4AF37]"
+                type="email"
+                value={userEmail}
+                onChange={(event) => setUserEmail(event.target.value)}
+                placeholder={t("form.emailPlaceholder")}
+                className="font-ko w-full rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-transparent px-4 py-3 text-sm font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 focus:border-[#D4AF37]"
               />
-              <span className="text-xs leading-6 text-[#E8DFC6]">
-                입력하신 정보는 나중에 이터널빔 기계 설정 및 맞춤형 서비스 제공을 위해 안전하게
-                보관됩니다
-              </span>
-            </label>
-          </div>
+              <input
+                type="text"
+                value={petName}
+                onChange={(event) => setPetName(event.target.value)}
+                placeholder={t("form.petNamePlaceholder")}
+                className="font-ko w-full rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-transparent px-4 py-3 text-sm font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 focus:border-[#D4AF37]"
+              />
+              <input
+                type="text"
+                value={preferredScenery}
+                onChange={(event) => setPreferredScenery(event.target.value)}
+                placeholder={t("form.sceneryPlaceholder")}
+                className="font-ko w-full rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-transparent px-4 py-3 text-sm font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 focus:border-[#D4AF37] md:col-span-2"
+              />
+              <label className="font-ko md:col-span-2 flex items-start gap-3 rounded-xl border-[0.5px] border-[rgba(255,255,255,0.18)] bg-transparent p-3">
+                <input
+                  type="checkbox"
+                  checked={privacyConsent}
+                  onChange={(event) => setPrivacyConsent(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[#D4AF37]"
+                />
+                <span className="text-xs font-extralight leading-6 text-[#F3EAD8]">
+                  {t("form.privacyConsent")}
+                </span>
+              </label>
+            </div>
 
-          <div className="mb-6 flex items-center justify-between text-xs tracking-[0.12em] text-[#D4AF37]">
-            <span>QUESTION {step + 1}</span>
-            <span>{QUESTIONS.length}</span>
-          </div>
-          <div className="mb-7 h-1 overflow-hidden rounded-full bg-[#2f2b1d]">
-            <div
-              className="h-full rounded-full bg-[#D4AF37] transition-all duration-300"
-              style={{ width: `${((step + 1) / QUESTIONS.length) * 100}%` }}
-            />
-          </div>
+            <div key={step} className="animate-fade-in">
+              <div className="mb-6 flex items-center justify-between text-xs">
+                <span className="font-display-en uppercase text-[#D4AF37]">
+                  {t("questionHeader.label")} {step + 1}
+                </span>
+                <span className="font-display-en text-[#D4AF37]">{questions.length}</span>
+              </div>
+              <div className="mb-7 h-px overflow-hidden rounded-full bg-[rgba(243,234,216,0.12)]">
+                <div
+                  className="h-full rounded-full bg-[#D4AF37] transition-all duration-700 ease-out"
+                  style={{ width: `${((step + 1) / questions.length) * 100}%` }}
+                />
+              </div>
 
-          <p className="font-title text-2xl leading-relaxed text-[#F7F2E7] md:text-3xl">
-            {QUESTIONS[step].prompt}
-          </p>
+              <p className="font-ko text-xl font-extralight leading-relaxed text-[#FFFFFF] md:text-2xl">
+                {q.emphasisBefore}
+                <span className="text-[#D4AF37]">{q.emphasis}</span>
+                {q.emphasisAfter}
+              </p>
 
-          <textarea
-            value={answers[step]}
-            onChange={(event) => handleChangeAnswer(event.target.value)}
-            placeholder={QUESTIONS[step].placeholder}
-            rows={5}
-            className="mt-6 w-full resize-none rounded-2xl border border-[#D4AF37]/30 bg-black/50 p-4 text-sm leading-7 text-[#F7F2E7] outline-none transition focus:border-[#D4AF37] md:text-base"
-          />
+              <textarea
+                value={answers[step]}
+                onChange={(event) => handleChangeAnswer(event.target.value)}
+                placeholder={q.placeholder}
+                rows={5}
+                className="font-ko mt-6 w-full resize-none rounded-2xl border-[0.5px] border-[rgba(212,175,55,0.28)] bg-transparent p-4 text-sm font-extralight leading-7 text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/45 focus:border-[#D4AF37] md:text-base"
+              />
+            </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={goPrev}
-              disabled={step === 0}
-              className="rounded-xl border border-white/20 px-4 py-3 text-sm text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              이전 질문
-            </button>
-            {isLastQuestion ? (
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={submitAnswers}
-                disabled={isLoading || !isAnswerValid || !isProfileValid}
-                className="rounded-xl border border-[#D4AF37] bg-[#D4AF37] px-4 py-3 text-sm text-black transition hover:bg-[#c69a1e] disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={goPrev}
+                disabled={step === 0}
+                className="font-ko rounded-xl border-[0.5px] border-[rgba(212,175,55,0.45)] bg-transparent px-4 py-3 text-sm font-light text-[#FFFFFF] transition hover:bg-[rgba(212,175,55,0.06)] disabled:cursor-not-allowed disabled:opacity-35"
               >
-                {isLoading ? "편지 생성 중..." : "AI 편지 생성하기"}
+                {t("buttons.prev")}
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={goNext}
-                disabled={!isAnswerValid}
-                className="rounded-xl border border-[#D4AF37] bg-[#D4AF37] px-4 py-3 text-sm text-black transition hover:bg-[#c69a1e] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                다음 질문
-              </button>
-            )}
-          </div>
-        </article>
-        {error ? <p className="mt-4 text-center text-sm text-red-300">{error}</p> : null}
-      </section>
-    </main>
+              {isLastQuestion ? (
+                <button
+                  type="button"
+                  onClick={submitAnswers}
+                  disabled={isLoading || !isAnswerValid || !isProfileValid}
+                  className="font-ko rounded-xl bg-[#b89a2e] px-4 py-3 text-sm font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {isLoading ? t("buttons.generating") : t("buttons.generate")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={goNext}
+                  disabled={!isAnswerValid}
+                  className="font-ko rounded-xl border-[0.5px] border-[rgba(212,175,55,0.55)] bg-transparent px-4 py-3 text-sm font-light text-[#FFFFFF] transition hover:bg-[rgba(212,175,55,0.06)] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {t("buttons.next")}
+                </button>
+              )}
+            </div>
+          </article>
+          {error ? <p className="mt-4 text-center text-sm text-red-300">{error}</p> : null}
+        </section>
+      </main>
+    </>
   );
 }

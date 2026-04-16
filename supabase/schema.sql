@@ -3,7 +3,8 @@ create table if not exists public.soul_trace_profiles (
   pet_name text not null,
   personality_type text not null,
   generated_letter text not null,
-  preferred_scenery text not null
+  preferred_scenery text not null,
+  hero_image_url text
 );
 
 create table if not exists public.soul_trace_answers (

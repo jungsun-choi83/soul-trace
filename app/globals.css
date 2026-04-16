@@ -2,8 +2,10 @@
 
 :root {
   --background: #000000;
-  --foreground: #f7f2e7;
-  --accent: #d4af37;
+  --text-primary: #ffffff;
+  --text-muted: #f3ead8;
+  --text-champagne: #ede4d3;
+  --gold: #d4af37;
 }
 
 * {
@@ -12,11 +14,243 @@
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color: var(--text-primary);
 }
 
-.font-title {
-  font-family: var(--font-marcellus), serif;
-  letter-spacing: 0.03em;
+/* 한글 제목·본문: 본명조 계열(Noto Serif KR), 아주 얇게 */
+.font-ko {
+  font-family: "Noto Serif KR", "Nanum Myeongjo", serif;
+  font-weight: 200;
+  letter-spacing: 0.02em;
+}
+
+.font-ko-medium {
+  font-family: "Noto Serif KR", serif;
+  font-weight: 300;
+}
+
+/* 영문 전용: Marcellus + 넓은 자간 */
+.font-display-en {
+  font-family: var(--font-marcellus), "Marcellus", serif;
+  letter-spacing: 0.3em;
+  font-weight: 400;
+}
+
+@keyframes fade-in-soft {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in-soft 1s ease forwards;
+}
+
+/* 이미지 캡처용: 언어별 폰트가 PNG에 박히도록 */
+.capture-card--ko {
+  font-family: "Noto Serif KR", "Nanum Myeongjo", serif;
+  font-weight: 200;
+}
+
+.capture-card--ko .capture-letter-body {
+  font-family: "Noto Serif KR", "Nanum Myeongjo", serif;
+  font-weight: 200;
+}
+
+.capture-card--en {
+  font-family: var(--font-marcellus), "Marcellus", serif;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+
+.capture-card--en .capture-eyebrow {
+  letter-spacing: 0.28em;
+}
+
+.capture-card--en .capture-letter-body {
+  font-family: var(--font-marcellus), "Marcellus", serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.75;
+}
+
+/* 풀스크린 결과 오버레이: 가독성 */
+.result-hero-text-ko {
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.88);
+}
+
+.result-hero-text-en {
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.88);
+}
+
+/* Ken Burns: 배경 이미지 아주 느린 줌인 */
+@keyframes ken-burns {
+  0% {
+    transform: scale(1) translate(0%, 0%);
+  }
+  100% {
+    transform: scale(1.14) translate(-1.2%, -0.6%);
+  }
+}
+
+.ken-burns-img {
+  animation: ken-burns 55s ease-in-out infinite alternate;
+  transform-origin: 52% 45%;
+  will-change: transform;
+}
+
+/* 은은한 금박(Gold Foil) */
+.gold-foil-heading {
+  background: linear-gradient(
+    125deg,
+    #8a6a2a 0%,
+    #d4af37 18%,
+    #fff9e6 38%,
+    #c9a227 52%,
+    #f5e6d3 68%,
+    #a67c00 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
+}
+
+.gold-foil-accent {
+  background: linear-gradient(
+    100deg,
+    #b8860b 0%,
+    #f5e6b8 35%,
+    #d4af37 55%,
+    #fff8e7 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+.gold-foil-prose {
+  color: #faf6f0;
+  text-shadow:
+    0 0 1px rgba(212, 175, 55, 0.35),
+    0 0 24px rgba(255, 248, 220, 0.18),
+    0 2px 20px rgba(0, 0, 0, 0.88);
+}
+
+/* 드롭캡: 첫 글자만 */
+.letter-dropcap-wrap {
+  overflow: hidden;
+}
+
+.letter-dropcap-wrap::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.drop-cap {
+  float: left;
+  font-size: clamp(3.25rem, 11vw, 4.75rem);
+  line-height: 0.8;
+  margin-right: 0.12em;
+  margin-top: 0.06em;
+  font-weight: 300;
+  background: linear-gradient(145deg, #a67c00 0%, #fff8e7 42%, #d4af37 58%, #8a6a2a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+.hardware-teaser {
+  color: rgba(255, 248, 235, 0.92);
+  text-shadow:
+    0 0 1px rgba(212, 175, 55, 0.45),
+    0 2px 20px rgba(0, 0, 0, 0.75);
+  letter-spacing: 0.06em;
+}
+
+/* 럭셔리 편지지: 바깥 프레임 + 안쪽 크림 페이퍼 */
+.stationery-outer {
+  border-radius: 1.125rem;
+  border: 1px solid rgba(212, 175, 55, 0.38);
+  background: linear-gradient(168deg, #222018 0%, #14120f 42%, #0c0b09 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 220, 0.07),
+    0 28px 90px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.stationery-paper {
+  position: relative;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(160, 130, 70, 0.35);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, transparent 42%),
+    linear-gradient(165deg, #faf6ef 0%, #ebe4d6 48%, #ddd3c4 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    inset 0 -20px 50px rgba(80, 60, 30, 0.06),
+    0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* 미세 질감(노이즈) */
+.stationery-paper::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.22;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+.stationery-paper-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* 크림 페이퍼 위 본문 */
+.letter-body-paper {
+  color: #3a342f;
+  text-shadow: none;
+}
+
+.letter-body-paper .drop-cap {
+  background: linear-gradient(145deg, #6b5220 0%, #c9a227 45%, #5c4818 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.12));
+}
+
+.gold-foil-on-paper {
+  background: linear-gradient(
+    118deg,
+    #6b5220 0%,
+    #a67c00 28%,
+    #d4af37 48%,
+    #8a6a2a 72%,
+    #5c4818 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35));
+}
+
+.hardware-teaser-paper {
+  color: #5a5248;
+  letter-spacing: 0.05em;
+  text-shadow: none;
 }
