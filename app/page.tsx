@@ -43,6 +43,14 @@ const QUESTIONS: Question[] = [
   },
 ];
 
+const CAPTURE_OPTIONS = {
+  cacheBust: true,
+  pixelRatio: 2,
+  backgroundColor: "#000000",
+  // Avoid CORS-protected stylesheet parsing errors from external font CSS.
+  skipFonts: true,
+} as const;
+
 export default function Home() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>(() => Array(QUESTIONS.length).fill(""));
@@ -53,6 +61,8 @@ export default function Home() {
   const [result, setResult] = useState<GeneratedResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  /** Web Share API는 사용자 제스처 직후에만 허용되므로, 이미지는 1차 클릭에서 만들고 2차 클릭에서 공유합니다. */
+  const [shareableFile, setShareableFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
 
@@ -126,50 +136,75 @@ export default function Home() {
 
   const handleDownloadImage = async () => {
     if (!captureRef.current) return;
-    const dataUrl = await toPng(captureRef.current, {
-      cacheBust: true,
-      pixelRatio: 2,
-      backgroundColor: "#000000",
-    });
-    const anchor = document.createElement("a");
-    anchor.download = "soul-trace-letter.png";
-    anchor.href = dataUrl;
-    anchor.click();
+    try {
+      setError(null);
+      const dataUrl = await toPng(captureRef.current, CAPTURE_OPTIONS);
+      const anchor = document.createElement("a");
+      anchor.download = "soul-trace-letter.png";
+      anchor.href = dataUrl;
+      anchor.click();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `이미지 저장에 실패했습니다: ${err.message}`
+          : "이미지 저장 중 오류가 발생했습니다.",
+      );
+    }
   };
 
-  const handleInstagramShare = async () => {
+  /** 1단계: 비동기로 PNG 생성 (여기서는 share 호출 금지) */
+  const prepareInstagramShare = async () => {
     if (!captureRef.current) return;
     setIsSharing(true);
-
+    setError(null);
     try {
-      const blob = await toBlob(captureRef.current, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: "#000000",
-      });
-
+      const blob = await toBlob(captureRef.current, CAPTURE_OPTIONS);
       if (!blob) {
         throw new Error("이미지를 생성하지 못했습니다.");
       }
-
       const file = new File([blob], "soul-trace-letter.png", { type: "image/png" });
-
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          title: "Soul Trace 편지",
-          text: "우리 아이가 남긴 Soul Trace 편지를 공유합니다.",
-          files: [file],
-        });
-        return;
-      }
-
-      await handleDownloadImage();
-      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+      setShareableFile(file);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "공유 중 오류가 발생했습니다.");
+      setShareableFile(null);
+      setError(err instanceof Error ? err.message : "공유 준비 중 오류가 발생했습니다.");
     } finally {
       setIsSharing(false);
     }
+  };
+
+  /** 2단계: 동기적으로만 share (사용자 클릭 직후 호출) */
+  const openInstagramShare = () => {
+    if (!shareableFile) return;
+    setError(null);
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        if (navigator.canShare?.({ files: [shareableFile] })) {
+          void navigator.share({
+            title: "Soul Trace 편지",
+            text: "우리 아이가 남긴 Soul Trace 편지를 공유합니다.",
+            files: [shareableFile],
+          });
+          return;
+        }
+      }
+      const url = URL.createObjectURL(shareableFile);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "soul-trace-letter.png";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "공유 중 오류가 발생했습니다.");
+    }
+  };
+
+  const onInstagramButtonClick = () => {
+    if (shareableFile) {
+      openInstagramShare();
+      return;
+    }
+    void prepareInstagramShare();
   };
 
   const resetTest = () => {
@@ -180,6 +215,7 @@ export default function Home() {
     setPreferredScenery("");
     setPrivacyConsent(false);
     setResult(null);
+    setShareableFile(null);
     setError(null);
   };
 
@@ -233,11 +269,15 @@ export default function Home() {
             </button>
             <button
               type="button"
-              onClick={handleInstagramShare}
+              onClick={onInstagramButtonClick}
               disabled={isSharing}
               className="rounded-xl border border-[#D4AF37] bg-[#D4AF37] px-4 py-3 text-sm text-black transition hover:bg-[#c69a1e] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isSharing ? "공유 준비 중..." : "인스타 바로 공유하기"}
+              {isSharing
+                ? "이미지 준비 중..."
+                : shareableFile
+                  ? "인스타에서 공유하기 (2단계)"
+                  : "인스타용 이미지 준비 (1단계)"}
             </button>
             <button
               type="button"
@@ -247,6 +287,12 @@ export default function Home() {
               테스트 다시하기
             </button>
           </div>
+          {shareableFile && !isSharing ? (
+            <p className="text-center text-xs leading-6 text-[#b8ac8c]">
+              1단계가 끝났습니다. 같은 버튼을 한 번 더 눌러 공유 창을 여세요. (PC에서는 이미지 저장 후
+              인스타가 열릴 수 있어요)
+            </p>
+          ) : null}
           {error ? <p className="text-sm text-red-300">{error}</p> : null}
         </section>
       </main>
