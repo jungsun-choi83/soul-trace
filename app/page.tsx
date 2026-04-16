@@ -391,9 +391,11 @@ export default function Home() {
 
   return (
     <>
-      <LanguageToggle />
       <main className="flex min-h-screen items-center justify-center px-5 pb-14 pt-16 md:px-8 md:pb-16 md:pt-20">
         <section className="w-full max-w-2xl">
+          <div className="mb-6 flex justify-center sm:justify-end">
+            <LanguageToggle inline />
+          </div>
           <div className="animate-fade-in mb-10 text-center">
             <p className="font-display-en text-xs uppercase text-[#D4AF37]">{t("hero.eyebrow")}</p>
             <h1 className="font-display-en mt-6 text-4xl text-[#FFFFFF] md:text-5xl">
