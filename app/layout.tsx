@@ -12,6 +12,10 @@ const marcellus = Marcellus({
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://soultrace.eternalbeam.com";
 
+/** 프로덕션에서 오래된 정적 HTML이 남지 않도록 (Vercel 엣지·프리렌더 갱신) */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Soul Trace | Eternal Beam",
