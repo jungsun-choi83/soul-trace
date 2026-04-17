@@ -33,6 +33,9 @@ function readStoredLocale(): Locale | null {
 }
 
 type LocaleContextValue = {
+  /** 현재 언어 (useState로 관리되는 단일 소스) */
+  lang: Locale;
+  setLang: (next: Locale) => void;
   locale: Locale;
   setLocale: (next: Locale) => void;
   t: (path: string) => string;
@@ -61,6 +64,8 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => {
     const m = messages[locale];
     return {
+      lang: locale,
+      setLang: setLocale,
       locale,
       setLocale,
       messages: m,

@@ -1,5 +1,6 @@
 "use client";
 
+import { BenefitBottomSheet } from "@/components/benefit-bottom-sheet";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
@@ -11,6 +12,8 @@ type GeneratedResult = {
   personalitySummary: string;
   letter: string;
   heroImageUrl: string | null;
+  /** DALL·E 단계 실패 또는 URL 없음 — 편지(GPT)는 성공했을 수 있음 */
+  heroImageSkipped?: boolean;
 };
 
 /** 첫 그래프클러스터(드롭캡)와 나머지 본문 분리 — 선행 공백은 유지 */
@@ -41,8 +44,13 @@ function getCaptureOptions(locale: Locale, skipFonts: boolean, pixelRatio = 2) {
   } as const;
 }
 
+const HERO_EYEBROW: Record<Locale, string> = {
+  ko: "이터널빔",
+  en: "Eternal Beam",
+};
+
 export default function Home() {
-  const { locale, t, messages } = useLocale();
+  const { lang, t, messages } = useLocale();
   const questions = messages.questions;
 
   const [step, setStep] = useState(0);
@@ -57,6 +65,7 @@ export default function Home() {
   const [shareableFile, setShareableFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [heroLoaded, setHeroLoaded] = useState(false);
+  const [benefitModalOpen, setBenefitModalOpen] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -114,7 +123,7 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          locale,
+          locale: lang,
           userEmail: userEmail.trim(),
           petName: petName.trim(),
           preferredScenery: preferredScenery.trim(),
@@ -132,6 +141,7 @@ export default function Home() {
       setResult({
         ...data,
         heroImageUrl: data.heroImageUrl ?? null,
+        heroImageSkipped: data.heroImageSkipped === true,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.unknown"));
@@ -142,12 +152,12 @@ export default function Home() {
 
   const captureToPng = async (skipFonts: boolean, pixelRatio = 2) => {
     if (!captureRef.current) return "";
-    return toPng(captureRef.current, getCaptureOptions(locale, skipFonts, pixelRatio));
+    return toPng(captureRef.current, getCaptureOptions(lang, skipFonts, pixelRatio));
   };
 
   const captureToBlob = async (skipFonts: boolean, pixelRatio = 2) => {
     if (!captureRef.current) return null;
-    return toBlob(captureRef.current, getCaptureOptions(locale, skipFonts, pixelRatio));
+    return toBlob(captureRef.current, getCaptureOptions(lang, skipFonts, pixelRatio));
   };
 
   const handleDownloadImage = async () => {
@@ -241,6 +251,7 @@ export default function Home() {
     setResult(null);
     setShareableFile(null);
     setError(null);
+    setBenefitModalOpen(false);
   };
 
   const q = questions[step];
@@ -252,8 +263,10 @@ export default function Home() {
 
     return (
       <>
-        <LanguageToggle />
-        <main className="min-h-screen bg-black pb-10 pt-14 md:pt-16">
+        <main className="min-h-screen bg-black pb-10">
+          <header className="flex w-full justify-end px-4 pt-6 sm:px-6">
+            <LanguageToggle />
+          </header>
           <section className="mx-auto w-full max-w-3xl space-y-8 px-4 sm:px-6">
             <div
               ref={captureRef}
@@ -281,19 +294,19 @@ export default function Home() {
 
               <div className="relative z-10 flex min-h-[100vh] flex-col justify-center px-4 py-12 sm:px-8 sm:py-16 md:px-10 md:py-20">
                 <div
-                  className={`mx-auto w-full max-w-xl ${locale === "ko" ? "result-hero-text-ko font-ko" : "result-hero-text-en font-display-en"}`}
+                  className={`mx-auto w-full max-w-xl ${lang === "ko" ? "result-hero-text-ko font-ko" : "result-hero-text-en font-display-en"}`}
                 >
                   <div className="stationery-outer p-5 sm:p-7 md:p-9">
                     <p className="font-display-en gold-foil-accent text-[10px] uppercase tracking-[0.35em] sm:text-xs">
                       {t("result.eyebrow")}
                     </p>
                     <h1
-                      className={`gold-foil-heading mt-5 text-2xl font-extralight leading-snug sm:text-3xl md:text-4xl ${locale === "en" ? "font-display-en" : "font-ko"}`}
+                      className={`gold-foil-heading mt-5 text-2xl font-extralight leading-snug sm:text-3xl md:text-4xl ${lang === "en" ? "font-display-en" : "font-ko"}`}
                     >
                       {result.personalityType}
                     </h1>
                     <p
-                      className={`mt-4 text-sm font-extralight leading-relaxed text-[#E8DCC8] sm:text-base ${locale === "ko" ? "font-ko" : "font-display-en"}`}
+                      className={`mt-4 text-sm font-extralight leading-relaxed text-[#E8DCC8] sm:text-base ${lang === "ko" ? "font-ko" : "font-display-en"}`}
                     >
                       {result.personalitySummary}
                     </p>
@@ -301,12 +314,12 @@ export default function Home() {
                     <div className="stationery-paper mt-8 p-5 sm:p-7 md:p-8">
                       <div className="stationery-paper-inner space-y-4">
                         <p
-                          className={`gold-foil-on-paper text-sm font-light sm:text-base ${locale === "ko" ? "font-ko" : "font-display-en"}`}
+                          className={`gold-foil-on-paper text-sm font-light sm:text-base ${lang === "ko" ? "font-ko" : "font-display-en"}`}
                         >
                           {t("result.letterHeading")}
                         </p>
                         <p
-                          className={`letter-dropcap-wrap letter-body-paper whitespace-pre-line text-[15px] font-extralight leading-[1.9] sm:text-base ${locale === "ko" ? "font-ko" : "font-display-en"}`}
+                          className={`letter-dropcap-wrap letter-body-paper whitespace-pre-line text-[15px] font-extralight leading-[1.9] sm:text-base ${lang === "ko" ? "font-ko" : "font-display-en"}`}
                         >
                           {dropCap ? (
                             <>
@@ -318,7 +331,7 @@ export default function Home() {
                           )}
                         </p>
                         <p
-                          className={`hardware-teaser-paper border-t border-[rgba(90,82,72,0.2)] pt-5 text-center text-[11px] font-extralight leading-relaxed sm:text-xs ${locale === "ko" ? "font-ko" : "font-display-en"}`}
+                          className={`hardware-teaser-paper border-t border-[rgba(90,82,72,0.2)] pt-5 text-center text-[11px] font-extralight leading-relaxed sm:text-xs ${lang === "ko" ? "font-ko" : "font-display-en"}`}
                         >
                           {t("result.hardwareTeaser")}
                         </p>
@@ -333,20 +346,31 @@ export default function Home() {
               {t("result.recordEmail")}: {userEmail}
             </p>
 
+            {result.heroImageSkipped && !result.heroImageUrl ? (
+              <p className="font-ko text-center text-xs font-extralight leading-relaxed text-amber-200/90">
+                {t("result.heroImageSkipped")}
+              </p>
+            ) : null}
+
             {!canCaptureArtwork ? (
               <p className="font-ko text-center text-xs text-[#D4AF37]">
                 {t("result.sceneLoading")}
               </p>
             ) : null}
 
-            <a
-              href="https://eternalbeam.com"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={() => setBenefitModalOpen(true)}
               className="font-ko block w-full rounded-2xl bg-[#b89a2e] px-6 py-4 text-center text-lg font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928]"
             >
               {t("result.ctaEternalBeam")}
-            </a>
+            </button>
+
+            <BenefitBottomSheet
+              open={benefitModalOpen}
+              onClose={() => setBenefitModalOpen(false)}
+              petDisplayName={petName}
+            />
 
             <div className="grid gap-3 sm:grid-cols-3">
               <button
@@ -391,19 +415,33 @@ export default function Home() {
 
   return (
     <>
-      <main className="flex min-h-screen items-center justify-center px-5 pb-14 pt-16 md:px-8 md:pb-16 md:pt-20">
+      <main className="flex min-h-screen flex-col bg-black">
+        <header className="flex w-full shrink-0 justify-end px-5 pt-6 md:px-8 md:pt-8">
+          <LanguageToggle />
+        </header>
+        <div className="flex flex-1 items-center justify-center px-5 pb-14 pt-2 md:px-8 md:pb-16">
         <section className="w-full max-w-2xl">
-          <div className="mb-6 flex justify-center sm:justify-end">
-            <LanguageToggle inline />
-          </div>
           <div className="animate-fade-in mb-10 text-center">
-            <p className="font-display-en text-xs uppercase text-[#D4AF37]">{t("hero.eyebrow")}</p>
+            <p
+              className={
+                lang === "ko"
+                  ? "font-ko text-xs tracking-[0.22em] text-[#D4AF37]"
+                  : "font-display-en text-xs uppercase tracking-[0.35em] text-[#D4AF37]"
+              }
+            >
+              {HERO_EYEBROW[lang]}
+            </p>
             <h1 className="font-display-en mt-6 text-4xl text-[#FFFFFF] md:text-5xl">
               {t("hero.title")}
             </h1>
-            <p className="font-ko mx-auto mt-5 max-w-xl text-sm font-extralight leading-8 text-[#F3EAD8] md:text-base">
-              {t("hero.subtitle")}
-            </p>
+            <div
+              className={`mx-auto mt-5 max-w-xl space-y-2 text-sm font-extralight leading-8 text-[#F3EAD8] md:text-base ${
+                lang === "ko" ? "font-ko" : "font-display-en"
+              }`}
+            >
+              <p className="leading-relaxed">{t("hero.subtitleLine1")}</p>
+              <p className="leading-relaxed">{t("hero.subtitleLine2")}</p>
+            </div>
           </div>
 
           <article className="rounded-3xl border-[0.5px] border-[rgba(212,175,55,0.3)] bg-transparent p-6 md:p-10">
@@ -503,6 +541,7 @@ export default function Home() {
           </article>
           {error ? <p className="mt-4 text-center text-sm text-red-300">{error}</p> : null}
         </section>
+        </div>
       </main>
     </>
   );

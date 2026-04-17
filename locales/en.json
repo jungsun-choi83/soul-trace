@@ -4,9 +4,10 @@
     "en": "EN"
   },
   "hero": {
-    "eyebrow": "Eternal Beam Pre-Marketing",
+    "eyebrow": "Eternal Beam",
     "title": "Soul Trace",
-    "subtitle": "Walk through five gentle questions about your memories together. We will read your answers, reflect your companion’s spirit, and return a warm letter from the future."
+    "subtitleLine1": "Walk through five gentle questions about your memories together. We’ll read your answers and reflect your companion’s spirit—",
+    "subtitleLine2": "then return a warm letter from the future."
   },
   "form": {
     "emailPlaceholder": "Email (used to sync with Eternal Beam)",
@@ -37,7 +38,16 @@
     "retryTest": "Start again",
     "instagramHint": "Step 1 is done. Tap the same button again to open the share sheet. On desktop, your image may download and Instagram will open in a new tab.",
     "sceneLoading": "Loading your scene…",
-    "hardwareTeaser": "We’ve held this letter in Eternal Beam’s light. In May, meet again in the light."
+    "heroImageSkipped": "Background image (DALL·E) was not generated. Check OPENAI_API_KEY on the server and your billing/limits.",
+    "hardwareTeaser": "We’ve held this letter in Eternal Beam’s light. In May, meet again in the light.",
+    "benefitModal": {
+      "title": "The letter you just received—we’ll keep it in your companion’s warm light.",
+      "description": "The heart you met in Soul Trace and the precious background from DALL·E can be preserved forever through Eternal Beam’s dedicated NFC slot launching in May.",
+      "perkBefore": "🎁 Reserve now: we’ll make a physical NFC card with ",
+      "perkAfter": "’s custom background theme from this session.",
+      "reserveCta": "➜ Claim launch perks & reserve on Eternal Beam",
+      "nameFallback": "your companion"
+    }
   },
   "share": {
     "title": "Soul Trace letter",

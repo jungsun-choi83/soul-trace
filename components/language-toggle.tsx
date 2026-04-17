@@ -3,48 +3,38 @@
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 
-type LanguageToggleProps = {
-  /** 문서 흐름에 두어 랜딩 등에서 항상 보이게 할 때 */
-  inline?: boolean;
-};
-
-export function LanguageToggle({ inline = false }: LanguageToggleProps) {
-  const { locale, setLocale, t } = useLocale();
+/**
+ * KO | EN 전환. 활성 #D4AF37, 비활성 그레이. 부모에서 우측 정렬(flex justify-end)로 둡니다.
+ */
+export function LanguageToggle() {
+  const { lang, setLang } = useLocale();
 
   const segment = (value: Locale, label: string) => {
-    const active = locale === value;
+    const active = lang === value;
     return (
       <button
         type="button"
-        onClick={() => setLocale(value)}
-        className={`min-w-[3rem] px-3 py-2 text-[12px] tracking-[0.18em] transition sm:min-w-[2.75rem] sm:px-2 sm:py-1.5 sm:text-[11px] ${
-          active
-            ? "bg-[#D4AF37] text-black"
-            : "bg-transparent text-[#F3EAD8] hover:text-[#D4AF37]"
-        }`}
+        onClick={() => setLang(value)}
+        className={`px-2 py-1 text-[13px] font-medium tracking-wide transition sm:text-[14px] ${
+          active ? "text-[#D4AF37]" : "text-[#6b6b6b] hover:text-[#a3a3a3]"
+        } `}
       >
         {label}
       </button>
     );
   };
 
-  const shell =
-    "font-display-en flex items-center gap-0 rounded-lg border border-[rgba(212,175,55,0.55)] bg-[#141210]/95 px-0.5 py-0.5 shadow-[0_8px_40px_rgba(0,0,0,0.65)] backdrop-blur-md";
-
   return (
     <div
-      className={
-        inline
-          ? shell
-          : `${shell} fixed top-4 right-4 z-[200] md:top-6 md:right-6`
-      }
+      className="font-display-en inline-flex items-center rounded-md border border-[#D4AF37]/55 bg-black/90 px-1.5 py-0.5 shadow-[inset_0_1px_0_rgba(212,175,55,0.12)]"
+      role="group"
       aria-label="Language"
     >
-      {segment("ko", t("languageToggle.kr"))}
-      <span className="text-[#D4AF37]/50" aria-hidden>
+      {segment("ko", "KO")}
+      <span className="select-none text-[12px] text-[#4a4a4a]" aria-hidden>
         |
       </span>
-      {segment("en", t("languageToggle.en"))}
+      {segment("en", "EN")}
     </div>
   );
 }
