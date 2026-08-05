@@ -1,7 +1,5 @@
 "use client";
 
-import { ResultEmailModal } from "@/components/result-email-modal";
-import { ResultRewardSheet } from "@/components/result-reward-sheet";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
 import { InstagramStoryCard } from "@/components/instagram-story-card";
 import { EternalBeamPreview } from "@/components/eternal-beam-preview";
@@ -15,13 +13,7 @@ import { primeResultBgm, resolveResultBgmSrc, stopResultBgm } from "@/lib/result
 import { heroImageSrcForApp } from "@/lib/hero-image-proxy";
 import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
 import { pickEmotionalLetterSentence, pickRandomBestLetterSentence } from "@/lib/letter-emotional-line";
-import {
-  buildConnectUrl,
-  clearSoulTraceConnectDrafts,
-  ETERNALBEAM_CONNECT_ORIGIN,
-  persistConnectPayload,
-  type EternalBeamConnectPayload,
-} from "@/lib/connect-eternalbeam";
+import { getEternalBeamInstagramUrl, getEternalBeamMainUrl } from "@/lib/eternalbeam-urls";
 import { toJpeg } from "html-to-image";
 import { flushSync } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -97,8 +89,6 @@ export default function Home() {
   const [profileEmailBlockedMessage, setProfileEmailBlockedMessage] = useState<string | null>(null);
   const [isCheckingProfileEmail, setIsCheckingProfileEmail] = useState(false);
   const [heroLoaded, setHeroLoaded] = useState(false);
-  const [emailModalIntent, setEmailModalIntent] = useState<"continue" | "save" | null>(null);
-  const [rewardSheetOpen, setRewardSheetOpen] = useState(false);
   /** 첫 생성 스트리밍 시에만 감성 로딩 한 줄 (언어 전환 시에는 null) */
   const [generationLoadingMessage, setGenerationLoadingMessage] = useState<string | null>(null);
   /** 스토리 캡처 직전 무작위로 고른 한 줄(매 공유마다 갱신) */
@@ -106,6 +96,9 @@ export default function Home() {
   const captureRef = useRef<HTMLDivElement>(null);
   const instagramStoryRef = useRef<HTMLDivElement>(null);
   const bgmPrimeRef = useRef<HTMLAudioElement>(null);
+
+  const officialSiteUrl = useMemo(() => getEternalBeamMainUrl(), []);
+  const instagramProfileUrl = useMemo(() => getEternalBeamInstagramUrl(), []);
 
   /** 배경 URL 문자열만 추적한다. `result` 객체를 deps에 넣으면 스트리밍 편지 갱신마다 heroLoaded가 false로 깨져 onLoad가 다시 안 오고 버튼이 막힌다. */
   const heroImageUrl = result?.heroImageUrl ?? null;
@@ -265,59 +258,6 @@ export default function Home() {
       }
     })();
   }, [userEmail, checkEmailEligibility, t]);
-
-  const connectPayload = useMemo((): EternalBeamConnectPayload | null => {
-    if (!result) return null;
-    return {
-      letter: result.letter,
-      email: userEmail.trim(),
-      petName: (result.savedPetName ?? petName).trim(),
-      preferredScenery: preferredScenery.trim(),
-      locale: lang,
-      source: "soultrace",
-    };
-  }, [result, userEmail, petName, preferredScenery, lang]);
-
-  const connectHref = useMemo(() => {
-    if (!connectPayload) return `${ETERNALBEAM_CONNECT_ORIGIN}/`;
-    return buildConnectUrl(connectPayload);
-  }, [connectPayload]);
-
-  const handleConnectClick = useCallback(() => {
-    if (!connectPayload) return;
-    persistConnectPayload(connectPayload);
-  }, [connectPayload]);
-
-  const handleEmailSubmit = useCallback(
-    (email: string, intent: "continue" | "save") => {
-      if (!result) return;
-      setUserEmail(email);
-      const payload: EternalBeamConnectPayload = {
-        letter: result.letter,
-        email,
-        petName: (result.savedPetName ?? petName).trim(),
-        preferredScenery: preferredScenery.trim(),
-        locale: lang,
-        source: "soultrace",
-      };
-      persistConnectPayload(payload);
-      try {
-        localStorage.setItem(
-          "soul_trace_continuity",
-          JSON.stringify({ email, intent, ts: Date.now() }),
-        );
-      } catch {
-        /* ignore */
-      }
-      setEmailModalIntent(null);
-      if (intent === "continue") {
-        setRewardSheetOpen(true);
-      } else {
-        setRewardSheetOpen(false);
-      }
-    },
-    [result, petName, preferredScenery, lang],
-  );
 
   const handleChangeAnswer = (value: string) => {
     const next = [...answers];
@@ -569,7 +509,7 @@ export default function Home() {
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 4000);
-      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+      window.open(instagramProfileUrl, "_blank", "noopener,noreferrer");
     };
 
     try {
@@ -623,13 +563,10 @@ export default function Home() {
     setShareableFile(null);
     setError(null);
     setPersistenceWarning(null);
-    setEmailModalIntent(null);
-    setRewardSheetOpen(false);
     setGenerationLoadingMessage(null);
     setHeroLoaded(false);
     setStoryShareLine(null);
     stopResultBgm(bgmPrimeRef);
-    clearSoulTraceConnectDrafts();
   };
 
   const defaultStoryShareLine = useMemo(
@@ -828,21 +765,6 @@ export default function Home() {
               </p>
             ) : null}
 
-            {emailModalIntent ? (
-              <ResultEmailModal
-                key={emailModalIntent}
-                open
-                intent={emailModalIntent}
-                initialEmail={userEmail}
-                onClose={() => setEmailModalIntent(null)}
-                onSubmit={(email) => {
-                  handleEmailSubmit(email, emailModalIntent);
-                }}
-              />
-            ) : null}
-
-            <ResultRewardSheet open={rewardSheetOpen} onClose={() => setRewardSheetOpen(false)} />
-
             <div className="mx-auto mt-8 w-full max-w-xl text-center">
               <p
                 className={`mb-3 text-sm font-extralight leading-relaxed text-[#D4AF37]/88 sm:text-[13px] ${
@@ -878,53 +800,55 @@ export default function Home() {
 
             <div className="mx-auto mt-12 w-full max-w-xl space-y-5">
               <article
-                className={`rounded-2xl border border-[rgba(212,175,55,0.15)] bg-[rgba(18,16,14,0.65)] px-5 py-7 text-left sm:px-8 sm:py-8 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/95 sm:text-xs">
-                  {t("result.destinationDeck.connect.label")}
-                </p>
-                <h3 className="mt-3 text-[15px] font-extralight leading-snug text-[#EDE4D3] sm:text-base">
-                  {t("result.destinationDeck.connect.title")}
-                </h3>
-                <p className="mt-3 text-sm font-extralight leading-relaxed text-[#C4B8A8] sm:text-[15px]">
-                  {t("result.destinationDeck.connect.body")}
-                </p>
-                <a
-                  href={connectHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={handleConnectClick}
-                  className={`mt-6 flex w-full items-center justify-center rounded-xl border border-[rgba(212,175,55,0.4)] bg-[#1A1A1A]/90 px-5 py-3.5 text-sm font-light text-[#F5E6B8] transition hover:border-[rgba(212,175,55,0.55)] hover:bg-[#222018] sm:text-base`}
-                >
-                  {t("result.destinationDeck.connect.cta")}
-                </a>
-              </article>
-
-              <article
                 className={`rounded-2xl border border-[rgba(212,175,55,0.22)] bg-[rgba(18,16,14,0.72)] px-5 py-7 text-left shadow-[0_0_40px_rgba(212,175,55,0.06)] sm:px-8 sm:py-8 ${
                   lang === "ko" ? "font-ko" : "font-display-en"
                 }`}
               >
                 <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/95 sm:text-xs">
-                  {t("result.destinationDeck.eternalBeam.label")}
+                  {t("result.destinationDeck.officialSite.label")}
                 </p>
                 <h3 className="mt-3 text-[15px] font-extralight leading-snug text-[#EDE4D3] sm:text-base">
-                  {t("result.destinationDeck.eternalBeam.title")}
+                  {t("result.destinationDeck.officialSite.title")}
                 </h3>
                 <p className="mt-3 text-sm font-extralight leading-relaxed text-[#C4B8A8] sm:text-[15px]">
-                  {t("result.destinationDeck.eternalBeam.body")}
+                  {t("result.destinationDeck.officialSite.body")}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setEmailModalIntent("continue")}
+                <a
+                  href={officialSiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={`mt-6 flex w-full items-center justify-center rounded-2xl bg-[#b89a2e] px-5 py-3.5 text-center text-base font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] ${
                     lang === "ko" ? "font-ko" : "font-display-en"
                   }`}
                 >
-                  {t("result.destinationDeck.eternalBeam.cta")}
-                </button>
+                  {t("result.destinationDeck.officialSite.cta")}
+                </a>
+              </article>
+
+              <article
+                className={`rounded-2xl border border-[rgba(212,175,55,0.15)] bg-[rgba(18,16,14,0.65)] px-5 py-7 text-left sm:px-8 sm:py-8 ${
+                  lang === "ko" ? "font-ko" : "font-display-en"
+                }`}
+              >
+                <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/95 sm:text-xs">
+                  {t("result.destinationDeck.instagram.label")}
+                </p>
+                <h3 className="mt-3 text-[15px] font-extralight leading-snug text-[#EDE4D3] sm:text-base">
+                  {t("result.destinationDeck.instagram.title")}
+                </h3>
+                <p className="mt-3 text-sm font-extralight leading-relaxed text-[#C4B8A8] sm:text-[15px]">
+                  {t("result.destinationDeck.instagram.body")}
+                </p>
+                <a
+                  href={instagramProfileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`mt-6 flex w-full items-center justify-center rounded-xl border border-[rgba(212,175,55,0.4)] bg-[#1A1A1A]/90 px-5 py-3.5 text-sm font-light text-[#F5E6B8] transition hover:border-[rgba(212,175,55,0.55)] hover:bg-[#222018] sm:text-base ${
+                    lang === "ko" ? "font-ko" : "font-display-en"
+                  }`}
+                >
+                  {t("result.destinationDeck.instagram.cta")}
+                </a>
               </article>
             </div>
 

@@ -53,7 +53,7 @@
       "invalid": "Please enter a valid email address.",
       "submit": "Continue"
     },
-    "saveDoneNotice": "Saved. Continue below on the CONNECT card whenever you’re ready.",
+    "saveDoneNotice": "Saved.",
     "rewardFlow": {
       "kicker": "Soul Trace × Eternal Beam",
       "title": "Only for guardians who begin today",
@@ -63,17 +63,17 @@
       "cta": "See pre-order perks"
     },
     "destinationDeck": {
-      "connect": {
-        "label": "CONNECT",
-        "title": "If you want to meet them again at home",
-        "body": "A space where their photo and memories glow as light. Letter, photos, and memories in one place.",
-        "cta": "Open digital memorial"
-      },
-      "eternalBeam": {
+      "officialSite": {
         "label": "ETERNAL BEAM",
         "title": "Forever, in the fullest sense",
-        "body": "Memory that breathes in hologram light—keep it forever in light. Tap View official site below to share your email—we’ll send Kickstarter perks and official updates.",
-        "cta": "View official site"
+        "body": "Memory that breathes in hologram light—keep it forever in light.",
+        "cta": "Visit official site"
+      },
+      "instagram": {
+        "label": "INSTAGRAM",
+        "title": "Stories from Eternal Beam",
+        "body": "Follow us on Instagram for product news and quiet moments.",
+        "cta": "View Instagram"
       }
     },
     "instagramShareLead": "Keep this moment with you",
