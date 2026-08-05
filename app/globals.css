@@ -77,13 +77,52 @@ body {
   line-height: 1.75;
 }
 
-/* 풀스크린 결과 오버레이: 가독성 */
+/* 풀스크린 결과 오버레이: 가독성(스크림 + 함께 쓰는 보조 그림자) */
 .result-hero-text-ko {
-  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.88);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.9),
+    0 2px 36px rgba(0, 0, 0, 0.88);
 }
 
 .result-hero-text-en {
-  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.88);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.9),
+    0 2px 36px rgba(0, 0, 0, 0.88);
+}
+
+/* 결과 히어로: 이미지 전 그라데이션 + 은은한 시머 */
+.result-hero-placeholder {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(145deg, #3d3020 0%, #1c1812 42%, #080706 100%);
+}
+
+.result-hero-placeholder::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(212, 175, 55, 0.07) 42%,
+    transparent 88%
+  );
+  animation: hero-placeholder-shimmer 2.8s ease-in-out infinite;
+}
+
+@keyframes hero-placeholder-shimmer {
+  0% {
+    transform: translateX(-22%);
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.65;
+  }
+  100% {
+    transform: translateX(22%);
+    opacity: 0.35;
+  }
 }
 
 /* Ken Burns: 배경 이미지 아주 느린 줌인 */
@@ -177,6 +216,37 @@ body {
   letter-spacing: 0.06em;
 }
 
+/* 결과 상단: 영혼 성향 카드 */
+.soul-type-card {
+  margin-top: 0.35rem;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(212, 175, 55, 0.38);
+  background: linear-gradient(168deg, rgba(38, 34, 26, 0.96) 0%, rgba(14, 12, 9, 0.99) 100%);
+  padding: 1.15rem 1.25rem 1.25rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 220, 0.07),
+    0 18px 50px rgba(0, 0, 0, 0.42);
+}
+
+.soul-type-card-title {
+  margin-bottom: 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  color: rgba(232, 220, 200, 0.88);
+}
+
+/* 편지 본문과 하단 티저 사이: 이터널빔 브릿지 */
+.eternal-bridge-prompt {
+  margin-top: 1.35rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(90, 82, 72, 0.18);
+  font-size: 0.8125rem;
+  line-height: 1.75;
+  color: rgba(90, 82, 72, 0.88);
+  text-align: center;
+}
+
 /* 럭셔리 편지지: 바깥 프레임 + 안쪽 크림 페이퍼 */
 .stationery-outer {
   border-radius: 1.125rem;
@@ -204,16 +274,30 @@ body {
     0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
-/* 미세 질감(노이즈) — multiply 대비 낮은 농도로만 질감만 */
+/* 미세 질감 — SVG 필터 대신 경량 패턴(캡처·렌더 비용 절감) */
 .stationery-paper::before {
   content: "";
   pointer-events: none;
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  opacity: 0.09;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  mix-blend-mode: soft-light;
+  opacity: 0.06;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0, 0, 0, 0.04) 3px,
+      rgba(0, 0, 0, 0.04) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 3px,
+      rgba(0, 0, 0, 0.03) 3px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+  mix-blend-mode: multiply;
 }
 
 .stationery-paper-inner {
@@ -256,4 +340,143 @@ body {
   color: #5a5248;
   letter-spacing: 0.05em;
   text-shadow: none;
+}
+
+/* 이터널빔 프리뷰: 기기 화면 글로우·맥동 */
+@keyframes eternal-beam-glow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 36px rgba(255, 230, 180, 0.22),
+      0 0 18px rgba(212, 175, 55, 0.2);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 52px rgba(255, 240, 200, 0.38),
+      0 0 32px rgba(212, 175, 55, 0.42);
+    filter: brightness(1.08);
+  }
+}
+
+.eternal-beam-screen-inner {
+  animation: eternal-beam-glow 3s ease-in-out infinite;
+}
+
+.eternal-beam-screen-fallback {
+  animation: eternal-beam-glow 3s ease-in-out infinite;
+}
+
+/* ── 랜딩: 하단 중앙에서 올라오는 따뜻한 스파클 (transform·opacity만 애니메이션) */
+@keyframes warm-sparkle-rise {
+  0% {
+    transform: translate3d(var(--x0, 0vw), 0, 0) scale(var(--s0, 0.35));
+    opacity: 0;
+  }
+  14% {
+    opacity: var(--op, 0.45);
+  }
+  52% {
+    opacity: calc(var(--op, 0.45) * 0.72);
+  }
+  100% {
+    transform: translate3d(var(--x1, 0vw), var(--y1, -100vh), 0) scale(1);
+    opacity: 0;
+  }
+}
+
+.warm-sparkle-field {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  contain: layout paint;
+}
+
+.warm-sparkle-anchor {
+  position: absolute;
+  left: 50%;
+  bottom: -1.5vh;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.warm-sparkle-particle {
+  display: block;
+  border-radius: 50%;
+  animation-name: warm-sparkle-rise;
+  animation-timing-function: cubic-bezier(0.28, 0.55, 0.18, 0.98);
+  animation-iteration-count: infinite;
+}
+
+.warm-sparkle-particle--gold {
+  background: radial-gradient(
+    circle at 38% 32%,
+    rgba(255, 248, 220, 0.92) 0%,
+    rgba(232, 200, 130, 0.55) 28%,
+    rgba(212, 175, 55, 0.22) 52%,
+    rgba(212, 175, 55, 0) 72%
+  );
+  box-shadow:
+    0 0 10px rgba(240, 210, 140, 0.35),
+    0 0 22px rgba(212, 175, 55, 0.18);
+}
+
+.warm-sparkle-particle--pink {
+  background: radial-gradient(
+    circle at 42% 38%,
+    rgba(255, 220, 236, 0.88) 0%,
+    rgba(230, 160, 190, 0.45) 34%,
+    rgba(200, 120, 160, 0.14) 58%,
+    rgba(200, 120, 160, 0) 76%
+  );
+  box-shadow:
+    0 0 12px rgba(255, 190, 210, 0.32),
+    0 0 24px rgba(220, 140, 170, 0.14);
+}
+
+.warm-sparkle-particle--lavender {
+  background: radial-gradient(
+    circle at 35% 40%,
+    rgba(232, 224, 255, 0.9) 0%,
+    rgba(180, 170, 230, 0.42) 32%,
+    rgba(140, 130, 200, 0.16) 55%,
+    rgba(140, 130, 200, 0) 74%
+  );
+  box-shadow:
+    0 0 11px rgba(200, 190, 255, 0.3),
+    0 0 22px rgba(160, 150, 220, 0.12);
+}
+
+/* 인스타 스토리 카드: 인용문 최대 줄 수(긴 편지도 이름·워터마크가 잘리지 않게) */
+.instagram-story-quote-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
+  word-break: keep-all;
+}
+
+/* 결과 화면 캡처를 9:16 인스타 스토리로 맞추는 래퍼 */
+.story-wrapper {
+  width: 1080px;
+  height: 1920px;
+  background: linear-gradient(#000, #111);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.story-wrapper #share-card,
+.story-wrapper #share-card-capture {
+  width: 90%;
+  border-radius: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .warm-sparkle-field {
+    display: none;
+  }
 }

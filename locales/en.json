@@ -6,14 +6,16 @@
   "hero": {
     "eyebrow": "Eternal Beam",
     "title": "Soul Trace",
-    "subtitleLine1": "Walk through five gentle questions about your memories together. We’ll read your answers and reflect your companion’s spirit—",
-    "subtitleLine2": "then return a warm letter from the future."
+    "subtitleLine1": "If they could have spoken to you,\nwhat would they have said?",
+    "subtitleLine2": "In their heart, there are words they never got to share."
   },
   "form": {
     "emailPlaceholder": "Email (used to sync with Eternal Beam)",
     "petNamePlaceholder": "Your companion’s name",
     "sceneryPlaceholder": "A place or scene they loved most",
-    "privacyConsent": "The information you provide will be kept securely for Eternal Beam device setup and personalized services."
+    "privacyConsent": "The information you provide will be kept securely for Eternal Beam device setup and personalized services.",
+    "generateNeedAnswer": "Answer this question to enable the gold button.",
+    "generateNeedProfile": "Fill in email (valid format), name, and scenery above, and check the privacy box to enable Create letter."
   },
   "questionHeader": {
     "label": "QUESTION",
@@ -23,30 +25,100 @@
     "prev": "Previous",
     "next": "Next question",
     "generate": "Create AI letter",
-    "generating": "Creating your letter..."
+    "generating": "Creating your letter...",
+    "generatingMusicHint": "Soft background music plays while your letter is prepared."
   },
   "result": {
     "eyebrow": "Soul Trace Result",
-    "letterHeading": "A letter to you from the future",
+    "letterHeading": "A letter to Mom and Dad from the future",
+    "soulTypeCardTitle": "Your companion’s traits and temperament",
+    "eternalBridgePrompt": "Would you like to keep this precious letter forever in Eternal Beam’s light?",
+    "bgmOn": "Play soft background music",
+    "bgmOff": "Stop music",
+    "bgmAria": "Toggle gentle background music",
+    "bgmMute": "Mute",
+    "bgmUnmute": "Sound on",
+    "bgmTapToPlay": "Play music",
     "recordEmail": "Saved email",
-    "ctaEternalBeam": "Meet them again in light",
+    "emotionalBridge": {
+      "block1": "This letter reaches you only once—right here, right now.\n\nBut their story doesn’t end on this page.",
+      "block2": "On Eternal Beam,\ntheir heart keeps arriving for you.\n\nSo even years from now,\nyou can open it again\nand meet them again."
+    },
+    "ctaSaveLetter": "Save this letter",
+    "emailFlow": {
+      "titleContinue": "Where should we send the next gentle updates?",
+      "titleSave": "Which email should we use to keep this letter safe?",
+      "hint": "We’ll use this only for Soul Trace and Eternal Beam updates—unsubscribe anytime.",
+      "placeholder": "Email address",
+      "invalid": "Please enter a valid email address.",
+      "submit": "Continue"
+    },
+    "saveDoneNotice": "Saved. Continue below on the CONNECT card whenever you’re ready.",
+    "rewardFlow": {
+      "kicker": "Soul Trace × Eternal Beam",
+      "title": "Only for guardians who begin today",
+      "bullet1": "A physical NFC card with a theme made for your companion",
+      "bullet2": "Up to 40% Super Early Bird on Kickstarter—priority for you",
+      "bullet3": "Be first to hear launch news and member-only perks",
+      "cta": "See pre-order perks"
+    },
+    "destinationDeck": {
+      "connect": {
+        "label": "CONNECT",
+        "title": "If you want to meet them again at home",
+        "body": "A space where their photo and memories glow as light. Letter, photos, and memories in one place.",
+        "cta": "Open digital memorial"
+      },
+      "eternalBeam": {
+        "label": "ETERNAL BEAM",
+        "title": "Forever, in the fullest sense",
+        "body": "Memory that breathes in hologram light—keep it forever in light. Tap View official site below to share your email—we’ll send Kickstarter perks and official updates.",
+        "cta": "View official site"
+      }
+    },
+    "instagramShareLead": "Keep this moment with you",
+    "instagramShareButton": "Share to Instagram Stories",
+    "instagramFooter": "Share your memory on Instagram",
+    "ctaEternalBeam": "Reserve this light in real life",
+    "connectLetterLink": "Send this letter to your companion in the memorial hall",
+    "connectCardLabel": "Send letter to memorial hall",
+    "instagramCardLabel": "Share on Instagram",
+    "instagramCardReady": "Tap to share",
+    "instagramMemoryShare": "Share your memory on Instagram",
+    "eternalBeamPreview": {
+      "kicker": "Eternal Beam",
+      "body": "This letter can stay with you—as light, beside you."
+    },
     "saveImage": "Save to phone",
     "keepForever": "Keep forever",
     "instagramPrepare": "Prepare image (step 1)",
     "instagramShare": "Share to Instagram (step 2)",
     "preparingImage": "Preparing image...",
     "retryTest": "Start again",
-    "instagramHint": "Step 1 is done. Tap the same button again to open the share sheet. On desktop, your image may download and Instagram will open in a new tab.",
+    "instagramHint": "On your phone, pick Instagram Stories from the share sheet. On desktop, the image saves and Instagram opens in a new tab—so you won’t get the Windows share panel (Paint).",
     "sceneLoading": "Loading your scene…",
-    "heroImageSkipped": "Background image (DALL·E) was not generated. Check OPENAI_API_KEY on the server and your billing/limits.",
-    "hardwareTeaser": "We’ve held this letter in Eternal Beam’s light. In May, meet again in the light.",
+    "streamingPersonalityTitle": "Listening for their little soul…",
+    "streamingPersonalityBody": "A gentle summary will appear in a moment.",
+    "letterStarting": "Gathering the first line of the letter…",
+    "updatingLanguage": "Rewriting your letter and analysis in the selected language…",
+    "heroImageSkipped": "Background image was not generated. Check OPENAI_API_KEY on the server and your billing/limits.",
+    "saveFailedNotice": "Your letter was created but could not be saved on our server. Please try again later, or keep a copy with the download below.",
+    "hardwareTeaser": "In May, meet again in that light on Eternal Beam.",
     "benefitModal": {
       "title": "The letter you just received—we’ll keep it in your companion’s warm light.",
-      "description": "The heart you met in Soul Trace and the precious background from DALL·E can be preserved forever through Eternal Beam’s dedicated NFC slot launching in May.",
-      "perkBefore": "🎁 Reserve now: we’ll make a physical NFC card with ",
-      "perkAfter": "’s custom background theme from this session.",
-      "reserveCta": "➜ Claim launch perks & reserve on Eternal Beam",
+      "productOneLiner": "Eternal Beam is an emotional hologram device that brings your memories with them back as light.",
+      "description": "The heart you shared in Soul Trace and this session’s gentle backdrop can live on—kept in Eternal Beam’s NFC slot launching in May.",
+      "perkBoxTitle": "🎁 Pre-order exclusive perks",
+      "perkBullet1": "A physical NFC card with a theme made just for %NAME%",
+      "perkBullet2": "Priority access to up to 40% Super Early Bird on Kickstarter at launch",
+      "perkBullet3": "Be first to hear launch news and member-only perks.",
+      "reserveCta": "➜ Pre-order now and lock in your perks",
       "nameFallback": "your companion"
+    },
+    "instagramStory": {
+      "footerTagline": "Keep their voice in light—Eternal Beam",
+      "siteLine": "soultrace.eternalbeam.com",
+      "petStoryNameLead": "Closing words from %NAME%"
     }
   },
   "share": {
@@ -59,6 +131,8 @@
     "profileIncomplete": "Please enter your companion’s name and a favorite scenery.",
     "privacyRequired": "Please accept the privacy notice so we can securely keep your information for Eternal Beam setup and personalized services.",
     "generateFailed": "Could not create your letter.",
+    "alreadyGenerated": "A letter was already created with this email. Each email can only be used once.",
+    "emailAlreadyUsedSoft": "A letter was already sent to this email. Each address can be used once—please enter a different one.",
     "unknown": "Something went wrong.",
     "saveImageFailed": "Could not save the image:",
     "saveImageGeneric": "An error occurred while saving the image.",
