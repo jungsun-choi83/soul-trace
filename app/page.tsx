@@ -1,8 +1,8 @@
 "use client";
 
 import { PrivacyConsentBlock } from "@/components/privacy-consent-block";
+import { PetIntroForm } from "@/components/pet-intro-form";
 import { SurveyFlow } from "@/components/survey-flow";
-import { VideoMotionPicker } from "@/components/video-motion-picker";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
 import { InstagramStoryCard } from "@/components/instagram-story-card";
 import { EternalBeamPreview } from "@/components/eternal-beam-preview";
@@ -821,13 +821,6 @@ export default function Home() {
 
             <EternalBeamPreview lang={lang} />
 
-            <VideoMotionPicker
-              petDisplayName={displayPetName}
-              value={videoMotion}
-              onChange={setVideoMotion}
-              disabled={!petPhotoFile}
-            />
-
             <p
               className={`mt-6 text-center text-[11px] font-extralight leading-relaxed text-[#C4B8A8]/85 ${
                 lang === "ko" ? "font-ko" : "font-display-en"
@@ -1009,8 +1002,18 @@ export default function Home() {
 
           <article className="rounded-3xl border-[0.5px] border-[rgba(212,175,55,0.3)] bg-transparent p-6 md:p-10">
             <div className="mb-8 space-y-6">
-              <input
-                type="email"
+              <div className="space-y-2">
+                <label
+                  htmlFor="user-email"
+                  className={`text-sm font-extralight text-[#F3EAD8] sm:text-[15px] ${
+                    lang === "ko" ? "font-ko" : "font-display-en"
+                  }`}
+                >
+                  {t("form.emailLabel")}
+                </label>
+                <input
+                  id="user-email"
+                  type="email"
                 value={userEmail}
                 onChange={(event) => {
                   setProfileEmailBlockedMessage(null);
@@ -1020,6 +1023,7 @@ export default function Home() {
                 placeholder={t("form.emailPlaceholder")}
                 className={`font-ko w-full rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-transparent px-4 py-3 text-base font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 focus:border-[#D4AF37] md:text-sm`}
               />
+              </div>
               <PetIntroForm profile={petIntro} onChange={patchPetIntro} />
               <PrivacyConsentBlock
                 titlePath="form.privacyConsentTitle"
@@ -1052,6 +1056,8 @@ export default function Home() {
                 onSkipPhoto={handleSkipPhoto}
                 photoPrivacyConsent={photoPrivacyConsent}
                 onPhotoPrivacyConsentChange={setPhotoPrivacyConsent}
+                videoMotion={videoMotion}
+                onVideoMotionChange={setVideoMotion}
                 onMemoryChange={handleMemoryChange}
                 onToneMood={(mood) => setTonePrefs((prev) => ({ ...prev, mood }))}
                 onToneOptionToggle={handleToneOptionToggle}

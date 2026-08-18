@@ -10,7 +10,8 @@
     "subtitleLine2": "In their heart, there are words they never got to share."
   },
   "form": {
-    "emailPlaceholder": "Email address",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "name@example.com",
     "privacyConsentTitle": "[Required] Consent to collect and use personal information",
     "privacyConsentBody": "Soul Trace (Eternal Beam) collects and uses personal information as follows.\n\n· Items: email, companion information (name, nickname, species, years together, etc.), survey responses, AI-generated letter\n· Purpose: creating and delivering memory letters, Eternal Beam personalized services, service improvement\n· Retention: deleted without delay after the purpose is fulfilled (except where law requires longer retention)\n· Right to refuse: you may refuse consent; service use may be limited if you do.",
     "privacyConsentAgree": "I have read the above and agree to the collection and use of my personal information.",
@@ -243,7 +244,8 @@
       "kicker": "Video motion",
       "prompt": "What movement would you like to give ○○ in this photo?",
       "photoKicker": "Photo for video",
-      "photoHint": "Upload one photo of ○○ — we’ll use it for the video.",
+      "photoHint": "Upload one clear front-facing photo of ○○.",
+      "photoGuideline": "Video tip: use a photo where they face the camera. Clear eyes, nose, and face work best for natural-looking video.",
       "photoDrop": "Choose a photo or drag here",
       "photoFormats": "JPG · PNG · WEBP · up to 10MB",
       "photoChange": "Change photo",
@@ -253,7 +255,7 @@
       "photoErrorType": "Only JPG, PNG, or WEBP files are supported.",
       "photoErrorEmpty": "That file appears to be empty.",
       "photoSkip": "Skip for now",
-      "motionNeedsPhoto": "Upload a photo in the survey to choose a motion.",
+      "motionNeedsPhoto": "Upload a photo and agree below to choose a motion.",
       "motions": {
         "breathing": "Gentle breathing",
         "ears": "Ears perking up",

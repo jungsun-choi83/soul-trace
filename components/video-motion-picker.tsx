@@ -9,6 +9,8 @@ type VideoMotionPickerProps = {
   onChange: (motion: VideoMotion) => void;
   /** 사진 업로드 전에는 모션 선택 비활성 */
   disabled?: boolean;
+  /** 설문 사진 단계 안에 넣을 때 — 바깥 카드 스타일 생략 */
+  embedded?: boolean;
 };
 
 const MOTIONS: VideoMotion[] = ["breathing", "ears", "head_tilt", "tail"];
@@ -18,23 +20,20 @@ export function VideoMotionPicker({
   value,
   onChange,
   disabled = false,
+  embedded = false,
 }: VideoMotionPickerProps) {
   const { t, lang } = useLocale();
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
   const prompt = t("survey.video.prompt").replace(/○○/g, petDisplayName.trim());
 
-  return (
-    <section
-      className={`mx-auto mt-8 max-w-xl rounded-2xl border border-[rgba(212,175,55,0.22)] bg-[rgba(12,10,8,0.55)] px-5 py-6 sm:px-7 ${bodyFont}`}
-    >
-      <p className="step-kicker">
-        {t("survey.video.kicker")}
-      </p>
+  const content = (
+    <>
+      <p className="step-kicker">{t("survey.video.kicker")}</p>
       <p className="mt-3 text-sm font-extralight leading-relaxed text-[#EDE4D3] sm:text-[15px]">
         {prompt}
       </p>
       {disabled ? (
-        <p className="mt-3 text-xs font-extralight leading-relaxed text-[#A8A29E]">
+        <p className="survey-hint mt-3 font-extralight text-[#A8A29E]">
           {t("survey.video.motionNeedsPhoto")}
         </p>
       ) : null}
@@ -55,6 +54,24 @@ export function VideoMotionPicker({
           </button>
         ))}
       </div>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div
+        className={`mt-6 border-t border-[rgba(212,175,55,0.18)] pt-6 ${bodyFont}`}
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <section
+      className={`mx-auto mt-8 max-w-xl rounded-2xl border border-[rgba(212,175,55,0.22)] bg-[rgba(12,10,8,0.55)] px-5 py-6 sm:px-7 ${bodyFont}`}
+    >
+      {content}
     </section>
   );
 }

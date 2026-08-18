@@ -2,6 +2,9 @@
 
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
+import { PetPhotoUpload } from "@/components/pet-photo-upload";
+import { PrivacyConsentBlock } from "@/components/privacy-consent-block";
+import { VideoMotionPicker } from "@/components/video-motion-picker";
 import {
   formatSurveyName,
   isPhotoSurveyStep,
@@ -10,9 +13,8 @@ import {
   SURVEY_STEP_COUNT,
   type LetterToneOption,
   type LetterTonePrefs,
+  type VideoMotion,
 } from "@/lib/survey";
-import { PetPhotoUpload } from "@/components/pet-photo-upload";
-import { PrivacyConsentBlock } from "@/components/privacy-consent-block";
 
 type SurveyFlowProps = {
   step: number;
@@ -24,6 +26,8 @@ type SurveyFlowProps = {
   onSkipPhoto: () => void;
   photoPrivacyConsent: boolean;
   onPhotoPrivacyConsentChange: (checked: boolean) => void;
+  videoMotion: VideoMotion | "";
+  onVideoMotionChange: (motion: VideoMotion) => void;
   onMemoryChange: (index: number, value: string) => void;
   onToneMood: (mood: LetterTonePrefs["mood"]) => void;
   onToneOptionToggle: (option: LetterToneOption) => void;
@@ -51,6 +55,8 @@ export function SurveyFlow({
   onSkipPhoto,
   photoPrivacyConsent,
   onPhotoPrivacyConsentChange,
+  videoMotion,
+  onVideoMotionChange,
   onMemoryChange,
   onToneMood,
   onToneOptionToggle,
@@ -101,6 +107,13 @@ export function SurveyFlow({
               onChange={onPhotoPrivacyConsentChange}
             />
           ) : null}
+          <VideoMotionPicker
+            petDisplayName={petDisplayName}
+            value={videoMotion}
+            onChange={onVideoMotionChange}
+            disabled={!petPhotoPreviewUrl || !photoPrivacyConsent}
+            embedded
+          />
           <button
             type="button"
             onClick={onSkipPhoto}

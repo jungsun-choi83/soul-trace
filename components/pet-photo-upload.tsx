@@ -80,6 +80,9 @@ export function PetPhotoUpload({
       <p className={`text-sm font-extralight leading-relaxed text-[#EDE4D3] sm:text-[15px] ${showKicker ? "mt-3" : ""}`}>
         {hint}
       </p>
+      <p className="survey-hint mt-3 font-extralight text-[#D4AF37]/88">
+        {t("survey.video.photoGuideline")}
+      </p>
 
       <input
         ref={inputRef}

@@ -10,7 +10,8 @@
     "subtitleLine2": "아이의 마음속엔, 아직 전하지 못한 말이 있어요."
   },
   "form": {
-    "emailPlaceholder": "이메일 주소",
+    "emailLabel": "이메일 주소",
+    "emailPlaceholder": "name@example.com",
     "privacyConsentTitle": "[필수] 개인정보 수집·이용 동의",
     "privacyConsentBody": "Soul Trace(이터널빔)는 아래와 같이 개인정보를 수집·이용합니다.\n\n· 수집 항목: 이메일, 반려동물 정보(이름·애칭·종류·함께한 기간 등), 설문에 입력하신 내용, AI가 생성한 편지\n· 이용 목적: 추억 편지 생성·제공, Eternal Beam 맞춤형 서비스 제공, 서비스 품질 개선\n· 보유·이용 기간: 수집·이용 목적 달성 후 지체 없이 파기(관련 법령에 따라 보관이 필요한 경우 해당 기간 동안 보관)\n· 동의 거부 권리: 동의를 거부하실 수 있으며, 거부 시 서비스 이용이 제한될 수 있습니다.",
     "privacyConsentAgree": "위 내용을 확인하였으며, 개인정보 수집·이용에 동의합니다.",
@@ -243,7 +244,8 @@
       "kicker": "영상 모션",
       "prompt": "이 사진 속 ○○에게 어떤 움직임을 주고 싶으세요?",
       "photoKicker": "영상용 사진",
-      "photoHint": "○○의 사진 한 장을 올려 주세요. 영상에 쓸 사진이에요.",
+      "photoHint": "○○의 정면이 잘 보이는 사진 한 장을 올려 주세요.",
+      "photoGuideline": "영상 가이드: 정면을 바라본 사진을 권장해요. 얼굴·눈·코가 선명하게 나온 사진일수록 영상이 더 자연스럽게 만들어져요.",
       "photoDrop": "사진 선택 또는 끌어다 놓기",
       "photoFormats": "JPG · PNG · WEBP · 최대 10MB",
       "photoChange": "다른 사진",
@@ -253,7 +255,7 @@
       "photoErrorType": "JPG, PNG, WEBP 형식만 올릴 수 있어요.",
       "photoErrorEmpty": "비어 있는 파일은 올릴 수 없어요.",
       "photoSkip": "지금은 건너뛰기",
-      "motionNeedsPhoto": "설문에서 사진을 올리면 움직임을 고를 수 있어요.",
+      "motionNeedsPhoto": "사진을 올리고 동의해 주시면 움직임을 고를 수 있어요.",
       "motions": {
         "breathing": "숨 쉬는 모습",
         "ears": "귀 쫑긋",
