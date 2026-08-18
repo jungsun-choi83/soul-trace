@@ -2,7 +2,7 @@
 
 import { PetIntroForm } from "@/components/pet-intro-form";
 import { SurveyFlow } from "@/components/survey-flow";
-import { VideoMotionPicker } from "@/components/video-motion-picker";
+import { VideoGenerationSection } from "@/components/video-generation-section";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
 import { InstagramStoryCard } from "@/components/instagram-story-card";
 import { EternalBeamPreview } from "@/components/eternal-beam-preview";
@@ -99,6 +99,8 @@ export default function Home() {
   );
   const [tonePrefs, setTonePrefs] = useState<LetterTonePrefs>(() => ({ ...EMPTY_TONE_PREFS }));
   const [videoMotion, setVideoMotion] = useState<VideoMotion | "">("");
+  const [petPhotoFile, setPetPhotoFile] = useState<File | null>(null);
+  const [petPhotoPreviewUrl, setPetPhotoPreviewUrl] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState("");
   const [petIntro, setPetIntro] = useState<PetIntroProfile>(() => ({ ...EMPTY_PET_INTRO }));
   const [privacyConsent, setPrivacyConsent] = useState(false);
@@ -126,6 +128,21 @@ export default function Home() {
   const petProfilePayload = petProfilePayloadFromIntro(petIntro);
   const officialSiteUrl = useMemo(() => getEternalBeamMainUrl(), []);
   const instagramProfileUrl = useMemo(() => getEternalBeamInstagramUrl(), []);
+
+  useEffect(() => {
+    if (!petPhotoFile) {
+      setPetPhotoPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(petPhotoFile);
+    setPetPhotoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [petPhotoFile]);
+
+  const onPetPhotoChange = useCallback((file: File | null) => {
+    setPetPhotoFile(file);
+    if (!file) setVideoMotion("");
+  }, []);
 
   const patchPetIntro = useCallback((patch: Partial<PetIntroProfile>) => {
     setPetIntro((prev) => ({ ...prev, ...patch }));
@@ -594,6 +611,7 @@ export default function Home() {
     setMemoryAnswers(Array(MEMORY_STEP_COUNT).fill(""));
     setTonePrefs({ ...EMPTY_TONE_PREFS });
     setVideoMotion("");
+    setPetPhotoFile(null);
     setUserEmail("");
     setPetIntro({ ...EMPTY_PET_INTRO });
     setPrivacyConsent(false);
@@ -783,10 +801,13 @@ export default function Home() {
 
             <EternalBeamPreview lang={lang} />
 
-            <VideoMotionPicker
+            <VideoGenerationSection
               petDisplayName={displayPetName}
-              value={videoMotion}
-              onChange={setVideoMotion}
+              petPhoto={petPhotoFile}
+              petPhotoPreviewUrl={petPhotoPreviewUrl}
+              onPetPhotoChange={onPetPhotoChange}
+              videoMotion={videoMotion}
+              onVideoMotionChange={setVideoMotion}
             />
 
             <p

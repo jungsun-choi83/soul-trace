@@ -235,6 +235,17 @@
     "video": {
       "kicker": "Video motion",
       "prompt": "What movement would you like to give ○○ in this photo?",
+      "photoKicker": "Photo for video",
+      "photoHint": "Upload one photo of ○○ — we’ll use it for the video.",
+      "photoDrop": "Choose a photo or drag here",
+      "photoFormats": "JPG · PNG · WEBP · up to 10MB",
+      "photoChange": "Change photo",
+      "photoRemove": "Remove",
+      "photoPreviewAlt": "Preview of ○○",
+      "photoErrorSize": "Please use a photo under 10MB.",
+      "photoErrorType": "Only JPG, PNG, or WEBP files are supported.",
+      "photoErrorEmpty": "That file appears to be empty.",
+      "motionNeedsPhoto": "Upload a photo above first.",
       "motions": {
         "breathing": "Gentle breathing",
         "ears": "Ears perking up",

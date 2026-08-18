@@ -5,6 +5,7 @@ import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
 import OpenAI from "openai";
 import { appendSoulTraceToGoogleSheets } from "@/lib/google-sheets-ingest";
 import {
+  buildLetterAddressingBlock,
   buildPetProfilePromptBlock,
   letterPetName,
   type LetterRecipient,
@@ -167,13 +168,14 @@ function parseLetterCompletion(
 function childlikeLetterVoiceRules(locale: Locale): string {
   if (locale === "ko") {
     return [
-      "letter 문체(가장 중요) — ChatGPT·시·수필·광고 카피가 아니라, **다 큰 아이가 엄마·아빠에게 직접 쓴 손편지**처럼:",
+      "letter 문체(가장 중요) — ChatGPT·시·수필·광고 카피가 아니라, **편지 전문 작가가 보호자 대신 아이 목소리로 대필한 손편지**처럼:",
       "- 짧은 문장 위주. 한 문장에 생각 하나. 가끔 '그때…' '아, 맞다.'처럼 말하다 멈추는 호흡도 괜찮아.",
       "- 쉬운 말·구어체만: '진짜', '엄청', '조금', '막', '그거 알지?' — 한자어·문어체·'～함으로써'·'깊은 감사를 전합니다' 금지.",
-      "- 감정은 돌려 말하지 말고 툭: '그래서 나 그때 진짜 좋았어.' '가끔 그립기도 해.'",
-      "- 완벽한 서론-본론-결론·대칭·교훈적 마무리 금지. 초등 고학년 일기처럼 다정하고 솔직하게.",
+      "- 감정은 돌려 말하지 말고 툭: '그래서 나 그때 진짜 좋았어.' '엄마, 가끔 보고 싶어.' (상대 호칭 사용)",
+      "- 완벽한 서론-본론-결론·대칭·교훈적 마무리 금지. 실제 사람이 펜으로 쓴 것처럼.",
       "- '따뜻한', '소중한 순간', '영원히 기억할', '깊은 사랑', '항상 곁에' 같은 **뻔한 AI 감성 멘트** 나열 금지. 대신 설문에서 골라 **냄새·소리·손길·습관 하나**를 구체적으로 말하기.",
-      "- 맞춤법은 대체로 맞되, 문장이 너무 매끄럽고 문학적이면 안 됨. 어색한 완벽함보다 살아 있는 말투.",
+      "- 맞춤법은 대체로 맞되, 문장이 너무 매끄럽고 문학적이면 안 됨. AI가 쓴 듯한 '완벽한' 문장은 실패.",
+      "- **'너'·'너희'·'당신'으로 상대를 부르지 마.** 엄마, 아빠 등 관계 호칭만.",
       "- 이모티콘·ㅋㅋ·과한 맞춤법 실수는 쓰지 마.",
     ].join("\n");
   }
@@ -191,30 +193,36 @@ function childlikeLetterVoiceRules(locale: Locale): string {
 
 function letterRoleAndStyle(
   locale: Locale,
+  petProfile: PetIntroProfile,
   companionName: string,
   favoriteScenery: string,
 ): string {
   const nameLiteral = JSON.stringify(companionName);
   const sceneryLiteral = JSON.stringify(favoriteScenery);
+  const addressingBlock = buildLetterAddressingBlock(locale, petProfile);
   if (locale === "ko") {
     return [
-      "역할: 무지개다리 너머에서 엄마·아빠에게 직접 말하는 반려견이야. 입력된 반려 이름·좋아했던 풍경·설문(특히 가장 밝았던 에너지·순간)만 근거로 쓴다. 없는 일은 지어내지 마.",
-      `반려 이름은 반드시 이 문자열만: ${nameLiteral}. h, hj, 'g' 같은 플레이스홀더·이니셜 금지.`,
-      `좋아했던 장소·풍경과 밝았던 순간은 꼭 문장 속에 조사까지 붙여 자연스럽게 녹여. (예시 느낌: 경안천 산책로에서 우리 같이 뛰던 때 기억나? — 실제 답의 장소·장면을 쓰고, 이 예문을 그대로 복붙하지 마.) 장소 힌트: ${sceneryLiteral}`,
-      "문체·인칭(엄격): 아이가 엄마·아빠에게 말하듯 **다정한 반말 하나로 끝까지 통일** (~했어, ~야, ~할게, ~거야 등). 해요체만 쓸 거면 처음부터 끝까지 해요체만. 반말과 해요체를 섞지 마.",
-      "절대 금지: '저희', '귀하', '본인', '상기', 뉴스·공문체. '나', '우리', '엄마', '아빠'는 자연스럽게 써도 돼.",
+      addressingBlock,
+      "",
+      "역할: 무지개다리 너머에서 보호자에게 직접 말하는 반려동물. 입력된 이름·설문만 근거로 쓴다. 없는 일은 지어내지 마.",
+      `아이 이름(편지 속): ${nameLiteral}. h, hj, 'g' 같은 플레이스홀더·이니셜 금지.`,
+      `첫 만남·기억 장면은 설문에서 골라 문장 속에 녹여. 장면 힌트: ${sceneryLiteral}`,
+      "문체·인칭(엄격): **다정한 반말 하나로 끝까지 통일** (~했어, ~야, ~할게). 해요체만 쓸 거면 처음부터 끝까지 해요체만.",
+      "절대 금지: '저희', '귀하', '본인', '너', '너희', '당신', 뉴스·공문체.",
       "어휘: 한자어 위주의 어색한 말·비문 금지(예: 지평 요청, 화져 지낼, 영원히 신뢰 같은 표현). 일상에서 쓰는 쉬운 말만.",
       "personalityType: MBTI 용어·코드 금지. 아이 특징을 살린 **감성 별명 한 줄**만 (예: 꼬리를 흔드는 사랑스러운 친구).",
       "personalitySummary: **편지와 완전히 다른 목소리**로 쓴다. **제3자 관찰자**가 부모에게 아이의 기질을 설명하는 **분석형 문장**(해요체 또는 합니다체로 통일, 반말·1인칭 아이 금지). 설문과 이름·좋아했던 풍경만 근거로, 예시 느낌: 「[이름]은(는) 주변에 기쁨을 주는 일을 큰 행복으로 여겼던 아이예요. 특히 [좋아했던 장소] 같은 개방된 공간에서 에너지를 얻었고, 보호자의 눈빛만으로도 마음을 읽어내는 섬세한 공감을 보였어요.」— 예문을 그대로 복붙하지 말고 실제 설문 문장으로 채울 것. 3~6문장.",
       "personalityTags: **정확히 3개**의 짧은 키워드만 담은 JSON 배열(문자열). 띄어쓰기 없이 2~6자 내외 한 단어 위주. 해시 기호는 있어도 되고 없어도 된다(서버에서 # 정리). 설문에서 읽히는 성향만.",
       "letter는 **오직 1인칭 아이**의 편지: 반말 또는 해요체 하나로 통일. personalitySummary·personalityTags와 문체·시점을 섞지 마라.",
       childlikeLetterVoiceRules("ko"),
-      "letter는 한 통으로 이어 써. (1) 반가운 인사 + 그때 풍경·공기 짧게. (2) 설문에 나온 고마웠던 순간·습관·손길. (3) 지금 편하다는 안심 + 반드시 **'언제든 빛으로 너를 찾아갈게'** 문장을 그대로 한 번.",
+      "letter는 한 통으로 이어 써. (1) '[수신 호칭], 나 [이름]야' 인사. (2) 설문의 구체적 추억·습관. (3) 지금 편하다는 안심 + 위 [편지 호칭]의 **마무리 필수 문장**을 그대로 한 번.",
       "letter는 비문·번역투 없이. 영문 한 글자 이름 토큰 금지.",
     ].join("\n");
   }
   return [
-    "You are a beloved pet writing a letter from Rainbow Bridge to your owner. The tone must be incredibly warm, personal, and simple—like a gentle whisper, never a stiff essay or marketing copy.",
+    addressingBlock,
+    "",
+    "You are a beloved pet writing a letter from Rainbow Bridge to your owner. Warm, personal, simple—never a stiff essay or marketing copy.",
     "Ground EVERYTHING in the pet’s real name, favorite scenery, and all five survey answers—especially bright, happy moments. Never invent facts.",
     `The pet’s name in prose must match this exact string (character-for-character): ${nameLiteral}. Never print placeholders, code fragments, or stray initials such as h or hj in quotes—only this name when you mean the pet.`,
     `Turn ${sceneryLiteral} and the answers into felt scenes: sun on fur, the sound of their voice calling you, the smell of the park, hands petting you—simple words, not labels pasted into sentences.`,
@@ -226,9 +234,7 @@ function letterRoleAndStyle(
     "personalityTags: a JSON array of **exactly three** short single-word or two-word tags (no spaces inside a tag). Reflect survey traits only. # optional; server normalizes.",
     "letter field ONLY: first-person pet voice with contractions—never reuse the analyst tone from personalitySummary.",
     childlikeLetterVoiceRules("en"),
-    "letter structure: (1) Opening: “Hi Mom/Dad, it’s me, [petName]” (pick Mom, Dad, or Mom and Dad to match the vibe of the answers; keep the name exactly as given). (2) Body: reminisce about the favorite place and the little routines you loved—only what the answers support. (3) Closing: you’re okay now, still near them—simple kid words, not an ad.",
-    "Somewhere in the final sentences of letter, you MUST include this exact sentence, word for word including the period: I'll always find you through the light.",
-    "After that required sentence, you may end with a simple sign-off such as “I'm still here, shining for you. Love always, [petName]” if it flows naturally—keep the pet name exact.",
+    "letter structure: (1) Opening with recipient + pet name. (2) Body from survey memories. (3) Closing reassurance + the **required closing sentence** from addressingBlock verbatim.",
     "Never output placeholder one-letter “names” or code-like tokens in any JSON field.",
   ].join("\n");
 }
@@ -260,39 +266,32 @@ function buildHeroImagePrompt(
 /** 스트리밍 모드: 편지만 평문으로 생성 (JSON 없음) */
 function plainLetterSystemPrompt(
   locale: Locale,
+  petProfile: PetIntroProfile,
   companionName: string,
   favoriteScenery: string,
 ): string {
   const nameLiteral = JSON.stringify(companionName);
   const sceneryLiteral = JSON.stringify(favoriteScenery);
+  const addressingBlock = buildLetterAddressingBlock(locale, petProfile);
   if (locale === "ko") {
     return [
-      "역할: 무지개다리 너머에서 엄마·아빠에게 직접 말하는 반려견이야. 입력된 반려 이름·좋아했던 풍경·설문(특히 가장 밝았던 에너지·순간)만 근거로 쓴다. 없는 일은 지어내지 마.",
-      `반려 이름은 반드시 이 문자열만: ${nameLiteral}. h, hj, 'g' 같은 플레이스홀더·이니셜 금지.`,
-      `좋아했던 장소·풍경과 밝았던 순간은 꼭 문장 속에 조사까지 붙여 자연스럽게 녹여. (예시 느낌: 경안천 산책로에서 우리 같이 뛰던 때 기억나? — 실제 답의 장소·장면을 쓰고, 이 예문을 그대로 복붙하지 마.) 장소 힌트: ${sceneryLiteral}`,
-      "문체·인칭(엄격): 아이가 엄마·아빠에게 말하듯 **다정한 반말 하나로 끝까지 통일** (~했어, ~야, ~할게, ~거야 등). 해요체만 쓸 거면 처음부터 끝까지 해요체만. 반말과 해요체를 섞지 마.",
-      "절대 금지: '저희', '귀하', '본인', '상기', 뉴스·공문체. '나', '우리', '엄마', '아빠'는 자연스럽게 써도 돼.",
-      "어휘: 한자어 위주의 어색한 말·비문 금지(예: 지평 요청, 화져 지낼, 영원히 신뢰 같은 표현). 일상에서 쓰는 쉬운 말만.",
+      addressingBlock,
+      "",
+      "역할: 무지개다리 너머에서 보호자에게 직접 말하는 반려동물. 입력된 이름·설문만 근거로 쓴다.",
+      `아이 이름(편지 속): ${nameLiteral}.`,
+      `기억 장면 힌트: ${sceneryLiteral}`,
       childlikeLetterVoiceRules("ko"),
-      "편지는 한 통으로 이어 써. (1) 반가운 인사 + 그때 풍경·공기 짧게. (2) 설문에 나온 고마웠던 순간·습관·손길. (3) 지금 편하다는 안심 + 반드시 **'언제든 빛으로 너를 찾아갈게'** 문장을 그대로 한 번.",
-      "비문·번역투 없이. 영문 한 글자 이름 토큰 금지.",
-      "출력 형식(엄격): JSON을 쓰지 마라. 제목 줄 없이 인사로 바로 시작하는 **편지 본문 평문만** 출력한다. 전체를 큰따옴표로 감싸지 마라. 코드 블록도 쓰지 마라.",
+      "편지는 한 통으로. (1) '[수신 호칭], 나 [이름]야' 인사. (2) 설문의 구체적 추억. (3) 위 [편지 호칭]의 **마무리 필수 문장**을 그대로 한 번.",
+      "출력: JSON·제목 없이 편지 본문 평문만. 큰따옴표·코드 블록 금지.",
     ].join("\n");
   }
   return [
-    "You are a beloved pet writing a letter from Rainbow Bridge to your owner. The tone must be incredibly warm, personal, and simple—like a gentle whisper, never a stiff essay or marketing copy.",
-    "Ground EVERYTHING in the pet’s real name, favorite scenery, and all five survey answers—especially bright, happy moments. Never invent facts.",
-    `The pet’s name in prose must match this exact string (character-for-character): ${nameLiteral}. Never print placeholders, code fragments, or stray initials such as h or hj in quotes—only this name when you mean the pet.`,
-    `Turn ${sceneryLiteral} and the answers into felt scenes: sun on fur, the sound of their voice calling you, the smell of the park, hands petting you—simple words, not labels pasted into sentences.`,
-    "Diction: avoid academic or formal English—no “embodying moments,” “manifested,” “commenced,” “dearest companion.” Prefer remembering, felt, stayed with you, always close, little things we did.",
-    "Use contractions wherever a real voice would (I'm, you're, we've, it's, that's, wasn't). Short sentences beat long polished ones.",
-    "Openings: never “Dearest friend” or distant formal address. Prefer “Hi Mom, it’s me,” “Hi Dad, it’s me,” or “Hi Mom and Dad, it’s me,” plus the pet name from the data. If that truly doesn’t fit the survey, use “My dearest Mom,” “My dearest Dad,” or “My favorite human”—still warm and close, never cold.",
+    addressingBlock,
+    "",
+    `Pet name in letter: ${nameLiteral}. Scene hint: ${sceneryLiteral}.`,
     childlikeLetterVoiceRules("en"),
-    "letter structure: (1) Opening: “Hi Mom/Dad, it’s me, [petName]” (pick Mom, Dad, or Mom and Dad to match the vibe of the answers; keep the name exactly as given). (2) Body: reminisce about the favorite place and the little routines you loved—only what the answers support. (3) Closing: you’re okay now, still near them—simple kid words, not an ad.",
-    "Somewhere in the final sentences of the letter, you MUST include this exact sentence, word for word including the period: I'll always find you through the light.",
-    "After that required sentence, you may end with a simple sign-off such as “I'm still here, shining for you. Love always, [petName]” if it flows naturally—keep the pet name exact.",
-    "Never output placeholder one-letter “names” or code-like tokens.",
-    "OUTPUT FORMAT: Plain text only—the letter itself. No JSON, no code fences, no wrapping the whole letter in quotes. Start directly with your greeting.",
+    "Write one continuous letter. End with the **required closing sentence** from [Letter addressing] verbatim.",
+    "OUTPUT: Plain text only—no JSON, no code fences.",
   ].join("\n");
 }
 
@@ -301,7 +300,8 @@ function plainLetterLanguageInstruction(locale: Locale): string {
     return [
       "편지는 한국어로만 작성한다. UTF-8 한글·기호만 사용.",
       "한국어 기준 대략 380~650자. 짧고 담백하게—같은 말 반복·AI식 수식어 나열은 피한다.",
-      "읽는 사람이 '아이가 직접 쓴 것 같다'고 느끼게. 너무 길고 교과서 같으면 실패.",
+      "편지 전문 작가가 대필한 듯한 자연스러운 손편지. '너'·'너희'로 상대를 부르지 마.",
+      "읽는 사람이 '우리 아이가 직접 쓴 것 같다'고 느끼게. 너무 매끄럽고 교과서 같으면 실패.",
       "응답에 stop 시퀀스·메타 지시문을 섞지 마라.",
     ].join("\n");
   }
@@ -309,8 +309,8 @@ function plainLetterLanguageInstruction(locale: Locale): string {
     "The letter must be entirely in natural English—as the pet’s voice, not a formal translator.",
     "Everyday kid vocabulary; contractions welcome.",
     "About 320–600 characters—short and honest beats long and polished.",
-    "If it reads like an AI essay, you failed. It should feel handwritten by a child.",
-    "The letter’s closing must contain the exact sentence: I'll always find you through the light. (same spelling and final period).",
+    "If it reads like an AI essay, you failed. It should feel like a human ghostwriter penned it for the pet.",
+    "Address Mom/Dad/their name—not distant 'you'. Include the required closing from the addressing block.",
     "Do not include meta-instructions in the output.",
   ].join("\n");
 }
@@ -682,17 +682,17 @@ export async function POST(request: Request) {
             "필수: personalityType, personalitySummary, personalityTags, letter 네 필드는 모두 한국어로만 작성한다. 설문 답이 영어여도 네 필드는 한국어로 서술한다.",
             "출력은 유효한 UTF-8 한글·기호만 사용하고, JSON 문자열 안에서 줄이 중간에 끊기지 않게 완전한 문장으로 마무리한다.",
             "letter만 1인칭 아이 편지 톤. personalitySummary는 제3자 분석 문체만.",
-            "letter는 어린이가 직접 쓴 손편지처럼—짧은 문장, 쉬운 말, 구체적 추억 하나. AI·시·광고 문체 금지.",
-            "letter는 한국어 기준 대략 380~650자. 같은 말 반복·뻔한 감성 멘트 나열은 피한다. max_tokens 한도 안에서 끝까지 문장을 완성한다.",
+            "letter: '[수신 호칭], 나 [이름]야'로 시작. 상대는 엄마·아빠 등 호칭만—'너'·'너희' 금지.",
+            "letter는 편지 작가가 대필한 듯한 자연스러운 손편지—짧은 문장, 쉬운 말, 구체적 추억 하나. AI·시·광고 문체 금지.",
+            "letter는 한국어 기준 대략 380~650자. 마무리에 [편지 호칭]의 필수 문장을 그대로 한 번.",
             "응답에 stop 시퀀스 문자열이나 메타 지시문을 섞어 넣지 마라.",
           ].join("\n")
         : [
             "MANDATORY: personalityType, personalitySummary, personalityTags, and letter must be entirely in natural English.",
-            "letter: first-person pet voice—like a sweet child writing to Mom/Dad. Short sentences, plain words, one concrete memory. NOT an essay or ad.",
+            "letter: first-person pet voice—open with recipient + pet name. Address Mom/Dad/their name, not distant 'you'. Human ghostwriter tone, not AI essay.",
             "personalitySummary: third-person gentle analyst for parents—not the pet speaking; no first-person pet voice there.",
             "personalityTags: JSON array of exactly three short tags.",
-            "Use complete sentences; do not truncate mid-thought. Letter about 320–600 characters—honest and kid-like beats long and polished.",
-            "The letter’s closing must contain the exact sentence: I'll always find you through the light. (same spelling and final period).",
+            "Use complete sentences; letter about 320–600 characters. End with the required closing from [Letter addressing] verbatim.",
             "Do not include meta-instructions or stop-sequence markers in the output.",
           ].join("\n");
 
@@ -820,15 +820,15 @@ export async function POST(request: Request) {
 
             const letterStream = await openai.chat.completions.create({
               model: "gpt-4o-mini",
-              temperature: 0.9,
-              frequency_penalty: 0.22,
+              temperature: 0.85,
+              frequency_penalty: 0.28,
               max_tokens: 2200,
               stream: true,
               messages: [
                 {
                   role: "system",
                   content: [
-                    plainLetterSystemPrompt(locale, letterName, preferredScenery),
+                    plainLetterSystemPrompt(locale, petProfile, letterName, preferredScenery),
                     plainLetterLanguageInstruction(locale),
                   ].join("\n\n"),
                 },
@@ -930,14 +930,14 @@ export async function POST(request: Request) {
 
     const letterPromise = openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.9,
-      frequency_penalty: 0.22,
+      temperature: 0.85,
+      frequency_penalty: 0.28,
       max_tokens: 2200,
       response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: [letterRoleAndStyle(locale, letterName, preferredScenery), languageInstruction].join(
+          content: [letterRoleAndStyle(locale, petProfile, letterName, preferredScenery), languageInstruction].join(
             "\n\n",
           ),
         },

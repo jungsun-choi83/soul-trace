@@ -235,6 +235,17 @@
     "video": {
       "kicker": "영상 모션",
       "prompt": "이 사진 속 ○○에게 어떤 움직임을 주고 싶으세요?",
+      "photoKicker": "영상용 사진",
+      "photoHint": "○○의 사진 한 장을 올려 주세요. 영상에 쓸 사진이에요.",
+      "photoDrop": "사진 선택 또는 끌어다 놓기",
+      "photoFormats": "JPG · PNG · WEBP · 최대 10MB",
+      "photoChange": "다른 사진",
+      "photoRemove": "삭제",
+      "photoPreviewAlt": "○○ 사진 미리보기",
+      "photoErrorSize": "10MB 이하 사진만 올릴 수 있어요.",
+      "photoErrorType": "JPG, PNG, WEBP 형식만 올릴 수 있어요.",
+      "photoErrorEmpty": "비어 있는 파일은 올릴 수 없어요.",
+      "motionNeedsPhoto": "먼저 위에서 사진을 올려 주세요.",
       "motions": {
         "breathing": "숨 쉬는 모습",
         "ears": "귀 쫑긋",

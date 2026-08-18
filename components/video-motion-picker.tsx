@@ -7,11 +7,18 @@ type VideoMotionPickerProps = {
   petDisplayName: string;
   value: VideoMotion | "";
   onChange: (motion: VideoMotion) => void;
+  /** 사진 업로드 전에는 모션 선택 비활성 */
+  disabled?: boolean;
 };
 
 const MOTIONS: VideoMotion[] = ["breathing", "ears", "head_tilt", "tail"];
 
-export function VideoMotionPicker({ petDisplayName, value, onChange }: VideoMotionPickerProps) {
+export function VideoMotionPicker({
+  petDisplayName,
+  value,
+  onChange,
+  disabled = false,
+}: VideoMotionPickerProps) {
   const { t, lang } = useLocale();
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
   const prompt = t("survey.video.prompt").replace(/○○/g, petDisplayName.trim());
@@ -26,11 +33,17 @@ export function VideoMotionPicker({ petDisplayName, value, onChange }: VideoMoti
       <p className="mt-3 text-sm font-extralight leading-relaxed text-[#EDE4D3] sm:text-[15px]">
         {prompt}
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
+      {disabled ? (
+        <p className="mt-3 text-xs font-extralight leading-relaxed text-[#A8A29E]">
+          {t("survey.video.motionNeedsPhoto")}
+        </p>
+      ) : null}
+      <div className={`mt-4 flex flex-wrap gap-2 ${disabled ? "pointer-events-none opacity-45" : ""}`}>
         {MOTIONS.map((motion) => (
           <button
             key={motion}
             type="button"
+            disabled={disabled}
             onClick={() => onChange(motion)}
             className={`min-h-[40px] rounded-xl border px-3 py-2 text-sm font-light transition ${
               value === motion
