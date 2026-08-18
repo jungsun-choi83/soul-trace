@@ -1,10 +1,13 @@
 import type { Messages } from "@/lib/i18n";
 
 export const MEMORY_STEP_COUNT = 5;
+export const PHOTO_STEP_COUNT = 1;
 export const TONE_STEP_COUNT = 3;
-export const SURVEY_STEP_COUNT = MEMORY_STEP_COUNT + TONE_STEP_COUNT;
+export const SURVEY_STEP_COUNT = MEMORY_STEP_COUNT + PHOTO_STEP_COUNT + TONE_STEP_COUNT;
 /** Q9 — 0-based index 4 */
 export const OPTIONAL_MEMORY_STEP = 4;
+/** 기억 질문 직후 — 영상용 사진 업로드 */
+export const PHOTO_SURVEY_STEP = MEMORY_STEP_COUNT;
 
 export type LetterToneMood = "bright" | "calm" | "warm";
 export type LetterToneOption = "comfort" | "no_heaven" | "frequent_name";
@@ -121,13 +124,24 @@ export function buildTonePromptBlock(
     .join("\n");
 }
 
+export function isPhotoSurveyStep(step: number): boolean {
+  return step === PHOTO_SURVEY_STEP;
+}
+
+function toneSurveyIndex(step: number): number {
+  return step - MEMORY_STEP_COUNT - PHOTO_STEP_COUNT;
+}
+
+export function isPhotoStepValid(hasPhoto: boolean, skipped: boolean): boolean {
+  return hasPhoto || skipped;
+}
+
 export function isMemoryStepValid(step: number, memoryAnswers: string[]): boolean {
   if (step === OPTIONAL_MEMORY_STEP) return true;
   return (memoryAnswers[step]?.trim().length ?? 0) > 0;
 }
 
-export function isToneStepValid(step: number, tonePrefs: LetterTonePrefs): boolean {
-  const toneIndex = step - MEMORY_STEP_COUNT;
+export function isToneStepValid(toneIndex: number, tonePrefs: LetterTonePrefs): boolean {
   if (toneIndex === 0) return tonePrefs.mood !== "";
   if (toneIndex === 1) return true;
   if (toneIndex === 2) return tonePrefs.length !== "";
@@ -138,9 +152,11 @@ export function isSurveyStepValid(
   step: number,
   memoryAnswers: string[],
   tonePrefs: LetterTonePrefs,
+  photoReady: { hasPhoto: boolean; skipped: boolean },
 ): boolean {
   if (step < MEMORY_STEP_COUNT) return isMemoryStepValid(step, memoryAnswers);
-  return isToneStepValid(step, tonePrefs);
+  if (isPhotoSurveyStep(step)) return isPhotoStepValid(photoReady.hasPhoto, photoReady.skipped);
+  return isToneStepValid(toneSurveyIndex(step), tonePrefs);
 }
 
 export function isSurveyComplete(memoryAnswers: string[], tonePrefs: LetterTonePrefs): boolean {

@@ -170,6 +170,7 @@
   },
   "survey": {
     "memoryKicker": "STEP 2 — 기억",
+    "photoStepKicker": "STEP 2 — 영상용 사진",
     "memoryHint": "한두 문장이면 충분해요",
     "toneKicker": "STEP 3 — 편지 톤",
     "toneMultiHint": "원하시는 것만 골라주세요 (선택)",
@@ -245,7 +246,8 @@
       "photoErrorSize": "10MB 이하 사진만 올릴 수 있어요.",
       "photoErrorType": "JPG, PNG, WEBP 형식만 올릴 수 있어요.",
       "photoErrorEmpty": "비어 있는 파일은 올릴 수 없어요.",
-      "motionNeedsPhoto": "먼저 위에서 사진을 올려 주세요.",
+      "photoSkip": "지금은 건너뛰기",
+      "motionNeedsPhoto": "설문에서 사진을 올리면 움직임을 고를 수 있어요.",
       "motions": {
         "breathing": "숨 쉬는 모습",
         "ears": "귀 쫑긋",

@@ -2,7 +2,7 @@
 
 import { PetIntroForm } from "@/components/pet-intro-form";
 import { SurveyFlow } from "@/components/survey-flow";
-import { VideoGenerationSection } from "@/components/video-generation-section";
+import { VideoMotionPicker } from "@/components/video-motion-picker";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
 import { InstagramStoryCard } from "@/components/instagram-story-card";
 import { EternalBeamPreview } from "@/components/eternal-beam-preview";
@@ -101,6 +101,7 @@ export default function Home() {
   const [videoMotion, setVideoMotion] = useState<VideoMotion | "">("");
   const [petPhotoFile, setPetPhotoFile] = useState<File | null>(null);
   const [petPhotoPreviewUrl, setPetPhotoPreviewUrl] = useState<string | null>(null);
+  const [petPhotoSkipped, setPetPhotoSkipped] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [petIntro, setPetIntro] = useState<PetIntroProfile>(() => ({ ...EMPTY_PET_INTRO }));
   const [privacyConsent, setPrivacyConsent] = useState(false);
@@ -141,7 +142,15 @@ export default function Home() {
 
   const onPetPhotoChange = useCallback((file: File | null) => {
     setPetPhotoFile(file);
+    setPetPhotoSkipped(false);
     if (!file) setVideoMotion("");
+  }, []);
+
+  const handleSkipPhoto = useCallback(() => {
+    setPetPhotoFile(null);
+    setPetPhotoSkipped(true);
+    setVideoMotion("");
+    setStep((prev) => Math.min(prev + 1, SURVEY_STEP_COUNT - 1));
   }, []);
 
   const patchPetIntro = useCallback((patch: Partial<PetIntroProfile>) => {
@@ -255,7 +264,10 @@ export default function Home() {
   ]);
 
   const isLastQuestion = step === SURVEY_STEP_COUNT - 1;
-  const isAnswerValid = isSurveyStepValid(step, memoryAnswers, tonePrefs);
+  const isAnswerValid = isSurveyStepValid(step, memoryAnswers, tonePrefs, {
+    hasPhoto: petPhotoFile != null,
+    skipped: petPhotoSkipped,
+  });
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim());
   const isProfileValid = isEmailValid && isPetIntroComplete(petIntro) && privacyConsent;
 
@@ -612,6 +624,7 @@ export default function Home() {
     setTonePrefs({ ...EMPTY_TONE_PREFS });
     setVideoMotion("");
     setPetPhotoFile(null);
+    setPetPhotoSkipped(false);
     setUserEmail("");
     setPetIntro({ ...EMPTY_PET_INTRO });
     setPrivacyConsent(false);
@@ -801,13 +814,11 @@ export default function Home() {
 
             <EternalBeamPreview lang={lang} />
 
-            <VideoGenerationSection
+            <VideoMotionPicker
               petDisplayName={displayPetName}
-              petPhoto={petPhotoFile}
-              petPhotoPreviewUrl={petPhotoPreviewUrl}
-              onPetPhotoChange={onPetPhotoChange}
-              videoMotion={videoMotion}
-              onVideoMotionChange={setVideoMotion}
+              value={videoMotion}
+              onChange={setVideoMotion}
+              disabled={!petPhotoFile}
             />
 
             <p
@@ -1033,6 +1044,9 @@ export default function Home() {
                 petDisplayName={displayPetName}
                 memoryAnswers={memoryAnswers}
                 tonePrefs={tonePrefs}
+                petPhotoPreviewUrl={petPhotoPreviewUrl}
+                onPetPhotoChange={onPetPhotoChange}
+                onSkipPhoto={handleSkipPhoto}
                 onMemoryChange={handleMemoryChange}
                 onToneMood={(mood) => setTonePrefs((prev) => ({ ...prev, mood }))}
                 onToneOptionToggle={handleToneOptionToggle}

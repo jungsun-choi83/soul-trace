@@ -4,18 +4,23 @@ import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 import {
   formatSurveyName,
+  isPhotoSurveyStep,
   MEMORY_STEP_COUNT,
   OPTIONAL_MEMORY_STEP,
   SURVEY_STEP_COUNT,
   type LetterToneOption,
   type LetterTonePrefs,
 } from "@/lib/survey";
+import { PetPhotoUpload } from "@/components/pet-photo-upload";
 
 type SurveyFlowProps = {
   step: number;
   petDisplayName: string;
   memoryAnswers: string[];
   tonePrefs: LetterTonePrefs;
+  petPhotoPreviewUrl: string | null;
+  onPetPhotoChange: (file: File | null) => void;
+  onSkipPhoto: () => void;
   onMemoryChange: (index: number, value: string) => void;
   onToneMood: (mood: LetterTonePrefs["mood"]) => void;
   onToneOptionToggle: (option: LetterToneOption) => void;
@@ -38,6 +43,9 @@ export function SurveyFlow({
   petDisplayName,
   memoryAnswers,
   tonePrefs,
+  petPhotoPreviewUrl,
+  onPetPhotoChange,
+  onSkipPhoto,
   onMemoryChange,
   onToneMood,
   onToneOptionToggle,
@@ -46,10 +54,11 @@ export function SurveyFlow({
 }: SurveyFlowProps) {
   const { t, lang, messages } = useLocale();
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
+  const isPhoto = isPhotoSurveyStep(step);
   const isMemory = step < MEMORY_STEP_COUNT;
   const memoryItem = isMemory ? messages.survey.memory[step] : null;
-  const toneIndex = step - MEMORY_STEP_COUNT;
-  const toneItem = !isMemory ? messages.survey.tone[toneIndex] : null;
+  const toneIndex = step - MEMORY_STEP_COUNT - 1;
+  const toneItem = !isMemory && !isPhoto ? messages.survey.tone[toneIndex] : null;
 
   return (
     <div className={bodyFont}>
@@ -67,8 +76,26 @@ export function SurveyFlow({
       </div>
 
       <p className="font-display-en text-[10px] uppercase tracking-[0.28em] text-[#D4AF37]/85">
-        {isMemory ? t("survey.memoryKicker") : t("survey.toneKicker")}
+        {isPhoto ? t("survey.photoStepKicker") : isMemory ? t("survey.memoryKicker") : t("survey.toneKicker")}
       </p>
+
+      {isPhoto ? (
+        <div className="mt-4 space-y-4">
+          <PetPhotoUpload
+            petDisplayName={petDisplayName}
+            previewUrl={petPhotoPreviewUrl}
+            onFileChange={onPetPhotoChange}
+            showKicker={false}
+          />
+          <button
+            type="button"
+            onClick={onSkipPhoto}
+            className={`w-full rounded-xl border border-dashed border-[rgba(212,175,55,0.35)] px-4 py-3 text-sm font-light text-[#D4AF37]/90 transition hover:border-[rgba(212,175,55,0.55)] hover:bg-[rgba(212,175,55,0.06)] ${bodyFont}`}
+          >
+            {t("survey.video.photoSkip")}
+          </button>
+        </div>
+      ) : null}
 
       {isMemory && memoryItem ? (
         <div className="mt-4 space-y-4">
@@ -106,7 +133,7 @@ export function SurveyFlow({
         </div>
       ) : null}
 
-      {!isMemory && toneItem ? (
+      {!isMemory && !isPhoto && toneItem ? (
         <div className="mt-4 space-y-4">
           <p className="text-xl font-extralight leading-relaxed text-[#FFFFFF] md:text-2xl">
             {toneItem.promptText}

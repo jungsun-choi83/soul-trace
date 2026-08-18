@@ -170,6 +170,7 @@
   },
   "survey": {
     "memoryKicker": "STEP 2 — Memories",
+    "photoStepKicker": "STEP 2 — Photo for video",
     "memoryHint": "One or two sentences is enough",
     "toneKicker": "STEP 3 — Letter tone",
     "toneMultiHint": "Choose only what you want (optional)",
@@ -245,7 +246,8 @@
       "photoErrorSize": "Please use a photo under 10MB.",
       "photoErrorType": "Only JPG, PNG, or WEBP files are supported.",
       "photoErrorEmpty": "That file appears to be empty.",
-      "motionNeedsPhoto": "Upload a photo above first.",
+      "photoSkip": "Skip for now",
+      "motionNeedsPhoto": "Upload a photo in the survey to choose a motion.",
       "motions": {
         "breathing": "Gentle breathing",
         "ears": "Ears perking up",
