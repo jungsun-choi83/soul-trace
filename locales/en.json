@@ -165,7 +165,7 @@
     "profileIncomplete": "Please complete STEP 1 and your email.",
     "privacyRequired": "Please agree to the privacy consent to continue.",
     "photoPrivacyRequired": "Please agree to photo consent before uploading.",
-    "generateFailed": "We couldn’t create your letter. Please try again.",
+    "generateFailed": "We couldn't create your letter right now. Please try again in a moment.",
     "alreadyGenerated": "A letter was already created with this email. Each email can only be used once.",
     "emailAlreadyUsedSoft": "We already sent a letter to this email—one letter per address. Please use a different email.",
     "unknown": "Something went wrong. Please try again.",

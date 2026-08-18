@@ -139,6 +139,10 @@ function err(locale: Locale, key: keyof typeof ko.errors, status: number) {
   return NextResponse.json({ error: ERR[locale][key] }, { status });
 }
 
+function friendlyGenerateError(locale: Locale): string {
+  return ERR[locale].generateFailed;
+}
+
 function parseLetterCompletion(
   completion: { choices: { message?: { content?: string | null } }[] },
   locale: Locale,
@@ -585,17 +589,15 @@ function sseEncode(obj: unknown): Uint8Array {
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "OPENAI_API_KEY is not configured." },
-      { status: 500 },
-    );
-  }
-
   try {
     const body = (await request.json()) as RequestBody;
     const locale: Locale = body.locale === "en" ? "en" : "ko";
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: friendlyGenerateError(locale) }, { status: 503 });
+    }
+
     const userEmail = body.userEmail?.trim().toLowerCase() ?? "";
     const petProfile = parsePetProfileFromBody(body);
     const privacyConsent = body.privacyConsent ?? false;
@@ -847,10 +849,7 @@ export async function POST(request: Request) {
 
             const trimmedLetter = fullLetter.trim();
             if (!trimmedLetter) {
-              send({
-                type: "error",
-                message: locale === "ko" ? "AI 편지 응답이 비어 있습니다." : "Empty letter response.",
-              });
+              send({ type: "error", message: friendlyGenerateError(locale) });
               controller.close();
               return;
             }
@@ -866,7 +865,7 @@ export async function POST(request: Request) {
               promptFormattedAnswers,
             );
             if (!personality.ok) {
-              send({ type: "error", message: personality.error });
+              send({ type: "error", message: friendlyGenerateError(locale) });
               controller.close();
               return;
             }
@@ -910,10 +909,8 @@ export async function POST(request: Request) {
               persistenceFailed: !saveResult.ok,
             });
             controller.close();
-          } catch (error) {
-            const message =
-              error instanceof Error ? error.message : "Unknown error while generating the letter.";
-            send({ type: "error", message });
+          } catch {
+            send({ type: "error", message: friendlyGenerateError(locale) });
             controller.close();
           }
         },
@@ -1054,9 +1051,7 @@ export async function POST(request: Request) {
         headers: { "Content-Type": "application/json; charset=utf-8" },
       },
     );
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown error while generating the letter.";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: friendlyGenerateError("ko") }, { status: 500 });
   }
 }

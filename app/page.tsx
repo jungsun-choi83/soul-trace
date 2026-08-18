@@ -11,6 +11,7 @@ import { ResultAmbientAudio } from "@/components/result-ambient-audio";
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 import { consumeLetterSseStream } from "@/lib/consume-letter-sse";
+import { userFacingErrorMessage } from "@/lib/user-facing-error";
 import { pickGenerationLoadingMessage } from "@/lib/generation-loading-messages";
 import { primeResultBgm, resolveResultBgmSrc, stopResultBgm } from "@/lib/result-bgm";
 import { heroImageSrcForApp } from "@/lib/hero-image-proxy";
@@ -113,7 +114,6 @@ export default function Home() {
   const [isSharing, setIsSharing] = useState(false);
   const [shareableFile, setShareableFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [persistenceWarning, setPersistenceWarning] = useState<string | null>(null);
   /** 이미 편지를 받은 이메일 — 설문 진행·생성 전에 안내 */
   const [profileEmailBlockedMessage, setProfileEmailBlockedMessage] = useState<string | null>(null);
   const [isCheckingProfileEmail, setIsCheckingProfileEmail] = useState(false);
@@ -242,7 +242,7 @@ export default function Home() {
           (err instanceof DOMException && err.name === "AbortError") ||
           (err instanceof Error && err.name === "AbortError");
         if (cancelled || aborted) return;
-        setError(err instanceof Error ? err.message : t("errors.unknown"));
+        setError(userFacingErrorMessage(err, t("errors.generateFailed")));
         setResultLocale(lang);
       } finally {
         setIsLoading(false);
@@ -385,7 +385,6 @@ export default function Home() {
     await primeResultBgm(bgmPrimeRef);
 
     setError(null);
-    setPersistenceWarning(null);
     setShareableFile(null);
     setStoryShareLine(null);
     setGenerationLoadingMessage(pickGenerationLoadingMessage(lang, displayPetName));
@@ -466,9 +465,6 @@ export default function Home() {
                   : displayPetName,
             });
             setResultLocale(lang);
-            setPersistenceWarning(
-              data.persistenceFailed === true ? t("result.saveFailedNotice") : null,
-            );
           },
         });
       } else {
@@ -486,7 +482,7 @@ export default function Home() {
       stopResultBgm(bgmPrimeRef);
       setResult(null);
       setResultLocale(null);
-      setError(err instanceof Error ? err.message : t("errors.unknown"));
+      setError(userFacingErrorMessage(err, t("errors.generateFailed")));
     } finally {
       setIsLoading(false);
       setGenerationLoadingMessage(null);
@@ -640,7 +636,6 @@ export default function Home() {
     setResultLocale(null);
     setShareableFile(null);
     setError(null);
-    setPersistenceWarning(null);
     setGenerationLoadingMessage(null);
     setHeroLoaded(false);
     setStoryShareLine(null);
@@ -688,15 +683,6 @@ export default function Home() {
                 }`}
               >
                 {generationLoadingMessage ?? t("result.updatingLanguage")}
-              </p>
-            ) : null}
-            {persistenceWarning ? (
-              <p
-                className={`text-center text-sm font-extralight leading-relaxed text-amber-200/90 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                {persistenceWarning}
               </p>
             ) : null}
             <div
@@ -832,12 +818,6 @@ export default function Home() {
                 : null}
             </p>
 
-            {result.heroImageSkipped && !result.heroImageUrl ? (
-              <p className="font-ko mt-4 text-center text-xs font-extralight leading-relaxed text-amber-200/90">
-                {t("result.heroImageSkipped")}
-              </p>
-            ) : null}
-
             {!canCaptureArtwork ? (
               <p className="font-ko mt-4 text-center text-xs text-[#D4AF37]">
                 {t("result.sceneLoading")}
@@ -866,15 +846,6 @@ export default function Home() {
                     ? t("result.instagramCardReady")
                     : t("result.instagramShareButton")}
               </button>
-              {shareableFile && !isSharing ? (
-                <p
-                  className={`mt-3 text-center text-[11px] font-extralight leading-relaxed text-[#A8A29E] sm:text-xs ${
-                    lang === "ko" ? "font-ko" : "font-display-en"
-                  }`}
-                >
-                  {t("result.instagramHint")}
-                </p>
-              ) : null}
             </div>
 
             <div className="mx-auto mt-12 w-full max-w-xl space-y-5">
