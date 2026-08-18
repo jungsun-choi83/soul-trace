@@ -132,8 +132,10 @@ function toneSurveyIndex(step: number): number {
   return step - MEMORY_STEP_COUNT - PHOTO_STEP_COUNT;
 }
 
-export function isPhotoStepValid(hasPhoto: boolean, skipped: boolean): boolean {
-  return hasPhoto || skipped;
+export function isPhotoStepValid(hasPhoto: boolean, skipped: boolean, photoConsent: boolean): boolean {
+  if (skipped) return true;
+  if (hasPhoto) return photoConsent;
+  return false;
 }
 
 export function isMemoryStepValid(step: number, memoryAnswers: string[]): boolean {
@@ -152,10 +154,12 @@ export function isSurveyStepValid(
   step: number,
   memoryAnswers: string[],
   tonePrefs: LetterTonePrefs,
-  photoReady: { hasPhoto: boolean; skipped: boolean },
+  photoReady: { hasPhoto: boolean; skipped: boolean; photoConsent: boolean },
 ): boolean {
   if (step < MEMORY_STEP_COUNT) return isMemoryStepValid(step, memoryAnswers);
-  if (isPhotoSurveyStep(step)) return isPhotoStepValid(photoReady.hasPhoto, photoReady.skipped);
+  if (isPhotoSurveyStep(step)) {
+    return isPhotoStepValid(photoReady.hasPhoto, photoReady.skipped, photoReady.photoConsent);
+  }
   return isToneStepValid(toneSurveyIndex(step), tonePrefs);
 }
 

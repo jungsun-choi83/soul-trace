@@ -10,10 +10,15 @@
     "subtitleLine2": "In their heart, there are words they never got to share."
   },
   "form": {
-    "emailPlaceholder": "Email (used to sync with Eternal Beam)",
-    "privacyConsent": "The information you provide will be kept securely for Eternal Beam device setup and personalized services.",
+    "emailPlaceholder": "Email address",
+    "privacyConsentTitle": "[Required] Consent to collect and use personal information",
+    "privacyConsentBody": "Soul Trace (Eternal Beam) collects and uses personal information as follows.\n\n· Items: email, companion information (name, nickname, species, years together, etc.), survey responses, AI-generated letter\n· Purpose: creating and delivering memory letters, Eternal Beam personalized services, service improvement\n· Retention: deleted without delay after the purpose is fulfilled (except where law requires longer retention)\n· Right to refuse: you may refuse consent; service use may be limited if you do.",
+    "privacyConsentAgree": "I have read the above and agree to the collection and use of my personal information.",
+    "photoPrivacyConsentTitle": "[Required] Consent to collect and use photos",
+    "photoPrivacyConsentBody": "Photos you upload may contain personal information under applicable privacy laws.\n\n· Items: uploaded companion photos (including information visible in the image)\n· Purpose: video generation and Eternal Beam related services\n· Retention: deleted without delay after the purpose is fulfilled (except where law requires longer retention)\n· Notice: upload only photos you took or are authorized to share. Avoid photos that clearly show other people’s faces or personal data.\n· Right to refuse: you may refuse; photo upload and video-related features will be limited.",
+    "photoPrivacyConsentAgree": "I have read the above and agree to the collection and use of my photo.",
     "generateNeedAnswer": "Answer this question to enable the gold button.",
-    "generateNeedProfile": "Complete STEP 1, email, and the privacy checkbox above to create your letter.",
+    "generateNeedProfile": "Complete STEP 1, email, and personal information consent to create your letter.",
     "step1": {
       "kicker": "STEP 1 — About your companion",
       "q1Label": "Q1. What was their name?",
@@ -157,7 +162,8 @@
     "fillAll": "Please answer required questions (Q5–Q8, Q10, Q12).",
     "invalidEmail": "Please enter a valid email address.",
     "profileIncomplete": "Please complete STEP 1 and your email.",
-    "privacyRequired": "Please accept the privacy notice so we can securely keep your information for Eternal Beam setup and personalized services.",
+    "privacyRequired": "Personal information consent is required.",
+    "photoPrivacyRequired": "Photo consent is required to upload an image.",
     "generateFailed": "Could not create your letter.",
     "alreadyGenerated": "A letter was already created with this email. Each email can only be used once.",
     "emailAlreadyUsedSoft": "A letter was already sent to this email. Each address can be used once—please enter a different one.",

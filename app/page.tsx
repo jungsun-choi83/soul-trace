@@ -1,6 +1,6 @@
 "use client";
 
-import { PetIntroForm } from "@/components/pet-intro-form";
+import { PrivacyConsentBlock } from "@/components/privacy-consent-block";
 import { SurveyFlow } from "@/components/survey-flow";
 import { VideoMotionPicker } from "@/components/video-motion-picker";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
@@ -105,6 +105,7 @@ export default function Home() {
   const [userEmail, setUserEmail] = useState("");
   const [petIntro, setPetIntro] = useState<PetIntroProfile>(() => ({ ...EMPTY_PET_INTRO }));
   const [privacyConsent, setPrivacyConsent] = useState(false);
+  const [photoPrivacyConsent, setPhotoPrivacyConsent] = useState(false);
   const [result, setResult] = useState<GeneratedResult | null>(null);
   /** 마지막으로 생성된 편지·분석이 맞는 UI 언어 (언어 토글 시 API로 다시 맞춤) */
   const [resultLocale, setResultLocale] = useState<Locale | null>(null);
@@ -143,12 +144,16 @@ export default function Home() {
   const onPetPhotoChange = useCallback((file: File | null) => {
     setPetPhotoFile(file);
     setPetPhotoSkipped(false);
-    if (!file) setVideoMotion("");
+    if (!file) {
+      setVideoMotion("");
+      setPhotoPrivacyConsent(false);
+    }
   }, []);
 
   const handleSkipPhoto = useCallback(() => {
     setPetPhotoFile(null);
     setPetPhotoSkipped(true);
+    setPhotoPrivacyConsent(false);
     setVideoMotion("");
     setStep((prev) => Math.min(prev + 1, SURVEY_STEP_COUNT - 1));
   }, []);
@@ -267,6 +272,7 @@ export default function Home() {
   const isAnswerValid = isSurveyStepValid(step, memoryAnswers, tonePrefs, {
     hasPhoto: petPhotoFile != null,
     skipped: petPhotoSkipped,
+    photoConsent: photoPrivacyConsent,
   });
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim());
   const isProfileValid = isEmailValid && isPetIntroComplete(petIntro) && privacyConsent;
@@ -628,6 +634,7 @@ export default function Home() {
     setUserEmail("");
     setPetIntro({ ...EMPTY_PET_INTRO });
     setPrivacyConsent(false);
+    setPhotoPrivacyConsent(false);
     setProfileEmailBlockedMessage(null);
     setResult(null);
     setResultLocale(null);
@@ -1014,17 +1021,13 @@ export default function Home() {
                 className={`font-ko w-full rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-transparent px-4 py-3 text-base font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 focus:border-[#D4AF37] md:text-sm`}
               />
               <PetIntroForm profile={petIntro} onChange={patchPetIntro} />
-              <label className="font-ko flex items-start gap-3 rounded-xl border-[0.5px] border-[rgba(255,255,255,0.18)] bg-transparent p-3">
-                <input
-                  type="checkbox"
-                  checked={privacyConsent}
-                  onChange={(event) => setPrivacyConsent(event.target.checked)}
-                  className="mt-0.5 h-5 w-5 shrink-0 accent-[#D4AF37] sm:h-4 sm:w-4"
-                />
-                <span className="text-xs font-extralight leading-6 text-[#F3EAD8]">
-                  {t("form.privacyConsent")}
-                </span>
-              </label>
+              <PrivacyConsentBlock
+                titlePath="form.privacyConsentTitle"
+                bodyPath="form.privacyConsentBody"
+                agreePath="form.privacyConsentAgree"
+                checked={privacyConsent}
+                onChange={setPrivacyConsent}
+              />
             </div>
 
             {profileEmailBlockedMessage ? (
@@ -1047,6 +1050,8 @@ export default function Home() {
                 petPhotoPreviewUrl={petPhotoPreviewUrl}
                 onPetPhotoChange={onPetPhotoChange}
                 onSkipPhoto={handleSkipPhoto}
+                photoPrivacyConsent={photoPrivacyConsent}
+                onPhotoPrivacyConsentChange={setPhotoPrivacyConsent}
                 onMemoryChange={handleMemoryChange}
                 onToneMood={(mood) => setTonePrefs((prev) => ({ ...prev, mood }))}
                 onToneOptionToggle={handleToneOptionToggle}

@@ -27,7 +27,7 @@ export function VideoMotionPicker({
     <section
       className={`mx-auto mt-8 max-w-xl rounded-2xl border border-[rgba(212,175,55,0.22)] bg-[rgba(12,10,8,0.55)] px-5 py-6 sm:px-7 ${bodyFont}`}
     >
-      <p className="font-display-en text-[10px] uppercase tracking-[0.28em] text-[#D4AF37]/90">
+      <p className="step-kicker">
         {t("survey.video.kicker")}
       </p>
       <p className="mt-3 text-sm font-extralight leading-relaxed text-[#EDE4D3] sm:text-[15px]">

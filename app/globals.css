@@ -18,6 +18,34 @@ body {
 }
 
 /* 한글 제목·본문: 본명조 계열(Noto Serif KR), 아주 얇게 */
+.step-kicker {
+  font-family: var(--font-marcellus), "Marcellus", serif;
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(212, 175, 55, 0.92);
+}
+
+@media (min-width: 640px) {
+  .step-kicker {
+    font-size: 0.9375rem;
+    letter-spacing: 0.24em;
+  }
+}
+
+.survey-hint {
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+@media (min-width: 640px) {
+  .survey-hint {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+  }
+}
+
 .font-ko {
   font-family: "Noto Serif KR", "Nanum Myeongjo", serif;
   font-weight: 200;

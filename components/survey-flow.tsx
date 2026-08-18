@@ -12,6 +12,7 @@ import {
   type LetterTonePrefs,
 } from "@/lib/survey";
 import { PetPhotoUpload } from "@/components/pet-photo-upload";
+import { PrivacyConsentBlock } from "@/components/privacy-consent-block";
 
 type SurveyFlowProps = {
   step: number;
@@ -21,6 +22,8 @@ type SurveyFlowProps = {
   petPhotoPreviewUrl: string | null;
   onPetPhotoChange: (file: File | null) => void;
   onSkipPhoto: () => void;
+  photoPrivacyConsent: boolean;
+  onPhotoPrivacyConsentChange: (checked: boolean) => void;
   onMemoryChange: (index: number, value: string) => void;
   onToneMood: (mood: LetterTonePrefs["mood"]) => void;
   onToneOptionToggle: (option: LetterToneOption) => void;
@@ -46,6 +49,8 @@ export function SurveyFlow({
   petPhotoPreviewUrl,
   onPetPhotoChange,
   onSkipPhoto,
+  photoPrivacyConsent,
+  onPhotoPrivacyConsentChange,
   onMemoryChange,
   onToneMood,
   onToneOptionToggle,
@@ -75,7 +80,7 @@ export function SurveyFlow({
         />
       </div>
 
-      <p className="font-display-en text-[10px] uppercase tracking-[0.28em] text-[#D4AF37]/85">
+      <p className="step-kicker">
         {isPhoto ? t("survey.photoStepKicker") : isMemory ? t("survey.memoryKicker") : t("survey.toneKicker")}
       </p>
 
@@ -87,6 +92,15 @@ export function SurveyFlow({
             onFileChange={onPetPhotoChange}
             showKicker={false}
           />
+          {petPhotoPreviewUrl ? (
+            <PrivacyConsentBlock
+              titlePath="form.photoPrivacyConsentTitle"
+              bodyPath="form.photoPrivacyConsentBody"
+              agreePath="form.photoPrivacyConsentAgree"
+              checked={photoPrivacyConsent}
+              onChange={onPhotoPrivacyConsentChange}
+            />
+          ) : null}
           <button
             type="button"
             onClick={onSkipPhoto}
@@ -103,14 +117,14 @@ export function SurveyFlow({
             {formatSurveyName(memoryItem.promptText, petDisplayName)}
           </p>
           {memoryItem.optional ? (
-            <p className="text-xs font-extralight leading-relaxed text-[#C4B8A8]/90">
+            <p className="survey-hint font-extralight text-[#C4B8A8]/90">
               {memoryItem.optionalNote}
             </p>
           ) : (
-            <p className="text-xs font-extralight text-[#D4AF37]/75">{t("survey.memoryHint")}</p>
+            <p className="survey-hint font-extralight text-[#D4AF37]/85">{t("survey.memoryHint")}</p>
           )}
           {memoryItem.example ? (
-            <p className="text-xs font-extralight leading-relaxed text-[#A8A29E]">
+            <p className="survey-hint font-extralight leading-relaxed text-[#A8A29E]">
               {t("survey.examplePrefix")} {memoryItem.example}
             </p>
           ) : null}
@@ -139,7 +153,7 @@ export function SurveyFlow({
             {toneItem.promptText}
           </p>
           {toneItem.id === "q11" ? (
-            <p className="text-xs font-extralight text-[#D4AF37]/75">{t("survey.toneMultiHint")}</p>
+            <p className="survey-hint font-extralight text-[#D4AF37]/85">{t("survey.toneMultiHint")}</p>
           ) : null}
           <div className="flex flex-wrap gap-2">
             {toneItem.id === "q10"

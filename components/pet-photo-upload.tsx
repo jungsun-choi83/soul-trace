@@ -73,7 +73,7 @@ export function PetPhotoUpload({
   return (
     <div className={bodyFont}>
       {showKicker ? (
-        <p className="font-display-en text-[10px] uppercase tracking-[0.28em] text-[#D4AF37]/90">
+        <p className="step-kicker">
           {t("survey.video.photoKicker")}
         </p>
       ) : null}

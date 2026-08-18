@@ -38,7 +38,7 @@ export function PetIntroForm({ profile, onChange }: PetIntroFormProps) {
 
   return (
     <div className={`space-y-5 ${bodyFont}`}>
-      <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/90">
+      <p className="step-kicker">
         {t("form.step1.kicker")}
       </p>
 
