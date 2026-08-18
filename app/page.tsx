@@ -1,6 +1,7 @@
 "use client";
 
-import { PrivacyConsentBlock } from "@/components/privacy-consent-block";
+import { PrivacyConsentTrigger } from "@/components/privacy-consent-trigger";
+import { PrivacyConsentSheet } from "@/components/privacy-consent-sheet";
 import { PetIntroForm } from "@/components/pet-intro-form";
 import { SurveyFlow } from "@/components/survey-flow";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
@@ -107,6 +108,8 @@ export default function Home() {
   const [petIntro, setPetIntro] = useState<PetIntroProfile>(() => ({ ...EMPTY_PET_INTRO }));
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [photoPrivacyConsent, setPhotoPrivacyConsent] = useState(false);
+  const [mainPrivacySheetOpen, setMainPrivacySheetOpen] = useState(false);
+  const [photoPrivacySheetOpen, setPhotoPrivacySheetOpen] = useState(false);
   const [result, setResult] = useState<GeneratedResult | null>(null);
   /** 마지막으로 생성된 편지·분석이 맞는 UI 언어 (언어 토글 시 API로 다시 맞춤) */
   const [resultLocale, setResultLocale] = useState<Locale | null>(null);
@@ -147,8 +150,12 @@ export default function Home() {
     if (!file) {
       setVideoMotion("");
       setPhotoPrivacyConsent(false);
+      return;
     }
-  }, []);
+    if (!photoPrivacyConsent) {
+      setPhotoPrivacySheetOpen(true);
+    }
+  }, [photoPrivacyConsent]);
 
   const handleSkipPhoto = useCallback(() => {
     setPetPhotoFile(null);
@@ -364,6 +371,10 @@ export default function Home() {
   };
 
   const submitAnswers = async () => {
+    if (!privacyConsent) {
+      setMainPrivacySheetOpen(true);
+      return;
+    }
     if (!isSurveyComplete(memoryAnswers, tonePrefs)) {
       setError(t("errors.fillAll"));
       return;
@@ -631,6 +642,8 @@ export default function Home() {
     setPetIntro({ ...EMPTY_PET_INTRO });
     setPrivacyConsent(false);
     setPhotoPrivacyConsent(false);
+    setMainPrivacySheetOpen(false);
+    setPhotoPrivacySheetOpen(false);
     setProfileEmailBlockedMessage(null);
     setResult(null);
     setResultLocale(null);
@@ -996,14 +1009,32 @@ export default function Home() {
               />
               </div>
               <PetIntroForm profile={petIntro} onChange={patchPetIntro} />
-              <PrivacyConsentBlock
-                titlePath="form.privacyConsentTitle"
-                bodyPath="form.privacyConsentBody"
-                agreePath="form.privacyConsentAgree"
-                checked={privacyConsent}
-                onChange={setPrivacyConsent}
+              <PrivacyConsentTrigger
+                agreed={privacyConsent}
+                onOpen={() => setMainPrivacySheetOpen(true)}
+                labelPath="form.privacyConsentLink"
               />
             </div>
+
+            <PrivacyConsentSheet
+              open={mainPrivacySheetOpen}
+              onClose={() => setMainPrivacySheetOpen(false)}
+              titlePath="form.privacyConsentTitle"
+              bodyPath="form.privacyConsentBody"
+              agreePath="form.privacyConsentAgree"
+              checked={privacyConsent}
+              onConfirm={() => setPrivacyConsent(true)}
+            />
+
+            <PrivacyConsentSheet
+              open={photoPrivacySheetOpen}
+              onClose={() => setPhotoPrivacySheetOpen(false)}
+              titlePath="form.photoPrivacyConsentTitle"
+              bodyPath="form.photoPrivacyConsentBody"
+              agreePath="form.photoPrivacyConsentAgree"
+              checked={photoPrivacyConsent}
+              onConfirm={() => setPhotoPrivacyConsent(true)}
+            />
 
             {profileEmailBlockedMessage ? (
               <p
@@ -1026,7 +1057,7 @@ export default function Home() {
                 onPetPhotoChange={onPetPhotoChange}
                 onSkipPhoto={handleSkipPhoto}
                 photoPrivacyConsent={photoPrivacyConsent}
-                onPhotoPrivacyConsentChange={setPhotoPrivacyConsent}
+                onOpenPhotoPrivacy={() => setPhotoPrivacySheetOpen(true)}
                 videoMotion={videoMotion}
                 onVideoMotionChange={setVideoMotion}
                 onMemoryChange={handleMemoryChange}

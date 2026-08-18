@@ -3,7 +3,7 @@
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 import { PetPhotoUpload } from "@/components/pet-photo-upload";
-import { PrivacyConsentBlock } from "@/components/privacy-consent-block";
+import { PrivacyConsentTrigger } from "@/components/privacy-consent-trigger";
 import { VideoMotionPicker } from "@/components/video-motion-picker";
 import {
   formatSurveyName,
@@ -25,7 +25,7 @@ type SurveyFlowProps = {
   onPetPhotoChange: (file: File | null) => void;
   onSkipPhoto: () => void;
   photoPrivacyConsent: boolean;
-  onPhotoPrivacyConsentChange: (checked: boolean) => void;
+  onOpenPhotoPrivacy: () => void;
   videoMotion: VideoMotion | "";
   onVideoMotionChange: (motion: VideoMotion) => void;
   onMemoryChange: (index: number, value: string) => void;
@@ -54,7 +54,7 @@ export function SurveyFlow({
   onPetPhotoChange,
   onSkipPhoto,
   photoPrivacyConsent,
-  onPhotoPrivacyConsentChange,
+  onOpenPhotoPrivacy,
   videoMotion,
   onVideoMotionChange,
   onMemoryChange,
@@ -99,12 +99,10 @@ export function SurveyFlow({
             showKicker={false}
           />
           {petPhotoPreviewUrl ? (
-            <PrivacyConsentBlock
-              titlePath="form.photoPrivacyConsentTitle"
-              bodyPath="form.photoPrivacyConsentBody"
-              agreePath="form.photoPrivacyConsentAgree"
-              checked={photoPrivacyConsent}
-              onChange={onPhotoPrivacyConsentChange}
+            <PrivacyConsentTrigger
+              agreed={photoPrivacyConsent}
+              onOpen={onOpenPhotoPrivacy}
+              labelPath="form.photoPrivacyConsentLink"
             />
           ) : null}
           <VideoMotionPicker
