@@ -11,11 +11,39 @@
   },
   "form": {
     "emailPlaceholder": "이메일 주소 (기계 연동 키)",
-    "petNamePlaceholder": "아이 이름",
-    "sceneryPlaceholder": "아이가 가장 좋아했던 풍경",
     "privacyConsent": "입력하신 정보는 나중에 이터널빔 기계 설정 및 맞춤형 서비스 제공을 위해 안전하게 보관됩니다",
-    "generateNeedAnswer": "이 질문에 답을 입력하면 금색 버튼이 활성화됩니다.",
-    "generateNeedProfile": "맨 위에서 이메일(형식 확인)·이름·추억 풍경을 모두 채우고, 개인정보 안내에 체크해야 편지 확인이 가능합니다."
+    "generateNeedAnswer": "현재 질문에 답하거나, 마지막 단계에서 필수 항목을 채워 주세요.",
+    "generateNeedProfile": "맨 위 STEP 1과 이메일·개인정보 안내를 모두 채워야 편지 확인이 가능합니다.",
+    "step1": {
+      "kicker": "STEP 1 — 아이 소개",
+      "q1Label": "Q1. 아이의 이름은?",
+      "q1Placeholder": "정식 이름",
+      "q1bLabel": "Q1-b. 평소엔 뭐라고 부르셨나요?",
+      "q1bPlaceholder": "예: 콩아, 콩디, 뚱아 (선택)",
+      "q2Label": "Q2. 어떤 아이였나요?",
+      "q3Label": "Q3. 함께한 시간",
+      "yearMetPlaceholder": "만난 해",
+      "yearPartedPlaceholder": "헤어진 해",
+      "q4Label": "Q4. 이 편지를 받는 사람은?",
+      "recipientByNamePlaceholder": "부르는 이름",
+      "recipientCustomPlaceholder": "직접 입력",
+      "petTypes": {
+        "dog": "강아지",
+        "cat": "고양이",
+        "rabbit": "토끼",
+        "hamster": "햄스터",
+        "bird": "새",
+        "other": "기타"
+      },
+      "recipients": {
+        "mom": "엄마",
+        "dad": "아빠",
+        "both": "엄마랑 아빠",
+        "sibling": "누나/언니/형/오빠",
+        "byName": "이름으로 부르기",
+        "custom": "직접 입력"
+      }
+    }
   },
   "questionHeader": {
     "label": "QUESTION",
@@ -126,9 +154,9 @@
     "text": "우리 아이가 남긴 Soul Trace 편지를 공유합니다."
   },
   "errors": {
-    "fillAll": "모든 문항을 채워주세요.",
+    "fillAll": "필수 질문(Q5–Q8, Q10, Q12)을 모두 입력해 주세요.",
     "invalidEmail": "유효한 이메일 주소를 입력해주세요.",
-    "profileIncomplete": "아이 이름과 기억 풍경을 입력해주세요.",
+    "profileIncomplete": "STEP 1 아이 소개와 이메일을 모두 입력해주세요.",
     "privacyRequired": "입력하신 정보는 나중에 이터널빔 기계 설정 및 맞춤형 서비스 제공을 위해 안전하게 보관됩니다 항목에 동의가 필요합니다.",
     "generateFailed": "편지 생성에 실패했습니다.",
     "alreadyGenerated": "이 이메일로는 이미 편지를 만든 기록이 있어요. 같은 이메일로는 한 번만 이용할 수 있습니다.",
@@ -140,41 +168,79 @@
     "prepareShareFailed": "공유 준비 중 오류가 발생했습니다.",
     "shareFailed": "공유 중 오류가 발생했습니다."
   },
-  "questions": [
-    {
-      "promptText": "아이의 가장 밝았던 에너지는 어떤 순간에 반짝였나요?",
-      "emphasisBefore": "아이의 ",
-      "emphasis": "가장 밝았던 에너지",
-      "emphasisAfter": "는 어떤 순간에 반짝였나요?",
-      "placeholder": "예: 아침마다 꼬리를 흔들며 인사하던 순간"
-    },
-    {
-      "promptText": "아이가 가장 좋아했던 산책길의 냄새나 장소는 어디였나요?",
-      "emphasisBefore": "아이가 ",
-      "emphasis": "가장 좋아했던 산책길의 냄새나 장소",
-      "emphasisAfter": "는 어디였나요?",
-      "placeholder": "예: 비 온 뒤 흙냄새가 나는 공원 입구"
-    },
-    {
-      "promptText": "아이가 당신에게 자주 보여주던 사랑의 표현은 무엇이었나요?",
-      "emphasisBefore": "아이가 당신에게 자주 보여주던 ",
-      "emphasis": "사랑의 표현",
-      "emphasisAfter": "은 무엇이었나요?",
-      "placeholder": "예: 소파에 먼저 올라와 기대앉던 습관"
-    },
-    {
-      "promptText": "지금도 가장 선명하게 떠오르는 아이의 표정은 어떤 모습인가요?",
-      "emphasisBefore": "지금도 ",
-      "emphasis": "가장 선명하게 떠오르는 아이의 표정",
-      "emphasisAfter": "은 어떤 모습인가요?",
-      "placeholder": "예: 간식을 기다리며 눈이 동그래지던 얼굴"
-    },
-    {
-      "promptText": "아이가 당신에게 마지막으로 남기고 싶어할 메시지는 무엇일까요?",
-      "emphasisBefore": "아이가 당신에게 ",
-      "emphasis": "마지막으로 남기고 싶어할 메시지",
-      "emphasisAfter": "는 무엇일까요?",
-      "placeholder": "예: 엄마, 나 때문에 울지 말고 웃어줘"
+  "survey": {
+    "memoryKicker": "STEP 2 — 기억",
+    "memoryHint": "한두 문장이면 충분해요",
+    "toneKicker": "STEP 3 — 편지 톤",
+    "toneMultiHint": "원하시는 것만 골라주세요 (선택)",
+    "toneQ11None": "(선택 없음)",
+    "examplePrefix": "예:",
+    "memory": [
+      {
+        "promptText": "○○을 처음 만난 날, 어떤 장면이 기억나세요?",
+        "placeholder": "그날의 장면을 적어주세요",
+        "example": "케이지 구석에서 안 나오려고 버텼어요 / 손가락을 자꾸 물었어요"
+      },
+      {
+        "promptText": "○○만 하던 이상한 버릇이나 고집이 있었나요?",
+        "placeholder": "사소하고 특별한 습관을 적어주세요",
+        "example": "꼭 이불 속으로 파고들어야 잤어요 / 택배 아저씨한테만 짖었어요"
+      },
+      {
+        "promptText": "○○가 당신에게 사랑을 표현하던 방식은?",
+        "placeholder": "아이만의 방식을 적어주세요",
+        "example": "화장실 앞에서 기다렸어요 / 발등에만 올라와서 잤어요"
+      },
+      {
+        "promptText": "○○가 신났던 순간을 알 수 있는 신호가 있었나요?",
+        "placeholder": "소리·습관·트리거를 적어주세요",
+        "example": "간식 봉지 소리 / 현관 비밀번호 소리 / 캐리어 꺼내면 도망"
+      },
+      {
+        "promptText": "(선택) ○○에게 아직 미안한 게 있으신가요?",
+        "placeholder": "마음에 남은 말이 있다면 적어주세요",
+        "optional": true,
+        "optionalNote": "이 질문은 답하지 않으셔도 괜찮아요.",
+        "skipLabel": "건너뛰기"
+      }
+    ],
+    "tone": [
+      {
+        "id": "q10",
+        "promptText": "Q10. 어떤 분위기가 좋으세요?",
+        "options": [
+          { "id": "bright", "label": "밝고 장난스럽게" },
+          { "id": "calm", "label": "담담하고 차분하게" },
+          { "id": "warm", "label": "따뜻한 위로 중심" }
+        ]
+      },
+      {
+        "id": "q11",
+        "promptText": "Q11. 원하시는 걸 골라주세요",
+        "options": [
+          { "id": "comfort", "label": "\"네 잘못이 아니야\" 같은 위로를 넣어주세요" },
+          { "id": "no_heaven", "label": "하늘, 무지개다리 같은 표현은 빼주세요" },
+          { "id": "frequent_name", "label": "이름을 자주 불러주세요" }
+        ]
+      },
+      {
+        "id": "q12",
+        "promptText": "Q12. 길이",
+        "options": [
+          { "id": "short", "label": "짧게 (5줄)" },
+          { "id": "normal", "label": "보통 (10줄)" }
+        ]
+      }
+    ],
+    "video": {
+      "kicker": "영상 모션",
+      "prompt": "이 사진 속 ○○에게 어떤 움직임을 주고 싶으세요?",
+      "motions": {
+        "breathing": "숨 쉬는 모습",
+        "ears": "귀 쫑긋",
+        "head_tilt": "고개 살짝 기울이기",
+        "tail": "꼬리 흔들기"
+      }
     }
-  ]
+  }
 }

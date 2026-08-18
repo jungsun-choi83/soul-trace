@@ -1,5 +1,8 @@
 "use client";
 
+import { PetIntroForm } from "@/components/pet-intro-form";
+import { SurveyFlow } from "@/components/survey-flow";
+import { VideoMotionPicker } from "@/components/video-motion-picker";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
 import { InstagramStoryCard } from "@/components/instagram-story-card";
 import { EternalBeamPreview } from "@/components/eternal-beam-preview";
@@ -14,6 +17,26 @@ import { heroImageSrcForApp } from "@/lib/hero-image-proxy";
 import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
 import { pickEmotionalLetterSentence, pickRandomBestLetterSentence } from "@/lib/letter-emotional-line";
 import { getEternalBeamInstagramUrl, getEternalBeamMainUrl } from "@/lib/eternalbeam-urls";
+import {
+  buildLetterRequestFields,
+  EMPTY_PET_INTRO,
+  isPetIntroComplete,
+  letterPetName,
+  petProfilePayloadFromIntro,
+  type PetIntroProfile,
+} from "@/lib/pet-profile";
+import {
+  buildSurveyAnswers,
+  EMPTY_TONE_PREFS,
+  isSurveyComplete,
+  isSurveyStepValid,
+  MEMORY_STEP_COUNT,
+  OPTIONAL_MEMORY_STEP,
+  SURVEY_STEP_COUNT,
+  type LetterToneOption,
+  type LetterTonePrefs,
+  type VideoMotion,
+} from "@/lib/survey";
 import { toJpeg } from "html-to-image";
 import { flushSync } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -69,13 +92,15 @@ const SKIP_FIRST_HERO_IMAGE =
 
 export default function Home() {
   const { lang, t, messages } = useLocale();
-  const questions = messages.questions;
 
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<string[]>(() => Array(questions.length).fill(""));
+  const [memoryAnswers, setMemoryAnswers] = useState<string[]>(() =>
+    Array(MEMORY_STEP_COUNT).fill(""),
+  );
+  const [tonePrefs, setTonePrefs] = useState<LetterTonePrefs>(() => ({ ...EMPTY_TONE_PREFS }));
+  const [videoMotion, setVideoMotion] = useState<VideoMotion | "">("");
   const [userEmail, setUserEmail] = useState("");
-  const [petName, setPetName] = useState("");
-  const [preferredScenery, setPreferredScenery] = useState("");
+  const [petIntro, setPetIntro] = useState<PetIntroProfile>(() => ({ ...EMPTY_PET_INTRO }));
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [result, setResult] = useState<GeneratedResult | null>(null);
   /** 마지막으로 생성된 편지·분석이 맞는 UI 언어 (언어 토글 시 API로 다시 맞춤) */
@@ -97,8 +122,14 @@ export default function Home() {
   const instagramStoryRef = useRef<HTMLDivElement>(null);
   const bgmPrimeRef = useRef<HTMLAudioElement>(null);
 
+  const displayPetName = letterPetName(petIntro);
+  const petProfilePayload = petProfilePayloadFromIntro(petIntro);
   const officialSiteUrl = useMemo(() => getEternalBeamMainUrl(), []);
   const instagramProfileUrl = useMemo(() => getEternalBeamInstagramUrl(), []);
+
+  const patchPetIntro = useCallback((patch: Partial<PetIntroProfile>) => {
+    setPetIntro((prev) => ({ ...prev, ...patch }));
+  }, []);
 
   /** 배경 URL 문자열만 추적한다. `result` 객체를 deps에 넣으면 스트리밍 편지 갱신마다 heroLoaded가 false로 깨져 onLoad가 다시 안 오고 버튼이 막힌다. */
   const heroImageUrl = result?.heroImageUrl ?? null;
@@ -137,10 +168,7 @@ export default function Home() {
       setError(null);
       const heroUrl = resultHeroUrlForLocaleSwitch;
       try {
-        const payload = questions.map((question, index) => ({
-          question: question.promptText,
-          answer: (answers[index] ?? "").trim(),
-        }));
+        const surveyPayload = buildSurveyAnswers(messages, memoryAnswers, tonePrefs, displayPetName);
 
         const response = await fetch("/api/generate-letter", {
           method: "POST",
@@ -149,10 +177,9 @@ export default function Home() {
           body: JSON.stringify({
             locale: lang,
             userEmail: userEmail.trim(),
-            petName: petName.trim(),
-            preferredScenery: preferredScenery.trim(),
+            ...buildLetterRequestFields(petIntro, memoryAnswers, tonePrefs)!,
             privacyConsent,
-            answers: payload,
+            answers: surveyPayload,
             skipImageGeneration: true,
             existingHeroImageUrl: heroUrl,
           }),
@@ -174,7 +201,7 @@ export default function Home() {
           heroImageUrl: data.heroImageUrl ?? null,
           heroImageSkipped: data.heroImageSkipped === true,
           savedPetName:
-            typeof data.savedPetName === "string" ? data.savedPetName : petName.trim(),
+            typeof data.savedPetName === "string" ? data.savedPetName : displayPetName,
         });
         setResultLocale(lang);
         setShareableFile(null);
@@ -200,20 +227,20 @@ export default function Home() {
     resultLocale,
     hasResult,
     resultHeroUrlForLocaleSwitch,
-    questions,
-    answers,
+    memoryAnswers,
+    tonePrefs,
+    messages,
+    displayPetName,
     userEmail,
-    petName,
-    preferredScenery,
+    petIntro,
     privacyConsent,
     t,
   ]);
 
-  const isLastQuestion = step === questions.length - 1;
-  const isAnswerValid = answers[step]?.trim().length > 0;
+  const isLastQuestion = step === SURVEY_STEP_COUNT - 1;
+  const isAnswerValid = isSurveyStepValid(step, memoryAnswers, tonePrefs);
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim());
-  const isProfileValid =
-    isEmailValid && petName.trim().length > 0 && preferredScenery.trim().length > 0 && privacyConsent;
+  const isProfileValid = isEmailValid && isPetIntroComplete(petIntro) && privacyConsent;
 
   const checkEmailEligibility = useCallback(async (): Promise<"eligible" | "used" | "error"> => {
     const email = userEmail.trim().toLowerCase();
@@ -259,10 +286,26 @@ export default function Home() {
     })();
   }, [userEmail, checkEmailEligibility, t]);
 
-  const handleChangeAnswer = (value: string) => {
-    const next = [...answers];
-    next[step] = value;
-    setAnswers(next);
+  const handleMemoryChange = (index: number, value: string) => {
+    setMemoryAnswers((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
+
+  const handleSkipOptional = () => {
+    handleMemoryChange(OPTIONAL_MEMORY_STEP, "");
+    setStep((prev) => Math.min(prev + 1, SURVEY_STEP_COUNT - 1));
+  };
+
+  const handleToneOptionToggle = (option: LetterToneOption) => {
+    setTonePrefs((prev) => ({
+      ...prev,
+      options: prev.options.includes(option)
+        ? prev.options.filter((o) => o !== option)
+        : [...prev.options, option],
+    }));
   };
 
   const goNext = async () => {
@@ -278,7 +321,7 @@ export default function Home() {
         return;
       }
     }
-    setStep((prev) => Math.min(prev + 1, questions.length - 1));
+    setStep((prev) => Math.min(prev + 1, SURVEY_STEP_COUNT - 1));
   };
 
   const goPrev = () => {
@@ -286,7 +329,7 @@ export default function Home() {
   };
 
   const submitAnswers = async () => {
-    if (!answers.every((answer) => answer.trim())) {
+    if (!isSurveyComplete(memoryAnswers, tonePrefs)) {
       setError(t("errors.fillAll"));
       return;
     }
@@ -310,7 +353,7 @@ export default function Home() {
     setPersistenceWarning(null);
     setShareableFile(null);
     setStoryShareLine(null);
-    setGenerationLoadingMessage(pickGenerationLoadingMessage(lang, petName.trim()));
+    setGenerationLoadingMessage(pickGenerationLoadingMessage(lang, displayPetName));
     setResult({
       personalityType: "",
       personalitySummary: "",
@@ -318,16 +361,13 @@ export default function Home() {
       letter: "",
       heroImageUrl: null,
       heroImageSkipped: false,
-      savedPetName: petName.trim(),
+      savedPetName: displayPetName,
     });
     setResultLocale(lang);
     setIsLoading(true);
 
     try {
-      const payload = questions.map((question, index) => ({
-        question: question.promptText,
-        answer: answers[index].trim(),
-      }));
+      const surveyPayload = buildSurveyAnswers(messages, memoryAnswers, tonePrefs, displayPetName);
 
       const response = await fetch("/api/generate-letter", {
         method: "POST",
@@ -337,10 +377,9 @@ export default function Home() {
         body: JSON.stringify({
           locale: lang,
           userEmail: userEmail.trim(),
-          petName: petName.trim(),
-          preferredScenery: preferredScenery.trim(),
+          ...buildLetterRequestFields(petIntro, memoryAnswers, tonePrefs)!,
           privacyConsent,
-          answers: payload,
+          answers: surveyPayload,
           stream: true,
           ...(SKIP_FIRST_HERO_IMAGE
             ? { skipImageGeneration: true, existingHeroImageUrl: null as string | null }
@@ -389,7 +428,7 @@ export default function Home() {
               savedPetName:
                 typeof data.savedPetName === "string" && data.savedPetName.trim().length > 0
                   ? data.savedPetName.trim()
-                  : petName.trim(),
+                  : displayPetName,
             });
             setResultLocale(lang);
             setPersistenceWarning(
@@ -404,7 +443,7 @@ export default function Home() {
           personalityTags: normalizePersonalityTags(data.personalityTags, lang),
           heroImageUrl: data.heroImageUrl ?? null,
           heroImageSkipped: data.heroImageSkipped === true,
-          savedPetName: typeof data.savedPetName === "string" ? data.savedPetName : petName.trim(),
+          savedPetName: typeof data.savedPetName === "string" ? data.savedPetName : displayPetName,
         });
         setResultLocale(lang);
       }
@@ -552,10 +591,11 @@ export default function Home() {
 
   const resetTest = () => {
     setStep(0);
-    setAnswers(Array(questions.length).fill(""));
+    setMemoryAnswers(Array(MEMORY_STEP_COUNT).fill(""));
+    setTonePrefs({ ...EMPTY_TONE_PREFS });
+    setVideoMotion("");
     setUserEmail("");
-    setPetName("");
-    setPreferredScenery("");
+    setPetIntro({ ...EMPTY_PET_INTRO });
     setPrivacyConsent(false);
     setProfileEmailBlockedMessage(null);
     setResult(null);
@@ -578,11 +618,9 @@ export default function Home() {
   const storyPetNameLead = useMemo(() => {
     const template = t("result.instagramStory.petStoryNameLead");
     const name =
-      (result?.savedPetName ?? petName).trim() || t("result.benefitModal.nameFallback");
+      (result?.savedPetName ?? displayPetName).trim() || t("result.benefitModal.nameFallback");
     return template.replace(/%NAME%/g, name);
-  }, [result?.savedPetName, petName, t]);
-
-  const q = questions[step];
+  }, [result?.savedPetName, displayPetName, t]);
 
   const canCaptureArtwork = !result?.heroImageUrl || heroLoaded;
   const letterSplit = result ? splitLetterForDropCap(result.letter) : null;
@@ -745,12 +783,21 @@ export default function Home() {
 
             <EternalBeamPreview lang={lang} />
 
+            <VideoMotionPicker
+              petDisplayName={displayPetName}
+              value={videoMotion}
+              onChange={setVideoMotion}
+            />
+
             <p
               className={`mt-6 text-center text-[11px] font-extralight leading-relaxed text-[#C4B8A8]/85 ${
                 lang === "ko" ? "font-ko" : "font-display-en"
               }`}
             >
-              {(result.savedPetName ?? petName).trim()} · {preferredScenery.trim()}
+              {(result.savedPetName ?? displayPetName).trim()}
+              {petProfilePayload
+                ? ` · ${petProfilePayload.yearMet}–${petProfilePayload.yearParted}`
+                : null}
             </p>
 
             {result.heroImageSkipped && !result.heroImageUrl ? (
@@ -922,7 +969,7 @@ export default function Home() {
           </div>
 
           <article className="rounded-3xl border-[0.5px] border-[rgba(212,175,55,0.3)] bg-transparent p-6 md:p-10">
-            <div className="mb-8 grid gap-3 md:grid-cols-2">
+            <div className="mb-8 space-y-6">
               <input
                 type="email"
                 value={userEmail}
@@ -932,23 +979,10 @@ export default function Home() {
                 }}
                 onBlur={handleEmailBlur}
                 placeholder={t("form.emailPlaceholder")}
-                className="font-ko w-full rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-transparent px-4 py-3 text-base font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 focus:border-[#D4AF37] md:text-sm"
+                className={`font-ko w-full rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-transparent px-4 py-3 text-base font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 focus:border-[#D4AF37] md:text-sm`}
               />
-              <input
-                type="text"
-                value={petName}
-                onChange={(event) => setPetName(event.target.value)}
-                placeholder={t("form.petNamePlaceholder")}
-                className="font-ko w-full rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-transparent px-4 py-3 text-base font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 focus:border-[#D4AF37] md:text-sm"
-              />
-              <input
-                type="text"
-                value={preferredScenery}
-                onChange={(event) => setPreferredScenery(event.target.value)}
-                placeholder={t("form.sceneryPlaceholder")}
-                className="font-ko w-full rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-transparent px-4 py-3 text-base font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 focus:border-[#D4AF37] md:col-span-2 md:text-sm"
-              />
-              <label className="font-ko md:col-span-2 flex items-start gap-3 rounded-xl border-[0.5px] border-[rgba(255,255,255,0.18)] bg-transparent p-3">
+              <PetIntroForm profile={petIntro} onChange={patchPetIntro} />
+              <label className="font-ko flex items-start gap-3 rounded-xl border-[0.5px] border-[rgba(255,255,255,0.18)] bg-transparent p-3">
                 <input
                   type="checkbox"
                   checked={privacyConsent}
@@ -973,31 +1007,16 @@ export default function Home() {
             ) : null}
 
             <div key={step} className="animate-fade-in">
-              <div className="mb-6 flex items-center justify-between text-xs">
-                <span className="font-display-en uppercase text-[#D4AF37]">
-                  {t("questionHeader.label")} {step + 1}
-                </span>
-                <span className="font-display-en text-[#D4AF37]">{questions.length}</span>
-              </div>
-              <div className="mb-7 h-px overflow-hidden rounded-full bg-[rgba(243,234,216,0.12)]">
-                <div
-                  className="h-full rounded-full bg-[#D4AF37] transition-all duration-700 ease-out"
-                  style={{ width: `${((step + 1) / questions.length) * 100}%` }}
-                />
-              </div>
-
-              <p className="font-ko text-xl font-extralight leading-relaxed text-[#FFFFFF] md:text-2xl">
-                {q.emphasisBefore}
-                <span className="text-[#D4AF37]">{q.emphasis}</span>
-                {q.emphasisAfter}
-              </p>
-
-              <textarea
-                value={answers[step]}
-                onChange={(event) => handleChangeAnswer(event.target.value)}
-                placeholder={q.placeholder}
-                rows={5}
-                className="font-ko mt-6 w-full resize-none rounded-2xl border-[0.5px] border-[rgba(212,175,55,0.28)] bg-transparent p-4 text-base font-extralight leading-7 text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/45 focus:border-[#D4AF37] md:text-base"
+              <SurveyFlow
+                step={step}
+                petDisplayName={displayPetName}
+                memoryAnswers={memoryAnswers}
+                tonePrefs={tonePrefs}
+                onMemoryChange={handleMemoryChange}
+                onToneMood={(mood) => setTonePrefs((prev) => ({ ...prev, mood }))}
+                onToneOptionToggle={handleToneOptionToggle}
+                onToneLength={(length) => setTonePrefs((prev) => ({ ...prev, length }))}
+                onSkipOptional={handleSkipOptional}
               />
             </div>
 
@@ -1016,7 +1035,7 @@ export default function Home() {
                   onClick={submitAnswers}
                   disabled={
                     isLoading ||
-                    !isAnswerValid ||
+                    !isSurveyComplete(memoryAnswers, tonePrefs) ||
                     !isProfileValid ||
                     Boolean(profileEmailBlockedMessage)
                   }
@@ -1040,13 +1059,15 @@ export default function Home() {
                 </button>
               )}
             </div>
-            {isLastQuestion && !isLoading && (!isAnswerValid || !isProfileValid) ? (
+            {isLastQuestion && !isLoading && (!isSurveyComplete(memoryAnswers, tonePrefs) || !isProfileValid) ? (
               <p
                 className={`mt-3 text-center text-xs font-extralight leading-relaxed text-[#D4AF37]/90 ${
                   lang === "ko" ? "font-ko" : "font-display-en"
                 }`}
               >
-                {!isAnswerValid ? t("form.generateNeedAnswer") : t("form.generateNeedProfile")}
+                {!isSurveyComplete(memoryAnswers, tonePrefs)
+                  ? t("form.generateNeedAnswer")
+                  : t("form.generateNeedProfile")}
               </p>
             ) : null}
             {isLoading ? (

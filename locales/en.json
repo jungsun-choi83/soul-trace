@@ -11,11 +11,39 @@
   },
   "form": {
     "emailPlaceholder": "Email (used to sync with Eternal Beam)",
-    "petNamePlaceholder": "Your companion’s name",
-    "sceneryPlaceholder": "A place or scene they loved most",
     "privacyConsent": "The information you provide will be kept securely for Eternal Beam device setup and personalized services.",
     "generateNeedAnswer": "Answer this question to enable the gold button.",
-    "generateNeedProfile": "Fill in email (valid format), name, and scenery above, and check the privacy box to enable Create letter."
+    "generateNeedProfile": "Complete STEP 1, email, and the privacy checkbox above to create your letter.",
+    "step1": {
+      "kicker": "STEP 1 — About your companion",
+      "q1Label": "Q1. What was their name?",
+      "q1Placeholder": "Formal name",
+      "q1bLabel": "Q1-b. What did you usually call them?",
+      "q1bPlaceholder": "e.g. Coco, Bean (optional)",
+      "q2Label": "Q2. What kind of companion were they?",
+      "q3Label": "Q3. Years together",
+      "yearMetPlaceholder": "Year you met",
+      "yearPartedPlaceholder": "Year you parted",
+      "q4Label": "Q4. Who is this letter for?",
+      "recipientByNamePlaceholder": "Name to use",
+      "recipientCustomPlaceholder": "Your wording",
+      "petTypes": {
+        "dog": "Dog",
+        "cat": "Cat",
+        "rabbit": "Rabbit",
+        "hamster": "Hamster",
+        "bird": "Bird",
+        "other": "Other"
+      },
+      "recipients": {
+        "mom": "Mom",
+        "dad": "Dad",
+        "both": "Mom and Dad",
+        "sibling": "Sister / Brother",
+        "byName": "Call by name",
+        "custom": "Custom"
+      }
+    }
   },
   "questionHeader": {
     "label": "QUESTION",
@@ -126,9 +154,9 @@
     "text": "Sharing a Soul Trace letter from our companion."
   },
   "errors": {
-    "fillAll": "Please answer every question.",
+    "fillAll": "Please answer required questions (Q5–Q8, Q10, Q12).",
     "invalidEmail": "Please enter a valid email address.",
-    "profileIncomplete": "Please enter your companion’s name and a favorite scenery.",
+    "profileIncomplete": "Please complete STEP 1 and your email.",
     "privacyRequired": "Please accept the privacy notice so we can securely keep your information for Eternal Beam setup and personalized services.",
     "generateFailed": "Could not create your letter.",
     "alreadyGenerated": "A letter was already created with this email. Each email can only be used once.",
@@ -140,41 +168,79 @@
     "prepareShareFailed": "Something went wrong while preparing to share.",
     "shareFailed": "Something went wrong while sharing."
   },
-  "questions": [
-    {
-      "promptText": "When did your companion’s energy shine the brightest?",
-      "emphasisBefore": "When did your companion’s ",
-      "emphasis": "brightest energy",
-      "emphasisAfter": " shine through the most?",
-      "placeholder": "e.g. Every morning when they wagged hello at the door"
-    },
-    {
-      "promptText": "What scent or place did they love on walks?",
-      "emphasisBefore": "What ",
-      "emphasis": "scent or place",
-      "emphasisAfter": " did they love most on walks?",
-      "placeholder": "e.g. The park path after rain, earth and grass"
-    },
-    {
-      "promptText": "How did they show love to you most often?",
-      "emphasisBefore": "How did they show ",
-      "emphasis": "love",
-      "emphasisAfter": " to you most often?",
-      "placeholder": "e.g. Resting their chin on your knee"
-    },
-    {
-      "promptText": "Which expression of theirs stays clearest in your mind?",
-      "emphasisBefore": "Which ",
-      "emphasis": "expression",
-      "emphasisAfter": " of theirs stays clearest in your mind?",
-      "placeholder": "e.g. Eyes widening at the treat bag rustle"
-    },
-    {
-      "promptText": "What message might they want to leave with you last?",
-      "emphasisBefore": "What ",
-      "emphasis": "last message",
-      "emphasisAfter": " might they want to leave with you?",
-      "placeholder": "e.g. Please smile more than you cry for me"
+  "survey": {
+    "memoryKicker": "STEP 2 — Memories",
+    "memoryHint": "One or two sentences is enough",
+    "toneKicker": "STEP 3 — Letter tone",
+    "toneMultiHint": "Choose only what you want (optional)",
+    "toneQ11None": "(none selected)",
+    "examplePrefix": "e.g.",
+    "memory": [
+      {
+        "promptText": "When you first met ○○, what scene comes to mind?",
+        "placeholder": "Describe that first day",
+        "example": "Hiding in the corner of the crate / Nibbling your fingers"
+      },
+      {
+        "promptText": "What quirky habit or stubborn streak was unique to ○○?",
+        "placeholder": "Small, specific habits",
+        "example": "Had to sleep buried under blankets / Barked only at the delivery person"
+      },
+      {
+        "promptText": "How did ○○ show love to you?",
+        "placeholder": "Their way of loving you",
+        "example": "Waiting outside the bathroom / Sleeping only on your feet"
+      },
+      {
+        "promptText": "What signal told you ○○ was excited?",
+        "placeholder": "Sounds, habits, triggers",
+        "example": "Treat bag rustle / Door code beep / Running when the carrier came out"
+      },
+      {
+        "promptText": "(Optional) Is there something you still feel sorry about with ○○?",
+        "placeholder": "Anything left unsaid",
+        "optional": true,
+        "optionalNote": "You can skip this question.",
+        "skipLabel": "Skip"
+      }
+    ],
+    "tone": [
+      {
+        "id": "q10",
+        "promptText": "Q10. What mood would you like?",
+        "options": [
+          { "id": "bright", "label": "Bright and playful" },
+          { "id": "calm", "label": "Calm and quiet" },
+          { "id": "warm", "label": "Warm comfort" }
+        ]
+      },
+      {
+        "id": "q11",
+        "promptText": "Q11. Choose what you want",
+        "options": [
+          { "id": "comfort", "label": "Include reassurance like \"it wasn't your fault\"" },
+          { "id": "no_heaven", "label": "Avoid heaven / rainbow bridge wording" },
+          { "id": "frequent_name", "label": "Say their name often" }
+        ]
+      },
+      {
+        "id": "q12",
+        "promptText": "Q12. Length",
+        "options": [
+          { "id": "short", "label": "Short (~5 lines)" },
+          { "id": "normal", "label": "Normal (~10 lines)" }
+        ]
+      }
+    ],
+    "video": {
+      "kicker": "Video motion",
+      "prompt": "What movement would you like to give ○○ in this photo?",
+      "motions": {
+        "breathing": "Gentle breathing",
+        "ears": "Ears perking up",
+        "head_tilt": "Slight head tilt",
+        "tail": "Tail wagging"
+      }
     }
-  ]
+  }
 }

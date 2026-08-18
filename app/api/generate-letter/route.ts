@@ -5,6 +5,18 @@ import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
 import OpenAI from "openai";
 import { appendSoulTraceToGoogleSheets } from "@/lib/google-sheets-ingest";
 import {
+  buildPetProfilePromptBlock,
+  letterPetName,
+  type LetterRecipient,
+  type PetIntroProfile,
+  type PetType,
+} from "@/lib/pet-profile";
+import {
+  buildTonePromptBlock,
+  type LetterToneOption,
+  type LetterTonePrefs,
+} from "@/lib/survey";
+import {
   createSupabaseServerClient,
   isRetryableSupabaseMessage,
   sleep,
@@ -21,7 +33,18 @@ type RequestBody = {
   locale?: string;
   userEmail?: string;
   petName?: string;
+  petNickname?: string;
+  petType?: string;
+  yearMet?: number;
+  yearParted?: number;
+  letterRecipient?: string;
+  letterRecipientDetail?: string;
   preferredScenery?: string;
+  tonePrefs?: {
+    mood?: string;
+    options?: string[];
+    length?: string;
+  };
   privacyConsent?: boolean;
   answers?: AnswerInput[];
   /** 언어 전환 등 텍스트만 다시 생성할 때 — 배경 이미지 API 호출 생략 */
@@ -30,6 +53,62 @@ type RequestBody = {
   /** 첫 생성: 편지를 SSE로 스트리밍 (이미지는 병렬로 진행) */
   stream?: boolean;
 };
+
+const PET_TYPES: PetType[] = ["dog", "cat", "rabbit", "hamster", "bird", "other"];
+const LETTER_RECIPIENTS: LetterRecipient[] = ["mom", "dad", "both", "sibling", "byName", "custom"];
+
+function parsePetProfileFromBody(body: RequestBody): PetIntroProfile | null {
+  const petName = body.petName?.trim() ?? "";
+  const petType = body.petType?.trim() ?? "";
+  const letterRecipient = body.letterRecipient?.trim() ?? "";
+  const yearMet =
+    typeof body.yearMet === "number" && Number.isFinite(body.yearMet)
+      ? String(body.yearMet)
+      : "";
+  const yearParted =
+    typeof body.yearParted === "number" && Number.isFinite(body.yearParted)
+      ? String(body.yearParted)
+      : "";
+
+  if (
+    !petName ||
+    !PET_TYPES.includes(petType as PetType) ||
+    !LETTER_RECIPIENTS.includes(letterRecipient as LetterRecipient) ||
+    !yearMet ||
+    !yearParted
+  ) {
+    return null;
+  }
+
+  return {
+    petName,
+    petNickname: body.petNickname?.trim() ?? "",
+    petType: petType as PetType,
+    yearMet,
+    yearParted,
+    letterRecipient: letterRecipient as LetterRecipient,
+    letterRecipientDetail: body.letterRecipientDetail?.trim() ?? "",
+  };
+}
+
+function sceneryFallback(locale: Locale, answers: AnswerInput[]): string {
+  const fromSurvey = answers[0]?.answer?.trim() ?? "";
+  if (fromSurvey) return fromSurvey;
+  return locale === "ko" ? "함께했던 추억의 장소" : "a place you shared together";
+}
+
+function parseTonePrefs(body: RequestBody): LetterTonePrefs | null {
+  const raw = body.tonePrefs;
+  if (!raw?.mood || !raw.length) return null;
+  const mood = raw.mood;
+  if (mood !== "bright" && mood !== "calm" && mood !== "warm") return null;
+  const length = raw.length;
+  if (length !== "short" && length !== "normal") return null;
+  const options = (raw.options ?? []).filter(
+    (o): o is LetterToneOption => o === "comfort" || o === "no_heaven" || o === "frequent_name",
+  );
+  return { mood, length, options };
+}
 
 type ParsedResponse = {
   personalityType: string;
@@ -518,8 +597,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as RequestBody;
     const locale: Locale = body.locale === "en" ? "en" : "ko";
     const userEmail = body.userEmail?.trim().toLowerCase() ?? "";
-    const petName = body.petName?.trim() ?? "";
-    const preferredScenery = body.preferredScenery?.trim() ?? "";
+    const petProfile = parsePetProfileFromBody(body);
     const privacyConsent = body.privacyConsent ?? false;
     const answers = body.answers ?? [];
     const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail);
@@ -527,18 +605,43 @@ export async function POST(request: Request) {
     if (!isEmailValid) {
       return err(locale, "invalidEmail", 400);
     }
-    if (!petName || !preferredScenery) {
+    if (!petProfile) {
+      return err(locale, "profileIncomplete", 400);
+    }
+    if (
+      (petProfile.letterRecipient === "byName" || petProfile.letterRecipient === "custom") &&
+      !petProfile.letterRecipientDetail.trim()
+    ) {
       return err(locale, "profileIncomplete", 400);
     }
     if (!privacyConsent) {
       return err(locale, "privacyRequired", 400);
     }
 
-    if (!Array.isArray(answers) || answers.length !== 5) {
+    const tonePrefs = parseTonePrefs(body);
+    if (!tonePrefs) {
+      return err(locale, "profileIncomplete", 400);
+    }
+    const petName = petProfile.petName;
+    const letterName = letterPetName(petProfile);
+    const preferredScenery = body.preferredScenery?.trim() || sceneryFallback(locale, answers);
+    const profilePromptBlock = buildPetProfilePromptBlock(locale, petProfile);
+    const tonePromptBlock = buildTonePromptBlock(locale, tonePrefs, locale === "ko" ? ko : en);
+
+    if (!Array.isArray(answers) || answers.length !== 8) {
       return NextResponse.json(
-        { error: locale === "ko" ? "질문 답변 5개가 필요합니다." : "Five answers are required." },
+        { error: locale === "ko" ? "질문 답변 8개가 필요합니다." : "Eight answers are required." },
         { status: 400 },
       );
+    }
+
+    for (let i = 0; i < 4; i++) {
+      if (!answers[i]?.answer?.trim()) {
+        return NextResponse.json(
+          { error: locale === "ko" ? "기억 질문(Q5–Q8)을 모두 입력해 주세요." : "Please answer memory questions Q5–Q8." },
+          { status: 400 },
+        );
+      }
     }
 
     const promptFormattedAnswers = answers
@@ -600,25 +703,33 @@ export async function POST(request: Request) {
         ? [
             "Return JSON only with these exact keys: personalityType, personalitySummary, personalityTags, letter.",
             "",
-            "[아이 이름 — 편지에서 자연스럽게 부를 것]",
-            petName,
+            profilePromptBlock,
+            "",
+            tonePromptBlock,
+            "",
+            "[아이 이름 — 편지에서 자연스럽게 부를 것 (애칭 우선)]",
+            letterName,
             "",
             "[보호자가 적어 준, 아이가 사랑했던 풍경·장소 — 분위기와 은유에 반영할 것]",
             preferredScenery,
             "",
-            "[설문 5문항과 답변 — 성향·편지의 유일한 근거]",
+            "[설문 8문항과 답변 — 성향·편지의 유일한 근거]",
             promptFormattedAnswers,
           ].join("\n")
         : [
             "Return JSON only with these exact keys: personalityType, personalitySummary, personalityTags, letter.",
             "",
-            "[Companion’s name — use naturally in the letter]",
-            petName,
+            profilePromptBlock,
+            "",
+            tonePromptBlock,
+            "",
+            "[Companion’s name — use naturally in the letter (nickname first)]",
+            letterName,
             "",
             "[Scenery or place they loved — reflect in mood and metaphor]",
             preferredScenery,
             "",
-            "[Five survey Q&As — the only basis for personality and letter]",
+            "[Eight survey Q&As — the only basis for personality and letter]",
             promptFormattedAnswers,
           ].join("\n");
 
@@ -632,23 +743,31 @@ export async function POST(request: Request) {
       const userLetterPayload =
         locale === "ko"
           ? [
-              "[아이 이름 — 편지에서 자연스럽게 부를 것]",
-              petName,
+              profilePromptBlock,
+              "",
+              tonePromptBlock,
+              "",
+              "[아이 이름 — 편지에서 자연스럽게 부를 것 (애칭 우선)]",
+              letterName,
               "",
               "[보호자가 적어 준, 아이가 사랑했던 풍경·장소 — 분위기와 은유에 반영할 것]",
               preferredScenery,
               "",
-              "[설문 5문항과 답변 — 편지의 유일한 근거]",
+              "[설문 8문항과 답변 — 편지의 유일한 근거]",
               promptFormattedAnswers,
             ].join("\n")
           : [
-              "[Companion’s name — use naturally in the letter]",
-              petName,
+              profilePromptBlock,
+              "",
+              tonePromptBlock,
+              "",
+              "[Companion’s name — use naturally in the letter (nickname first)]",
+              letterName,
               "",
               "[Scenery or place they loved — reflect in mood and metaphor]",
               preferredScenery,
               "",
-              "[Five survey Q&As — the only basis for the letter]",
+              "[Eight survey Q&As — the only basis for the letter]",
               promptFormattedAnswers,
             ].join("\n");
 
@@ -677,7 +796,7 @@ export async function POST(request: Request) {
               try {
                 const imagePrompt = buildHeroImagePrompt(
                   promptFormattedAnswers,
-                  petName,
+                  letterName,
                   preferredScenery,
                   locale,
                 );
@@ -709,7 +828,7 @@ export async function POST(request: Request) {
                 {
                   role: "system",
                   content: [
-                    plainLetterSystemPrompt(locale, petName, preferredScenery),
+                    plainLetterSystemPrompt(locale, letterName, preferredScenery),
                     plainLetterLanguageInstruction(locale),
                   ].join("\n\n"),
                 },
@@ -742,7 +861,7 @@ export async function POST(request: Request) {
               openai,
               locale,
               trimmedLetter,
-              petName,
+              letterName,
               preferredScenery,
               promptFormattedAnswers,
             );
@@ -787,7 +906,7 @@ export async function POST(request: Request) {
               letter: trimmedLetter,
               heroImageUrl,
               heroImageSkipped,
-              savedPetName: petName,
+              savedPetName: letterName,
               persistenceFailed: !saveResult.ok,
             });
             controller.close();
@@ -818,7 +937,7 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: [letterRoleAndStyle(locale, petName, preferredScenery), languageInstruction].join(
+          content: [letterRoleAndStyle(locale, letterName, preferredScenery), languageInstruction].join(
             "\n\n",
           ),
         },
@@ -860,7 +979,7 @@ export async function POST(request: Request) {
     } else {
       const imagePrompt = buildHeroImagePrompt(
         promptFormattedAnswers,
-        petName,
+        letterName,
         preferredScenery,
         locale,
       );
@@ -927,7 +1046,7 @@ export async function POST(request: Request) {
         ...parsed,
         heroImageUrl,
         heroImageSkipped,
-        savedPetName: petName,
+        savedPetName: letterName,
         persistenceFailed: false,
       }),
       {
