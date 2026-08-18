@@ -7,32 +7,32 @@
     "eyebrow": "Eternal Beam",
     "title": "Soul Trace",
     "subtitleLine1": "If they could have spoken to you,\nwhat would they have said?",
-    "subtitleLine2": "In their heart, there are words they never got to share."
+    "subtitleLine2": "They still had words left in their heart—words they never got to share."
   },
   "form": {
     "emailLabel": "Email address",
     "emailPlaceholder": "name@example.com",
-    "privacyConsentTitle": "[Required] Consent to collect and use personal information",
-    "privacyConsentBody": "Soul Trace (Eternal Beam) collects and uses personal information as follows.\n\n· Items: email, companion information (name, nickname, species, years together, etc.), survey responses, AI-generated letter\n· Purpose: creating and delivering memory letters, Eternal Beam personalized services, service improvement\n· Retention: deleted without delay after the purpose is fulfilled (except where law requires longer retention)\n· Right to refuse: you may refuse consent; service use may be limited if you do.",
-    "privacyConsentAgree": "I have read the above and agree to the collection and use of my personal information.",
-    "photoPrivacyConsentTitle": "[Required] Consent to collect and use photos",
-    "photoPrivacyConsentBody": "Photos you upload may contain personal information under applicable privacy laws.\n\n· Items: uploaded companion photos (including information visible in the image)\n· Purpose: video generation and Eternal Beam related services\n· Retention: deleted without delay after the purpose is fulfilled (except where law requires longer retention)\n· Notice: upload only photos you took or are authorized to share. Avoid photos that clearly show other people’s faces or personal data.\n· Right to refuse: you may refuse; photo upload and video-related features will be limited.",
-    "photoPrivacyConsentAgree": "I have read the above and agree to the collection and use of my photo.",
-    "generateNeedAnswer": "Answer this question to enable the gold button.",
-    "generateNeedProfile": "Complete STEP 1, email, and personal information consent to create your letter.",
+    "privacyConsentTitle": "[Required] Privacy consent",
+    "privacyConsentBody": "Soul Trace (Eternal Beam) uses your information as follows.\n\n· What we collect: your email, your pet’s details (name, nickname, species, years together, etc.), your survey answers, and the AI-generated letter\n· Why: to create and deliver your memory letter, provide Eternal Beam services, and improve the experience\n· How long we keep it: we delete it once we no longer need it for those purposes (or as long as the law requires)\n· Your choice: you can decline, but you may not be able to use the service without consent.",
+    "privacyConsentAgree": "I have read the above and agree to how my information is collected and used.",
+    "photoPrivacyConsentTitle": "[Required] Photo consent",
+    "photoPrivacyConsentBody": "Photos you upload may count as personal information under privacy law.\n\n· What we collect: the pet photo you upload (including anything visible in the image)\n· Why: video creation and Eternal Beam–related services\n· How long we keep it: we delete it once we no longer need it (or as long as the law requires)\n· Please only upload photos you took or have permission to share. Avoid photos that clearly show other people’s faces or private details.\n· Your choice: you can decline, but photo upload and video features will not be available.",
+    "photoPrivacyConsentAgree": "I have read the above and agree to how my photo is used.",
+    "generateNeedAnswer": "Answer this question to continue.",
+    "generateNeedProfile": "Complete STEP 1, your email, and privacy consent to read your letter.",
     "step1": {
-      "kicker": "STEP 1 — About your companion",
+      "kicker": "STEP 1 — About your pet",
       "q1Label": "Q1. What was their name?",
-      "q1Placeholder": "Formal name",
+      "q1Placeholder": "Full name",
       "q1bLabel": "Q1-b. What did you usually call them?",
       "q1bPlaceholder": "e.g. Coco, Bean (optional)",
-      "q2Label": "Q2. What kind of companion were they?",
+      "q2Label": "Q2. What kind of pet were they?",
       "q3Label": "Q3. Years together",
       "yearMetPlaceholder": "Year you met",
-      "yearPartedPlaceholder": "Year you parted",
+      "yearPartedPlaceholder": "Year they passed",
       "q4Label": "Q4. Who is this letter for?",
-      "recipientByNamePlaceholder": "Name to use",
-      "recipientCustomPlaceholder": "Your wording",
+      "recipientByNamePlaceholder": "Name for the letter",
+      "recipientCustomPlaceholder": "Your own wording",
       "petTypes": {
         "dog": "Dog",
         "cat": "Cat",
@@ -46,7 +46,7 @@
         "dad": "Dad",
         "both": "Mom and Dad",
         "sibling": "Sister / Brother",
-        "byName": "Call by name",
+        "byName": "Use a name",
         "custom": "Custom"
       }
     }
@@ -56,33 +56,33 @@
     "of": "/"
   },
   "buttons": {
-    "prev": "Previous",
-    "next": "Next question",
-    "generate": "Create AI letter",
-    "generating": "Creating your letter...",
-    "generatingMusicHint": "Soft background music plays while your letter is prepared."
+    "prev": "Back",
+    "next": "Next",
+    "generate": "Read their letter",
+    "generating": "Writing their letter…",
+    "generatingMusicHint": "Soft background music plays while we prepare your letter."
   },
   "result": {
     "eyebrow": "Soul Trace Result",
-    "letterHeading": "A letter to Mom and Dad from the future",
-    "soulTypeCardTitle": "Your companion’s traits and temperament",
-    "eternalBridgePrompt": "Would you like to keep this precious letter forever in Eternal Beam’s light?",
+    "letterHeading": "A letter to Mom and Dad",
+    "soulTypeCardTitle": "Their personality and temperament",
+    "eternalBridgePrompt": "Would you like to keep this letter with Eternal Beam?",
     "bgmOn": "Play soft background music",
     "bgmOff": "Stop music",
-    "bgmAria": "Toggle gentle background music",
+    "bgmAria": "Toggle background music",
     "bgmMute": "Mute",
-    "bgmUnmute": "Sound on",
+    "bgmUnmute": "Unmute",
     "bgmTapToPlay": "Play music",
     "recordEmail": "Saved email",
     "emotionalBridge": {
       "block1": "This letter reaches you only once—right here, right now.\n\nBut their story doesn’t end on this page.",
-      "block2": "On Eternal Beam,\ntheir heart keeps arriving for you.\n\nSo even years from now,\nyou can open it again\nand meet them again."
+      "block2": "With Eternal Beam,\nyou can keep feeling close to them.\n\nEven years from now,\nyou can open it again\nand be with them again."
     },
     "ctaSaveLetter": "Save this letter",
     "emailFlow": {
-      "titleContinue": "Where should we send the next gentle updates?",
-      "titleSave": "Which email should we use to keep this letter safe?",
-      "hint": "We’ll use this only for Soul Trace and Eternal Beam updates—unsubscribe anytime.",
+      "titleContinue": "Where should we send updates?",
+      "titleSave": "Which email should we use to save this letter?",
+      "hint": "We’ll only use this for Soul Trace and Eternal Beam updates—you can unsubscribe anytime.",
       "placeholder": "Email address",
       "invalid": "Please enter a valid email address.",
       "submit": "Continue"
@@ -90,97 +90,97 @@
     "saveDoneNotice": "Saved.",
     "rewardFlow": {
       "kicker": "Soul Trace × Eternal Beam",
-      "title": "Only for guardians who begin today",
-      "bullet1": "A physical NFC card with a theme made for your companion",
-      "bullet2": "Up to 40% Super Early Bird on Kickstarter—priority for you",
-      "bullet3": "Be first to hear launch news and member-only perks",
+      "title": "For guardians who start today",
+      "bullet1": "A physical NFC card themed for your companion",
+      "bullet2": "Up to 40% off Super Early Bird on Kickstarter—reserved for you",
+      "bullet3": "First access to launch news and member perks",
       "cta": "See pre-order perks"
     },
     "destinationDeck": {
       "officialSite": {
         "label": "ETERNAL BEAM",
-        "title": "Forever, in the fullest sense",
-        "body": "Memory that breathes in hologram light—keep it forever in light.",
-        "cta": "Visit official site"
+        "title": "Keep them close, always",
+        "body": "Turn your memories into light you can return to, again and again.",
+        "cta": "Visit the official site"
       },
       "instagram": {
         "label": "INSTAGRAM",
         "title": "Stories from Eternal Beam",
         "body": "Follow us on Instagram for product news and quiet moments.",
-        "cta": "View Instagram"
+        "cta": "View on Instagram"
       }
     },
     "instagramShareLead": "Keep this moment with you",
     "instagramShareButton": "Share to Instagram Stories",
     "instagramFooter": "Share your memory on Instagram",
-    "ctaEternalBeam": "Reserve this light in real life",
-    "connectLetterLink": "Send this letter to your companion in the memorial hall",
-    "connectCardLabel": "Send letter to memorial hall",
+    "ctaEternalBeam": "Bring this light into real life",
+    "connectLetterLink": "Send this letter to your companion",
+    "connectCardLabel": "Send letter",
     "instagramCardLabel": "Share on Instagram",
     "instagramCardReady": "Tap to share",
     "instagramMemoryShare": "Share your memory on Instagram",
     "eternalBeamPreview": {
       "kicker": "Eternal Beam",
-      "body": "This letter can stay with you—as light, beside you."
+      "body": "This letter can stay with you—as light, right beside you."
     },
     "saveImage": "Save to phone",
     "keepForever": "Keep forever",
     "instagramPrepare": "Prepare image (step 1)",
     "instagramShare": "Share to Instagram (step 2)",
-    "preparingImage": "Preparing image...",
-    "retryTest": "Start again",
-    "instagramHint": "On your phone, pick Instagram Stories from the share sheet. On desktop, the image saves and Instagram opens in a new tab—so you won’t get the Windows share panel (Paint).",
+    "preparingImage": "Preparing image…",
+    "retryTest": "Start over",
+    "instagramHint": "On your phone, choose Instagram Stories from the share menu. On desktop, the image will download and Instagram will open in a new tab.",
     "sceneLoading": "Loading your scene…",
-    "streamingPersonalityTitle": "Listening for their little soul…",
+    "streamingPersonalityTitle": "Getting to know their little soul…",
     "streamingPersonalityBody": "A gentle summary will appear in a moment.",
-    "letterStarting": "Gathering the first line of the letter…",
-    "updatingLanguage": "Rewriting your letter and analysis in the selected language…",
-    "heroImageSkipped": "Background image was not generated. Check OPENAI_API_KEY on the server and your billing/limits.",
-    "saveFailedNotice": "Your letter was created but could not be saved on our server. Please try again later, or keep a copy with the download below.",
-    "hardwareTeaser": "In May, meet again in that light on Eternal Beam.",
+    "letterStarting": "Finding the first words of their letter…",
+    "updatingLanguage": "Rewriting your letter in the selected language…",
+    "heroImageSkipped": "We couldn’t create the background image right now. Your letter is still here—please try again later.",
+    "saveFailedNotice": "Your letter was created, but we couldn’t save it on our server. Please try again later, or save a copy with the download below.",
+    "hardwareTeaser": "In May, meet them again in Eternal Beam’s light.",
     "benefitModal": {
       "title": "The letter you just received—we’ll keep it in your companion’s warm light.",
-      "productOneLiner": "Eternal Beam is an emotional hologram device that brings your memories with them back as light.",
-      "description": "The heart you shared in Soul Trace and this session’s gentle backdrop can live on—kept in Eternal Beam’s NFC slot launching in May.",
-      "perkBoxTitle": "🎁 Pre-order exclusive perks",
-      "perkBullet1": "A physical NFC card with a theme made just for %NAME%",
+      "productOneLiner": "Eternal Beam is a holographic keepsake that brings your memories with them back as light.",
+      "description": "What you shared in Soul Trace—and this session’s gentle backdrop—can live on in Eternal Beam’s NFC slot, launching in May.",
+      "perkBoxTitle": "🎁 Pre-order perks",
+      "perkBullet1": "A physical NFC card themed just for %NAME%",
       "perkBullet2": "Priority access to up to 40% Super Early Bird on Kickstarter at launch",
       "perkBullet3": "Be first to hear launch news and member-only perks.",
-      "reserveCta": "➜ Pre-order now and lock in your perks",
+      "reserveCta": "➜ Pre-order and lock in your perks",
       "nameFallback": "your companion"
     },
     "instagramStory": {
-      "footerTagline": "Keep their voice in light—Eternal Beam",
+      "footerTagline": "Keep their voice in the light—Eternal Beam",
       "siteLine": "soultrace.eternalbeam.com",
       "petStoryNameLead": "Closing words from %NAME%"
     }
   },
   "share": {
     "title": "Soul Trace letter",
-    "text": "Sharing a Soul Trace letter from our companion."
+    "text": "Sharing a letter from my companion on Soul Trace."
   },
   "errors": {
-    "fillAll": "Please answer required questions (Q5–Q8, Q10, Q12).",
+    "fillAll": "Please answer the required questions (Q5–Q8, Q10, Q12).",
     "invalidEmail": "Please enter a valid email address.",
     "profileIncomplete": "Please complete STEP 1 and your email.",
-    "privacyRequired": "Personal information consent is required.",
-    "photoPrivacyRequired": "Photo consent is required to upload an image.",
-    "generateFailed": "Could not create your letter.",
+    "privacyRequired": "Please agree to the privacy consent to continue.",
+    "photoPrivacyRequired": "Please agree to photo consent before uploading.",
+    "generateFailed": "We couldn’t create your letter. Please try again.",
     "alreadyGenerated": "A letter was already created with this email. Each email can only be used once.",
-    "emailAlreadyUsedSoft": "A letter was already sent to this email. Each address can be used once—please enter a different one.",
-    "unknown": "Something went wrong.",
-    "saveImageFailed": "Could not save the image:",
-    "saveImageGeneric": "An error occurred while saving the image.",
-    "blobFailed": "Could not create the image.",
+    "emailAlreadyUsedSoft": "We already sent a letter to this email—one letter per address. Please use a different email.",
+    "unknown": "Something went wrong. Please try again.",
+    "saveImageFailed": "Couldn’t save the image:",
+    "saveImageGeneric": "Something went wrong while saving the image.",
+    "blobFailed": "Couldn’t create the image.",
     "prepareShareFailed": "Something went wrong while preparing to share.",
     "shareFailed": "Something went wrong while sharing."
   },
   "survey": {
     "memoryKicker": "STEP 2 — Memories",
-    "photoStepKicker": "STEP 2 — Photo for video",
-    "memoryHint": "One or two sentences is enough",
+    "photoStepKicker": "STEP 2 — Upload a photo",
+    "memoryHint": "A sentence or two is plenty",
     "toneKicker": "STEP 3 — Letter tone",
-    "toneMultiHint": "Choose only what you want (optional)",
+    "toneMultiHint": "Pick only what you want (optional)",
     "toneQ11None": "(none selected)",
     "examplePrefix": "e.g.",
     "memory": [
@@ -190,76 +190,76 @@
         "example": "Hiding in the corner of the crate / Nibbling your fingers"
       },
       {
-        "promptText": "What quirky habit or stubborn streak was unique to ○○?",
+        "promptText": "What little habit or quirk was unique to ○○?",
         "placeholder": "Small, specific habits",
         "example": "Had to sleep buried under blankets / Barked only at the delivery person"
       },
       {
-        "promptText": "How did ○○ show love to you?",
-        "placeholder": "Their way of loving you",
+        "promptText": "How did ○○ show you they loved you?",
+        "placeholder": "Their way of showing love",
         "example": "Waiting outside the bathroom / Sleeping only on your feet"
       },
       {
-        "promptText": "What signal told you ○○ was excited?",
-        "placeholder": "Sounds, habits, triggers",
-        "example": "Treat bag rustle / Door code beep / Running when the carrier came out"
+        "promptText": "What let you know ○○ was excited?",
+        "placeholder": "Sounds, habits, little triggers",
+        "example": "Treat bag rustling / The door code beeping / Running when the carrier came out"
       },
       {
-        "promptText": "(Optional) Is there something you still feel sorry about with ○○?",
+        "promptText": "(Optional) Is there something you still wish you could tell ○○?",
         "placeholder": "Anything left unsaid",
         "optional": true,
-        "optionalNote": "You can skip this question.",
+        "optionalNote": "You can skip this one.",
         "skipLabel": "Skip"
       }
     ],
     "tone": [
       {
         "id": "q10",
-        "promptText": "Q10. What mood would you like?",
+        "promptText": "Q10. What tone would you like?",
         "options": [
           { "id": "bright", "label": "Bright and playful" },
           { "id": "calm", "label": "Calm and quiet" },
-          { "id": "warm", "label": "Warm comfort" }
+          { "id": "warm", "label": "Warm and comforting" }
         ]
       },
       {
         "id": "q11",
-        "promptText": "Q11. Choose what you want",
+        "promptText": "Q11. Anything else?",
         "options": [
           { "id": "comfort", "label": "Include reassurance like \"it wasn't your fault\"" },
-          { "id": "no_heaven", "label": "Avoid heaven / rainbow bridge wording" },
-          { "id": "frequent_name", "label": "Say their name often" }
+          { "id": "no_heaven", "label": "Skip rainbow bridge / heaven references" },
+          { "id": "frequent_name", "label": "Use their name often" }
         ]
       },
       {
         "id": "q12",
-        "promptText": "Q12. Length",
+        "promptText": "Q12. How long should the letter be?",
         "options": [
           { "id": "short", "label": "Short (~5 lines)" },
-          { "id": "normal", "label": "Normal (~10 lines)" }
+          { "id": "normal", "label": "Medium (~10 lines)" }
         ]
       }
     ],
     "video": {
-      "kicker": "Video motion",
-      "prompt": "What movement would you like to give ○○ in this photo?",
-      "photoKicker": "Photo for video",
-      "photoHint": "Upload one clear front-facing photo of ○○.",
-      "photoGuideline": "Video tip: use a photo where they face the camera. Clear eyes, nose, and face work best for natural-looking video.",
-      "photoDrop": "Choose a photo or drag here",
+      "kicker": "Choose a motion",
+      "prompt": "Pick a gentle motion for ○○ in this photo.",
+      "photoKicker": "Photo for their video",
+      "photoHint": "Upload a clear, front-facing photo of ○○.",
+      "photoGuideline": "Tip: choose a photo where they’re looking at the camera. A clear view of their eyes, nose, and face works best.",
+      "photoDrop": "Choose a photo or drag it here",
       "photoFormats": "JPG · PNG · WEBP · up to 10MB",
       "photoChange": "Change photo",
       "photoRemove": "Remove",
       "photoPreviewAlt": "Preview of ○○",
-      "photoErrorSize": "Please use a photo under 10MB.",
-      "photoErrorType": "Only JPG, PNG, or WEBP files are supported.",
-      "photoErrorEmpty": "That file appears to be empty.",
+      "photoErrorSize": "Please choose a photo under 10MB.",
+      "photoErrorType": "Only JPG, PNG, or WEBP files work here.",
+      "photoErrorEmpty": "That file looks empty.",
       "photoSkip": "Skip for now",
-      "motionNeedsPhoto": "Upload a photo and agree below to choose a motion.",
+      "motionNeedsPhoto": "Upload a photo and agree below to pick a motion.",
       "motions": {
         "breathing": "Gentle breathing",
         "ears": "Ears perking up",
-        "head_tilt": "Slight head tilt",
+        "head_tilt": "A little head tilt",
         "tail": "Tail wagging"
       }
     }
