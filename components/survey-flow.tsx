@@ -2,6 +2,7 @@
 
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
+import { modeCopy, type LetterMode } from "@/lib/letter-mode";
 import { PetPhotoUpload } from "@/components/pet-photo-upload";
 import { PrivacyConsentTrigger } from "@/components/privacy-consent-trigger";
 import { VideoMotionPicker } from "@/components/video-motion-picker";
@@ -17,6 +18,7 @@ import {
 } from "@/lib/survey";
 
 type SurveyFlowProps = {
+  mode: LetterMode;
   step: number;
   petDisplayName: string;
   memoryAnswers: string[];
@@ -46,6 +48,7 @@ function chipClass(selected: boolean, lang: Locale) {
 }
 
 export function SurveyFlow({
+  mode,
   step,
   petDisplayName,
   memoryAnswers,
@@ -64,12 +67,13 @@ export function SurveyFlow({
   onSkipOptional,
 }: SurveyFlowProps) {
   const { t, lang, messages } = useLocale();
+  const copy = modeCopy(messages, mode);
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
   const isPhoto = isPhotoSurveyStep(step);
   const isMemory = step < MEMORY_STEP_COUNT;
-  const memoryItem = isMemory ? messages.survey.memory[step] : null;
+  const memoryItem = isMemory ? copy.memory[step] : null;
   const toneIndex = step - MEMORY_STEP_COUNT - 1;
-  const toneItem = !isMemory && !isPhoto ? messages.survey.tone[toneIndex] : null;
+  const toneItem = !isMemory && !isPhoto ? copy.tone[toneIndex] : null;
 
   return (
     <div className={bodyFont}>

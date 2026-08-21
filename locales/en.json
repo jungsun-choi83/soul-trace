@@ -6,8 +6,146 @@
   "hero": {
     "eyebrow": "Eternal Beam",
     "title": "Soul Trace",
-    "subtitleLine1": "If they could have spoken to you,\nwhat would they have said?",
-    "subtitleLine2": "They still had words left in their heart—words they never got to share."
+    "subtitleLine1": "If they could speak to you,\nwhat would they say?"
+  },
+  "landing": {
+    "prompt": "Whose story should we tell?",
+    "back": "Start over"
+  },
+  "modes": {
+    "living": {
+      "landingCta": "A companion still beside me",
+      "landingHint": "Hear how today went—from their side of the room.",
+      "headline": "What were they thinking today?",
+      "subline": "They can't say it out loud, but there's something they'd tell you every day.",
+      "letterHeading": "A letter from their day",
+      "q1Label": "Q1. What is their name?",
+      "q2Label": "Q2. What kind of companion are they?",
+      "yearPartedPlaceholder": "Now (this year)",
+      "memory": [
+        {
+          "promptText": "When you first met ○○, what scene comes to mind?",
+          "placeholder": "Describe that first day",
+          "example": "Hiding in the corner of the crate / Nibbling your fingers"
+        },
+        {
+          "promptText": "What little habit or quirk is unique to ○○?",
+          "placeholder": "Small, specific habits",
+          "example": "Has to sleep buried under blankets / Barks only at the delivery person"
+        },
+        {
+          "promptText": "How does ○○ show you they love you?",
+          "placeholder": "Their way of showing love",
+          "example": "Waits outside the bathroom / Sleeps only on your feet"
+        },
+        {
+          "promptText": "What lets you know ○○ is excited?",
+          "placeholder": "Sounds, habits, little triggers",
+          "example": "Treat bag rustling / The door code beeping / Running when the leash comes out"
+        },
+        {
+          "promptText": "(Optional) Is there something you still wish you could give ○○?",
+          "placeholder": "Anything on your mind",
+          "optional": true,
+          "optionalNote": "You can skip this one.",
+          "skipLabel": "Skip"
+        }
+      ],
+      "tone": [
+        {
+          "id": "q10",
+          "promptText": "Q10. What tone would you like?",
+          "options": [
+            { "id": "bright", "label": "Bright and playful" },
+            { "id": "calm", "label": "Calm and quiet" },
+            { "id": "warm", "label": "Warm and comforting" }
+          ]
+        },
+        {
+          "id": "q11",
+          "promptText": "Q11. Anything else?",
+          "options": [
+            { "id": "comfort", "label": "Include reassurance like \"you're doing just fine\"" },
+            { "id": "frequent_name", "label": "Use their name often" }
+          ]
+        },
+        {
+          "id": "q12",
+          "promptText": "Q12. How long should the letter be?",
+          "options": [
+            { "id": "short", "label": "Short (~5 lines)" },
+            { "id": "normal", "label": "Medium (~10 lines)" }
+          ]
+        }
+      ]
+    },
+    "memorial": {
+      "landingCta": "A companion who crossed the rainbow bridge",
+      "landingHint": "There are still words they never got to say.",
+      "headline": "The words they never got to say",
+      "subline": "They still had words left in their heart—words they never got to share.",
+      "letterHeading": "A letter to Mom and Dad",
+      "q1Label": "Q1. What was their name?",
+      "q2Label": "Q2. What kind of companion were they?",
+      "yearPartedPlaceholder": "Year they passed",
+      "memory": [
+        {
+          "promptText": "When you first met ○○, what scene comes to mind?",
+          "placeholder": "Describe that first day",
+          "example": "Hiding in the corner of the crate / Nibbling your fingers"
+        },
+        {
+          "promptText": "What little habit or quirk was unique to ○○?",
+          "placeholder": "Small, specific habits",
+          "example": "Had to sleep buried under blankets / Barked only at the delivery person"
+        },
+        {
+          "promptText": "How did ○○ show you they loved you?",
+          "placeholder": "Their way of showing love",
+          "example": "Waiting outside the bathroom / Sleeping only on your feet"
+        },
+        {
+          "promptText": "What let you know ○○ was excited?",
+          "placeholder": "Sounds, habits, little triggers",
+          "example": "Treat bag rustling / The door code beeping / Running when the carrier came out"
+        },
+        {
+          "promptText": "(Optional) Is there something you still wish you could tell ○○?",
+          "placeholder": "Anything left unsaid",
+          "optional": true,
+          "optionalNote": "You can skip this one.",
+          "skipLabel": "Skip"
+        }
+      ],
+      "tone": [
+        {
+          "id": "q10",
+          "promptText": "Q10. What tone would you like?",
+          "options": [
+            { "id": "bright", "label": "Bright and playful" },
+            { "id": "calm", "label": "Calm and quiet" },
+            { "id": "warm", "label": "Warm and comforting" }
+          ]
+        },
+        {
+          "id": "q11",
+          "promptText": "Q11. Anything else?",
+          "options": [
+            { "id": "comfort", "label": "Include reassurance like \"it wasn't your fault\"" },
+            { "id": "no_heaven", "label": "Skip rainbow bridge / heaven references" },
+            { "id": "frequent_name", "label": "Use their name often" }
+          ]
+        },
+        {
+          "id": "q12",
+          "promptText": "Q12. How long should the letter be?",
+          "options": [
+            { "id": "short", "label": "Short (~5 lines)" },
+            { "id": "normal", "label": "Medium (~10 lines)" }
+          ]
+        }
+      ]
+    }
   },
   "form": {
     "emailLabel": "Email address",
@@ -28,14 +166,11 @@
     "generateNeedProfile": "Complete STEP 1, your email, and privacy consent to read your letter.",
     "step1": {
       "kicker": "STEP 1 — About your pet",
-      "q1Label": "Q1. What was their name?",
       "q1Placeholder": "Full name",
       "q1bLabel": "Q1-b. What did you usually call them?",
       "q1bPlaceholder": "e.g. Coco, Bean (optional)",
-      "q2Label": "Q2. What kind of pet were they?",
       "q3Label": "Q3. Years together",
       "yearMetPlaceholder": "Year you met",
-      "yearPartedPlaceholder": "Year they passed",
       "q4Label": "Q4. Who is this letter for?",
       "recipientByNamePlaceholder": "Name for the letter",
       "recipientCustomPlaceholder": "Your own wording",
@@ -70,7 +205,6 @@
   },
   "result": {
     "eyebrow": "Soul Trace Result",
-    "letterHeading": "A letter to Mom and Dad",
     "soulTypeCardTitle": "Their personality and temperament",
     "eternalBridgePrompt": "Would you like to keep this letter with Eternal Beam?",
     "bgmOn": "Play soft background music",
@@ -197,63 +331,6 @@
     "toneMultiHint": "Pick only what you want (optional)",
     "toneQ11None": "(none selected)",
     "examplePrefix": "e.g.",
-    "memory": [
-      {
-        "promptText": "When you first met ○○, what scene comes to mind?",
-        "placeholder": "Describe that first day",
-        "example": "Hiding in the corner of the crate / Nibbling your fingers"
-      },
-      {
-        "promptText": "What little habit or quirk was unique to ○○?",
-        "placeholder": "Small, specific habits",
-        "example": "Had to sleep buried under blankets / Barked only at the delivery person"
-      },
-      {
-        "promptText": "How did ○○ show you they loved you?",
-        "placeholder": "Their way of showing love",
-        "example": "Waiting outside the bathroom / Sleeping only on your feet"
-      },
-      {
-        "promptText": "What let you know ○○ was excited?",
-        "placeholder": "Sounds, habits, little triggers",
-        "example": "Treat bag rustling / The door code beeping / Running when the carrier came out"
-      },
-      {
-        "promptText": "(Optional) Is there something you still wish you could tell ○○?",
-        "placeholder": "Anything left unsaid",
-        "optional": true,
-        "optionalNote": "You can skip this one.",
-        "skipLabel": "Skip"
-      }
-    ],
-    "tone": [
-      {
-        "id": "q10",
-        "promptText": "Q10. What tone would you like?",
-        "options": [
-          { "id": "bright", "label": "Bright and playful" },
-          { "id": "calm", "label": "Calm and quiet" },
-          { "id": "warm", "label": "Warm and comforting" }
-        ]
-      },
-      {
-        "id": "q11",
-        "promptText": "Q11. Anything else?",
-        "options": [
-          { "id": "comfort", "label": "Include reassurance like \"it wasn't your fault\"" },
-          { "id": "no_heaven", "label": "Skip rainbow bridge / heaven references" },
-          { "id": "frequent_name", "label": "Use their name often" }
-        ]
-      },
-      {
-        "id": "q12",
-        "promptText": "Q12. How long should the letter be?",
-        "options": [
-          { "id": "short", "label": "Short (~5 lines)" },
-          { "id": "normal", "label": "Medium (~10 lines)" }
-        ]
-      }
-    ],
     "video": {
       "kicker": "Choose a motion",
       "prompt": "Pick a gentle motion for ○○ in this photo.",

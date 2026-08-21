@@ -17,6 +17,7 @@ import {
   type LetterToneOption,
   type LetterTonePrefs,
 } from "@/lib/survey";
+import { DEFAULT_LETTER_MODE, isLetterMode, type LetterMode } from "@/lib/letter-mode";
 import {
   createSupabaseServerClient,
   isRetryableSupabaseMessage,
@@ -33,6 +34,8 @@ type AnswerInput = {
 
 type RequestBody = {
   locale?: string;
+  /** 편지 갈래. 없으면 추모 — 이 필드가 생기기 전 클라이언트와 같은 동작. */
+  mode?: string;
   userEmail?: string;
   petName?: string;
   petNickname?: string;
@@ -169,6 +172,42 @@ function parseLetterCompletion(
   return parsed as ParsedResponse;
 }
 
+/**
+ * 편지의 전제 — 아이가 지금 살아 있는가, 이미 떠났는가.
+ *
+ * 두 갈래에서 가장 크게 갈리는 지점이고, 틀리면 가장 크게 다치는 지점이다.
+ * 살아 있는 아이의 편지에 작별·무지개다리가 섞이면 위로가 아니라 사고다.
+ * 그래서 금지어를 흐리게 돌려 말하지 않고 못 박아 둔다.
+ */
+function letterPremiseBlock(locale: Locale, mode: LetterMode): string {
+  if (locale === "ko") {
+    if (mode === "living") {
+      return [
+        "역할: **지금 보호자 곁에 살아 있는** 반려동물. 오늘 하루를 떠올리며 직접 쓰는 편지다.",
+        "전제(엄격): 아이는 **살아 있다.** 죽음·이별·작별·마지막·떠남·무지개다리·하늘·천국·다음 생 표현 **절대 금지.**",
+        "지난 추억은 과거형으로 말해도 되지만, 지금 이 순간은 **현재형**이다 — '아직 여기 있어', '내일도 볼 거야'.",
+        "입력된 이름·설문만 근거로 쓴다. 없는 일은 지어내지 마.",
+      ].join("\n");
+    }
+    return [
+      "역할: 무지개다리 너머에서 보호자에게 직접 말하는 반려동물.",
+      "입력된 이름·설문만 근거로 쓴다. 없는 일은 지어내지 마.",
+    ].join("\n");
+  }
+  if (mode === "living") {
+    return [
+      "Role: a pet who is **alive and still living with their guardian**, writing about their day.",
+      "Premise (strict): they are ALIVE. Never mention death, goodbye, farewell, passing, the rainbow bridge, heaven, or an afterlife.",
+      "Memories may be past tense, but right now is present tense—'I'm still here', 'I'll see you tomorrow'.",
+      "Ground everything in the given name and survey answers. Never invent facts.",
+    ].join("\n");
+  }
+  return [
+    "Role: a beloved pet writing from Rainbow Bridge to their guardian. Warm, personal, simple—never a stiff essay or marketing copy.",
+    "Ground everything in the given name and survey answers. Never invent facts.",
+  ].join("\n");
+}
+
 /** letter 필드만: AI·에세이 티를 빼고 어린이 편지처럼 */
 function childlikeLetterVoiceRules(locale: Locale): string {
   if (locale === "ko") {
@@ -201,15 +240,16 @@ function letterRoleAndStyle(
   petProfile: PetIntroProfile,
   companionName: string,
   favoriteScenery: string,
+  mode: LetterMode,
 ): string {
   const nameLiteral = JSON.stringify(companionName);
   const sceneryLiteral = JSON.stringify(favoriteScenery);
-  const addressingBlock = buildLetterAddressingBlock(locale, petProfile);
+  const addressingBlock = buildLetterAddressingBlock(locale, petProfile, mode);
   if (locale === "ko") {
     return [
       addressingBlock,
       "",
-      "역할: 무지개다리 너머에서 보호자에게 직접 말하는 반려동물. 입력된 이름·설문만 근거로 쓴다. 없는 일은 지어내지 마.",
+      letterPremiseBlock("ko", mode),
       `아이 이름(편지 속): ${nameLiteral}. h, hj, 'g' 같은 플레이스홀더·이니셜 금지.`,
       `첫 만남·기억 장면은 설문에서 골라 문장 속에 녹여. 장면 힌트: ${sceneryLiteral}`,
       "문체·인칭(엄격): **다정한 반말 하나로 끝까지 통일** (~했어, ~야, ~할게). 해요체만 쓸 거면 처음부터 끝까지 해요체만.",
@@ -227,7 +267,7 @@ function letterRoleAndStyle(
   return [
     addressingBlock,
     "",
-    "You are a beloved pet writing a letter from Rainbow Bridge to your owner. Warm, personal, simple—never a stiff essay or marketing copy.",
+    letterPremiseBlock("en", mode),
     "Ground EVERYTHING in the pet’s real name, favorite scenery, and all five survey answers—especially bright, happy moments. Never invent facts.",
     `The pet’s name in prose must match this exact string (character-for-character): ${nameLiteral}. Never print placeholders, code fragments, or stray initials such as h or hj in quotes—only this name when you mean the pet.`,
     `Turn ${sceneryLiteral} and the answers into felt scenes: sun on fur, the sound of their voice calling you, the smell of the park, hands petting you—simple words, not labels pasted into sentences.`,
@@ -274,15 +314,16 @@ function plainLetterSystemPrompt(
   petProfile: PetIntroProfile,
   companionName: string,
   favoriteScenery: string,
+  mode: LetterMode,
 ): string {
   const nameLiteral = JSON.stringify(companionName);
   const sceneryLiteral = JSON.stringify(favoriteScenery);
-  const addressingBlock = buildLetterAddressingBlock(locale, petProfile);
+  const addressingBlock = buildLetterAddressingBlock(locale, petProfile, mode);
   if (locale === "ko") {
     return [
       addressingBlock,
       "",
-      "역할: 무지개다리 너머에서 보호자에게 직접 말하는 반려동물. 입력된 이름·설문만 근거로 쓴다.",
+      letterPremiseBlock("ko", mode),
       `아이 이름(편지 속): ${nameLiteral}.`,
       `기억 장면 힌트: ${sceneryLiteral}`,
       childlikeLetterVoiceRules("ko"),
@@ -293,6 +334,7 @@ function plainLetterSystemPrompt(
   return [
     addressingBlock,
     "",
+    letterPremiseBlock("en", mode),
     `Pet name in letter: ${nameLiteral}. Scene hint: ${sceneryLiteral}.`,
     childlikeLetterVoiceRules("en"),
     "Write one continuous letter. End with the **required closing sentence** from [Letter addressing] verbatim.",
@@ -624,6 +666,7 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as RequestBody;
     const locale: Locale = body.locale === "en" ? "en" : "ko";
+    const mode: LetterMode = isLetterMode(body.mode) ? body.mode : DEFAULT_LETTER_MODE;
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -659,8 +702,13 @@ export async function POST(request: Request) {
     const petName = petProfile.petName;
     const letterName = letterPetName(petProfile);
     const preferredScenery = body.preferredScenery?.trim() || sceneryFallback(locale, answers);
-    const profilePromptBlock = buildPetProfilePromptBlock(locale, petProfile);
-    const tonePromptBlock = buildTonePromptBlock(locale, tonePrefs, locale === "ko" ? ko : en);
+    const profilePromptBlock = buildPetProfilePromptBlock(locale, petProfile, mode);
+    const tonePromptBlock = buildTonePromptBlock(
+      locale,
+      tonePrefs,
+      locale === "ko" ? ko : en,
+      mode,
+    );
 
     if (!Array.isArray(answers) || answers.length !== 8) {
       return NextResponse.json(
@@ -862,7 +910,13 @@ export async function POST(request: Request) {
                 {
                   role: "system",
                   content: [
-                    plainLetterSystemPrompt(locale, petProfile, letterName, preferredScenery),
+                    plainLetterSystemPrompt(
+                      locale,
+                      petProfile,
+                      letterName,
+                      preferredScenery,
+                      mode,
+                    ),
                     plainLetterLanguageInstruction(locale),
                   ].join("\n\n"),
                 },
@@ -969,7 +1023,10 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: [letterRoleAndStyle(locale, petProfile, letterName, preferredScenery), languageInstruction].join(
+          content: [
+            letterRoleAndStyle(locale, petProfile, letterName, preferredScenery, mode),
+            languageInstruction,
+          ].join(
             "\n\n",
           ),
         },

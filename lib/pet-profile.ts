@@ -1,3 +1,4 @@
+import type { LetterMode } from "@/lib/letter-mode";
 import type { LetterTonePrefs } from "@/lib/survey";
 
 export type PetType = "dog" | "cat" | "rabbit" | "hamster" | "bird" | "other";
@@ -53,6 +54,7 @@ export function isPetIntroComplete(profile: PetIntroProfile): boolean {
 export function buildPetProfilePromptBlock(
   locale: "ko" | "en",
   profile: PetIntroProfile,
+  mode: LetterMode,
 ): string {
   const name = letterPetName(profile);
   const formalName = profile.petName.trim();
@@ -79,7 +81,11 @@ export function buildPetProfilePromptBlock(
       `정식 이름: ${formalName}`,
       `편지 속 호칭(애칭 우선): ${name}`,
       `종류: ${petTypeLine}`,
-      years !== null ? `함께한 시간: ${profile.yearMet}년 ~ ${profile.yearParted}년 (${years}년)` : "",
+      years !== null
+        ? mode === "living"
+          ? `함께한 시간: ${profile.yearMet}년부터 지금까지 (${years}년째, 여전히 함께 있다)`
+          : `함께한 시간: ${profile.yearMet}년 ~ ${profile.yearParted}년 (${years}년)`
+        : "",
       `편지 받는 사람: ${recipientLine}`,
       profile.petType === "cat"
         ? "종 분기: 고양이 — 산책·목줄 같은 개 전용 표현 쓰지 마."
@@ -103,7 +109,9 @@ export function buildPetProfilePromptBlock(
     `Name in letter (nickname first): ${name}`,
     `Species: ${petTypeLine}`,
     years !== null
-      ? `Years together: ${profile.yearMet} – ${profile.yearParted} (${years} years)`
+      ? mode === "living"
+        ? `Years together: ${profile.yearMet} to now (${years} years and counting—they are still here)`
+        : `Years together: ${profile.yearMet} – ${profile.yearParted} (${years} years)`
       : "",
     `Letter recipient: ${recipientLine}`,
     profile.petType === "cat"
@@ -182,6 +190,7 @@ export function resolveRecipientAddress(
 export function buildLetterAddressingBlock(
   locale: "ko" | "en",
   profile: PetIntroProfile,
+  mode: LetterMode,
 ): string {
   const name = letterPetName(profile);
   const recipient = resolveRecipientAddress(profile, locale);
@@ -202,7 +211,9 @@ export function buildLetterAddressingBlock(
       `상대를 부를 때: ${recipientLit} 만 쓴다. **'너'·'너희'·'당신' 절대 금지.**`,
       `자기 자신: '나' 또는 이름 ${nameLit}. 상대와 나를 헷갈리지 마.`,
       `문장 예: '엄마, 그때 케이지에서…' / '엄마 손길이 기억나.' — '너 기억나?' 같은 표현 금지.`,
-      `마무리 필수 문장(한 번, 그대로): '언제든 빛으로 ${recipient} 곁에 있을게.' ('너를' 쓰지 마)`,
+      mode === "living"
+        ? `마무리 필수 문장(한 번, 그대로): '오늘도 ${recipient} 옆에서 기다리고 있을게.' ('너를' 쓰지 마)`
+        : `마무리 필수 문장(한 번, 그대로): '언제든 빛으로 ${recipient} 곁에 있을게.' ('너를' 쓰지 마)`,
       "톤: AI·시·카피라이터가 쓴 듯한 매끄러운 문장 금지. **편지 작가가 한 통 대필해 준 것처럼**—구체적 추억 하나, 짧은 문장, 말하다 멈추는 호흡.",
     ].join("\n");
   }
@@ -216,7 +227,9 @@ export function buildLetterAddressingBlock(
     `The pet **${name}** writes in first person **to ${recipient}** only.`,
     `Open with exactly: ${openingEn}`,
     `Address them as ${recipientLit} throughout—never "you" as a distant pronoun; use Mom/Dad/their name like a real letter.`,
-    `Required closing (once, verbatim): "I'll always stay close to ${recipient} through the light."`,
+    mode === "living"
+      ? `Required closing (once, verbatim): "I'll be right here waiting for ${recipient}."`
+      : `Required closing (once, verbatim): "I'll always stay close to ${recipient} through the light."`,
     "Tone: NOT polished AI prose—a human ghostwriter who specializes in pet letters; one concrete memory, short lines, lived-in voice.",
   ].join("\n");
 }
