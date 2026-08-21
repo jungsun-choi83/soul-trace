@@ -11,8 +11,27 @@ Next.js 앱입니다. 만들어진 편지는 인스타그램 스토리로 공유
 
 ## 1) 사용자 흐름
 
-랜딩 → **STEP 1** 프로필(이메일·아이 이름·함께한 기간 등) → **STEP 2** 설문 → **STEP 3** 편지 톤 →
-편지 생성(스트리밍) → 결과 화면 → 공유 / 이터널빔으로 이어가기.
+첫 화면에서 **아이가 지금 곁에 있는지** 먼저 묻습니다.
+
+| 경로 | 갈래 | 편지 |
+|------|------|------|
+| `/` | 갈림길 | — |
+| `/living` | 지금 곁에 있는 아이 | 오늘 하루를 들려주는 편지 |
+| `/memorial` | 무지개 다리를 건넌 아이 | 마지막으로 전하지 못한 말 |
+
+두 갈래는 같은 흐름을 씁니다 — **STEP 1** 프로필(이메일·아이 이름·함께한 기간 등) →
+**STEP 2** 설문 → **STEP 3** 편지 톤 → 편지 생성(스트리밍) → 결과 화면 →
+공유 / 이터널빔으로 이어가기. 화면 구현은 `components/soul-trace-flow.tsx` 하나이고
+`mode` 프롭만 다릅니다.
+
+갈리는 것은 **시제와 전제**입니다. 헤드라인, Q1·Q2, "헤어진 해" ↔ "지금 (올해)",
+기억 5문항의 어미, 결과 편지 제목, 그리고 편지 프롬프트가 달라집니다.
+살아 있는 갈래에는 "하늘·무지개다리 표현 빼기" 선택지가 **없습니다** — 살아 있는 아이에게
+그걸 묻는 것 자체가 아이가 죽었다는 전제를 깔기 때문입니다. 프롬프트에서도 죽음·이별·
+무지개다리 표현을 사용자의 선택과 무관하게 막습니다.
+
+문구는 `locales/*.json` 의 `modes.living` / `modes.memorial` 에 모여 있고,
+두 갈래가 어긋나지 않는지는 `lib/letter-mode.test.ts` 가 지킵니다.
 
 설문은 총 **9단계**이고, DB에는 답변 **8개**가 저장됩니다.
 
@@ -94,7 +113,10 @@ npm run build
 ### 편지 생성 — `POST /api/generate-letter`
 
 입력: `userEmail`, `petName`, `preferredScenery`, `privacyConsent`, `answers`(8개), `tonePrefs`,
-`locale`, 선택적으로 `stream` / `skipImageGeneration` / `existingHeroImageUrl`.
+`locale`, `mode`, 선택적으로 `stream` / `skipImageGeneration` / `existingHeroImageUrl`.
+
+`mode`는 `living` 또는 `memorial`이고, 없으면 `memorial`로 봅니다(이 필드가 생기기 전과 같은 동작).
+편지 프롬프트의 전제와 마무리 문장이 이 값으로 갈립니다.
 
 `stream: true`면 SSE로 편지를 한 글자씩 흘려보내고, 마지막 `done` 이벤트에 성향 분석과
 `letterId`가 실려 옵니다. 저장은 `soul_trace_profiles` upsert(`user_email` 기준) +
@@ -140,6 +162,9 @@ SOUL_TRACE_SERVICE_TOKEN=... \
   `BenefitBottomSheet`, `PrivacyConsentBlock`은 만들어져 있지만 어디서도 import하지 않습니다.
   관련 locale 문구도 함께 놀고 있습니다.
 - **만료된 핸드오프 행 청소.** 부분 인덱스는 있지만 정리 작업(cron 등)은 없습니다.
+- **편지 갈래를 DB에 남기지 않습니다.** `living`/`memorial`은 프롬프트에만 쓰이고
+  `soul_trace_profiles`에는 저장되지 않습니다. 갈래별 통계가 필요해지면 nullable 컬럼과
+  마이그레이션을 추가해야 합니다.
 
 ## 8) Vercel 배포 & 커스텀 도메인
 
