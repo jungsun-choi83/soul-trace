@@ -34,12 +34,24 @@ export function ResultAmbientAudio({ active, audioRef }: ResultAmbientAudioProps
   const font = lang === "ko" ? "font-ko" : "font-display-en";
 
   useEffect(() => {
+    const el = audioRef.current;
     return () => {
-      const el = audioRef.current;
       if (!el) return;
       el.pause();
       el.currentTime = 0;
     };
+  }, [audioRef]);
+
+  // muted 의 주인은 <audio> 다 — 여기서는 따라 읽기만 한다. 그래야 재생 시작,
+  // 버튼 토글, 언어 전환 어느 경로로 바뀌든 라벨이 항상 실제 상태를 가리킨다.
+  // 페이드가 매 프레임 volume 을 건드려 volumechange 가 쏟아지므로,
+  // 값이 그대로면 같은 값을 돌려보내 리렌더를 막는다.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    const sync = () => setMuted((prev) => (prev === el.muted ? prev : el.muted));
+    el.addEventListener("volumechange", sync);
+    return () => el.removeEventListener("volumechange", sync);
   }, [audioRef]);
 
   useEffect(() => {
@@ -55,7 +67,6 @@ export function ResultAmbientAudio({ active, audioRef }: ResultAmbientAudioProps
 
     const fromVol = Math.min(Math.max(el.volume, PRIME_BGM_VOLUME * 0.5), VOL_END - 0.02);
     el.volume = fromVol;
-    setMuted(false);
     fadeStart.current = 0;
     cancelAnimationFrame(fadeRaf.current);
 
@@ -125,7 +136,6 @@ export function ResultAmbientAudio({ active, audioRef }: ResultAmbientAudioProps
     }
 
     el.muted = !el.muted;
-    setMuted(el.muted);
   }, [needsTap, playing, audioRef, src]);
 
   if (!active) return null;

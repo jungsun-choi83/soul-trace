@@ -14,8 +14,15 @@ export function ResultRewardSheet({ open, onClose }: ResultRewardSheetProps) {
   const { t, lang } = useLocale();
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
   const [ctaEnabled, setCtaEnabled] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
 
   const homeUrl = useMemo(() => getEternalBeamMainUrl(), []);
+
+  // 열고 닫을 때마다 잠금 상태로 되돌린다.
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    setCtaEnabled(false);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -27,10 +34,7 @@ export function ResultRewardSheet({ open, onClose }: ResultRewardSheetProps) {
   }, [open]);
 
   useEffect(() => {
-    if (!open) {
-      setCtaEnabled(false);
-      return;
-    }
+    if (!open) return;
     // 모달 닫힘→리워드 열림 전환 시 터치/클릭 연속 전달(ghost click)로 즉시 이동되는 현상 방지
     const id = window.setTimeout(() => setCtaEnabled(true), 450);
     return () => window.clearTimeout(id);
