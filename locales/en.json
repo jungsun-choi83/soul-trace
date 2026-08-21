@@ -103,6 +103,14 @@
       "cta": "See pre-order perks"
     },
     "destinationDeck": {
+      "continueToEternalBeam": {
+        "label": "ETERNAL BEAM",
+        "title": "Take this letter to Eternal Beam",
+        "body": "Move your letter securely into your Eternal Beam account. It is used as-is for the printed letter and Memory Box \u2014 the original wording never changes.",
+        "cta": "Continue to Eternal Beam",
+        "pending": "Preparing a secure link\u2026",
+        "error": "Couldn't prepare the link. Please try again in a moment."
+      },
       "officialSite": {
         "label": "ETERNAL BEAM",
         "title": "Keep them close, always",

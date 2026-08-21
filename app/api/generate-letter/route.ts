@@ -22,6 +22,7 @@ import {
   isRetryableSupabaseMessage,
   sleep,
 } from "@/lib/supabase-server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { after } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -414,7 +415,35 @@ async function extractPersonalityFields(
   }
 }
 
-type SaveProfileResult = { ok: true } | { ok: false; message: string; retryable: boolean };
+type SaveProfileResult =
+  | { ok: true; letterId: string | null }
+  | { ok: false; message: string; retryable: boolean };
+
+/**
+ * 저장된 편지의 letter_id (Eternal Beam 핸드오프의 source_letter_id).
+ *
+ * **읽기 전용이고, 실패해도 저장을 되돌리지 않는다.** migration_add_letter_identity.sql
+ * 이 아직 적용되지 않은 환경에서는 컬럼이 없어 이 조회가 실패한다. 그때 저장 전체를
+ * 실패로 만들면 배포와 마이그레이션의 순서가 어긋나는 것만으로 편지가 유실된다.
+ * 그래서 null 로 물러선다 — 편지는 정상 저장되고, 핸드오프만 아직 제공되지 않는다.
+ */
+async function fetchLetterId(
+  supabase: SupabaseClient,
+  userEmail: string,
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("soul_trace_profiles")
+    .select("letter_id")
+    .eq("user_email", userEmail)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[generate-letter] letter_id 조회 실패:", error.message);
+    return null;
+  }
+  const value = data?.letter_id;
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
 
 async function saveProfileAndAnswersOnce(
   locale: Locale,
@@ -502,7 +531,10 @@ async function saveProfileAndAnswersOnce(
     };
   }
 
-  return { ok: true };
+  // 저장이 끝난 뒤에 **따로** 읽는다. upsert 문에 .select() 를 붙이지 않는 이유는,
+  // 마이그레이션 전 환경에서 그 한 줄이 쓰기 자체를 실패시키기 때문이다.
+  // 여기서는 실패해도 null 이 되고 편지는 이미 저장돼 있다.
+  return { ok: true, letterId: await fetchLetterId(supabase, userEmail) };
 }
 
 async function saveProfileAndAnswers(
@@ -907,6 +939,9 @@ export async function POST(request: Request) {
               heroImageSkipped,
               savedPetName: letterName,
               persistenceFailed: !saveResult.ok,
+              // Eternal Beam 핸드오프의 source_letter_id. 저장이 실패했거나
+              // 마이그레이션 전이면 null 이다 — 편지 표시는 그대로 동작한다.
+              letterId: saveResult.ok ? saveResult.letterId : null,
             });
             controller.close();
           } catch {
@@ -1045,6 +1080,8 @@ export async function POST(request: Request) {
         heroImageSkipped,
         savedPetName: letterName,
         persistenceFailed: false,
+        // Eternal Beam 핸드오프의 source_letter_id. 마이그레이션 전이면 null 이다.
+        letterId: saveResult.letterId,
       }),
       {
         status: 200,

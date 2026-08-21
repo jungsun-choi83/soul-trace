@@ -18,7 +18,11 @@ import { primeResultBgm, resolveResultBgmSrc, stopResultBgm } from "@/lib/result
 import { heroImageSrcForApp } from "@/lib/hero-image-proxy";
 import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
 import { pickEmotionalLetterSentence, pickRandomBestLetterSentence } from "@/lib/letter-emotional-line";
-import { getEternalBeamInstagramUrl, getEternalBeamMainUrl } from "@/lib/eternalbeam-urls";
+import {
+  buildHandoffUrl,
+  getEternalBeamInstagramUrl,
+  getEternalBeamMainUrl,
+} from "@/lib/eternalbeam-urls";
 import {
   buildLetterRequestFields,
   EMPTY_PET_INTRO,
@@ -53,6 +57,11 @@ type GeneratedResult = {
   heroImageSkipped?: boolean;
   /** API에 전달된 반려 이름(모달 등에 그대로 표시) */
   savedPetName?: string;
+  /**
+   * 저장된 편지의 letter_id — Eternal Beam 핸드오프의 traceId.
+   * 저장 실패·마이그레이션 전이면 null 이라 핸드오프 CTA 가 나오지 않는다.
+   */
+  letterId?: string | null;
 };
 
 /** 첫 그래프클러스터(드롭캡)와 나머지 본문 분리 — 선행 공백은 유지 */
@@ -125,6 +134,8 @@ export default function Home() {
   const [generationLoadingMessage, setGenerationLoadingMessage] = useState<string | null>(null);
   /** 스토리 캡처 직전 무작위로 고른 한 줄(매 공유마다 갱신) */
   const [storyShareLine, setStoryShareLine] = useState<string | null>(null);
+  const [handoffBusy, setHandoffBusy] = useState(false);
+  const [handoffError, setHandoffError] = useState<string | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
   const instagramStoryRef = useRef<HTMLDivElement>(null);
   const bgmPrimeRef = useRef<HTMLAudioElement>(null);
@@ -132,6 +143,40 @@ export default function Home() {
   const displayPetName = letterPetName(petIntro);
   const petProfilePayload = petProfilePayloadFromIntro(petIntro);
   const officialSiteUrl = useMemo(() => getEternalBeamMainUrl(), []);
+
+  /**
+   * 편지를 Eternal Beam 으로 넘긴다.
+   *
+   * 브라우저는 **편지를 들고 가지 않는다.** 서버에서 일회용 능력(핸드오프 토큰)을
+   * 받아 traceId 와 함께 URL 에만 싣고, 본문은 Eternal Beam 이 서버 대 서버로
+   * 따로 가져간다. 그래서 이 링크가 새어도 15분 뒤에는, 또는 한 번 쓰이고 나면
+   * 아무것도 열지 못한다.
+   */
+  const continueToEternalBeam = useCallback(async () => {
+    const letterId = result?.letterId;
+    if (!letterId || handoffBusy) return;
+
+    setHandoffBusy(true);
+    setHandoffError(null);
+    try {
+      const response = await fetch("/api/handoff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ letterId }),
+      });
+      if (!response.ok) throw new Error("handoff request failed");
+
+      const data = (await response.json()) as { traceId?: string; handoff?: string };
+      if (!data.traceId || !data.handoff) throw new Error("handoff response incomplete");
+
+      // 같은 탭으로 이동한다 — 토큰이 남겨진 탭에 방치되지 않는다.
+      // 성공 시 busy 를 되돌리지 않는다: 이 줄 다음은 실행되지 않는다.
+      window.location.assign(buildHandoffUrl(data.traceId, data.handoff));
+    } catch {
+      setHandoffError(t("result.destinationDeck.continueToEternalBeam.error"));
+      setHandoffBusy(false);
+    }
+  }, [result?.letterId, handoffBusy, t]);
   const instagramProfileUrl = useMemo(() => getEternalBeamInstagramUrl(), []);
 
   useEffect(() => {
@@ -474,6 +519,7 @@ export default function Home() {
                 typeof data.savedPetName === "string" && data.savedPetName.trim().length > 0
                   ? data.savedPetName.trim()
                   : displayPetName,
+              letterId: data.letterId ?? null,
             });
             setResultLocale(lang);
           },
@@ -862,6 +908,44 @@ export default function Home() {
             </div>
 
             <div className="mx-auto mt-12 w-full max-w-xl space-y-5">
+              {/*
+                편지 핸드오프. letterId 가 있을 때만 보인다 — 저장이 실패했거나
+                마이그레이션 전이면 넘길 편지가 서버에 없으므로, 실패할 버튼을
+                보여 주지 않는다.
+              */}
+              {result.letterId ? (
+                <article
+                  className={`rounded-2xl border border-[rgba(212,175,55,0.35)] bg-[rgba(24,20,14,0.82)] px-5 py-7 text-left shadow-[0_0_48px_rgba(212,175,55,0.10)] sm:px-8 sm:py-8 ${
+                    lang === "ko" ? "font-ko" : "font-display-en"
+                  }`}
+                >
+                  <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/95 sm:text-xs">
+                    {t("result.destinationDeck.continueToEternalBeam.label")}
+                  </p>
+                  <h3 className="mt-3 text-[15px] font-extralight leading-snug text-[#EDE4D3] sm:text-base">
+                    {t("result.destinationDeck.continueToEternalBeam.title")}
+                  </h3>
+                  <p className="mt-3 text-sm font-extralight leading-relaxed text-[#C4B8A8] sm:text-[15px]">
+                    {t("result.destinationDeck.continueToEternalBeam.body")}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={continueToEternalBeam}
+                    disabled={handoffBusy}
+                    className={`mt-6 flex w-full items-center justify-center rounded-2xl bg-[#b89a2e] px-5 py-3.5 text-center text-base font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-60 ${
+                      lang === "ko" ? "font-ko" : "font-display-en"
+                    }`}
+                  >
+                    {handoffBusy
+                      ? t("result.destinationDeck.continueToEternalBeam.pending")
+                      : t("result.destinationDeck.continueToEternalBeam.cta")}
+                  </button>
+                  {handoffError ? (
+                    <p className="mt-3 text-center text-sm text-red-300">{handoffError}</p>
+                  ) : null}
+                </article>
+              ) : null}
+
               <article
                 className={`rounded-2xl border border-[rgba(212,175,55,0.22)] bg-[rgba(18,16,14,0.72)] px-5 py-7 text-left shadow-[0_0_40px_rgba(212,175,55,0.06)] sm:px-8 sm:py-8 ${
                   lang === "ko" ? "font-ko" : "font-display-en"

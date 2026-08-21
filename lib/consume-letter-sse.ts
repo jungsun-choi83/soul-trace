@@ -7,6 +7,11 @@ export type LetterStreamDonePayload = {
   heroImageSkipped: boolean;
   savedPetName: string;
   persistenceFailed?: boolean;
+  /**
+   * 저장된 편지의 letter_id — Eternal Beam 핸드오프의 source_letter_id.
+   * 저장 실패·마이그레이션 전 환경에서는 null 이다.
+   */
+  letterId?: string | null;
 };
 
 type LetterSseHandlers = {
@@ -67,6 +72,7 @@ export async function consumeLetterSseStream(
           heroImageSkipped: rec.heroImageSkipped === true,
           savedPetName: String(rec.savedPetName ?? ""),
           persistenceFailed: rec.persistenceFailed === true,
+          letterId: typeof rec.letterId === "string" ? rec.letterId : null,
         });
       } else if (type === "error" && typeof rec.message === "string") {
         throw new Error(rec.message);
