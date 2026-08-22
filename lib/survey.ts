@@ -1,5 +1,7 @@
 import type { Messages } from "@/lib/i18n";
-import { modeCopy, type LetterMode } from "@/lib/letter-mode";
+// lib 안에서는 상대 경로 + 확장자를 쓴다. `@/` 별칭은 번들러만 알아서,
+// node --test / 프롬프트 확인 스크립트가 이 파일을 못 읽는다.
+import { modeCopy, type LetterMode } from "./letter-mode.ts";
 
 export const MEMORY_STEP_COUNT = 5;
 export const PHOTO_STEP_COUNT = 1;

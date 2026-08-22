@@ -170,6 +170,9 @@ const RECIPIENT_LABELS = {
   },
 } as const;
 
+/** 테스트에서만 쓴다 — 첫 문장이 틀리면 편지 전체가 어색해지므로 따로 검증한다. */
+export const __internal = { endsWithFinalConsonant, selfIntroSentence };
+
 /** 편지 속에서 상대를 부를 호칭 — '너' 대신 이걸 쓴다 */
 export function resolveRecipientAddress(
   profile: PetIntroProfile,
@@ -186,6 +189,30 @@ export function resolveRecipientAddress(
   return locale === "ko" ? "엄마" : "Mom";
 }
 
+/**
+ * 마지막 글자에 받침이 있는가 — '나 콩이야' 와 '나 콩이이야' 를 가른다.
+ *
+ * 한글 음절은 0xAC00 부터 (초성×21×28 + 중성×28 + 종성) 으로 배열돼 있어서,
+ * 28 로 나눈 나머지가 곧 종성이다. 0 이면 받침이 없다.
+ */
+function endsWithFinalConsonant(name: string): boolean {
+  const last = name.trim().at(-1);
+  if (!last) return false;
+  const code = last.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return false;
+  return (code - 0xac00) % 28 !== 0;
+}
+
+/**
+ * '나 ○○야' / '나 ○○이야' 중 맞는 하나.
+ *
+ * 둘 다 후보로 주면 모델이 애칭에 '이' 를 덧붙여 '콩이이야' 를 쓴다.
+ * 편지의 첫 문장이라 틀리면 바로 눈에 걸린다.
+ */
+function selfIntroSentence(name: string): string {
+  return endsWithFinalConsonant(name) ? `나 ${name}이야` : `나 ${name}야`;
+}
+
 /** 편지 본문 인칭·호칭·마무리 문장 규칙 */
 export function buildLetterAddressingBlock(
   locale: "ko" | "en",
@@ -198,12 +225,13 @@ export function buildLetterAddressingBlock(
   const recipientLit = JSON.stringify(recipient);
 
   if (locale === "ko") {
+    const selfIntro = selfIntroSentence(name);
     const openingRule =
       profile.letterRecipient === "both"
-        ? `첫 문장은 반드시 '엄마, 아빠, 나 ${name}야.' 또는 '엄마, 아빠, 나 ${name}이야.' 로 시작한다.`
+        ? `첫 문장은 반드시 '엄마, 아빠, ${selfIntro}.' 로 시작한다.`
         : profile.letterRecipient === "sibling"
-          ? `첫 문장은 누나·언니·형·오빠 중 설문에 맞는 하나를 골라 '[호칭], 나 ${name}야.' 로 시작한다.`
-          : `첫 문장은 반드시 '${recipient}, 나 ${name}야.' 또는 '${recipient}, 나 ${name}이야.' 로 시작한다.`;
+          ? `첫 문장은 누나·언니·형·오빠 중 설문에 맞는 하나를 골라 '[호칭], ${selfIntro}.' 로 시작한다.`
+          : `첫 문장은 반드시 '${recipient}, ${selfIntro}.' 로 시작한다. 이름에 '이'를 더 붙이지 마.`;
     return [
       "[편지 호칭 — 가장 중요]",
       `편지는 **${name}**(애칭)이 **${recipient}**에게 직접 쓰는 1인칭 손편지다.`,
