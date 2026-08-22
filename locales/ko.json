@@ -236,6 +236,10 @@
       "bullet3": "가장 먼저 출시 소식 안내",
       "cta": "사전 예약 혜택 확인하기"
     },
+      "persistenceFailed": {
+        "title": "이 편지가 서버에 저장되지 않았습니다",
+        "body": "지금 보이는 편지는 화면에만 있습니다. 창을 닫으면 사라지고, 이터널빔으로 가져갈 수도 없습니다. 화면을 저장해 두시고, 잠시 후 같은 이메일로 다시 시도해 주세요."
+      },
     "destinationDeck": {
       "continueToEternalBeam": {
         "label": "ETERNAL BEAM",

@@ -236,6 +236,10 @@
       "bullet3": "First access to launch news and member perks",
       "cta": "See pre-order perks"
     },
+      "persistenceFailed": {
+        "title": "This letter was not saved to our server",
+        "body": "What you see is only on this screen. It will be lost if you close this page, and it cannot be taken to Eternal Beam. Please save the image and try again shortly with the same email."
+      },
     "destinationDeck": {
       "continueToEternalBeam": {
         "label": "ETERNAL BEAM",
