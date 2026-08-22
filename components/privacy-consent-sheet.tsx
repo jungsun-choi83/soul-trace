@@ -26,10 +26,14 @@ export function PrivacyConsentSheet({
   const { t, lang } = useLocale();
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
   const [draft, setDraft] = useState(checked);
+  const [wasOpen, setWasOpen] = useState(open);
 
-  useEffect(() => {
+  // 시트가 열리는 순간에만 확정된 값에서 다시 시작한다. 렌더 중 조정이라
+  // effect 를 거치지 않고 첫 페인트부터 올바른 체크 상태로 그려진다.
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) setDraft(checked);
-  }, [open, checked]);
+  }
 
   useEffect(() => {
     if (!open) return;

@@ -1,14 +1,6 @@
 "use client";
 
-import { PrivacyConsentTrigger } from "@/components/privacy-consent-trigger";
-import { PrivacyConsentSheet } from "@/components/privacy-consent-sheet";
-import { PetIntroForm } from "@/components/pet-intro-form";
-import { SurveyFlow } from "@/components/survey-flow";
-import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
-import { InstagramStoryCard } from "@/components/instagram-story-card";
-import { EternalBeamPreview } from "@/components/eternal-beam-preview";
 import { LanguageToggle } from "@/components/language-toggle";
-import { ResultAmbientAudio } from "@/components/result-ambient-audio";
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 import { consumeLetterSseStream } from "@/lib/consume-letter-sse";
@@ -726,192 +718,29 @@ export default function Home() {
   const letterRest = letterSplit?.rest ?? "";
 
   return (
-    <>
-      <audio
-        ref={bgmPrimeRef}
-        src={resolveResultBgmSrc()}
-        loop
-        preload="auto"
-        className="hidden"
-        aria-hidden
-      />
-      {result ? (
-        <main className="min-h-screen bg-black pb-10">
-          <header className="flex w-full justify-end px-4 pt-6 sm:px-6">
-            <LanguageToggle />
-          </header>
-          <section className="mx-auto w-full max-w-3xl space-y-8 px-4 sm:px-6">
-            {isLoading ? (
-              <p
-                className={`text-center text-sm font-extralight text-[#D4AF37] ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                {generationLoadingMessage ?? t("result.updatingLanguage")}
-              </p>
-            ) : null}
-            <div
-              ref={captureRef}
-              id="share-card"
-              className={`relative min-h-[100vh] w-full overflow-hidden rounded-sm shadow-[0_0_80px_rgba(212,175,55,0.12)] ${
-                isLoading ? "pointer-events-none opacity-50" : ""
-              }`}
-            >
-              <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="result-hero-placeholder absolute inset-0" aria-hidden />
-                {heroDisplaySrc ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- dynamic hero URL + crossOrigin for html capture
-                  <img
-                    src={heroDisplaySrc}
-                    alt=""
-                    {...(heroUsesProxy ? {} : { crossOrigin: "anonymous" as const })}
-                    className={`ken-burns-img absolute inset-0 h-full w-full min-h-full min-w-full object-cover transition-opacity duration-700 ease-out ${
-                      heroLoaded ? "opacity-100" : "opacity-0"
-                    }`}
-                    onLoad={() => setHeroLoaded(true)}
-                    onError={() => setHeroLoaded(true)}
-                  />
-                ) : null}
-              </div>
+    <main className="relative isolate flex min-h-screen flex-col bg-black">
+      <WarmRisingSparkles />
+      <header className="relative z-[2] flex w-full shrink-0 justify-end px-5 pt-6 md:px-8 md:pt-8">
+        <LanguageToggle />
+      </header>
 
-              <div
-                className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.42] via-black/[0.14] to-black/[0.48]"
-                aria-hidden
-              />
-
-              <div className="relative z-10 flex min-h-[100vh] flex-col justify-center px-6 py-14 sm:px-10 sm:py-20 md:px-14">
-                <div className="relative mx-auto w-full max-w-3xl">
-                  {/* 텍스트 영역 전용: 일러스트는 비추면서 글자 대비만 올리는 잡지형 스크림 */}
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute -inset-x-5 -inset-y-8 rounded-[1.25rem] bg-gradient-to-b from-[rgba(10,11,14,0.78)] via-[rgba(8,9,11,0.58)] to-[rgba(7,8,10,0.72)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/[0.06] sm:-inset-x-8 sm:-inset-y-10 md:-inset-x-10 md:-inset-y-12"
-                  />
-                  <div
-                    className={`relative z-[1] space-y-11 ${
-                      lang === "ko" ? "result-hero-text-ko font-ko" : "result-hero-text-en font-display-en"
-                    }`}
-                  >
-                    <div className="space-y-5 text-center">
-                    <p className="font-display-en text-[10px] uppercase tracking-[0.42em] text-[#D4AF37]/72 sm:text-xs">
-                      {t("result.eyebrow")}
-                    </p>
-                    <h1
-                      className={`text-3xl font-extralight leading-snug text-[#EAD8B7] sm:text-4xl md:text-5xl ${
-                        isLoading && !result.personalityType.trim() ? "animate-pulse opacity-[0.78]" : ""
-                      }`}
-                    >
-                      {isLoading && !result.personalityType.trim()
-                        ? t("result.streamingPersonalityTitle")
-                        : result.personalityType}
-                    </h1>
-                    <p
-                      className={`mx-auto max-w-2xl text-[15px] font-extralight leading-[1.9] text-[#F2EFE6] sm:text-base ${
-                        isLoading && !result.personalitySummary.trim()
-                          ? "animate-pulse opacity-[0.78]"
-                          : ""
-                      }`}
-                    >
-                      {isLoading && !result.personalitySummary.trim()
-                        ? t("result.streamingPersonalityBody")
-                        : result.personalitySummary}
-                    </p>
-                    {(result.personalityTags ?? []).length > 0 ? (
-                      <p className="text-xs font-extralight tracking-[0.16em] text-[#CDB894]/72 sm:text-sm">
-                        {(result.personalityTags ?? [])
-                          .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))
-                          .join("   ")}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="mx-auto h-px w-full max-w-xl bg-gradient-to-r from-transparent via-[#D4AF37]/32 to-transparent" />
-
-                  <div className="space-y-6 text-center">
-                    <p className="text-sm font-light tracking-[0.08em] text-[#D9C6A4] sm:text-base">
-                      {t("result.letterHeading")}
-                    </p>
-                    {isLoading && !result.letter.trim() ? (
-                      <p
-                        className={`mx-auto max-w-2xl text-[17px] font-extralight leading-[2] text-[#ECE7DC]/84 sm:text-lg ${
-                          lang === "ko" ? "break-keep" : ""
-                        } animate-pulse`}
-                      >
-                        {t("result.letterStarting")}
-                      </p>
-                    ) : null}
-                    <p
-                      className={`mx-auto max-w-2xl whitespace-pre-line text-left text-[17px] font-extralight leading-[2] text-[#F7F4EF] sm:text-lg ${
-                        lang === "ko" ? "break-keep" : ""
-                      }`}
-                    >
-                      {dropCap ? (
-                        <>
-                          <span className="drop-cap">{dropCap}</span>
-                          {letterRest}
-                        </>
-                      ) : (
-                        result.letter
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-            <div
-              className={`mx-auto mt-10 max-w-xl space-y-10 px-1 text-center sm:mt-12 ${
-                lang === "ko" ? "font-ko" : "font-display-en"
-              }`}
-            >
-              <div className="space-y-6 text-[15px] font-extralight leading-[1.95] tracking-[0.02em] text-[#EDE4D3]/95 sm:text-base sm:leading-[2]">
-                <p className="whitespace-pre-line">{t("result.emotionalBridge.block1")}</p>
-                <p className="whitespace-pre-line text-[#F3EAD8]">{t("result.emotionalBridge.block2")}</p>
-              </div>
-            </div>
-
-            <EternalBeamPreview lang={lang} />
-
-            <p
-              className={`mt-6 text-center text-[11px] font-extralight leading-relaxed text-[#C4B8A8]/85 ${
-                lang === "ko" ? "font-ko" : "font-display-en"
-              }`}
-            >
-              {(result.savedPetName ?? displayPetName).trim()}
-              {petProfilePayload
-                ? ` · ${petProfilePayload.yearMet}–${petProfilePayload.yearParted}`
-                : null}
-            </p>
-
-            {!canCaptureArtwork ? (
-              <p className="font-ko mt-4 text-center text-xs text-[#D4AF37]">
-                {t("result.sceneLoading")}
-              </p>
-            ) : null}
-
-            <div className="mx-auto mt-8 w-full max-w-xl text-center">
-              <p
-                className={`mb-3 text-sm font-extralight leading-relaxed text-[#D4AF37]/88 sm:text-[13px] ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                {t("result.instagramShareLead")}
-              </p>
-              <button
-                type="button"
-                onClick={onInstagramButtonClick}
-                disabled={!canCaptureArtwork || isSharing}
-                className={`w-full rounded-xl border border-[rgba(255,255,255,0.1)] bg-[rgba(26,26,26,0.78)] px-5 py-4 text-sm font-light text-[#F3EAD8] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-[rgba(212,175,55,0.28)] hover:bg-[rgba(30,28,26,0.88)] disabled:cursor-not-allowed disabled:opacity-45 sm:text-base ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                {isSharing
-                  ? t("result.preparingImage")
-                  : shareableFile
-                    ? t("result.instagramCardReady")
-                    : t("result.instagramShareButton")}
-              </button>
-            </div>
+      <div className="relative z-[2] flex flex-1 items-center justify-center px-5 pb-16 pt-2 md:px-8">
+        <section className="animate-fade-in w-full max-w-xl text-center">
+          <p className="font-display-en text-xs uppercase tracking-[0.35em] text-[#D4AF37]">
+            {t("hero.eyebrow")}
+          </p>
+          <h1 className="font-display-en mt-6 text-4xl text-[#FFFFFF] md:text-5xl">
+            {t("hero.title")}
+          </h1>
+          <p
+            className={`mx-auto mt-7 max-w-lg whitespace-pre-line text-[#F3EAD8]/[0.94] ${
+              lang === "ko"
+                ? "font-ko break-keep text-[15px] font-extralight leading-[2.05] tracking-[0.055em] sm:text-base"
+                : "font-display-en text-sm font-extralight leading-[2.05] tracking-[0.2em] sm:text-base"
+            }`}
+          >
+            {t("hero.subtitleLine1")}
+          </p>
 
             <div className="mx-auto mt-12 w-full max-w-xl space-y-5">
               {/*
@@ -946,304 +775,22 @@ export default function Home() {
                     lang === "ko" ? "font-ko" : "font-display-en"
                   }`}
                 >
-                  <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/95 sm:text-xs">
-                    {t("result.destinationDeck.continueToEternalBeam.label")}
-                  </p>
-                  <h3 className="mt-3 text-[15px] font-extralight leading-snug text-[#EDE4D3] sm:text-base">
-                    {t("result.destinationDeck.continueToEternalBeam.title")}
-                  </h3>
-                  <p className="mt-3 text-sm font-extralight leading-relaxed text-[#C4B8A8] sm:text-[15px]">
-                    {t("result.destinationDeck.continueToEternalBeam.body")}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={continueToEternalBeam}
-                    disabled={handoffBusy}
-                    className={`mt-6 flex w-full items-center justify-center rounded-2xl bg-[#b89a2e] px-5 py-3.5 text-center text-base font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-60 ${
-                      lang === "ko" ? "font-ko" : "font-display-en"
+                  <span className="block text-base font-light leading-snug sm:text-lg">
+                    {copy.landingCta}
+                  </span>
+                  <span
+                    className={`mt-1.5 block text-xs font-extralight leading-relaxed sm:text-[13px] ${
+                      primary ? "text-black/62" : "text-[#C4B8A8]"
                     }`}
                   >
-                    {handoffBusy
-                      ? t("result.destinationDeck.continueToEternalBeam.pending")
-                      : t("result.destinationDeck.continueToEternalBeam.cta")}
-                  </button>
-                  {handoffError ? (
-                    <p className="mt-3 text-center text-sm text-red-300">{handoffError}</p>
-                  ) : null}
-                </article>
-              ) : null}
-
-              <article
-                className={`rounded-2xl border border-[rgba(212,175,55,0.22)] bg-[rgba(18,16,14,0.72)] px-5 py-7 text-left shadow-[0_0_40px_rgba(212,175,55,0.06)] sm:px-8 sm:py-8 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/95 sm:text-xs">
-                  {t("result.destinationDeck.officialSite.label")}
-                </p>
-                <h3 className="mt-3 text-[15px] font-extralight leading-snug text-[#EDE4D3] sm:text-base">
-                  {t("result.destinationDeck.officialSite.title")}
-                </h3>
-                <p className="mt-3 text-sm font-extralight leading-relaxed text-[#C4B8A8] sm:text-[15px]">
-                  {t("result.destinationDeck.officialSite.body")}
-                </p>
-                <a
-                  href={officialSiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`mt-6 flex w-full items-center justify-center rounded-2xl bg-[#b89a2e] px-5 py-3.5 text-center text-base font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] ${
-                    lang === "ko" ? "font-ko" : "font-display-en"
-                  }`}
-                >
-                  {t("result.destinationDeck.officialSite.cta")}
-                </a>
-              </article>
-
-              <article
-                className={`rounded-2xl border border-[rgba(212,175,55,0.15)] bg-[rgba(18,16,14,0.65)] px-5 py-7 text-left sm:px-8 sm:py-8 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/95 sm:text-xs">
-                  {t("result.destinationDeck.instagram.label")}
-                </p>
-                <h3 className="mt-3 text-[15px] font-extralight leading-snug text-[#EDE4D3] sm:text-base">
-                  {t("result.destinationDeck.instagram.title")}
-                </h3>
-                <p className="mt-3 text-sm font-extralight leading-relaxed text-[#C4B8A8] sm:text-[15px]">
-                  {t("result.destinationDeck.instagram.body")}
-                </p>
-                <a
-                  href={instagramProfileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`mt-6 flex w-full items-center justify-center rounded-xl border border-[rgba(212,175,55,0.4)] bg-[#1A1A1A]/90 px-5 py-3.5 text-sm font-light text-[#F5E6B8] transition hover:border-[rgba(212,175,55,0.55)] hover:bg-[#222018] sm:text-base ${
-                    lang === "ko" ? "font-ko" : "font-display-en"
-                  }`}
-                >
-                  {t("result.destinationDeck.instagram.cta")}
-                </a>
-              </article>
-            </div>
-
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] font-extralight text-[#4a4744]/95 sm:text-[11px]">
-              <button
-                type="button"
-                onClick={handleDownloadImage}
-                disabled={!canCaptureArtwork || isSharing}
-                className={`transition hover:text-[#6b6865] disabled:cursor-not-allowed disabled:opacity-40 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                {t("result.keepForever")}
-              </button>
-              <span className="select-none text-[#3a3634]" aria-hidden>
-                ·
-              </span>
-              <button
-                type="button"
-                onClick={resetTest}
-                className={`transition hover:text-[#6b6865] ${lang === "ko" ? "font-ko" : "font-display-en"}`}
-              >
-                {t("result.retryTest")}
-              </button>
-            </div>
-            {error ? <p className="text-center text-sm text-red-300">{error}</p> : null}
-          </section>
-          <div
-            className="pointer-events-none fixed top-0 -left-[9999px] z-[-1] opacity-0"
-            style={{ width: 1080, height: 1920 }}
-            aria-hidden
-          >
-            <InstagramStoryCard
-              ref={instagramStoryRef}
-              heroSrc={heroDisplaySrc}
-              nameLead={storyPetNameLead}
-              personalityTitle={result.personalityType}
-              emotionalLine={storyCardQuote || result.letter.trim()}
-              footerTagline={t("result.instagramStory.footerTagline")}
-              siteLine={t("result.instagramStory.siteLine")}
-              lang={lang}
-            />
+                    {copy.landingHint}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
-          <ResultAmbientAudio active={!!result} audioRef={bgmPrimeRef} />
-        </main>
-      ) : (
-      <main className="relative isolate flex min-h-screen flex-col bg-black">
-        <WarmRisingSparkles />
-        <header className="relative z-[2] flex w-full shrink-0 justify-end px-5 pt-6 md:px-8 md:pt-8">
-          <LanguageToggle />
-        </header>
-        <div className="relative z-[2] flex flex-1 items-center justify-center px-5 pb-14 pt-2 md:px-8 md:pb-16">
-        <section className="w-full max-w-2xl">
-          <div className="animate-fade-in mb-10 text-center">
-            <p className="font-display-en text-xs uppercase tracking-[0.35em] text-[#D4AF37]">
-              {t("hero.eyebrow")}
-            </p>
-            <h1 className="font-display-en mt-6 text-4xl text-[#FFFFFF] md:text-5xl">
-              {t("hero.title")}
-            </h1>
-            <div
-              className={`mx-auto mt-7 max-w-xl space-y-6 text-[#F3EAD8]/[0.94] ${
-                lang === "ko"
-                  ? "font-ko break-keep text-[15px] font-extralight leading-[2.05] tracking-[0.055em] sm:text-base sm:leading-[2.1] sm:tracking-[0.05em]"
-                  : "font-display-en text-sm font-extralight leading-[2.05] tracking-[0.2em] sm:text-base sm:leading-[2.15] sm:tracking-[0.18em]"
-              }`}
-            >
-              <p className="whitespace-pre-line">{t("hero.subtitleLine1")}</p>
-              <p>{t("hero.subtitleLine2")}</p>
-            </div>
-          </div>
-
-          <article className="rounded-3xl border-[0.5px] border-[rgba(212,175,55,0.3)] bg-transparent p-6 md:p-10">
-            <div className="mb-8 space-y-6">
-              <div className="space-y-2">
-                <label
-                  htmlFor="user-email"
-                  className={`text-sm font-extralight text-[#F3EAD8] sm:text-[15px] ${
-                    lang === "ko" ? "font-ko" : "font-display-en"
-                  }`}
-                >
-                  {t("form.emailLabel")}
-                </label>
-                <input
-                  id="user-email"
-                  type="email"
-                value={userEmail}
-                onChange={(event) => {
-                  setProfileEmailBlockedMessage(null);
-                  setUserEmail(event.target.value);
-                }}
-                onBlur={handleEmailBlur}
-                placeholder={t("form.emailPlaceholder")}
-                className={`font-ko w-full rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-transparent px-4 py-3 text-base font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 focus:border-[#D4AF37] md:text-sm`}
-              />
-              </div>
-              <PetIntroForm profile={petIntro} onChange={patchPetIntro} />
-              <PrivacyConsentTrigger
-                agreed={privacyConsent}
-                onOpen={() => setMainPrivacySheetOpen(true)}
-                labelPath="form.privacyConsentLink"
-              />
-            </div>
-
-            <PrivacyConsentSheet
-              open={mainPrivacySheetOpen}
-              onClose={() => setMainPrivacySheetOpen(false)}
-              titlePath="form.privacyConsentTitle"
-              bodyPath="form.privacyConsentBody"
-              agreePath="form.privacyConsentAgree"
-              checked={privacyConsent}
-              onConfirm={() => setPrivacyConsent(true)}
-            />
-
-            <PrivacyConsentSheet
-              open={photoPrivacySheetOpen}
-              onClose={() => setPhotoPrivacySheetOpen(false)}
-              titlePath="form.photoPrivacyConsentTitle"
-              bodyPath="form.photoPrivacyConsentBody"
-              agreePath="form.photoPrivacyConsentAgree"
-              checked={photoPrivacyConsent}
-              onConfirm={() => setPhotoPrivacyConsent(true)}
-            />
-
-            {profileEmailBlockedMessage ? (
-              <p
-                className={`mb-6 rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-[rgba(212,175,55,0.06)] px-4 py-3 text-xs font-extralight leading-relaxed text-[#F3EAD8]/95 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-                role="alert"
-              >
-                {profileEmailBlockedMessage}
-              </p>
-            ) : null}
-
-            <div key={step} className="animate-fade-in">
-              <SurveyFlow
-                step={step}
-                petDisplayName={displayPetName}
-                memoryAnswers={memoryAnswers}
-                tonePrefs={tonePrefs}
-                petPhotoPreviewUrl={petPhotoPreviewUrl}
-                onPetPhotoChange={onPetPhotoChange}
-                onSkipPhoto={handleSkipPhoto}
-                photoPrivacyConsent={photoPrivacyConsent}
-                onOpenPhotoPrivacy={() => setPhotoPrivacySheetOpen(true)}
-                videoMotion={videoMotion}
-                onVideoMotionChange={setVideoMotion}
-                onMemoryChange={handleMemoryChange}
-                onToneMood={(mood) => setTonePrefs((prev) => ({ ...prev, mood }))}
-                onToneOptionToggle={handleToneOptionToggle}
-                onToneLength={(length) => setTonePrefs((prev) => ({ ...prev, length }))}
-                onSkipOptional={handleSkipOptional}
-              />
-            </div>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={goPrev}
-                disabled={step === 0}
-                className="font-ko min-h-[44px] rounded-xl border-[0.5px] border-[rgba(212,175,55,0.45)] bg-transparent px-4 py-3 text-sm font-light text-[#FFFFFF] transition hover:bg-[rgba(212,175,55,0.06)] active:bg-[rgba(212,175,55,0.1)] disabled:cursor-not-allowed disabled:opacity-35"
-              >
-                {t("buttons.prev")}
-              </button>
-              {isLastQuestion ? (
-                <button
-                  type="button"
-                  onClick={submitAnswers}
-                  disabled={
-                    isLoading ||
-                    !isSurveyComplete(memoryAnswers, tonePrefs) ||
-                    !isProfileValid ||
-                    Boolean(profileEmailBlockedMessage)
-                  }
-                  className="font-ko min-h-[44px] rounded-xl bg-[#b89a2e] px-4 py-3 text-sm font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  {isLoading ? t("buttons.generating") : t("buttons.generate")}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => void goNext()}
-                  disabled={
-                    !isAnswerValid ||
-                    (step === 0 &&
-                      isEmailValid &&
-                      (!!profileEmailBlockedMessage || isCheckingProfileEmail))
-                  }
-                  className="font-ko min-h-[44px] rounded-xl border-[0.5px] border-[rgba(212,175,55,0.55)] bg-transparent px-4 py-3 text-sm font-light text-[#FFFFFF] transition hover:bg-[rgba(212,175,55,0.06)] active:bg-[rgba(212,175,55,0.1)] disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  {t("buttons.next")}
-                </button>
-              )}
-            </div>
-            {isLastQuestion && !isLoading && (!isSurveyComplete(memoryAnswers, tonePrefs) || !isProfileValid) ? (
-              <p
-                className={`mt-3 text-center text-xs font-extralight leading-relaxed text-[#D4AF37]/90 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                {!isSurveyComplete(memoryAnswers, tonePrefs)
-                  ? t("form.generateNeedAnswer")
-                  : t("form.generateNeedProfile")}
-              </p>
-            ) : null}
-            {isLoading ? (
-              <p
-                className={`mt-4 text-center text-xs font-extralight leading-relaxed text-[#D4AF37]/85 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                {t("buttons.generatingMusicHint")}
-              </p>
-            ) : null}
-          </article>
-          {error ? <p className="mt-4 text-center text-sm text-red-300">{error}</p> : null}
         </section>
-        </div>
-      </main>
-      )}
-    </>
+      </div>
+    </main>
   );
 }

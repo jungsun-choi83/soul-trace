@@ -2,9 +2,11 @@
 
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
+import { modeCopy, type LetterMode } from "@/lib/letter-mode";
 import type { LetterRecipient, PetIntroProfile, PetType } from "@/lib/pet-profile";
 
 type PetIntroFormProps = {
+  mode: LetterMode;
   profile: PetIntroProfile;
   onChange: (patch: Partial<PetIntroProfile>) => void;
 };
@@ -29,8 +31,9 @@ function chipClass(selected: boolean, lang: Locale) {
   }`;
 }
 
-export function PetIntroForm({ profile, onChange }: PetIntroFormProps) {
-  const { t, lang } = useLocale();
+export function PetIntroForm({ mode, profile, onChange }: PetIntroFormProps) {
+  const { t, lang, messages } = useLocale();
+  const copy = modeCopy(messages, mode);
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
   const showRecipientDetail =
     profile.letterRecipient === "byName" || profile.letterRecipient === "custom";
@@ -43,7 +46,7 @@ export function PetIntroForm({ profile, onChange }: PetIntroFormProps) {
       </p>
 
       <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#F3EAD8]">{t("form.step1.q1Label")}</label>
+        <label className="text-sm font-extralight text-[#F3EAD8]">{copy.q1Label}</label>
         <input
           type="text"
           value={profile.petName}
@@ -65,7 +68,7 @@ export function PetIntroForm({ profile, onChange }: PetIntroFormProps) {
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#F3EAD8]">{t("form.step1.q2Label")}</label>
+        <label className="text-sm font-extralight text-[#F3EAD8]">{copy.q2Label}</label>
         <div className="flex flex-wrap gap-2">
           {PET_TYPES.map((type) => (
             <button
@@ -101,7 +104,7 @@ export function PetIntroForm({ profile, onChange }: PetIntroFormProps) {
             max={currentYear}
             value={profile.yearParted}
             onChange={(e) => onChange({ yearParted: e.target.value })}
-            placeholder={t("form.step1.yearPartedPlaceholder")}
+            placeholder={copy.yearPartedPlaceholder}
             className={fieldClass(lang)}
           />
         </div>

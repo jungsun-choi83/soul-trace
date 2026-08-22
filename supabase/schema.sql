@@ -4,6 +4,7 @@
 --   migration_add_hero_image.sql          hero_image_url
 --   migration_fix_answer_order_range.sql  answer_order 1..8
 --   migration_add_letter_identity.sql     letter_id / created_at
+--   migration_add_handoffs.sql            soul_trace_handoffs
 
 create table if not exists public.soul_trace_profiles (
   -- PK 는 이메일 그대로 둔다. 편지 핸드오프는 letter_id 를 쓴다 — PK 를 바꾸면
@@ -36,6 +37,37 @@ create table if not exists public.soul_trace_answers (
 
 create index if not exists idx_soul_trace_answers_user_email
   on public.soul_trace_answers (user_email);
+
+-- Eternal Beam 핸드오프 능력(capability). 이 표가 없으면 결과 화면의
+-- "이터널빔으로 이어가기" 가 조용히 사라진다 — 신규 환경에서도 반드시 만든다.
+-- 자세한 설계 근거는 migration_add_handoffs.sql 의 주석에 있다.
+create table if not exists public.soul_trace_handoffs (
+  -- sha256(원문 토큰) hex. **원문은 저장하지 않는다.**
+  token_hash  text primary key,
+  -- 이 토큰이 넘길 수 있는 편지. 정확히 하나다.
+  letter_id   uuid not null
+    references public.soul_trace_profiles (letter_id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  expires_at  timestamptz not null,
+  -- 소비 감사 기록. null 이면 아직 쓰이지 않은 것이다.
+  consumed_at timestamptz,
+  consumed_by text
+);
+
+create index if not exists soul_trace_handoffs_letter_idx
+  on public.soul_trace_handoffs (letter_id);
+
+-- 만료 청소용. 부분 인덱스라 이미 소비된 행은 들고 있지 않는다.
+create index if not exists soul_trace_handoffs_expiry_idx
+  on public.soul_trace_handoffs (expires_at)
+  where consumed_at is null;
+
+comment on table public.soul_trace_handoffs is
+  'Eternal Beam 핸드오프 능력. 15분·1회용·편지 하나. 원문 토큰은 저장하지 않는다';
+comment on column public.soul_trace_handoffs.token_hash is
+  'sha256(원문) hex. 표가 유출돼도 토큰을 되살릴 수 없다';
+comment on column public.soul_trace_handoffs.consumed_by is
+  '소비한 Eternal Beam canonical user_id — 클레임 감사 기록';
 
 comment on column public.soul_trace_profiles.letter_id is
   'Eternal Beam 핸드오프의 source_letter_id. DB 생성 UUID이며 재생성해도 보존된다';
