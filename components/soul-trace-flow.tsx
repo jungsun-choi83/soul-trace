@@ -64,6 +64,11 @@ type GeneratedResult = {
    * 저장 실패·마이그레이션 전이면 null 이라 핸드오프 CTA 가 나오지 않는다.
    */
   letterId?: string | null;
+  /**
+   * 서버가 편지를 **저장하지 못했다.** 화면에는 편지가 보이지만 DB 에는 없다.
+   * 조용히 넘기면 사용자는 저장됐다고 믿고 창을 닫고, 편지는 영영 사라진다.
+   */
+  persistenceFailed?: boolean;
 };
 
 /** 첫 그래프클러스터(드롭캡)와 나머지 본문 분리 — 선행 공백은 유지 */
@@ -550,6 +555,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
                   ? data.savedPetName.trim()
                   : displayPetName,
               letterId: data.letterId ?? null,
+              persistenceFailed: data.persistenceFailed === true,
             });
             setResultLocale(lang);
           },
@@ -943,6 +949,27 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
                 마이그레이션 전이면 넘길 편지가 서버에 없으므로, 실패할 버튼을
                 보여 주지 않는다.
               */}
+              {/*
+                저장 실패를 **말한다.** 이 경고가 없으면 사용자는 완벽한 편지를
+                보고 저장됐다고 믿은 채 창을 닫고, 편지는 영영 사라진다.
+                (서버는 이미 자세한 원인을 로그에 남겼다.)
+              */}
+              {result.persistenceFailed ? (
+                <article
+                  role="alert"
+                  className={`rounded-2xl border border-red-400/50 bg-red-950/40 px-5 py-6 text-left sm:px-8 ${
+                    lang === "ko" ? "font-ko" : "font-display-en"
+                  }`}
+                >
+                  <h3 className="text-[15px] font-medium leading-snug text-red-200 sm:text-base">
+                    {t("result.persistenceFailed.title")}
+                  </h3>
+                  <p className="mt-2 text-sm font-extralight leading-relaxed text-red-100/80 sm:text-[15px]">
+                    {t("result.persistenceFailed.body")}
+                  </p>
+                </article>
+              ) : null}
+
               {result.letterId ? (
                 <article
                   className={`rounded-2xl border border-[rgba(212,175,55,0.35)] bg-[rgba(24,20,14,0.82)] px-5 py-7 text-left shadow-[0_0_48px_rgba(212,175,55,0.10)] sm:px-8 sm:py-8 ${
