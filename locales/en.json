@@ -73,8 +73,8 @@
           "id": "q12",
           "promptText": "Q12. How long should the letter be?",
           "options": [
-            { "id": "short", "label": "Short (~5 lines)" },
-            { "id": "normal", "label": "Medium (~10 lines)" }
+          { "id": "short", "label": "Short (~12 lines)" },
+          { "id": "normal", "label": "Medium (~20 lines)" }
           ]
         }
       ]
@@ -140,8 +140,8 @@
           "id": "q12",
           "promptText": "Q12. How long should the letter be?",
           "options": [
-            { "id": "short", "label": "Short (~5 lines)" },
-            { "id": "normal", "label": "Medium (~10 lines)" }
+          { "id": "short", "label": "Short (~12 lines)" },
+          { "id": "normal", "label": "Medium (~20 lines)" }
           ]
         }
       ]

@@ -89,5 +89,16 @@ describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () 
       assert.notEqual(living.landingCta, memorial.landingCta);
       assert.notEqual(living.yearPartedPlaceholder, memorial.yearPartedPlaceholder);
     });
+
+    it(`${name}: 보통 길이는 20줄, 짧은 길이는 12줄이라고 적혀 있다`, () => {
+      for (const mode of LETTER_MODES) {
+        const lengthOpts = modeCopy(messages, mode).tone[2].options;
+        const short = lengthOpts.find((o) => o.id === "short")?.label ?? "";
+        const normal = lengthOpts.find((o) => o.id === "normal")?.label ?? "";
+        // 화면 숫자와 프롬프트 숫자가 어긋나면 사용자는 10줄을 골랐는데 20줄이 온다.
+        assert.match(short, /12/);
+        assert.match(normal, /20/);
+      }
+    });
   }
 });

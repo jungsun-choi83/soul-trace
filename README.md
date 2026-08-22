@@ -5,7 +5,7 @@ Next.js 앱입니다. 만들어진 편지는 인스타그램 스토리로 공유
 **이터널빔 기기**에 그대로 넘길 수 있습니다.
 
 - 프레임워크: Next.js 16 (App Router, Turbopack) · React 19 · Tailwind v4
-- AI: OpenAI `gpt-4o-mini`(편지) + `dall-e-3`(배경 이미지)
+- AI: OpenAI `gpt-4o`(편지) + `dall-e-3`(배경 이미지)
 - 저장소: Supabase (Google 시트 백업은 선택)
 - 언어: 한국어 / 영어 (`locales/ko.json`, `locales/en.json`)
 

@@ -105,8 +105,8 @@ export function buildTonePromptBlock(
         ? "아이 이름(애칭)을 편지에서 여러 번 불러줘."
         : "",
       tonePrefs.length === "short"
-        ? "편지는 짧게 — 대략 5줄 내외."
-        : "편지는 보통 — 대략 10줄 내외.",
+        ? "편지는 짧게 — 빈 줄 빼고 **12줄 전후**(10~14줄). 한 줄에 생각 하나."
+        : "편지는 보통 — 빈 줄 빼고 **20줄 전후**(18~22줄). 한 줄에 생각 하나. 설문 답을 다 쓰고도 짧으면 그 기억을 조금 더 천천히 말할 뿐, 새 사실을 만들지 마.",
     ]
       .filter(Boolean)
       .join("\n");
@@ -129,7 +129,9 @@ export function buildTonePromptBlock(
     tonePrefs.options.includes("frequent_name")
       ? "Say the pet's name (nickname) often in the letter."
       : "",
-    tonePrefs.length === "short" ? "Keep the letter short—about 5 lines." : "Aim for about 10 lines.",
+    tonePrefs.length === "short"
+      ? "Keep the letter short—about **12 lines** (10–14), excluding blank lines. One thought per line."
+      : "Aim for about **20 lines** (18–22), excluding blank lines. One thought per line. If the survey is short, linger on those memories—do not invent new facts.",
   ]
     .filter(Boolean)
     .join("\n");

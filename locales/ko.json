@@ -73,8 +73,8 @@
           "id": "q12",
           "promptText": "Q12. 길이",
           "options": [
-            { "id": "short", "label": "짧게 (5줄)" },
-            { "id": "normal", "label": "보통 (10줄)" }
+          { "id": "short", "label": "짧게 (12줄)" },
+          { "id": "normal", "label": "보통 (20줄)" }
           ]
         }
       ]
@@ -140,8 +140,8 @@
           "id": "q12",
           "promptText": "Q12. 길이",
           "options": [
-            { "id": "short", "label": "짧게 (5줄)" },
-            { "id": "normal", "label": "보통 (10줄)" }
+          { "id": "short", "label": "짧게 (12줄)" },
+          { "id": "normal", "label": "보통 (20줄)" }
           ]
         }
       ]

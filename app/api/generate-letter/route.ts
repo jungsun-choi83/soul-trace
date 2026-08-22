@@ -131,7 +131,7 @@ function envSkipsHeroImage(): boolean {
 }
 
 const PROMPT_Q_MAX = 140;
-const PROMPT_A_MAX = 280;
+const PROMPT_A_MAX = 500;
 
 function clampPromptField(s: string, max: number): string {
   const t = s.trim();
@@ -208,30 +208,47 @@ function letterPremiseBlock(locale: Locale, mode: LetterMode): string {
   ].join("\n");
 }
 
-/** letter 필드만: AI·에세이 티를 빼고 어린이 편지처럼 */
-function childlikeLetterVoiceRules(locale: Locale): string {
+/**
+ * 편지 목소리 — **말로 하는 대화**이지, 예쁜 글이 아니다.
+ *
+ * 모델은 매끈한 산문을 기본값으로 쓴다. 그걸 막으려면 문장 호흡·금지어·
+ * 설문 사용법을 같은 블록에서 못 박아야 한다. 길이 숫자는 여기가 아니라
+ * 톤 블록(`buildTonePromptBlock`)이 정한다.
+ */
+function conversationalLetterVoiceRules(locale: Locale): string {
   if (locale === "ko") {
     return [
-      "letter 문체(가장 중요) — ChatGPT·시·수필·광고 카피가 아니라, **편지 전문 작가가 보호자 대신 아이 목소리로 대필한 손편지**처럼:",
-      "- 짧은 문장 위주. 한 문장에 생각 하나. 가끔 '그때…' '아, 맞다.'처럼 말하다 멈추는 호흡도 괜찮아.",
-      "- 쉬운 말·구어체만: '진짜', '엄청', '조금', '막', '그거 알지?' — 한자어·문어체·'～함으로써'·'깊은 감사를 전합니다' 금지.",
-      "- 감정은 돌려 말하지 말고 툭: '그래서 나 그때 진짜 좋았어.' '엄마, 가끔 보고 싶어.' (상대 호칭 사용)",
-      "- 완벽한 서론-본론-결론·대칭·교훈적 마무리 금지. 실제 사람이 펜으로 쓴 것처럼.",
-      "- '따뜻한', '소중한 순간', '영원히 기억할', '깊은 사랑', '항상 곁에' 같은 **뻔한 AI 감성 멘트** 나열 금지. 대신 설문에서 골라 **냄새·소리·손길·습관 하나**를 구체적으로 말하기.",
-      "- 맞춤법은 대체로 맞되, 문장이 너무 매끄럽고 문학적이면 안 됨. AI가 쓴 듯한 '완벽한' 문장은 실패.",
+      "letter 문체(가장 중요) — ChatGPT·시·수필·광고가 아니라, **아이가 보호자한테 말로 하는 대화**다.",
+      "- 한 줄에 생각 하나. 줄바꿈으로 호흡을 끊는다. 긴 복문은 실패.",
+      "- 구어체 반말만: '진짜', '막', '그거', '그때', '있잖아', '아 맞다'. 한자어·문어체·'～함으로써'·'깊은 감사' 금지.",
+      "- 감정은 돌려 말하지 말고 툭: '그래서 나 그때 진짜 좋았어.' '엄마, 가끔 보고 싶어.'",
+      "- 서론-본론-결론, 대칭, 교훈적 마무리 금지. 말하다 멈추고 다른 얘기로 넘어가도 된다.",
+      "- 금지 멘트: '따뜻한', '소중한 순간', '영원히 기억할', '깊은 사랑', '항상 곁에', '마음속에', '영원히'. 이런 말이 한 번이라도 나오면 실패.",
+      "- 맞춤법은 맞되 너무 매끄러우면 안 된다. 완벽한 문장은 AI 티다.",
       "- **'너'·'너희'·'당신'으로 상대를 부르지 마.** 엄마, 아빠 등 관계 호칭만.",
       "- 이모티콘·ㅋㅋ·과한 맞춤법 실수는 쓰지 마.",
+      "",
+      "설문 사용(필수) — 편지의 내용은 **보호자가 적은 답변뿐**이다.",
+      "- 기억 문항(1~5) 답을 빠짐없이 대화 속에 녹여. 답에 나온 장면·버릇·소리·손길을 그 말로 다시 말한다.",
+      "- 답을 통째로 복붙하지 마. 아이가 그 일을 떠올리며 말하는 식으로 풀어 써.",
+      "- 빈 답·'(선택 없음)'·건너뛴 문항은 지어내지 말고 그냥 넘어가.",
+      "- 없는 에피소드를 보태지 마. 설문이 짧으면 그 짧은 기억을 천천히 말할 뿐, 새 사실을 만들지 마.",
     ].join("\n");
   }
   return [
-    "letter voice (critical) — NOT an essay, poem, or ad. Sound like a **sweet, slightly older kid** writing to Mom/Dad:",
-    "- Short, simple sentences. One thought at a time. OK to trail off: 'That day…' 'Oh, right.'",
-    "- Everyday kid words only—no literary flourishes, no 'hereby', 'profound', 'cherished', 'forever grateful'.",
+    "letter voice (critical) — NOT an essay, poem, or ad. Sound like they're **talking out loud** to Mom/Dad:",
+    "- One thought per line. Break lines the way speech pauses. Long compound sentences fail.",
+    "- Everyday spoken words and contractions only. No literary flourishes.",
     "- Say feelings plainly: 'I really loved that.' 'I miss it sometimes.'",
-    "- No perfect intro-body-conclusion symmetry or moral-of-the-story ending.",
-    "- Ban cliché AI lines: 'precious moments', 'deeply touched', 'always by your side'. Pick one concrete smell, sound, or touch from the survey instead.",
-    "- Slightly imperfect flow beats polished prose. Warm and honest beats elegant.",
+    "- No intro-body-conclusion, no moral-of-the-story ending.",
+    "- Ban cliché AI lines: 'precious moments', 'deeply touched', 'always by your side', 'in my heart forever'. Even once is a fail.",
+    "- Slightly imperfect flow beats polished prose.",
     "- No emojis or text-speak.",
+    "",
+    "Survey use (required) — the letter's facts come ONLY from the guardian's answers.",
+    "- Weave every answered memory question (1–5) into the talk. Re-say the scene, habit, sound, or touch in their own words.",
+    "- Don't paste answers verbatim. Don't invent episodes that aren't in the survey.",
+    "- Skip empty / '(none selected)' answers. Don't fill the gap with made-up details.",
   ].join("\n");
 }
 
@@ -258,9 +275,9 @@ function letterRoleAndStyle(
       "personalityType: MBTI 용어·코드 금지. 아이 특징을 살린 **감성 별명 한 줄**만 (예: 꼬리를 흔드는 사랑스러운 친구).",
       "personalitySummary: **편지와 완전히 다른 목소리**로 쓴다. **제3자 관찰자**가 부모에게 아이의 기질을 설명하는 **분석형 문장**(해요체 또는 합니다체로 통일, 반말·1인칭 아이 금지). 설문과 이름·좋아했던 풍경만 근거로, 예시 느낌: 「[이름]은(는) 주변에 기쁨을 주는 일을 큰 행복으로 여겼던 아이예요. 특히 [좋아했던 장소] 같은 개방된 공간에서 에너지를 얻었고, 보호자의 눈빛만으로도 마음을 읽어내는 섬세한 공감을 보였어요.」— 예문을 그대로 복붙하지 말고 실제 설문 문장으로 채울 것. 3~6문장.",
       "personalityTags: **정확히 3개**의 짧은 키워드만 담은 JSON 배열(문자열). 띄어쓰기 없이 2~6자 내외 한 단어 위주. 해시 기호는 있어도 되고 없어도 된다(서버에서 # 정리). 설문에서 읽히는 성향만.",
-      "letter는 **오직 1인칭 아이**의 편지: 반말 또는 해요체 하나로 통일. personalitySummary·personalityTags와 문체·시점을 섞지 마라.",
-      childlikeLetterVoiceRules("ko"),
-      "letter는 한 통으로 이어 써. (1) '[수신 호칭], 나 [이름]야' 인사. (2) 설문의 구체적 추억·습관. (3) 지금 편하다는 안심 + 위 [편지 호칭]의 **마무리 필수 문장**을 그대로 한 번.",
+      "letter는 **오직 1인칭 아이**의 편지: 반말 하나로 통일. personalitySummary·personalityTags와 문체·시점을 섞지 마라.",
+      conversationalLetterVoiceRules("ko"),
+      "letter 구조: (1) '[수신 호칭], 나 [이름]야' 인사 한 줄. (2) 설문의 구체적 추억·습관을 **한 줄씩** 이어서 말하듯 쓴다. (3) 위 [편지 호칭]의 **마무리 필수 문장**을 그대로 한 번.",
       "letter는 비문·번역투 없이. 영문 한 글자 이름 토큰 금지.",
     ].join("\n");
   }
@@ -278,8 +295,8 @@ function letterRoleAndStyle(
     "personalitySummary: MUST differ from the letter’s voice. Write as a **warm third-person observer** (like a gentle temperament note for parents)—not the pet speaking. Use clear, grounded sentences from the survey only (energy, habits, favorite place, how they showed love). No “I/me” as the pet here. Two to four sentences.",
     "personalityTags: a JSON array of **exactly three** short single-word or two-word tags (no spaces inside a tag). Reflect survey traits only. # optional; server normalizes.",
     "letter field ONLY: first-person pet voice with contractions—never reuse the analyst tone from personalitySummary.",
-    childlikeLetterVoiceRules("en"),
-    "letter structure: (1) Opening with recipient + pet name. (2) Body from survey memories. (3) Closing reassurance + the **required closing sentence** from addressingBlock verbatim.",
+    conversationalLetterVoiceRules("en"),
+    "letter structure: (1) Opening with recipient + pet name, one line. (2) Body: survey memories, one thought per line, spoken. (3) Closing + the **required closing sentence** from addressingBlock verbatim.",
     "Never output placeholder one-letter “names” or code-like tokens in any JSON field.",
   ].join("\n");
 }
@@ -326,8 +343,8 @@ function plainLetterSystemPrompt(
       letterPremiseBlock("ko", mode),
       `아이 이름(편지 속): ${nameLiteral}.`,
       `기억 장면 힌트: ${sceneryLiteral}`,
-      childlikeLetterVoiceRules("ko"),
-      "편지는 한 통으로. (1) '[수신 호칭], 나 [이름]야' 인사. (2) 설문의 구체적 추억. (3) 위 [편지 호칭]의 **마무리 필수 문장**을 그대로 한 번.",
+      conversationalLetterVoiceRules("ko"),
+      "편지는 말로 이어 간다. (1) '[수신 호칭], 나 [이름]야' 인사 한 줄. (2) 설문 답을 한 줄씩 풀어 말한다. (3) 위 [편지 호칭]의 **마무리 필수 문장**을 그대로 한 번.",
       "출력: JSON·제목 없이 편지 본문 평문만. 큰따옴표·코드 블록 금지.",
     ].join("\n");
   }
@@ -336,8 +353,8 @@ function plainLetterSystemPrompt(
     "",
     letterPremiseBlock("en", mode),
     `Pet name in letter: ${nameLiteral}. Scene hint: ${sceneryLiteral}.`,
-    childlikeLetterVoiceRules("en"),
-    "Write one continuous letter. End with the **required closing sentence** from [Letter addressing] verbatim.",
+    conversationalLetterVoiceRules("en"),
+    "Speak the letter out loud, one thought per line. End with the **required closing sentence** from [Letter addressing] verbatim.",
     "OUTPUT: Plain text only—no JSON, no code fences.",
   ].join("\n");
 }
@@ -345,18 +362,17 @@ function plainLetterSystemPrompt(
 function plainLetterLanguageInstruction(locale: Locale): string {
   if (locale === "ko") {
     return [
-      "편지는 한국어로만 작성한다. UTF-8 한글·기호만 사용.",
-      "한국어 기준 대략 380~650자. 짧고 담백하게—같은 말 반복·AI식 수식어 나열은 피한다.",
-      "편지 전문 작가가 대필한 듯한 자연스러운 손편지. '너'·'너희'로 상대를 부르지 마.",
-      "읽는 사람이 '우리 아이가 직접 쓴 것 같다'고 느끼게. 너무 매끄럽고 교과서 같으면 실패.",
+      "편지는 한국어 구어체 반말로만 작성한다. UTF-8 한글·기호만 사용.",
+      "한 줄에 한 생각. 줄바꿈으로 호흡. 같은 말 반복·AI식 수식어 나열 금지.",
+      "읽는 사람이 '우리 아이가 옆에서 말하는 것 같다'고 느끼게. 교과서·시·광고 같으면 실패.",
+      "'너'·'너희'로 상대를 부르지 마.",
       "응답에 stop 시퀀스·메타 지시문을 섞지 마라.",
     ].join("\n");
   }
   return [
-    "The letter must be entirely in natural English—as the pet’s voice, not a formal translator.",
-    "Everyday kid vocabulary; contractions welcome.",
-    "About 320–600 characters—short and honest beats long and polished.",
-    "If it reads like an AI essay, you failed. It should feel like a human ghostwriter penned it for the pet.",
+    "The letter must be entirely in spoken English—as if talking out loud, not a translator or essay.",
+    "One thought per line. Contractions welcome. Ban polished AI prose.",
+    "If it reads like an AI essay, you failed.",
     "Address Mom/Dad/their name—not distant 'you'. Include the required closing from the addressing block.",
     "Do not include meta-instructions in the output.",
   ].join("\n");
@@ -763,18 +779,18 @@ export async function POST(request: Request) {
         ? [
             "필수: personalityType, personalitySummary, personalityTags, letter 네 필드는 모두 한국어로만 작성한다. 설문 답이 영어여도 네 필드는 한국어로 서술한다.",
             "출력은 유효한 UTF-8 한글·기호만 사용하고, JSON 문자열 안에서 줄이 중간에 끊기지 않게 완전한 문장으로 마무리한다.",
-            "letter만 1인칭 아이 편지 톤. personalitySummary는 제3자 분석 문체만.",
+            "letter만 1인칭 아이 대화 톤. personalitySummary는 제3자 분석 문체만.",
             "letter: '[수신 호칭], 나 [이름]야'로 시작. 상대는 엄마·아빠 등 호칭만—'너'·'너희' 금지.",
-            "letter는 편지 작가가 대필한 듯한 자연스러운 손편지—짧은 문장, 쉬운 말, 구체적 추억 하나. AI·시·광고 문체 금지.",
-            "letter는 한국어 기준 대략 380~650자. 마무리에 [편지 호칭]의 필수 문장을 그대로 한 번.",
+            "letter는 말로 하는 대화 — 한 줄에 생각 하나, 설문 답을 빠짐없이 풀어 쓴다. AI·시·광고 문체 금지.",
+            "letter 길이는 [편지 톤] 블록을 따른다. 마무리에 [편지 호칭]의 필수 문장을 그대로 한 번.",
             "응답에 stop 시퀀스 문자열이나 메타 지시문을 섞어 넣지 마라.",
           ].join("\n")
         : [
             "MANDATORY: personalityType, personalitySummary, personalityTags, and letter must be entirely in natural English.",
-            "letter: first-person pet voice—open with recipient + pet name. Address Mom/Dad/their name, not distant 'you'. Human ghostwriter tone, not AI essay.",
+            "letter: first-person spoken voice—open with recipient + pet name. Address Mom/Dad/their name, not distant 'you'. Conversation, not an AI essay.",
             "personalitySummary: third-person gentle analyst for parents—not the pet speaking; no first-person pet voice there.",
             "personalityTags: JSON array of exactly three short tags.",
-            "Use complete sentences; letter about 320–600 characters. End with the required closing from [Letter addressing] verbatim.",
+            "One thought per line. Weave every answered survey memory. Length follows the [Letter tone] block. End with the required closing from [Letter addressing] verbatim.",
             "Do not include meta-instructions or stop-sequence markers in the output.",
           ].join("\n");
 
@@ -795,7 +811,7 @@ export async function POST(request: Request) {
             "[보호자가 적어 준, 아이가 사랑했던 풍경·장소 — 분위기와 은유에 반영할 것]",
             preferredScenery,
             "",
-            "[설문 8문항과 답변 — 성향·편지의 유일한 근거]",
+            "[설문 8문항과 답변 — 편지의 **유일한** 근거. 기억 답을 빠짐없이 대화에 녹여 쓸 것. 없는 일은 짓지 말 것]",
             promptFormattedAnswers,
           ].join("\n")
         : [
@@ -811,7 +827,7 @@ export async function POST(request: Request) {
             "[Scenery or place they loved — reflect in mood and metaphor]",
             preferredScenery,
             "",
-            "[Eight survey Q&As — the only basis for personality and letter]",
+            "[Eight survey Q&As — the letter's **only** facts. Weave every answered memory. Invent nothing.]",
             promptFormattedAnswers,
           ].join("\n");
 
@@ -835,7 +851,7 @@ export async function POST(request: Request) {
               "[보호자가 적어 준, 아이가 사랑했던 풍경·장소 — 분위기와 은유에 반영할 것]",
               preferredScenery,
               "",
-              "[설문 8문항과 답변 — 편지의 유일한 근거]",
+              "[설문 8문항과 답변 — 편지의 **유일한** 근거. 기억 답을 빠짐없이 대화에 녹여 쓸 것. 없는 일은 짓지 말 것]",
               promptFormattedAnswers,
             ].join("\n")
           : [
@@ -849,7 +865,7 @@ export async function POST(request: Request) {
               "[Scenery or place they loved — reflect in mood and metaphor]",
               preferredScenery,
               "",
-              "[Eight survey Q&As — the only basis for the letter]",
+              "[Eight survey Q&As — the letter's **only** facts. Weave every answered memory. Invent nothing.]",
               promptFormattedAnswers,
             ].join("\n");
 
@@ -901,7 +917,7 @@ export async function POST(request: Request) {
             })();
 
             const letterStream = await openai.chat.completions.create({
-              model: "gpt-4o-mini",
+              model: "gpt-4o",
               temperature: 0.85,
               frequency_penalty: 0.28,
               max_tokens: 2200,
@@ -1015,7 +1031,7 @@ export async function POST(request: Request) {
     }
 
     const letterPromise = openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       temperature: 0.85,
       frequency_penalty: 0.28,
       max_tokens: 2200,

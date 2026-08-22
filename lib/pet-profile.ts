@@ -214,7 +214,7 @@ export function buildLetterAddressingBlock(
       mode === "living"
         ? `마무리 필수 문장(한 번, 그대로): '오늘도 ${recipient} 옆에서 기다리고 있을게.' ('너를' 쓰지 마)`
         : `마무리 필수 문장(한 번, 그대로): '언제든 빛으로 ${recipient} 곁에 있을게.' ('너를' 쓰지 마)`,
-      "톤: AI·시·카피라이터가 쓴 듯한 매끄러운 문장 금지. **편지 작가가 한 통 대필해 준 것처럼**—구체적 추억 하나, 짧은 문장, 말하다 멈추는 호흡.",
+      "톤: AI 산문 금지. **옆에서 말로 하는 대화** — 한 줄에 생각 하나, 설문에 나온 장면만.",
     ].join("\n");
   }
 
@@ -230,7 +230,7 @@ export function buildLetterAddressingBlock(
     mode === "living"
       ? `Required closing (once, verbatim): "I'll be right here waiting for ${recipient}."`
       : `Required closing (once, verbatim): "I'll always stay close to ${recipient} through the light."`,
-    "Tone: NOT polished AI prose—a human ghostwriter who specializes in pet letters; one concrete memory, short lines, lived-in voice.",
+    "Tone: spoken conversation, not polished AI prose. One thought per line. Only memories from the survey.",
   ].join("\n");
 }
 
