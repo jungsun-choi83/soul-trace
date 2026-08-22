@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 
 import { consumeLetterSseStream, type LetterStreamDonePayload } from "./consume-letter-sse.ts";
 
@@ -92,9 +93,36 @@ describe("스트림 무결성", () => {
  * 소스 수준 고정. 위 테스트는 "화면이 값을 받을 수 있다"까지만 보장하고,
  * 실제로 **읽어서 쓰는지**는 보장하지 못한다. 조용한 실패가 바로 그 틈에서 나왔다.
  */
+/**
+ * 결과 화면이 **어느 파일에 있든** 찾아낸다.
+ *
+ * 처음에는 app/page.tsx 를 직접 읽었는데, 흐름이 components/soul-trace-flow.tsx
+ * 로 옮겨지면서(랜딩/living/memorial 분리) 이 검사가 엉뚱한 파일을 보게 됐다.
+ * 경로를 박아 두면 리팩터링 한 번으로 검사가 조용히 무력해진다.
+ *
+ * 기준은 위치가 아니라 **역할**이다: consumeLetterSseStream 을 쓰는 파일이
+ * 곧 done 이벤트를 받는 화면이고, persistenceFailed 를 처리할 책임도 거기 있다.
+ */
+function findResultScreens(): { path: string; src: string }[] {
+  const roots = ["app", "components"];
+  const out: { path: string; src: string }[] = [];
+  const walk = (dir: string) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.tsx?$/.test(e.name) && !e.name.endsWith(".test.ts")) {
+        const src = readFileSync(p, "utf8");
+        if (src.includes("consumeLetterSseStream")) out.push({ path: p, src });
+      }
+    }
+  };
+  for (const r of roots) walk(r);
+  return out;
+}
+
 describe("구조 고정 — 서버가 보내고 화면이 읽는다", () => {
   const route = readFileSync("app/api/generate-letter/route.ts", "utf8");
-  const page = readFileSync("app/page.tsx", "utf8");
+  const screens = findResultScreens();
 
   it("서버의 done 이벤트가 persistenceFailed 와 letterId 를 싣는다", () => {
     const done = route.slice(route.indexOf('type: "done"'));
@@ -102,18 +130,26 @@ describe("구조 고정 — 서버가 보내고 화면이 읽는다", () => {
     assert.ok(done.includes("letterId"), "done 에 letterId 가 없다");
   });
 
+  it("done 이벤트를 받는 화면이 정확히 하나는 있다", () => {
+    assert.ok(screens.length > 0, "consumeLetterSseStream 을 쓰는 화면을 찾지 못했다");
+  });
+
   it("화면이 persistenceFailed 를 상태로 반영한다", () => {
-    assert.ok(
-      /persistenceFailed:\s*data\.persistenceFailed\s*===\s*true/.test(page),
-      "onDone 이 persistenceFailed 를 무시하고 있다 — 조용한 실패가 돌아온다",
-    );
+    for (const { path, src } of screens) {
+      assert.ok(
+        /persistenceFailed:\s*data\.persistenceFailed\s*===\s*true/.test(src),
+        `${path}: onDone 이 persistenceFailed 를 무시하고 있다 — 조용한 실패가 돌아온다`,
+      );
+    }
   });
 
   it("화면이 저장 실패를 사용자에게 **보여 준다**", () => {
-    assert.ok(
-      page.includes("result.persistenceFailed.title"),
-      "저장 실패 경고 배너가 없다 — 사용자는 저장됐다고 믿고 창을 닫는다",
-    );
+    for (const { path, src } of screens) {
+      assert.ok(
+        src.includes("result.persistenceFailed.title"),
+        `${path}: 저장 실패 경고 배너가 없다 — 사용자는 저장됐다고 믿고 창을 닫는다`,
+      );
+    }
   });
 
   it("서버가 Supabase 실패의 code/details/hint 를 남긴다", () => {
