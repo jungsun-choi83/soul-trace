@@ -420,6 +420,30 @@ type SaveProfileResult =
   | { ok: false; message: string; retryable: boolean };
 
 /**
+ * Supabase 실패를 **진단 가능한 형태로** 남긴다.
+ *
+ * 예전에는 `error.message` 만 찍었다. 그런데 실제로 원인을 가르는 정보는
+ * `code`(예: 23514 CHECK 위반, 42703 없는 컬럼, 42P01 없는 테이블)와
+ * `details`·`hint` 에 들어 있다. 그것이 없으면 "저장 실패"라는 문장만 남고
+ * 프로덕션에서 무엇이 틀렸는지 알 수 없다 — 실제로 그 상태로 답변 유실이
+ * 오래 방치됐다.
+ *
+ * ⚠️ 서버 로그 전용이다. 이 내용은 브라우저로 절대 내보내지 않는다.
+ *    (키·URL 은 애초에 담지 않는다 — 담을 이유가 없다.)
+ */
+function logSupabaseFailure(
+  stage: string,
+  error: { message?: string; code?: string; details?: string; hint?: string },
+  context: Record<string, unknown>,
+): void {
+  console.error(
+    `[generate-letter] Supabase 실패 — stage=${stage} code=${error.code ?? "-"} ` +
+      `message=${error.message ?? "-"} details=${error.details ?? "-"} hint=${error.hint ?? "-"} ` +
+      `context=${JSON.stringify(context)}`,
+  );
+}
+
+/**
  * 저장된 편지의 letter_id (Eternal Beam 핸드오프의 source_letter_id).
  *
  * **읽기 전용이고, 실패해도 저장을 되돌리지 않는다.** migration_add_letter_identity.sql
@@ -438,11 +462,21 @@ async function fetchLetterId(
     .maybeSingle();
 
   if (error) {
-    console.error("[generate-letter] letter_id 조회 실패:", error.message);
+    logSupabaseFailure("letter_id read-back", error, { userEmail });
     return null;
   }
   const value = data?.letter_id;
-  return typeof value === "string" && value.trim().length > 0 ? value : null;
+  if (typeof value !== "string" || value.trim().length === 0) {
+    // 행은 저장됐는데 letter_id 를 못 읽었다. 마이그레이션이 적용된 환경에서는
+    // letter_id 가 NOT NULL + DEFAULT 라 일어날 수 없다 — 일어났다면 스키마가
+    // 예상과 다르다는 뜻이므로 조용히 넘기지 않는다. 핸드오프는 불가능해진다.
+    console.error(
+      `[generate-letter] 저장은 됐으나 letter_id 가 비었다 — user=${userEmail}. ` +
+        `핸드오프 CTA 가 뜨지 않는다. soul_trace_profiles.letter_id 스키마를 확인하라.`,
+    );
+    return null;
+  }
+  return value;
 }
 
 async function saveProfileAndAnswersOnce(
@@ -485,6 +519,10 @@ async function saveProfileAndAnswersOnce(
 
   if (profileError) {
     const msg = profileError.message;
+    logSupabaseFailure("profile upsert", profileError, {
+      userEmail,
+      columns: Object.keys(profileRow),
+    });
     return {
       ok: false,
       message:
@@ -508,6 +546,7 @@ async function saveProfileAndAnswersOnce(
     .eq("user_email", userEmail);
   if (deleteError) {
     const msg = deleteError.message;
+    logSupabaseFailure("answers delete", deleteError, { userEmail });
     return {
       ok: false,
       message:
@@ -521,6 +560,11 @@ async function saveProfileAndAnswersOnce(
   const { error: answerSaveError } = await supabase.from("soul_trace_answers").insert(answerRows);
   if (answerSaveError) {
     const msg = answerSaveError.message;
+    logSupabaseFailure("answers insert", answerSaveError, {
+      userEmail,
+      rowCount: answerRows.length,
+      answerOrders: answerRows.map((r) => r.answer_order),
+    });
     return {
       ok: false,
       message:
@@ -913,7 +957,13 @@ export async function POST(request: Request) {
               answers,
             );
             if (!saveResult.ok) {
-              console.error("[generate-letter] save failed after retries:", saveResult.message);
+              // **성공인 척하지 않는다.** 여기서 조용히 넘어가면 사용자는 완벽한
+              // 편지를 보고, 서버에는 아무것도 남지 않는다 — 편지를 되찾을 방법도,
+              // Eternal Beam 으로 넘길 방법도 사라진다. 실제로 그 상태였다.
+              console.error(
+                `[generate-letter] 저장 최종 실패 — user=${userEmail} ` +
+                  `retryable=${saveResult.retryable} message=${saveResult.message}`,
+              );
             } else {
               scheduleGoogleSheetsIngest({
                 locale,
