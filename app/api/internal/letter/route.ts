@@ -103,11 +103,29 @@ export async function POST(request: Request) {
   // ── 정본 조회 ──────────────────────────────────────────────────────────────
   // 토큰이 가리키는 편지를 **Soul Trace 자신의 DB 에서** 읽는다. 요청 본문이
   // 들고 온 값은 어느 것도 본문의 근거가 되지 않는다.
-  const { data: profile, error: profileError } = await supabase
+  // 관계를 함께 select 하면 supabase-js 의 추론이 유니온으로 벌어진다.
+  // 우리가 쓰는 모양은 확정적이므로 여기서 명시한다.
+  type ProfileRow = {
+    letter_id: string;
+    generated_letter: string;
+    pet_name: string | null;
+    partner_id: string | null;
+    partners?:
+      | { partner_id?: string; partner_type?: string; partner_name?: string }
+      | { partner_id?: string; partner_type?: string; partner_name?: string }[]
+      | null;
+  };
+
+  const { data: profileRaw, error: profileError } = await supabase
     .from("soul_trace_profiles")
-    .select("letter_id, generated_letter, pet_name")
+    .select(
+      "letter_id, generated_letter, pet_name, partner_id, " +
+        "partners(partner_id, partner_type, partner_name)",
+    )
     .eq("letter_id", traceId)
     .maybeSingle();
+
+  const profile = profileRaw as ProfileRow | null;
 
   if (profileError) {
     console.error("[internal/letter] 편지 조회 실패:", profileError.message);
@@ -125,11 +143,23 @@ export async function POST(request: Request) {
     consumedBy ?? "(unknown)",
   );
 
+  // 파트너 귀속을 함께 넘긴다. 두 프로젝트는 DB 를 공유하지 않으므로 Eternal Beam
+  // 이 partners 를 조회할 방법이 없다 — 이름·유형까지 여기서 실어 보내야 운영
+  // 화면이 교차 조회 없이 파트너를 보여 줄 수 있다.
+  //
+  // ⚠️ 이 값은 **서버가 확정한 것**이다. 브라우저는 코드만 넘겼고 partner_id 를
+  //    보낸 적이 없다. 그래서 이 응답이 귀속의 정본이다.
+  const rawPartner = profile.partners;
+  const partner = Array.isArray(rawPartner) ? rawPartner[0] : rawPartner ?? undefined;
+
   return NextResponse.json(
     {
       letterId: String(profile.letter_id),
       letterBody: String(profile.generated_letter),
       petName: String(profile.pet_name ?? ""),
+      partnerId: profile.partner_id ? String(profile.partner_id) : null,
+      partnerType: partner?.partner_type ? String(partner.partner_type) : null,
+      partnerName: partner?.partner_name ? String(partner.partner_name) : null,
     },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );

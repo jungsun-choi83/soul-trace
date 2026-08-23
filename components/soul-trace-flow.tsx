@@ -14,6 +14,7 @@ import type { Locale } from "@/lib/i18n";
 import { modeCopy, type LetterMode } from "@/lib/letter-mode";
 import Link from "next/link";
 import { consumeLetterSseStream } from "@/lib/consume-letter-sse";
+import { readPartnerCode } from "@/lib/partner";
 import { userFacingErrorMessage } from "@/lib/user-facing-error";
 import { pickGenerationLoadingMessage } from "@/lib/generation-loading-messages";
 import { primeResultBgm, resolveResultBgmSrc, stopResultBgm } from "@/lib/result-bgm";
@@ -154,6 +155,16 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
   const [generationLoadingMessage, setGenerationLoadingMessage] = useState<string | null>(null);
   /** 스토리 캡처 직전 무작위로 고른 한 줄(매 공유마다 갱신) */
   const [storyShareLine, setStoryShareLine] = useState<string | null>(null);
+  /**
+   * 파트너 QR 의 코드(`?p=`). **partner_id 가 아니다** — 어느 파트너인지는
+   * 서버가 코드를 조회해 정한다. 여기서는 그대로 실어 보내기만 한다.
+   *
+   * 한 번만 읽는 이유: 설문 도중 주소가 바뀌어도(뒤로가기 등) 처음 들어온
+   * 유입 경로가 정본이어야 한다.
+   */
+  const [partnerCode] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : readPartnerCode(window.location.search),
+  );
   const [handoffBusy, setHandoffBusy] = useState(false);
   const [handoffError, setHandoffError] = useState<string | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
@@ -287,6 +298,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
             locale: lang,
             mode,
             userEmail: userEmail.trim(),
+            partnerCode: partnerCode ?? undefined,
             ...buildLetterRequestFields(petIntro, memoryAnswers, tonePrefs)!,
             privacyConsent,
             answers: surveyPayload,
@@ -502,6 +514,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
           locale: lang,
           mode,
           userEmail: userEmail.trim(),
+          partnerCode: partnerCode ?? undefined,
           ...buildLetterRequestFields(petIntro, memoryAnswers, tonePrefs)!,
           privacyConsent,
           answers: surveyPayload,
