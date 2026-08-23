@@ -24,6 +24,7 @@ import {
   isRetryableSupabaseMessage,
   sleep,
 } from "@/lib/supabase-server";
+import { resolvePartnerCode } from "@/lib/partner";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { after } from "next/server";
 import { NextResponse } from "next/server";
@@ -58,6 +59,12 @@ type RequestBody = {
   existingHeroImageUrl?: string | null;
   /** 첫 생성: 편지를 SSE로 스트리밍 (이미지는 병렬로 진행) */
   stream?: boolean;
+  /**
+   * 파트너 QR 의 불투명 코드(`?p=`). **partner_id 가 아니다** —
+   * 어느 파트너인지는 서버가 조회해서 정한다. 브라우저가 partner_id 를 보낼 수
+   * 있으면 누구나 남의 병원에 귀속시킬 수 있고, 그것은 정산 조작이다.
+   */
+  partnerCode?: string;
 };
 
 const PET_TYPES: PetType[] = ["dog", "cat", "rabbit", "hamster", "bird", "other"];
@@ -467,7 +474,7 @@ async function saveProfileAndAnswersOnce(
   letter: string,
   heroImageUrl: string | null,
   answers: AnswerInput[],
-  options: { includeHeroImage: boolean },
+  options: { includeHeroImage: boolean; partnerId: string | null },
 ): Promise<SaveProfileResult> {
   const supabase = createSupabaseServerClient();
   if (!supabase) {
@@ -490,6 +497,11 @@ async function saveProfileAndAnswersOnce(
   };
   if (options.includeHeroImage) {
     profileRow.hero_image_url = heroImageUrl;
+  }
+  // 귀속이 확정된 경우에만 쓴다. NULL(직접 유입)이면 컬럼을 아예 보내지 않아,
+  // 재생성 시 기존 귀속을 실수로 지우지 않는다 — 첫 유입 경로가 정본이다.
+  if (options.partnerId) {
+    profileRow.partner_id = options.partnerId;
   }
 
   const { error: profileError } = await supabase
@@ -569,11 +581,12 @@ async function saveProfileAndAnswers(
   letter: string,
   heroImageUrl: string | null,
   answers: AnswerInput[],
+  partnerId: string | null,
 ): Promise<SaveProfileResult> {
   const attempts = [
-    { includeHeroImage: true },
-    { includeHeroImage: true },
-    { includeHeroImage: false },
+    { includeHeroImage: true, partnerId },
+    { includeHeroImage: true, partnerId },
+    { includeHeroImage: false, partnerId },
   ] as const;
 
   let last: SaveProfileResult = {
@@ -674,6 +687,20 @@ export async function POST(request: Request) {
     }
     if (!privacyConsent) {
       return err(locale, "privacyRequired", 400);
+    }
+
+    // 파트너 귀속은 **서버가** 정한다. 코드가 틀렸거나 꺼졌으면 조용히 null —
+    // 편지 생성을 막지 않는다(고객 잘못이 아니다). 틀린 귀속보다 없는 귀속이 낫다.
+    let partnerId: string | null = null;
+    {
+      const sb = createSupabaseServerClient();
+      if (sb) {
+        const partner = await resolvePartnerCode(sb, body.partnerCode);
+        partnerId = partner?.partnerId ?? null;
+        if (body.partnerCode && !partner) {
+          console.warn("[generate-letter] 알 수 없거나 비활성인 파트너 코드 — 귀속 없이 진행");
+        }
+      }
     }
 
     const tonePrefs = parseTonePrefs(body);
@@ -946,6 +973,7 @@ export async function POST(request: Request) {
               trimmedLetter,
               heroImageUrl,
               answers,
+              partnerId,
             );
             if (!saveResult.ok) {
               // **성공인 척하지 않는다.** 여기서 조용히 넘어가면 사용자는 완벽한
@@ -1099,6 +1127,7 @@ export async function POST(request: Request) {
       parsed.letter,
       heroImageUrl,
       answers,
+      partnerId,
     );
     if (!saveResult.ok) {
       return saveFailureResponse(locale, saveResult.message);
