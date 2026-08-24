@@ -72,13 +72,14 @@ export const BANNED_LETTER_CLICHES = {
 export function conversationalLetterVoiceRules(locale: Locale): string {
   if (locale === "ko") {
     return [
-      "letter 문체(가장 중요) — ChatGPT·시·수필·광고가 아니라, **아이가 보호자한테 말로 하는 대화**다.",
-      "- 한 줄에 생각 하나. 줄바꿈으로 호흡을 끊는다. 긴 복문은 실패.",
-      "- 구어체 반말만: '진짜', '막', '그거', '그때', '있잖아', '아 맞다'. 한자어·문어체·'～함으로써'·'깊은 감사' 금지.",
-      "- 감정은 돌려 말하지 말고 툭: '그래서 나 그때 진짜 좋았어.' '엄마, 가끔 보고 싶어.'",
-      "- 서론-본론-결론, 대칭, 교훈적 마무리 금지. 말하다 멈추고 다른 얘기로 넘어가도 된다.",
+      "letter 문체(가장 중요) — ChatGPT·시·수필·광고가 아니라, 아이가 보호자에게 직접 말하는 대화다.",
+      "- 한 줄에 생각 하나. 줄바꿈으로 호흡을 끊고, 길면 즉시 문장을 나눠 한 번 더 말한다.",
+      "- 구어체 반말 중심: '진짜', '아 맞다', '있잖아', '그때' 같은 말투를 허용한다. 한자어·문어체·과한 수사(예: '깊은 감사', '~함으로써')는 피한다.",
+      "- 감정은 돌려 말하지 말고 바로 표현: '그래서 나 그때 진짜 좋았어.' '엄마, 가끔 보고 싶어.'",
+      "- 서론-본론-결론, 대칭적 구조, 교훈형 마무리 금지. 말하다 멈추고 다른 기억으로 넘어가도 된다.",
+      "- 설문 바깥의 추측, AI/모델/시스템 언급, '요청·프롬프트·출력 형식' 같은 메타 표현은 절대 금지.",
       `- 금지 멘트: ${BANNED_LETTER_CLICHES.ko.map((w) => `'${w}'`).join(", ")}. 이런 말이 한 번이라도 나오면 실패.`,
-      "- 맞춤법은 맞되 너무 매끄러우면 안 된다. 완벽한 문장은 AI 티다.",
+      "- 맞춤법은 맞되 과하게 다듬지 않는다. 완벽한 문장일수록 오히려 실수형 인간 말투가 약해진다.",
       "- **'너'·'너희'·'당신'으로 상대를 부르지 마.** 엄마, 아빠 등 관계 호칭만.",
       "- 이모티콘·ㅋㅋ·과한 맞춤법 실수는 쓰지 마.",
       "",
@@ -91,13 +92,14 @@ export function conversationalLetterVoiceRules(locale: Locale): string {
   }
   return [
     "letter voice (critical) — NOT an essay, poem, or ad. Sound like they're **talking out loud** to Mom/Dad:",
-    "- One thought per line. Break lines the way speech pauses. Long compound sentences fail.",
+    "- One thought per line. Break lines as breathing points; if a sentence grows long, split it immediately.",
     "- Everyday spoken words and contractions only. No literary flourishes.",
     "- Say feelings plainly: 'I really loved that.' 'I miss it sometimes.'",
     "- No intro-body-conclusion, no moral-of-the-story ending.",
+    "- Do not mention model/AI/system/prompt/request/output-format. No meta commentary.",
     `- Banned cliches: ${BANNED_LETTER_CLICHES.en.map((w) => `'${w}'`).join(", ")}. Even once is a fail.`,
     "- Slightly imperfect flow beats polished prose.",
-    "- No emojis or text-speak.",
+    "- No emojis, slang overkill, or text-speak.",
     "",
     "Survey use (required) — the letter's facts come ONLY from the guardian's answers.",
     "- Weave every answered memory question (1–5) into the talk. Re-say the scene, habit, sound, or touch in their own words.",
