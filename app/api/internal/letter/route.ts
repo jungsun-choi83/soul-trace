@@ -105,22 +105,26 @@ export async function POST(request: Request) {
   // 들고 온 값은 어느 것도 본문의 근거가 되지 않는다.
   // 관계를 함께 select 하면 supabase-js 의 추론이 유니온으로 벌어진다.
   // 우리가 쓰는 모양은 확정적이므로 여기서 명시한다.
+  type PartnerRel = {
+    partner_id?: string;
+    partner_type?: string;
+    partner_name?: string;
+    share_rate?: number | string | null;
+  };
   type ProfileRow = {
     letter_id: string;
     generated_letter: string;
     pet_name: string | null;
     partner_id: string | null;
-    partners?:
-      | { partner_id?: string; partner_type?: string; partner_name?: string }
-      | { partner_id?: string; partner_type?: string; partner_name?: string }[]
-      | null;
+    partner_code: string | null;
+    partners?: PartnerRel | PartnerRel[] | null;
   };
 
   const { data: profileRaw, error: profileError } = await supabase
     .from("soul_trace_profiles")
     .select(
-      "letter_id, generated_letter, pet_name, partner_id, " +
-        "partners(partner_id, partner_type, partner_name)",
+      "letter_id, generated_letter, pet_name, partner_id, partner_code, " +
+        "partners(partner_id, partner_type, partner_name, share_rate)",
     )
     .eq("letter_id", traceId)
     .maybeSingle();
@@ -151,6 +155,31 @@ export async function POST(request: Request) {
   //    보낸 적이 없다. 그래서 이 응답이 귀속의 정본이다.
   const rawPartner = profile.partners;
   const partner = Array.isArray(rawPartner) ? rawPartner[0] : rawPartner ?? undefined;
+  const partnerCode = profile.partner_code ? String(profile.partner_code) : null;
+
+  // 갈래(track)는 **코드**의 속성이라 partners 조인으로는 오지 않는다. 한 번 더
+  // 읽는다 — 실패해도 편지를 막지 않는다(토큰은 이미 소비됐고, 갈래는 정산의
+  // 부가 정보다). active 로 거르지 않는 이유: 코드가 나중에 꺼져도 **그때 그
+  // 코드로 들어왔다는 사실**은 변하지 않는다.
+  let partnerTrack: string | null = null;
+  if (partnerCode) {
+    const { data: codeRow, error: codeError } = await supabase
+      .from("partner_codes")
+      .select("track")
+      .eq("code", partnerCode)
+      .maybeSingle();
+    if (codeError) {
+      console.error("[internal/letter] 코드 갈래 조회 실패:", codeError.message);
+    } else {
+      const t = (codeRow as { track?: unknown } | null)?.track;
+      partnerTrack = t === "living" || t === "memorial" ? t : null;
+    }
+  }
+
+  // 정산 비율은 **지금의 계약**이다. 이 값을 얼리는 것은 주문 생성 시점이고
+  // (Eternal Beam physical_orders), 여기서는 그때 쓸 입력으로 실어 보낸다.
+  const rawRate = partner?.share_rate;
+  const rate = typeof rawRate === "number" ? rawRate : Number(rawRate ?? NaN);
 
   return NextResponse.json(
     {
@@ -160,6 +189,9 @@ export async function POST(request: Request) {
       partnerId: profile.partner_id ? String(profile.partner_id) : null,
       partnerType: partner?.partner_type ? String(partner.partner_type) : null,
       partnerName: partner?.partner_name ? String(partner.partner_name) : null,
+      partnerCode,
+      partnerTrack,
+      partnerShareRate: Number.isFinite(rate) ? rate : null,
     },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );

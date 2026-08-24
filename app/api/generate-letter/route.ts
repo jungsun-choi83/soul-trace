@@ -474,7 +474,7 @@ async function saveProfileAndAnswersOnce(
   letter: string,
   heroImageUrl: string | null,
   answers: AnswerInput[],
-  options: { includeHeroImage: boolean; partnerId: string | null },
+  options: { includeHeroImage: boolean; partnerId: string | null; partnerCode: string | null },
 ): Promise<SaveProfileResult> {
   const supabase = createSupabaseServerClient();
   if (!supabase) {
@@ -502,6 +502,11 @@ async function saveProfileAndAnswersOnce(
   // 재생성 시 기존 귀속을 실수로 지우지 않는다 — 첫 유입 경로가 정본이다.
   if (options.partnerId) {
     profileRow.partner_id = options.partnerId;
+  }
+  // partner_id 와 같은 규칙이다 — 확정된 경우에만 쓴다. 재생성 시 컬럼을 아예
+  // 보내지 않아야 첫 유입 경로가 정본으로 남는다.
+  if (options.partnerCode) {
+    profileRow.partner_code = options.partnerCode;
   }
 
   const { error: profileError } = await supabase
@@ -582,11 +587,12 @@ async function saveProfileAndAnswers(
   heroImageUrl: string | null,
   answers: AnswerInput[],
   partnerId: string | null,
+  partnerCode: string | null,
 ): Promise<SaveProfileResult> {
   const attempts = [
-    { includeHeroImage: true, partnerId },
-    { includeHeroImage: true, partnerId },
-    { includeHeroImage: false, partnerId },
+    { includeHeroImage: true, partnerId, partnerCode },
+    { includeHeroImage: true, partnerId, partnerCode },
+    { includeHeroImage: false, partnerId, partnerCode },
   ] as const;
 
   let last: SaveProfileResult = {
@@ -692,11 +698,16 @@ export async function POST(request: Request) {
     // 파트너 귀속은 **서버가** 정한다. 코드가 틀렸거나 꺼졌으면 조용히 null —
     // 편지 생성을 막지 않는다(고객 잘못이 아니다). 틀린 귀속보다 없는 귀속이 낫다.
     let partnerId: string | null = null;
+    let partnerCode: string | null = null;
     {
       const sb = createSupabaseServerClient();
       if (sb) {
         const partner = await resolvePartnerCode(sb, body.partnerCode);
         partnerId = partner?.partnerId ?? null;
+        // 코드도 함께 남긴다. 한 파트너가 지점·캠페인별로 여러 코드를 갖는 것이
+        // 설계 전제인데(Phase 15), 어느 코드가 데려왔는지 남지 않으면 그 구분이
+        // 정산에서 사라진다. **확정된 코드만** 쓴다 — 요청 본문 값이 아니다.
+        partnerCode = partner?.partnerCode ?? null;
         if (body.partnerCode && !partner) {
           console.warn("[generate-letter] 알 수 없거나 비활성인 파트너 코드 — 귀속 없이 진행");
         }
@@ -974,6 +985,7 @@ export async function POST(request: Request) {
               heroImageUrl,
               answers,
               partnerId,
+              partnerCode,
             );
             if (!saveResult.ok) {
               // **성공인 척하지 않는다.** 여기서 조용히 넘어가면 사용자는 완벽한
@@ -1128,6 +1140,7 @@ export async function POST(request: Request) {
       heroImageUrl,
       answers,
       partnerId,
+      partnerCode,
     );
     if (!saveResult.ok) {
       return saveFailureResponse(locale, saveResult.message);
