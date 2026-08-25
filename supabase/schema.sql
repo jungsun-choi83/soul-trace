@@ -5,6 +5,7 @@
 --   migration_fix_answer_order_range.sql  answer_order 1..8
 --   migration_add_letter_identity.sql     letter_id / created_at
 --   migration_add_handoffs.sql            soul_trace_handoffs
+--   migration_add_hero_image_ref.sql      hero_image_ref + hero-images 버킷
 
 create table if not exists public.soul_trace_profiles (
   -- PK 는 이메일 그대로 둔다. 편지 핸드오프는 letter_id 를 쓴다 — PK 를 바꾸면
@@ -14,7 +15,11 @@ create table if not exists public.soul_trace_profiles (
   personality_type text not null,
   generated_letter text not null,
   preferred_scenery text not null,
+  -- DALL·E 임시 주소. **만료된다** — 레거시 편지용으로만 남긴다.
   hero_image_url text,
+  -- 우리 버킷의 객체 경로(letters/<letter_id>/hero.png). 만료되지 않는다.
+  -- 인쇄 배경의 정본은 이쪽이다. 서명 URL 을 넣지 말 것.
+  hero_image_ref text,
   -- Eternal Beam 핸드오프의 source_letter_id. **DB 가 만든다.**
   -- route.ts 의 upsert 컬럼 목록에 없으므로 언어 재생성에도 값이 보존된다.
   letter_id uuid not null default gen_random_uuid(),

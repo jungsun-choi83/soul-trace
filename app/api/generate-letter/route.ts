@@ -4,6 +4,7 @@ import type { Locale } from "@/lib/i18n";
 import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
 import OpenAI from "openai";
 import { appendSoulTraceToGoogleSheets } from "@/lib/google-sheets-ingest";
+import { createHeroStorageFromEnv, persistHeroImage } from "@/lib/hero-image-store";
 import {
   buildLetterAddressingBlock,
   buildPetProfilePromptBlock,
@@ -626,6 +627,44 @@ async function saveProfileAndAnswers(
   return last;
 }
 
+/**
+ * 히어로 이미지를 **우리 스토리지**로 옮긴다 (Phase 24).
+ *
+ * DALL·E 가 준 주소는 한두 시간이면 죽는다. 고객이 편지를 보고 바로 Eternal Beam
+ * 으로 넘어가면 그쪽이 제때 복사하지만, 이틀 뒤에 넘어가면 원본은 이미 없다 —
+ * 편지 본문은 멀쩡한데 실물 편지에서 배경만 사라진다.
+ *
+ * **응답 전에** 마친다. 여기서 after() 로 미루면 함수가 먼저 종료되는 환경에서
+ * 조용히 유실될 수 있고, 그러면 고치려던 결함이 그대로 남는다. 대신 비용은
+ * 업로드 한 번뿐이다(이미 만든 이미지를 한 번 더 받아 넣는다).
+ *
+ * 실패해도 던지지 않는다 — hero_image_url 이 남아 있어 지금까지의 동작으로
+ * 떨어질 뿐이다.
+ */
+async function persistHeroForLetter(
+  letterId: string | null,
+  heroImageUrl: string | null,
+): Promise<void> {
+  if (!letterId || !heroImageUrl) return;
+  try {
+    const ref = await persistHeroImage({
+      letterId,
+      heroImageUrl,
+      storage: createHeroStorageFromEnv(),
+    });
+    if (!ref) {
+      // 조용히 넘기지 않는다. 이 로그가 없으면 며칠 뒤 배경 없는 편지가
+      // 인쇄된 뒤에야 알게 된다.
+      console.error(
+        `[generate-letter] 히어로 영구 보관 실패 — letter=${letterId}. ` +
+          `원본이 만료되면 이 편지는 배경 없이 인쇄된다.`,
+      );
+    }
+  } catch (reason) {
+    console.error("[generate-letter] 히어로 영구 보관 중 예외:", reason);
+  }
+}
+
 function saveFailureResponse(locale: Locale, message: string): NextResponse {
   return NextResponse.json({ error: message }, { status: 500 });
 }
@@ -1001,6 +1040,9 @@ export async function POST(request: Request) {
                   `retryable=${saveResult.retryable} message=${saveResult.message}`,
               );
             } else {
+              // 편지가 저장된 뒤에 부른다 — letter_id 가 있어야 객체 경로가
+              // 결정되고, 그래야 같은 편지가 한 객체로 수렴한다.
+              await persistHeroForLetter(saveResult.letterId, heroImageUrl);
               scheduleGoogleSheetsIngest({
                 locale,
                 userEmail,
@@ -1150,6 +1192,8 @@ export async function POST(request: Request) {
     if (!saveResult.ok) {
       return saveFailureResponse(locale, saveResult.message);
     }
+
+    await persistHeroForLetter(saveResult.letterId, heroImageUrl);
 
     scheduleGoogleSheetsIngest({
       locale,
