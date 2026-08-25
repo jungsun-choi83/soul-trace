@@ -4,6 +4,10 @@ import {
   hashHandoffToken,
   serviceTokenMatches,
 } from "@/lib/handoff";
+import {
+  CLAIM_SIGNED_URL_TTL_SECONDS,
+  createHeroStorage,
+} from "@/lib/hero-image-store";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
@@ -115,6 +119,7 @@ export async function POST(request: Request) {
     letter_id: string;
     generated_letter: string;
     pet_name: string | null;
+    hero_image_url: string | null;
     partner_id: string | null;
     partner_code: string | null;
     partners?: PartnerRel | PartnerRel[] | null;
@@ -123,7 +128,7 @@ export async function POST(request: Request) {
   const { data: profileRaw, error: profileError } = await supabase
     .from("soul_trace_profiles")
     .select(
-      "letter_id, generated_letter, pet_name, partner_id, partner_code, " +
+      "letter_id, generated_letter, pet_name, hero_image_url, partner_id, partner_code, " +
         "partners(partner_id, partner_type, partner_name, share_rate)",
     )
     .eq("letter_id", traceId)
@@ -176,6 +181,45 @@ export async function POST(request: Request) {
     }
   }
 
+  // ── 배경(히어로) 원본 주소 만들기 (Phase 24) ──────────────────────────────
+  // hero_image_ref 가 있으면 **그것이 정본**이다: 우리 비공개 버킷의 객체 경로이고
+  // 만료되지 않는다. 여기서 짧은 서명을 새로 발급해 넘긴다 — 저장된 서명을 넘기면
+  // 그 서명이 죽는 순간 같은 문제가 반복된다.
+  //
+  // ref 조회를 **본문 조회와 분리**한 이유: 위 select 에 컬럼을 하나 더 얹으면
+  // 마이그레이션 전 환경에서 문장 전체가 실패한다. 그때는 이미 핸드오프 토큰이
+  // 소비된 뒤라 편지를 영영 못 가져온다. 배경 때문에 편지를 잃을 수는 없다.
+  let heroImageRef: string | null = null;
+  {
+    const { data: refRow, error: refError } = await supabase
+      .from("soul_trace_profiles")
+      .select("hero_image_ref")
+      .eq("letter_id", traceId)
+      .maybeSingle();
+    if (refError) {
+      // 마이그레이션 전이거나 일시 장애다. 레거시 주소로 떨어진다.
+      console.error("[internal/letter] hero_image_ref 조회 실패:", refError.message);
+    } else {
+      const v = (refRow as { hero_image_ref?: unknown } | null)?.hero_image_ref;
+      heroImageRef = typeof v === "string" && v.trim() ? v.trim() : null;
+    }
+  }
+
+  let heroImageUrl: string | null = null;
+  if (heroImageRef) {
+    heroImageUrl = await createHeroStorage(
+      supabase as unknown as Parameters<typeof createHeroStorage>[0],
+    ).sign(heroImageRef, CLAIM_SIGNED_URL_TTL_SECONDS);
+    if (!heroImageUrl) {
+      console.error("[internal/letter] 히어로 서명 실패 — 레거시 주소로 떨어진다");
+    }
+  }
+  if (!heroImageUrl) {
+    // 레거시 편지(보관 이전에 생성됐다). 원본이 아직 살아 있으면 동작하고,
+    // 죽었으면 Eternal Beam 이 배경 없이 진행한다(스크림 폴백).
+    heroImageUrl = profile.hero_image_url ? String(profile.hero_image_url) : null;
+  }
+
   // 정산 비율은 **지금의 계약**이다. 이 값을 얼리는 것은 주문 생성 시점이고
   // (Eternal Beam physical_orders), 여기서는 그때 쓸 입력으로 실어 보낸다.
   const rawRate = partner?.share_rate;
@@ -192,6 +236,17 @@ export async function POST(request: Request) {
       partnerCode,
       partnerTrack,
       partnerShareRate: Number.isFinite(rate) ? rate : null,
+      // ── 배경(히어로) 원본 (Phase 22 → 24) ──────────────────────────────
+      // ⚠️ 이 값은 어느 쪽이든 **수명이 짧다.** ref 가 있으면 방금 발급한 서명이고
+      //    (약 10분), 없으면 레거시 DALL·E 임시 주소다.
+      //
+      //    그래서 Eternal Beam 은 이 응답을 받는 **즉시** 바이트를 자기 스토리지로
+      //    복사한다. 이 주소를 저장해 두고 인쇄 시점에 다시 받는 설계는 어느
+      //    경우에도 성립하지 않는다.
+      heroImageUrl,
+      // 안정 참조. Eternal Beam 은 자기 사본을 쓰므로 필요하지 않지만, 배경이
+      // 빈 편지를 조사할 때 "보관이 됐는가"를 한눈에 가른다.
+      heroImageRef,
     },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );
