@@ -72,18 +72,19 @@ async function deliverWelcomeEmail(
  */
 export async function maybeSendWelcomeEmailForNewProfile(
   supabase: SupabaseClient,
-  *,
-  email: string,
-  locale: WelcomeEmailLocale,
-  isNewProfile: boolean,
+  options: {
+    email: string;
+    locale: WelcomeEmailLocale;
+    isNewProfile: boolean;
+  },
 ): Promise<void> {
   // Frozen by default — turn on only with WELCOME_EMAIL_ENABLED=1|true.
   const enabled = (process.env.WELCOME_EMAIL_ENABLED || "").trim().toLowerCase();
   if (enabled !== "1" && enabled !== "true") {
     return;
   }
-  if (!isNewProfile) return;
-  const normalized = email.trim().toLowerCase();
+  if (!options.isNewProfile) return;
+  const normalized = options.email.trim().toLowerCase();
   if (!normalized || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return;
   if (!resendApiKey() || !fromAddress()) {
     console.warn(
@@ -110,7 +111,7 @@ export async function maybeSendWelcomeEmailForNewProfile(
     return;
   }
 
-  const ok = await deliverWelcomeEmail(normalized, locale);
+  const ok = await deliverWelcomeEmail(normalized, options.locale);
   if (!ok) {
     const { error: clearError } = await supabase
       .from("soul_trace_profiles")
