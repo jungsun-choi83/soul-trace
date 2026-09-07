@@ -154,6 +154,8 @@ describe("partner_id 는 서버가 만든다", () => {
     assert.equal(new Set(ids).size, 200);
     for (const id of ids) assert.match(id, /^ptn_hosp_[0-9a-f]{12}$/);
     assert.match(createPartnerId("FUNERAL"), /^ptn_fnrl_[0-9a-f]{12}$/);
+    assert.match(createPartnerId("GROOMING"), /^ptn_groom_[0-9a-f]{12}$/);
+    assert.match(createPartnerId("PENSION"), /^ptn_pens_[0-9a-f]{12}$/);
   });
 });
 
