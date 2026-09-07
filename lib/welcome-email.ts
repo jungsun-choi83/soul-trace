@@ -77,6 +77,11 @@ export async function maybeSendWelcomeEmailForNewProfile(
   locale: WelcomeEmailLocale,
   isNewProfile: boolean,
 ): Promise<void> {
+  // Frozen by default — turn on only with WELCOME_EMAIL_ENABLED=1|true.
+  const enabled = (process.env.WELCOME_EMAIL_ENABLED || "").trim().toLowerCase();
+  if (enabled !== "1" && enabled !== "true") {
+    return;
+  }
   if (!isNewProfile) return;
   const normalized = email.trim().toLowerCase();
   if (!normalized || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return;

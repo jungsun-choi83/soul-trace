@@ -685,15 +685,21 @@ async function saveProfileAndAnswersOnce(
     };
   }
 
-  // 환영 메일 실패는 편지 저장을 막지 않는다.
-  try {
-    await maybeSendWelcomeEmailForNewProfile(supabase, {
-      email: userEmail,
-      locale,
-      isNewProfile,
-    });
-  } catch (reason) {
-    console.error("[generate-letter] 환영 메일 예외:", reason);
+  // 환영 메일: 기본 OFF. WELCOME_EMAIL_ENABLED=1 일 때만 보낸다
+  // (미설정·Resend·마이그레이션이 편지 저장을 막지 않게).
+  if (
+    (process.env.WELCOME_EMAIL_ENABLED || "").trim().toLowerCase() === "1" ||
+    (process.env.WELCOME_EMAIL_ENABLED || "").trim().toLowerCase() === "true"
+  ) {
+    try {
+      await maybeSendWelcomeEmailForNewProfile(supabase, {
+        email: userEmail,
+        locale,
+        isNewProfile,
+      });
+    } catch (reason) {
+      console.error("[generate-letter] 환영 메일 예외:", reason);
+    }
   }
 
   // Phase 5 presentation fields are deliberately written separately. Until its
