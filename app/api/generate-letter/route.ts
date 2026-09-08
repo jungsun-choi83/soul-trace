@@ -5,7 +5,6 @@ import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
 import OpenAI from "openai";
 import { appendSoulTraceToGoogleSheets } from "@/lib/google-sheets-ingest";
 import { createHeroStorageFromEnv, persistHeroImage } from "@/lib/hero-image-store";
-import { maybeSendWelcomeEmailForNewProfile } from "@/lib/welcome-email";
 import {
   buildLetterAddressingBlock,
   buildPetProfilePromptBlock,
@@ -635,14 +634,6 @@ async function saveProfileAndAnswersOnce(
     };
   }
 
-  // 첫 등록(= 프로필이 아직 없음)일 때만 환영 메일을 보낸다. 재생성은 보내지 않는다.
-  const { data: existingProfile } = await supabase
-    .from("soul_trace_profiles")
-    .select("user_email")
-    .eq("user_email", userEmail)
-    .maybeSingle();
-  const isNewProfile = !existingProfile;
-
   const profileRow: Record<string, string | null> = {
     user_email: userEmail,
     pet_name: petName,
@@ -683,23 +674,6 @@ async function saveProfileAndAnswersOnce(
           : `Could not save profile: ${msg}`,
       retryable: isRetryableSupabaseMessage(msg),
     };
-  }
-
-  // 환영 메일: 기본 OFF. WELCOME_EMAIL_ENABLED=1 일 때만 보낸다
-  // (미설정·Resend·마이그레이션이 편지 저장을 막지 않게).
-  if (
-    (process.env.WELCOME_EMAIL_ENABLED || "").trim().toLowerCase() === "1" ||
-    (process.env.WELCOME_EMAIL_ENABLED || "").trim().toLowerCase() === "true"
-  ) {
-    try {
-      await maybeSendWelcomeEmailForNewProfile(supabase, {
-        email: userEmail,
-        locale,
-        isNewProfile,
-      });
-    } catch (reason) {
-      console.error("[generate-letter] 환영 메일 예외:", reason);
-    }
   }
 
   // Phase 5 presentation fields are deliberately written separately. Until its
