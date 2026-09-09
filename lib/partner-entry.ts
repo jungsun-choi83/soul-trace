@@ -1,19 +1,8 @@
 import { authEntryPath } from "./auth-redirect.ts";
 import { PARTNER_CODE_PARAM, type PartnerType } from "./partner.ts";
 import type { ServerSearchParams } from "./search-params.ts";
-import { serviceChannelMode, type ServiceChannel } from "./service-channel.ts";
+import { partnerTypeToServiceChannel, serviceChannelMode } from "./service-channel.ts";
 import { letterModePath } from "./letter-mode.ts";
-
-const PARTNER_TYPE_CHANNELS: Readonly<Record<PartnerType, ServiceChannel>> = {
-  PENSION: "pension",
-  GROOMING: "grooming",
-  HOSPITAL: "hospital",
-  FUNERAL: "funeral",
-};
-
-export function partnerTypeToServiceChannel(type: PartnerType): ServiceChannel {
-  return PARTNER_TYPE_CHANNELS[type];
-}
 
 /** Builds the server-trusted destination for a partner QR entry. */
 export function partnerEntryDestination(

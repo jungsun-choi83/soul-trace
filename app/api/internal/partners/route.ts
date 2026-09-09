@@ -5,8 +5,7 @@ import {
   isPartnerType,
   parseShareRate,
 } from "@/lib/partner";
-import { partnerTypeToServiceChannel } from "@/lib/partner-entry";
-import { serviceChannelMode } from "@/lib/service-channel";
+import { partnerTypeToServiceChannel, serviceChannelMode } from "@/lib/service-channel";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 

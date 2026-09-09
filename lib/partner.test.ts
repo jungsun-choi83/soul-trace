@@ -40,6 +40,8 @@ describe("partner type normalization", () => {
   it("normalizes canonical casing without inventing a new type", () => {
     assert.equal(normalizePartnerType(" hospital "), "HOSPITAL");
     assert.equal(normalizePartnerType("funeral"), "FUNERAL");
+    assert.equal(normalizePartnerType("grooming"), "GROOMING");
+    assert.equal(normalizePartnerType(" pension "), "PENSION");
     assert.equal(normalizePartnerType("pet shop"), null);
   });
 });
