@@ -7,6 +7,11 @@
     "title": "A letter from the heart",
     "cta": "Begin Your Journey"
   },
+  "partnerEntry": {
+    "unavailableTitle": "This partner link is unavailable",
+    "unavailableBody": "The link may be inactive or no longer valid. You can still begin from the Soul Trace welcome page.",
+    "backToWelcome": "Go to Welcome"
+  },
   "auth": {
     "eyebrow": "Your Soul Trace",
     "signupTitle": "Create your account",

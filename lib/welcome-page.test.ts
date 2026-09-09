@@ -42,7 +42,7 @@ test("welcome action enters auth with an encoded choose destination", () => {
     authEntryPath("/choose?p=partner-code&campaign=one&campaign=two#mode"),
     "/auth?returnTo=%2Fchoose%3Fp%3Dpartner-code%26campaign%3Done%26campaign%3Dtwo%23mode",
   );
-  assert.match(page, /hrefWithSearchParams\("\/choose", await searchParams\)/);
+  assert.match(page, /hrefWithSearchParams\("\/choose", params\)/);
   assert.match(page, /choiceHref=\{authEntryPath\(choiceHref\)\}/);
   assert.match(experience, /href=\{choiceHref\}/);
 });

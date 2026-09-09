@@ -1,11 +1,12 @@
 import { requireServiceToken } from "@/lib/internal-auth";
-import { isLetterMode } from "@/lib/letter-mode";
 import {
   createPartnerCode,
   createPartnerId,
   isPartnerType,
   parseShareRate,
 } from "@/lib/partner";
+import { partnerTypeToServiceChannel } from "@/lib/partner-entry";
+import { serviceChannelMode } from "@/lib/service-channel";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
@@ -115,7 +116,6 @@ export async function POST(request: Request) {
     partnerType?: unknown;
     shareRate?: unknown;
     active?: unknown;
-    initialTrack?: unknown;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -142,6 +142,7 @@ export async function POST(request: Request) {
     );
   }
   const active = body.active === undefined ? true : Boolean(body.active);
+  const initialTrack = serviceChannelMode(partnerTypeToServiceChannel(body.partnerType));
 
   const supabase = createSupabaseServerClient();
   if (!supabase) return NextResponse.json({ error: "Unavailable." }, { status: 503 });
@@ -161,22 +162,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not create partner." }, { status: 503 });
   }
 
-  // 등록과 동시에 첫 QR 을 원하면 여기서 함께 발급한다. 두 번 왕복하지 않아도
-  // 되고, 실패해도 파트너는 남는다 — 코드는 언제든 다시 발급할 수 있다.
-  let firstCode: { code: string; track: string | null } | null = null;
-  if (isLetterMode(body.initialTrack)) {
-    const code = createPartnerCode();
-    const { error: codeError } = await supabase.from("partner_codes").insert({
-      code,
-      partner_id: partnerId,
-      track: body.initialTrack,
-      active: true,
-    });
-    if (codeError) {
-      console.error("[internal/partners] 첫 코드 발급 실패:", codeError.message);
-    } else {
-      firstCode = { code, track: body.initialTrack };
-    }
+  // The partner type is the single source of truth for every QR destination.
+  let firstCode: { code: string; track: string } | null = null;
+  const code = createPartnerCode();
+  const { error: codeError } = await supabase.from("partner_codes").insert({
+    code,
+    partner_id: partnerId,
+    track: initialTrack,
+    active: true,
+  });
+  if (codeError) {
+    console.error("[internal/partners] first code issuance failed");
+  } else {
+    firstCode = { code, track: initialTrack };
   }
 
   console.warn("[internal/partners] 파트너 생성 — %s (%s)", partnerId, body.partnerType);

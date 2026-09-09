@@ -1,6 +1,7 @@
 import { requireServiceToken } from "@/lib/internal-auth";
-import { isLetterMode } from "@/lib/letter-mode";
-import { createPartnerCode } from "@/lib/partner";
+import { createPartnerCode, isPartnerType } from "@/lib/partner";
+import { partnerTypeToServiceChannel } from "@/lib/partner-entry";
+import { serviceChannelMode } from "@/lib/service-channel";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
   const gate = requireServiceToken(request);
   if (!gate.ok) return gate.response;
 
-  let body: { partnerId?: unknown; track?: unknown };
+  let body: { partnerId?: unknown };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -39,15 +40,6 @@ export async function POST(request: Request) {
   if (!partnerId) {
     return NextResponse.json({ error: "partnerId is required." }, { status: 400 });
   }
-  // track 은 선택이다 — 없으면 고객이 첫 화면에서 직접 고른다(기존 동작).
-  const track = body.track === undefined || body.track === null ? null : body.track;
-  if (track !== null && !isLetterMode(track)) {
-    return NextResponse.json(
-      { error: "track must be 'living' or 'memorial'." },
-      { status: 400 },
-    );
-  }
-
   const supabase = createSupabaseServerClient();
   if (!supabase) return NextResponse.json({ error: "Unavailable." }, { status: 503 });
 
@@ -55,7 +47,7 @@ export async function POST(request: Request) {
   // 운영자에게는 원인이 보이지 않는 500 으로 보인다.
   const { data: partner, error: partnerError } = await supabase
     .from("partners")
-    .select("partner_id")
+    .select("partner_id, partner_type")
     .eq("partner_id", partnerId)
     .maybeSingle();
 
@@ -66,6 +58,10 @@ export async function POST(request: Request) {
   if (!partner) {
     return NextResponse.json({ error: "Partner not found." }, { status: 404 });
   }
+  if (!isPartnerType(partner.partner_type)) {
+    return NextResponse.json({ error: "Partner type is unavailable." }, { status: 409 });
+  }
+  const track = serviceChannelMode(partnerTypeToServiceChannel(partner.partner_type));
 
   // 충돌은 사실상 일어나지 않지만(96비트), 일어나면 조용히 실패하는 대신 다시
   // 뽑는다. 코드는 PK 라 중복이면 insert 가 거절된다.
