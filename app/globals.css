@@ -47,13 +47,13 @@ body {
 }
 
 .font-ko {
-  font-family: "Noto Serif KR", "Nanum Myeongjo", serif;
+  font-family: var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif;
   font-weight: 200;
   letter-spacing: 0.02em;
 }
 
 .font-ko-medium {
-  font-family: "Noto Serif KR", serif;
+  font-family: var(--font-noto-serif-kr), serif;
   font-weight: 300;
 }
 
@@ -79,12 +79,12 @@ body {
 
 /* 이미지 캡처용: 언어별 폰트가 PNG에 박히도록 */
 .capture-card--ko {
-  font-family: "Noto Serif KR", "Nanum Myeongjo", serif;
+  font-family: var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif;
   font-weight: 200;
 }
 
 .capture-card--ko .capture-letter-body {
-  font-family: "Noto Serif KR", "Nanum Myeongjo", serif;
+  font-family: var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif;
   font-weight: 200;
 }
 

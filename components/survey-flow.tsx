@@ -3,15 +3,17 @@
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 import { modeCopy, type LetterMode } from "@/lib/letter-mode";
+import type { ServiceChannel } from "@/lib/service-channel";
 import { PetPhotoUpload } from "@/components/pet-photo-upload";
 import { PrivacyConsentTrigger } from "@/components/privacy-consent-trigger";
 import { VideoMotionPicker } from "@/components/video-motion-picker";
 import {
   formatSurveyName,
-  isPhotoSurveyStep,
-  MEMORY_STEP_COUNT,
-  OPTIONAL_MEMORY_STEP,
-  SURVEY_STEP_COUNT,
+  channelMemoryQuestions,
+  memoryQuestionCount,
+  PET_PHOTO_UPLOAD_ENABLED,
+  PHOTO_STEP_COUNT,
+  TONE_STEP_COUNT,
   type LetterToneOption,
   type LetterTonePrefs,
   type VideoMotion,
@@ -19,6 +21,7 @@ import {
 
 type SurveyFlowProps = {
   mode: LetterMode;
+  serviceChannel?: ServiceChannel | null;
   step: number;
   petDisplayName: string;
   memoryAnswers: string[];
@@ -35,6 +38,7 @@ type SurveyFlowProps = {
   onToneOptionToggle: (option: LetterToneOption) => void;
   onToneLength: (length: LetterTonePrefs["length"]) => void;
   onSkipOptional: () => void;
+  showValidationError?: boolean;
 };
 
 function chipClass(selected: boolean, lang: Locale) {
@@ -49,6 +53,7 @@ function chipClass(selected: boolean, lang: Locale) {
 
 export function SurveyFlow({
   mode,
+  serviceChannel = null,
   step,
   petDisplayName,
   memoryAnswers,
@@ -65,15 +70,31 @@ export function SurveyFlow({
   onToneOptionToggle,
   onToneLength,
   onSkipOptional,
+  showValidationError = false,
 }: SurveyFlowProps) {
   const { t, lang, messages } = useLocale();
   const copy = modeCopy(messages, mode);
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
-  const isPhoto = isPhotoSurveyStep(step);
-  const isMemory = step < MEMORY_STEP_COUNT;
-  const memoryItem = isMemory ? copy.memory[step] : null;
-  const toneIndex = step - MEMORY_STEP_COUNT - 1;
+  const channelMemory = channelMemoryQuestions(messages, serviceChannel);
+  const memoryCount = memoryQuestionCount(serviceChannel);
+  const isPhoto = PET_PHOTO_UPLOAD_ENABLED && step === memoryCount;
+  const isMemory = step < memoryCount;
+  const memoryItem = isMemory ? (channelMemory?.[step] ?? copy.memory[step]) : null;
+  const toneIndex = step - memoryCount - PHOTO_STEP_COUNT;
   const toneItem = !isMemory && !isPhoto ? copy.tone[toneIndex] : null;
+  const validationMessage = !showValidationError
+    ? null
+    : isPhoto
+      ? petPhotoPreviewUrl && !photoPrivacyConsent
+        ? t("form.validation.photoConsentRequired")
+        : t("form.validation.photoChoiceRequired")
+      : isMemory && !memoryItem?.optional && !(memoryAnswers[step] ?? "").trim()
+        ? t("form.validation.memoryRequired")
+        : toneItem?.id === "q10" && !tonePrefs.mood
+          ? t("form.validation.moodRequired")
+          : toneItem?.id === "q12" && !tonePrefs.length
+            ? t("form.validation.lengthRequired")
+            : null;
 
   return (
     <div className={bodyFont}>
@@ -81,12 +102,12 @@ export function SurveyFlow({
         <span className="font-display-en uppercase text-[#D4AF37]">
           {t("questionHeader.label")} {step + 1}
         </span>
-        <span className="font-display-en text-[#D4AF37]">{SURVEY_STEP_COUNT}</span>
+        <span className="font-display-en text-[#D4AF37]">{memoryCount + PHOTO_STEP_COUNT + TONE_STEP_COUNT}</span>
       </div>
       <div className="mb-4 h-px overflow-hidden rounded-full bg-[rgba(243,234,216,0.12)]">
         <div
           className="h-full rounded-full bg-[#D4AF37] transition-all duration-700 ease-out"
-          style={{ width: `${((step + 1) / SURVEY_STEP_COUNT) * 100}%` }}
+          style={{ width: `${((step + 1) / (memoryCount + PHOTO_STEP_COUNT + TONE_STEP_COUNT)) * 100}%` }}
         />
       </div>
 
@@ -150,7 +171,7 @@ export function SurveyFlow({
             rows={5}
             className="font-ko w-full resize-none rounded-2xl border-[0.5px] border-[rgba(212,175,55,0.28)] bg-transparent p-4 text-base font-extralight leading-7 text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/45 focus:border-[#D4AF37] md:text-base"
           />
-          {step === OPTIONAL_MEMORY_STEP ? (
+          {memoryItem.optional ? (
             <button
               type="button"
               onClick={onSkipOptional}
@@ -217,6 +238,11 @@ export function SurveyFlow({
               : null}
           </div>
         </div>
+      ) : null}
+      {validationMessage ? (
+        <p className="mt-4 text-xs font-extralight leading-relaxed text-red-200" role="alert">
+          {validationMessage}
+        </p>
       ) : null}
     </div>
   );

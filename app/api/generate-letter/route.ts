@@ -9,17 +9,41 @@ import {
   buildLetterAddressingBlock,
   buildPetProfilePromptBlock,
   letterPetName,
+  resolveRecipientAddress,
   type LetterRecipient,
   type PetIntroProfile,
   type PetType,
 } from "@/lib/pet-profile";
 import {
+  createGeneratedLetterStructure,
+  ENDING_PHRASE_MARKER,
+  isShortEndingPhrase,
+  parseMarkedLetter,
+  serializeGeneratedLetter,
+  type GeneratedLetterStructure,
+} from "@/lib/generated-letter";
+import {
+  extractExplicitlyPreservedPhrases,
+  generationCacheKey,
+  letterMatchesLocale,
+} from "@/lib/generation-language";
+import {
   buildTonePromptBlock,
+  isChannelMemoryOptional,
+  memoryQuestionCount,
   type LetterToneOption,
   type LetterTonePrefs,
 } from "@/lib/survey";
 import { DEFAULT_LETTER_MODE, isLetterMode, type LetterMode } from "@/lib/letter-mode";
-import { conversationalLetterVoiceRules, letterPremiseBlock } from "@/lib/letter-voice";
+import {
+  isServiceChannelCompatible,
+  parseServiceChannel,
+} from "@/lib/service-channel";
+import {
+  conversationalLetterVoiceRules,
+  letterPremiseBlock,
+  withServiceChannelPrompt,
+} from "@/lib/letter-voice";
 import {
   createSupabaseServerClient,
   isRetryableSupabaseMessage,
@@ -31,6 +55,7 @@ import { after } from "next/server";
 import { NextResponse } from "next/server";
 
 type AnswerInput = {
+  id?: string;
   question: string;
   answer: string;
 };
@@ -46,6 +71,7 @@ type RequestBody = {
   yearMet?: number;
   yearParted?: number;
   letterRecipient?: string;
+  relationship?: string;
   letterRecipientDetail?: string;
   preferredScenery?: string;
   tonePrefs?: {
@@ -66,15 +92,25 @@ type RequestBody = {
    * 있으면 누구나 남의 병원에 귀속시킬 수 있고, 그것은 정산 조작이다.
    */
   partnerCode?: string;
+  channel?: string;
 };
 
 const PET_TYPES: PetType[] = ["dog", "cat", "rabbit", "hamster", "bird", "other"];
-const LETTER_RECIPIENTS: LetterRecipient[] = ["mom", "dad", "both", "sibling", "byName", "custom"];
+const LETTER_RECIPIENTS: LetterRecipient[] = [
+  "mom",
+  "dad",
+  "both",
+  "sister",
+  "brother",
+  "byName",
+  "sibling",
+  "custom",
+];
 
 function parsePetProfileFromBody(body: RequestBody): PetIntroProfile | null {
   const petName = body.petName?.trim() ?? "";
   const petType = body.petType?.trim() ?? "";
-  const letterRecipient = body.letterRecipient?.trim() ?? "";
+  const letterRecipient = body.relationship?.trim() || body.letterRecipient?.trim() || "";
   const yearMet =
     typeof body.yearMet === "number" && Number.isFinite(body.yearMet)
       ? String(body.yearMet)
@@ -129,9 +165,43 @@ type ParsedResponse = {
   personalitySummary: string;
   personalityTags: string[];
   letter: string;
+  endingPhrase: string;
 };
 
+function generatedLetterTitle(locale: Locale, profile: PetIntroProfile): string {
+  const template = (locale === "ko" ? ko : en).modes.memorial.letterHeading;
+  return template.replace("%RECIPIENT%", resolveRecipientAddress(profile, locale));
+}
+
+function sourceAnswerLanguageRule(locale: Locale): string {
+  return locale === "ko"
+    ? "Questionnaire answers are source facts, not output wording. Translate every English sentence into natural Korean before using its meaning. Never copy English prose verbatim; preserve only names and text explicitly placed in quotation marks by the user."
+    : "Questionnaire answers are source facts, not output wording. Translate every Korean sentence into natural English before using its meaning. Never copy Hangul prose verbatim; preserve only names and text explicitly placed in quotation marks by the user.";
+}
+
 const ERR = { ko: ko.errors, en: en.errors };
+
+function logOpenAIStageFailure(stage: string, error: unknown): void {
+  const details =
+    error && typeof error === "object"
+      ? (error as {
+          status?: unknown;
+          code?: unknown;
+          type?: unknown;
+          request_id?: unknown;
+        })
+      : null;
+  const safeValue = (value: unknown) =>
+    typeof value === "string" || typeof value === "number" ? value : undefined;
+
+  console.error("[generate-letter] OpenAI stage failed", {
+    stage,
+    status: safeValue(details?.status),
+    code: safeValue(details?.code),
+    type: safeValue(details?.type),
+    requestId: safeValue(details?.request_id),
+  });
+}
 
 /** Vercel/로컬: `1`, `true`, `yes`, `on` 이면 배경 이미지 API를 호출하지 않음 — 비용·대기 시간 대폭 절감 */
 function envSkipsHeroImage(): boolean {
@@ -168,7 +238,12 @@ function parseLetterCompletion(
     );
   }
   const parsed = JSON.parse(content) as ParsedResponse & { personalityTags?: unknown };
-  if (!parsed.personalityType || !parsed.personalitySummary || !parsed.letter) {
+  if (
+    !parsed.personalityType ||
+    !parsed.personalitySummary ||
+    !parsed.letter ||
+    !isShortEndingPhrase(parsed.endingPhrase ?? "", locale)
+  ) {
     return NextResponse.json(
       {
         error:
@@ -179,6 +254,61 @@ function parseLetterCompletion(
   }
   parsed.personalityTags = normalizePersonalityTags(parsed.personalityTags, locale);
   return parsed as ParsedResponse;
+}
+
+async function correctLetterLanguageOnce(
+  openai: OpenAI,
+  locale: Locale,
+  letter: GeneratedLetterStructure,
+  allowedText: readonly string[],
+): Promise<GeneratedLetterStructure | null> {
+  if (letterMatchesLocale(letter, locale, allowedText)) return letter;
+
+  const target = locale === "ko" ? "natural Korean" : "natural English";
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o",
+    temperature: 0.2,
+    max_tokens: 2200,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: [
+          `Rewrite the supplied letter completely in ${target}.`,
+          "Translate the meaning of all source-language prose; do not copy it verbatim.",
+          "Preserve only the exact names and explicitly quoted personal phrases listed below.",
+          `Allowed exact text: ${JSON.stringify(allowedText)}`,
+          "Return JSON only with keys letter and endingPhrase.",
+          locale === "ko"
+            ? "endingPhrase must be one short, natural Korean phrase with no newline."
+            : "endingPhrase must be one natural English sentence of 3-8 words with no newline.",
+          "Keep every body paragraph complete. Do not summarize, truncate, or add facts.",
+        ].join("\n"),
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          letter: letter.paragraphs.join("\n\n"),
+          endingPhrase: letter.endingPhrase,
+        }),
+      },
+    ],
+  });
+
+  const content = completion.choices[0]?.message?.content;
+  if (!content) return null;
+  const corrected = JSON.parse(content) as { letter?: unknown; endingPhrase?: unknown };
+  if (typeof corrected.letter !== "string" || typeof corrected.endingPhrase !== "string") {
+    return null;
+  }
+  if (!isShortEndingPhrase(corrected.endingPhrase, locale)) return null;
+  const structure = createGeneratedLetterStructure(
+    letter.title,
+    corrected.letter,
+    corrected.endingPhrase,
+    locale,
+  );
+  return letterMatchesLocale(structure, locale, allowedText) ? structure : null;
 }
 
 function letterRoleAndStyle(
@@ -194,6 +324,7 @@ function letterRoleAndStyle(
   if (locale === "ko") {
     return [
       addressingBlock,
+      sourceAnswerLanguageRule(locale),
       "",
       letterPremiseBlock("ko", mode),
       `아이 이름(편지 속): ${nameLiteral}. h, hj, 'g' 같은 플레이스홀더·이니셜 금지.`,
@@ -207,27 +338,30 @@ function letterRoleAndStyle(
       "letter는 **오직 1인칭 아이**의 편지: 반말 하나로 통일. personalitySummary·personalityTags와 문체·시점을 섞지 마라.",
       "모든 필드에서 메타 언급 절대 금지: 프롬프트, 시스템, 모델, API, 요청, JSON, 키 이름, 템플릿 같은 단어를 문장에 섞으면 실패.",
       conversationalLetterVoiceRules("ko"),
-      "letter 구조: (1) '[수신 호칭], 나 [이름]야' 인사 한 줄. (2) 설문의 구체적 추억·습관을 **한 줄씩** 이어서 말하듯 쓴다. (3) 위 [편지 호칭]의 **마무리 필수 문장**을 그대로 한 번.",
+      "letter 구조를 고정하지 마라. 설문의 한 장면에서 자연스럽게 시작하고, 기억과 감정의 중요도에 따라 순서를 바꾸며, 마지막은 실제 기억 하나와 이어지게 새롭게 쓴다. 정해진 인사·마무리 문구를 반복하지 마라.",
+      "JSON의 letter에는 정상 본문만 쓴다. endingPhrase에는 줄바꿈 없는 짧고 자연스러운 한국어 끝맺음 한 문장만 쓴다. 본문 마지막 문단을 endingPhrase로 옮기거나 자르지 마라.",
       "letter는 비문·번역투 없이. 영문 한 글자 이름 토큰 금지.",
     ].join("\n");
   }
   return [
     addressingBlock,
+    sourceAnswerLanguageRule(locale),
     "",
     letterPremiseBlock("en", mode),
     "Ground EVERYTHING in the pet’s real name, favorite scenery, and all five survey answers—especially bright, happy moments. Never invent facts.",
     `The pet’s name in prose must match this exact string (character-for-character): ${nameLiteral}. Never print placeholders, code fragments, or stray initials such as h or hj in quotes—only this name when you mean the pet.`,
-    `Turn ${sceneryLiteral} and the answers into felt scenes: sun on fur, the sound of their voice calling you, the smell of the park, hands petting you—simple words, not labels pasted into sentences.`,
+    `Use ${sceneryLiteral} and only sensory details explicitly present in the answers to form felt scenes. Do not import reusable scenery, sounds, smells, touch, or weather from examples.`,
     "Diction: avoid academic or formal English—no “embodying moments,” “manifested,” “commenced,” “dearest companion.” Prefer remembering, felt, stayed with you, always close, little things we did.",
     "Use contractions wherever a real voice would (I'm, you're, we've, it's, that's, wasn't). Short sentences beat long polished ones.",
-    "Openings: never “Dearest friend” or distant formal address. Prefer “Hi Mom, it’s me,” “Hi Dad, it’s me,” or “Hi Mom and Dad, it’s me,” plus the pet name from the data. If that truly doesn’t fit the survey, use “My dearest Mom,” “My dearest Dad,” or “My favorite human”—still warm and close, never cold.",
+    "Open naturally from a concrete supplied memory, feeling, sound, habit, or place. Make the recipient and pet identity clear early, but never reuse a greeting template or choose from a stock list of openings.",
       "personalityType: one sweet nickname only—plain and intuitive (e.g. “Your Happy Sunshine”). No MBTI codes.",
       "personalitySummary: MUST differ from the letter’s voice. Write as a **warm third-person observer** (like a gentle temperament note for parents)—not the pet speaking. Use clear, grounded sentences from the survey only (energy, habits, favorite place, how they showed love). No “I/me” as the pet here. Two to four sentences.",
       "personalityTags: a JSON array of **exactly three** short single-word or two-word tags (no spaces inside a tag). Reflect survey traits only. # optional; server normalizes.",
       "letter field ONLY: first-person pet voice with contractions—never reuse the analyst tone from personalitySummary.",
       "Never use meta language across any field: no mentions of prompt, system, model, API, JSON schema, keys, or output-instruction wording.",
       conversationalLetterVoiceRules("en"),
-      "letter structure: (1) Opening with recipient + pet name, one line. (2) Body: survey memories, one thought per line, spoken. (3) Closing + the **required closing sentence** from addressingBlock verbatim.",
+      "Do not force a three-part template. Let the strongest supplied memory determine the opening, order memories by emotional connection rather than questionnaire order, and create a fresh memory-led closing. Never repeat a stock opening or closing.",
+      "In JSON, letter contains only complete normal body paragraphs. endingPhrase contains one original 3-8 word sentence with no newline. Never move, summarize, or truncate the final body paragraph into endingPhrase.",
       "Never output placeholder one-letter “names” or code-like tokens in any JSON field.",
   ].join("\n");
 }
@@ -270,24 +404,28 @@ function plainLetterSystemPrompt(
   if (locale === "ko") {
     return [
       addressingBlock,
+      sourceAnswerLanguageRule(locale),
       "",
       letterPremiseBlock("ko", mode),
       `아이 이름(편지 속): ${nameLiteral}.`,
       `기억 장면 힌트: ${sceneryLiteral}`,
       conversationalLetterVoiceRules("ko"),
-      "편지는 말로 이어 간다. (1) '[수신 호칭], 나 [이름]야' 인사 한 줄. (2) 설문 답을 한 줄씩 풀어 말한다. (3) 위 [편지 호칭]의 **마무리 필수 문장**을 그대로 한 번.",
-      "출력: JSON·제목 없이 편지 본문 평문만. 큰따옴표·중괄호·코드 블록·메타 지시문·중단 토큰 문자열 금지.",
+      "편지는 설문의 가장 살아 있는 장면에서 자연스럽게 말을 시작한다. 질문 순서를 그대로 따르지 말고 감정의 흐름에 맞게 기억을 엮는다. 마지막은 실제 기억과 이어지는 새로운 1~2줄로 닫고 고정 인사·마무리 문구를 쓰지 마라.",
+      `본문을 모두 쓴 뒤 마지막 한 줄에만 '${ENDING_PHRASE_MARKER}' 다음으로 짧고 자연스러운 한국어 끝맺음 한 문장을 쓴다. 마커 앞 본문은 완전한 문단으로 유지하고, 본문 일부를 끝맺음으로 옮기거나 자르지 마라. 끝맺음은 줄바꿈 없이 한 줄만 쓴다.`,
+      `출력: JSON·제목 없이 편지 본문 평문만. '${ENDING_PHRASE_MARKER}' 외에는 큰따옴표·중괄호·코드 블록·메타 지시문·중단 토큰 문자열 금지.`,
       "메타 언급 금지: 모델·프롬프트·시스템·요청 같은 말투 단서가 보이면 실패.",
     ].join("\n");
   }
   return [
     addressingBlock,
+    sourceAnswerLanguageRule(locale),
     "",
     letterPremiseBlock("en", mode),
       `Pet name in letter: ${nameLiteral}. Scene hint: ${sceneryLiteral}.`,
       conversationalLetterVoiceRules("en"),
-      "Speak the letter out loud, one thought per line. End with the **required closing sentence** from [Letter addressing] verbatim.",
-      "OUTPUT: Plain text only—no JSON, no headings, no code fences, no meta markers.",
+      "Speak the letter out loud. Start from the most vivid supplied detail, arrange memories by emotional flow rather than survey order, and end with one or two newly worded lines grounded in a real supplied memory. No stock opening or closing.",
+      `After the complete body, output one final line in exactly this protocol: ${ENDING_PHRASE_MARKER} followed by one original 3-8 word sentence. Keep every body paragraph before the marker intact. Never move or truncate body text into the ending. No multiline ending.`,
+      `OUTPUT: Plain text only—no JSON, headings, code fences, or meta markers other than the required ${ENDING_PHRASE_MARKER} line.`,
   ].join("\n");
 }
 
@@ -306,7 +444,7 @@ function plainLetterLanguageInstruction(locale: Locale): string {
     "The letter must be entirely in spoken English—as if talking out loud, not a translator or essay.",
     "One thought per line. Contractions welcome. Ban polished AI prose.",
     "If it reads like an AI essay, you failed.",
-    "Address Mom/Dad/their name—not distant 'you'. Include the required closing from the addressing block.",
+    "Address Mom/Dad/their name naturally—not distant 'you'. Create a fresh closing grounded in a supplied memory; never append a required or reusable phrase.",
     "Do not include meta-instructions in the output.",
     "No prompt/system/model/API or schema-key language in the letter body.",
   ].join("\n");
@@ -478,6 +616,8 @@ async function saveProfileAndAnswersOnce(
   preferredScenery: string,
   personalityType: string,
   letter: string,
+  letterStructure: GeneratedLetterStructure,
+  mode: LetterMode,
   heroImageUrl: string | null,
   answers: AnswerInput[],
   options: { includeHeroImage: boolean; partnerId: string | null; partnerCode: string | null },
@@ -499,6 +639,7 @@ async function saveProfileAndAnswersOnce(
     pet_name: petName,
     personality_type: personalityType,
     generated_letter: letter,
+    generation_locale: locale,
     preferred_scenery: preferredScenery,
   };
   if (options.includeHeroImage) {
@@ -533,6 +674,21 @@ async function saveProfileAndAnswersOnce(
           : `Could not save profile: ${msg}`,
       retryable: isRetryableSupabaseMessage(msg),
     };
+  }
+
+  // Phase 5 presentation fields are deliberately written separately. Until its
+  // migration is deployed, a missing new column must not break normal Soul Trace
+  // letter saving or the existing result page.
+  const { error: presentationError } = await supabase
+    .from("soul_trace_profiles")
+    .update({
+      letter_title: letterStructure.title,
+      letter_ending_phrase: letterStructure.endingPhrase,
+      letter_mode: mode,
+    })
+    .eq("user_email", userEmail);
+  if (presentationError) {
+    logSupabaseFailure("persistent result fields", presentationError, { userEmail });
   }
 
   const answerRows = answers.map((item, index) => ({
@@ -590,6 +746,8 @@ async function saveProfileAndAnswers(
   preferredScenery: string,
   personalityType: string,
   letter: string,
+  letterStructure: GeneratedLetterStructure,
+  mode: LetterMode,
   heroImageUrl: string | null,
   answers: AnswerInput[],
   partnerId: string | null,
@@ -615,6 +773,8 @@ async function saveProfileAndAnswers(
       preferredScenery,
       personalityType,
       letter,
+      letterStructure,
+      mode,
       heroImageUrl,
       answers,
       attempts[i]!,
@@ -625,6 +785,41 @@ async function saveProfileAndAnswers(
   }
 
   return last;
+}
+
+async function storeRegeneratedLetterLocale(
+  userEmail: string,
+  letter: string,
+  letterStructure: GeneratedLetterStructure,
+  mode: LetterMode,
+  locale: Locale,
+): Promise<boolean> {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from("soul_trace_profiles")
+    .update({ generated_letter: letter, generation_locale: locale })
+    .eq("user_email", userEmail);
+  if (error) {
+    logSupabaseFailure("language regeneration update", error, { userEmail, locale });
+    return false;
+  }
+
+  const { error: presentationError } = await supabase
+    .from("soul_trace_profiles")
+    .update({
+      letter_title: letterStructure.title,
+      letter_ending_phrase: letterStructure.endingPhrase,
+      letter_mode: mode,
+    })
+    .eq("user_email", userEmail);
+  if (presentationError) {
+    logSupabaseFailure("persistent result locale fields", presentationError, {
+      userEmail,
+      locale,
+    });
+  }
+  return true;
 }
 
 /**
@@ -711,6 +906,10 @@ export async function POST(request: Request) {
     const body = (await request.json()) as RequestBody;
     const locale: Locale = body.locale === "en" ? "en" : "ko";
     const mode: LetterMode = isLetterMode(body.mode) ? body.mode : DEFAULT_LETTER_MODE;
+    const channel = parseServiceChannel(body.channel);
+    if (channel && !isServiceChannelCompatible(channel, mode)) {
+      return err(locale, "profileIncomplete", 400);
+    }
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -773,15 +972,17 @@ export async function POST(request: Request) {
       mode,
     );
 
-    if (!Array.isArray(answers) || answers.length !== 8) {
+    const expectedAnswerCount = memoryQuestionCount(channel) + 3;
+    if (!Array.isArray(answers) || answers.length !== expectedAnswerCount) {
       return NextResponse.json(
         { error: locale === "ko" ? "질문 답변 8개가 필요합니다." : "Eight answers are required." },
         { status: 400 },
       );
     }
 
-    for (let i = 0; i < 4; i++) {
-      if (!answers[i]?.answer?.trim()) {
+    const memoryCount = memoryQuestionCount(channel);
+    for (let i = 0; i < memoryCount; i++) {
+      if (!isChannelMemoryOptional(channel, i) && !answers[i]?.answer?.trim()) {
         return NextResponse.json(
           { error: locale === "ko" ? "기억 질문(Q5–Q8)을 모두 입력해 주세요." : "Please answer memory questions Q5–Q8." },
           { status: 400 },
@@ -796,6 +997,13 @@ export async function POST(request: Request) {
         return `${index + 1}. Q: ${q}\nA: ${a}`;
       })
       .join("\n\n");
+    const allowedCrossLanguageText = [
+      petProfile.petName,
+      petProfile.petNickname,
+      petProfile.letterRecipientDetail,
+      ...extractExplicitlyPreservedPhrases(answers.map((item) => item.answer)),
+    ].filter((value) => value.trim().length > 0);
+    const generationKey = generationCacheKey(userEmail, mode, locale);
 
     let hasSavedLetter = false;
     const supabaseGate = createSupabaseServerClient();
@@ -824,20 +1032,21 @@ export async function POST(request: Request) {
     const languageInstruction =
       locale === "ko"
         ? [
-            "필수: personalityType, personalitySummary, personalityTags, letter 네 필드는 모두 한국어로만 작성한다. 설문 답이 영어여도 네 필드는 한국어로 서술한다.",
+            "필수: personalityType, personalitySummary, personalityTags, letter, endingPhrase 다섯 필드는 모두 한국어로만 작성한다. 설문 답이 영어여도 모두 한국어로 서술한다.",
             "출력은 유효한 UTF-8 한글·기호만 사용하고, JSON 문자열 안에서 줄이 중간에 끊기지 않게 완전한 문장으로 마무리한다.",
             "letter만 1인칭 아이 대화 톤. personalitySummary는 제3자 분석 문체만.",
-            "letter: '[수신 호칭], 나 [이름]야'로 시작. 상대는 엄마·아빠 등 호칭만—'너'·'너희' 금지.",
-            "letter는 말로 하는 대화 — 한 줄에 생각 하나, 설문 답을 빠짐없이 풀어 쓴다. AI·시·광고 문체 금지.",
-            "letter 길이는 [편지 톤] 블록을 따른다. 마무리에 [편지 호칭]의 필수 문장을 그대로 한 번.",
+            "letter는 설문의 실제 장면에서 자연스럽게 시작하고 질문 순서를 그대로 따르지 않는다. 상대는 엄마·아빠 등 선택한 호칭만 쓰고 '너'·'너희'는 금지한다.",
+            "letter는 정상 본문만 담는다. endingPhrase는 줄바꿈 없는 짧은 한국어 한 문장만 담고, 본문 마지막 문단을 잘라 옮기지 않는다. AI·시·광고 문체 금지.",
+            "letter 길이는 [편지 톤] 블록의 유연한 지침을 따른다. 고정 인사나 필수 마무리 문장을 추가하지 않는다.",
             "응답에 stop 시퀀스 문자열이나 메타 지시문, 프롬프트·시스템 언급을 섞어 넣지 마라.",
           ].join("\n")
         : [
-            "MANDATORY: personalityType, personalitySummary, personalityTags, and letter must be entirely in natural English.",
+            "MANDATORY: personalityType, personalitySummary, personalityTags, letter, and endingPhrase must be entirely in natural English.",
             "letter: first-person spoken voice—open with recipient + pet name. Address Mom/Dad/their name, not distant 'you'. Conversation, not an AI essay.",
             "personalitySummary: third-person gentle analyst for parents—not the pet speaking; no first-person pet voice there.",
             "personalityTags: JSON array of exactly three short tags.",
-            "One thought per line. Weave every answered survey memory. Length follows the [Letter tone] block. End with the required closing from [Letter addressing] verbatim.",
+            "Use the most meaningful answered memories without following questionnaire order or forcing every answer into equal space. Length follows the flexible [Letter tone] guidance. Create a fresh memory-led opening and closing with no reusable phrase.",
+            "letter contains complete normal body paragraphs only. endingPhrase is one original 3-8 word sentence with no newline; never derive it by splitting or truncating the last body paragraph.",
             "Do not include meta-instructions, stop-sequence markers, or prompt/system/model/API wording in the output.",
           ].join("\n");
 
@@ -846,7 +1055,7 @@ export async function POST(request: Request) {
     const userPayload =
       locale === "ko"
         ? [
-            "Return JSON only with these exact keys: personalityType, personalitySummary, personalityTags, letter.",
+            "Return JSON only with these exact keys: personalityType, personalitySummary, personalityTags, letter, endingPhrase.",
             "",
             profilePromptBlock,
             "",
@@ -862,7 +1071,7 @@ export async function POST(request: Request) {
             promptFormattedAnswers,
           ].join("\n")
         : [
-            "Return JSON only with these exact keys: personalityType, personalitySummary, personalityTags, letter.",
+            "Return JSON only with these exact keys: personalityType, personalitySummary, personalityTags, letter, endingPhrase.",
             "",
             profilePromptBlock,
             "",
@@ -874,9 +1083,11 @@ export async function POST(request: Request) {
             "[Scenery or place they loved — reflect in mood and metaphor]",
             preferredScenery,
             "",
-            "[Eight survey Q&As — the letter's **only** facts. Weave every answered memory. Invent nothing.]",
+            "[Survey Q&As — the letter's only facts. Select and connect the most meaningful answered memories; do not follow questionnaire order or invent anything.]",
             promptFormattedAnswers,
           ].join("\n");
+
+    const channelAwareUserPayload = withServiceChannelPrompt(userPayload, channel);
 
     const skipImageGeneration = body.skipImageGeneration === true;
     const existingHeroImageUrl =
@@ -912,12 +1123,15 @@ export async function POST(request: Request) {
               "[Scenery or place they loved — reflect in mood and metaphor]",
               preferredScenery,
               "",
-              "[Eight survey Q&As — the letter's **only** facts. Weave every answered memory. Invent nothing.]",
+              "[Survey Q&As — the letter's only facts. Select and connect the most meaningful answered memories; do not follow questionnaire order or invent anything.]",
               promptFormattedAnswers,
-            ].join("\n");
+          ].join("\n");
+
+      const channelAwareUserLetterPayload = withServiceChannelPrompt(userLetterPayload, channel);
 
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
+          let openAIStage = "letter-stream";
           const send = (payload: unknown) => {
             controller.enqueue(sseEncode(payload));
           };
@@ -983,7 +1197,7 @@ export async function POST(request: Request) {
                     plainLetterLanguageInstruction(locale),
                   ].join("\n\n"),
                 },
-                { role: "user", content: userLetterPayload },
+                { role: "user", content: channelAwareUserLetterPayload },
               ],
             });
 
@@ -996,8 +1210,26 @@ export async function POST(request: Request) {
               }
             }
 
-            const trimmedLetter = fullLetter.trim();
-            if (!trimmedLetter) {
+            let letterStructure = parseMarkedLetter(
+              generatedLetterTitle(locale, petProfile),
+              fullLetter,
+              locale,
+            );
+            openAIStage = "language-validation";
+            letterStructure =
+              (await correctLetterLanguageOnce(
+                openai,
+                locale,
+                letterStructure,
+                allowedCrossLanguageText,
+              )) ?? letterStructure;
+            if (!letterMatchesLocale(letterStructure, locale, allowedCrossLanguageText)) {
+              send({ type: "error", message: friendlyGenerateError(locale) });
+              controller.close();
+              return;
+            }
+            const trimmedLetter = serializeGeneratedLetter(letterStructure);
+            if (!trimmedLetter || !letterStructure.endingPhrase) {
               send({ type: "error", message: friendlyGenerateError(locale) });
               controller.close();
               return;
@@ -1005,6 +1237,7 @@ export async function POST(request: Request) {
 
             await imageTask;
 
+            openAIStage = "personality-extraction";
             const personality = await extractPersonalityFields(
               openai,
               locale,
@@ -1026,6 +1259,8 @@ export async function POST(request: Request) {
               preferredScenery,
               personality.personalityType,
               trimmedLetter,
+              letterStructure,
+              mode,
               heroImageUrl,
               answers,
               partnerId,
@@ -1063,6 +1298,7 @@ export async function POST(request: Request) {
               personalitySummary: personality.personalitySummary,
               personalityTags: personality.personalityTags,
               letter: trimmedLetter,
+              letterStructure,
               heroImageUrl,
               heroImageSkipped,
               savedPetName: letterName,
@@ -1070,9 +1306,12 @@ export async function POST(request: Request) {
               // Eternal Beam 핸드오프의 source_letter_id. 저장이 실패했거나
               // 마이그레이션 전이면 null 이다 — 편지 표시는 그대로 동작한다.
               letterId: saveResult.ok ? saveResult.letterId : null,
+              generationLocale: locale,
+              generationCacheKey: generationKey,
             });
             controller.close();
-          } catch {
+          } catch (error) {
+            logOpenAIStageFailure(openAIStage, error);
             send({ type: "error", message: friendlyGenerateError(locale) });
             controller.close();
           }
@@ -1106,7 +1345,7 @@ export async function POST(request: Request) {
         },
         {
           role: "user",
-          content: userPayload,
+          content: channelAwareUserPayload,
         },
       ],
     });
@@ -1177,13 +1416,59 @@ export async function POST(request: Request) {
       }
     }
 
+    let letterStructure = createGeneratedLetterStructure(
+      generatedLetterTitle(locale, petProfile),
+      parsed.letter,
+      parsed.endingPhrase,
+      locale,
+    );
+    letterStructure =
+      (await correctLetterLanguageOnce(
+        openai,
+        locale,
+        letterStructure,
+        allowedCrossLanguageText,
+      )) ?? letterStructure;
+    if (!letterMatchesLocale(letterStructure, locale, allowedCrossLanguageText)) {
+      return NextResponse.json({ error: friendlyGenerateError(locale) }, { status: 502 });
+    }
+    const serializedLetter = serializeGeneratedLetter(letterStructure);
+
+    /**
+     * 언어 전환은 이미 만들어진 편지의 표시 언어만 바꾼다.
+     * 로컬처럼 Supabase 가 없는 환경에서도 동작해야 하고, 번역할 때마다 기존
+     * 저장 레코드와 답변을 다시 쓰는 것도 불필요하므로 여기서 바로 반환한다.
+     */
+    if (isLanguageRerunOnly) {
+      const regenerationStored = await storeRegeneratedLetterLocale(
+        userEmail,
+        serializedLetter,
+        letterStructure,
+        mode,
+        locale,
+      );
+      return NextResponse.json({
+        ...parsed,
+        letter: serializedLetter,
+        letterStructure,
+        heroImageUrl,
+        heroImageSkipped,
+        savedPetName: letterName,
+        generationLocale: locale,
+        generationCacheKey: generationKey,
+        persistenceFailed: !regenerationStored,
+      });
+    }
+
     const saveResult = await saveProfileAndAnswers(
       locale,
       userEmail,
       petName,
       preferredScenery,
       parsed.personalityType,
-      parsed.letter,
+      serializedLetter,
+      letterStructure,
+      mode,
       heroImageUrl,
       answers,
       partnerId,
@@ -1204,19 +1489,23 @@ export async function POST(request: Request) {
       personalitySummary: parsed.personalitySummary,
       personalityTags: parsed.personalityTags,
       heroImageUrl,
-      letter: parsed.letter,
+      letter: serializedLetter,
       answers,
     });
 
     return new NextResponse(
       JSON.stringify({
         ...parsed,
+        letter: serializedLetter,
+        letterStructure,
         heroImageUrl,
         heroImageSkipped,
         savedPetName: letterName,
         persistenceFailed: false,
         // Eternal Beam 핸드오프의 source_letter_id. 마이그레이션 전이면 null 이다.
         letterId: saveResult.letterId,
+        generationLocale: locale,
+        generationCacheKey: generationKey,
       }),
       {
         status: 200,

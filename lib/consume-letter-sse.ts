@@ -3,6 +3,11 @@ export type LetterStreamDonePayload = {
   personalitySummary: string;
   personalityTags: string[];
   letter: string;
+  letterStructure?: {
+    title: string;
+    paragraphs: string[];
+    endingPhrase: string;
+  };
   heroImageUrl: string | null;
   heroImageSkipped: boolean;
   savedPetName: string;
@@ -12,6 +17,8 @@ export type LetterStreamDonePayload = {
    * 저장 실패·마이그레이션 전 환경에서는 null 이다.
    */
   letterId?: string | null;
+  generationLocale?: "en" | "ko";
+  generationCacheKey?: string;
 };
 
 type LetterSseHandlers = {
@@ -63,16 +70,38 @@ export async function consumeLetterSseStream(
         const personalityTags = Array.isArray(rawTags)
           ? rawTags.map((x) => String(x))
           : [];
+        const rawStructure = rec.letterStructure;
+        const letterStructure =
+          rawStructure &&
+          typeof rawStructure === "object" &&
+          Array.isArray((rawStructure as Record<string, unknown>).paragraphs)
+            ? {
+                title: String((rawStructure as Record<string, unknown>).title ?? ""),
+                paragraphs: ((rawStructure as Record<string, unknown>).paragraphs as unknown[]).map(
+                  String,
+                ),
+                endingPhrase: String(
+                  (rawStructure as Record<string, unknown>).endingPhrase ?? "",
+                ),
+              }
+            : undefined;
         handlers.onDone({
           personalityType: String(rec.personalityType ?? ""),
           personalitySummary: String(rec.personalitySummary ?? ""),
           personalityTags,
           letter: String(rec.letter ?? ""),
+          letterStructure,
           heroImageUrl: typeof rec.heroImageUrl === "string" ? rec.heroImageUrl : null,
           heroImageSkipped: rec.heroImageSkipped === true,
           savedPetName: String(rec.savedPetName ?? ""),
           persistenceFailed: rec.persistenceFailed === true,
           letterId: typeof rec.letterId === "string" ? rec.letterId : null,
+          generationLocale:
+            rec.generationLocale === "en" || rec.generationLocale === "ko"
+              ? rec.generationLocale
+              : undefined,
+          generationCacheKey:
+            typeof rec.generationCacheKey === "string" ? rec.generationCacheKey : undefined,
         });
       } else if (type === "error" && typeof rec.message === "string") {
         throw new Error(rec.message);

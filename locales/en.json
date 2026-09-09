@@ -3,6 +3,70 @@
     "kr": "KR",
     "en": "EN"
   },
+  "welcome": {
+    "title": "A letter from the heart",
+    "cta": "Begin Your Journey"
+  },
+  "auth": {
+    "eyebrow": "Your Soul Trace",
+    "signupTitle": "Create your account",
+    "signupBody": "Keep your letters and memories connected to you.",
+    "signinTitle": "Welcome back",
+    "signinBody": "Continue with the email connected to your Soul Trace.",
+    "continueEmail": "Continue with Email",
+    "sending": "Sending…",
+    "checkEmailTitle": "Check your email",
+    "checkEmailBody": "Open the secure link we sent to continue.",
+    "registered": "Already registered?",
+    "signIn": "Sign in",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "signUpButton": "Sign Up",
+    "signInButton": "Sign In",
+    "submitting": "Please wait…",
+    "forgotPassword": "Forgot password?",
+    "createAccount": "Create account",
+    "passwordlessGuidance": "If you previously used an email link, set or reset your password.",
+    "passwordValidation": {
+      "required": "Enter your password.",
+      "too_short": "Use at least 8 characters.",
+      "mismatch": "The passwords do not match."
+    },
+    "newHere": "New to Soul Trace?",
+    "signUp": "Create an account",
+    "backHome": "Return to Soul Trace",
+    "recovery": {
+      "open": "Set or reset password",
+      "requestTitle": "Set or reset your password",
+      "requestBody": "We’ll send a secure password setup link if the address can receive one.",
+      "sendLink": "Send password setup link",
+      "sending": "Sending…",
+      "checkEmail": "If the address can receive a password setup link, it will arrive shortly.",
+      "back": "Back to Sign In",
+      "updateTitle": "Create a new password",
+      "updateBody": "Choose a secure password for your Soul Trace account.",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "savePassword": "Save password",
+      "saving": "Saving…",
+      "required": "Enter a password.",
+      "too_short": "Use at least 8 characters.",
+      "mismatch": "The passwords do not match.",
+      "policy_failed": "This password does not meet the required security policy. Try a stronger password.",
+      "request_failed": "We couldn’t complete this request safely. Please try again.",
+      "updated": "Password updated. Sign in with your new password."
+    },
+    "errors": {
+      "invalid_link": "This sign-in link is invalid or has expired. Request a new link to continue.",
+      "unavailable": "Email authentication is temporarily unavailable. Please try again later.",
+      "request_failed": "We couldn't send the email. Please try again.",
+      "invalid_credentials": "We couldn't sign you in with those credentials.",
+      "email_not_confirmed": "Confirm your email before signing in.",
+      "signup_unavailable": "Account creation is temporarily unavailable. Please try again later.",
+      "signin_unavailable": "Sign in is temporarily unavailable. Please try again later.",
+      "policy_failed": "This password does not meet the required security policy. Try a stronger password."
+    }
+  },
   "hero": {
     "eyebrow": "Eternal Beam",
     "title": "Soul Trace",
@@ -10,7 +74,8 @@
   },
   "landing": {
     "prompt": "Whose story should we tell?",
-    "back": "Start over"
+    "back": "Start over",
+    "navBack": "Back"
   },
   "modes": {
     "living": {
@@ -18,7 +83,7 @@
       "landingHint": "Hear how today went—from their side of the room.",
       "headline": "What were they thinking today?",
       "subline": "They can't say it out loud, but there's something they'd tell you every day.",
-      "letterHeading": "A letter from their day",
+      "letterHeading": "A letter to %RECIPIENT%",
       "q1Label": "Q1. What is their name?",
       "q2Label": "Q2. What kind of companion are they?",
       "yearPartedPlaceholder": "Now (this year)",
@@ -84,7 +149,7 @@
       "landingHint": "There are still words they never got to say.",
       "headline": "The words they never got to say",
       "subline": "They still had words left in their heart—words they never got to share.",
-      "letterHeading": "A letter to Mom and Dad",
+      "letterHeading": "A letter to %RECIPIENT%",
       "q1Label": "Q1. What was their name?",
       "q2Label": "Q2. What kind of companion were they?",
       "yearPartedPlaceholder": "Year they passed",
@@ -164,6 +229,23 @@
     "photoPrivacyConsentAgree": "I have read the above and agree to how my photo is used.",
     "generateNeedAnswer": "Answer this question to continue.",
     "generateNeedProfile": "Complete STEP 1, your email, and privacy consent to read your letter.",
+    "validation": {
+      "emailRequired": "Enter your email address.",
+      "emailInvalid": "Enter a valid email address, such as name@example.com.",
+      "petNameRequired": "Enter your pet's name.",
+      "petTypeRequired": "Choose your pet's type.",
+      "yearsRequired": "Enter both years.",
+      "yearsRange": "Enter years between 1980 and the current year.",
+      "yearsOrder": "The year you met cannot be later than the ending year.",
+      "recipientRequired": "Choose who should receive the letter.",
+      "recipientDetailRequired": "Enter the name or wording to use in the letter.",
+      "privacyRequired": "Review and agree to the privacy consent.",
+      "memoryRequired": "Write an answer before continuing.",
+      "photoChoiceRequired": "Upload a photo or choose Skip photo.",
+      "photoConsentRequired": "Agree to the photo consent, or remove and skip the photo.",
+      "moodRequired": "Choose a tone for the letter.",
+      "lengthRequired": "Choose the letter length."
+    },
     "step1": {
       "kicker": "STEP 1 — About your pet",
       "q1Placeholder": "Full name",
@@ -186,6 +268,8 @@
         "mom": "Mom",
         "dad": "Dad",
         "both": "Mom and Dad",
+        "sister": "Sister",
+        "brother": "Brother",
         "sibling": "Sister / Brother",
         "byName": "Use a name",
         "custom": "Custom"
@@ -206,6 +290,14 @@
   "result": {
     "eyebrow": "Soul Trace Result",
     "soulTypeCardTitle": "Their personality and temperament",
+    "letterStyle": {
+      "label": "Choose a letter style",
+      "goldenMeadow": "Golden Meadow",
+      "nightSky": "Night Sky",
+      "softClouds": "Soft Clouds",
+      "memoryPaper": "Memory Paper",
+      "temporary": "Temp"
+    },
     "eternalBridgePrompt": "Would you like to keep this letter with Eternal Beam?",
     "bgmOn": "Play soft background music",
     "bgmOff": "Stop music",
@@ -236,10 +328,10 @@
       "bullet3": "First access to launch news and member perks",
       "cta": "See pre-order perks"
     },
-      "persistenceFailed": {
-        "title": "This letter was not saved to our server",
-        "body": "What you see is only on this screen. It will be lost if you close this page, and it cannot be taken to Eternal Beam. Please save the image and try again shortly with the same email."
-      },
+    "persistenceFailed": {
+      "title": "This letter was not saved to our server",
+      "body": "What you see is only on this screen. It will be lost if you close this page, and it cannot be taken to Eternal Beam. Please save the image and try again shortly with the same email."
+    },
     "destinationDeck": {
       "continueToEternalBeam": {
         "label": "ETERNAL BEAM",
@@ -264,6 +356,17 @@
     },
     "instagramShareLead": "Keep this moment with you",
     "instagramShareButton": "Share to Instagram Stories",
+    "lifeArchive": {
+      "cta": "Continue Your Pet's Journey",
+      "preparing": "Preparing your Life Archive…",
+      "checkEmail": "We sent a secure verification link to the email already used for this Soul Trace. Open it to continue.",
+      "error": "We couldn't open the Life Archive. Please try again in a moment."
+    },
+    "restore": {
+      "errorTitle": "We couldn't restore this letter",
+      "errorBody": "Open Life Archive from the saved Soul Trace flow and make sure you are signed in with the verified owner email.",
+      "home": "Return to Soul Trace"
+    },
     "instagramFooter": "Share your memory on Instagram",
     "ctaEternalBeam": "Bring this light into real life",
     "connectLetterLink": "Send this letter to your companion",
@@ -276,7 +379,7 @@
       "body": "This letter can stay with you—as light, right beside you."
     },
     "saveImage": "Save to phone",
-    "keepForever": "Keep forever",
+    "keepForever": "Keep This Letter",
     "instagramPrepare": "Prepare image (step 1)",
     "instagramShare": "Share to Instagram (step 2)",
     "preparingImage": "Preparing image…",
@@ -307,6 +410,185 @@
       "petStoryNameLead": "Closing words from %NAME%"
     }
   },
+  "lifeArchive": {
+    "back": "Back to Letter",
+    "temporaryNotice": "Temporary build mode: this archive stays only in this browser tab and is not saved to a server.",
+    "authenticationRequired": {
+      "title": "Check your email to continue",
+      "body": "Open the secure verification link sent to the email already used for this Soul Trace."
+    },
+    "selectionRequired": {
+      "title": "Open Life Archive from your letter",
+      "body": "Return to the current Soul Trace letter and choose Continue Your Pet's Journey."
+    },
+    "exampleNotice": "Phase 1 layout preview — Coco and every letter or memory shown here are fictional example data. Nothing on this page is saved.",
+    "title": "Life Archive",
+    "hero": {
+      "keepMoments": "Keep the moments that tell %NAME%'s story."
+    },
+    "temporaryNoticeCompact": "Temporary mode · Memories are stored only in this browser tab.",
+    "summary": {
+      "photoMoments": "photo moments",
+      "photos": "photos",
+      "favorites": "favorites"
+    },
+    "origin": {
+      "label": "WHERE YOUR STORY BEGAN",
+      "createdFrom": "Created from %COUNT% memories"
+    },
+    "favorites": {
+      "title": "FAVORITE MOMENTS",
+      "photos": "photos",
+      "open": "Open favorite memory",
+      "previous": "Previous favorite moments",
+      "next": "Next favorite moments"
+    },
+    "allMemories": {
+      "title": "ALL MEMORIES",
+      "subtitle": "Every photo moment, kept in time.",
+      "allMoments": "All Moments",
+      "favorites": "Favorites",
+      "allYears": "All Years",
+      "yearLabel": "Filter by year",
+      "noDate": "DATE NOT PROVIDED",
+      "photos": "photos",
+      "noMatch": "No memories match these filters.",
+      "clear": "Clear Filters"
+    },
+    "footer": {
+      "privacy": "Your memories are yours. We respect your privacy."
+    },
+    "introduction": "Keep the moments that tell %NAME%'s story.\nYour Soul Trace letter and memories are already connected here.",
+    "previewControls": {
+      "label": "Phase 1 presentation states",
+      "empty": "Empty",
+      "returning": "Returning user",
+      "loading": "Loading",
+      "error": "Error"
+    },
+    "journey": {
+      "title": "Journey So Far",
+      "letterCreated": "Soul Trace letter created",
+      "soulTraceMemories": "%COUNT% memories shared through Soul Trace",
+      "archiveMemories": "%COUNT% new archive memories",
+      "photoMoments": "%COUNT% photo moments",
+      "savedPhotos": "%COUNT% saved photos"
+    },
+    "letter": {
+      "title": "From Your Soul Trace Letter",
+      "readSoulTrace": "Read Soul Trace Letter",
+      "readFull": "Read Full Letter",
+      "closeFull": "Close Full Letter"
+    },
+    "archive": {
+      "title": "Life Archive",
+      "count": "%COUNT% new memories",
+      "add": "Add a Memory",
+      "phaseOneNote": "Memory creation begins in a later approved phase."
+    },
+    "memoryForm": {
+      "title": "Memory title (optional)",
+      "titlePlaceholder": "A name for this moment",
+      "date": "Memory date (optional)",
+      "story": "Memory story",
+      "storyPlaceholder": "Write the moment exactly as you remember it…",
+      "cancel": "Cancel",
+      "save": "Save Memory",
+      "saving": "Saving…",
+      "saveError": "We couldn't save this memory. Please try again.",
+      "delete": "Delete memory",
+      "deleting": "Deleting…",
+      "deleteConfirm": "Delete this memory? This cannot be undone.",
+      "deleteError": "We couldn't delete this memory. Please try again."
+    },
+    "photos": {
+      "add": "Add Photos",
+      "addMoment": "Add a Photo Moment",
+      "addFirstMoment": "Add Your First Photo Moment",
+      "summary": "%MOMENTS% photo moments · %PHOTOS% photos",
+      "select": "Select pet photos",
+      "help": "JPEG, PNG or WebP · Up to %COUNT% photos in one moment",
+      "selectedLabel": "Selected photos in saved order",
+      "selectedCount": "%SELECTED% of %MAX% photos",
+      "addMore": "Add more",
+      "layoutTitle": "Choose a collage layout",
+      "layoutHelp": "You can change the layout before saving.",
+      "classicCentre": "Classic Centre",
+      "classicDescription": "Four frames with one round centre photo",
+      "classicUnavailable": "Classic Centre is available when exactly 5 photos are selected.",
+      "cleanGrid": "Clean Grid",
+      "cleanDescription": "A balanced grid with soft rounded corners",
+      "scrapbook": "Scrapbook",
+      "scrapbookDescription": "Warm printed-photo frames with gentle texture",
+      "chooseCentre": "Make centre",
+      "centrePhoto": "Centre photo",
+      "collagePreview": "Collage preview",
+      "previewAlt": "Selected photo %NUMBER%",
+      "moveEarlier": "Move earlier",
+      "moveLater": "Move later",
+      "remove": "Remove",
+      "caption": "A few words about this moment",
+      "save": "Save This Moment",
+      "saving": "Saving…",
+      "required": "Select at least one photo before saving.",
+      "tooMany": "You can save up to %COUNT% photos in one photo moment.",
+      "unsupported": "Choose JPEG, PNG or WebP photos only.",
+      "unreadable": "One or more photos could not be read. Please remove them and try again.",
+      "storageError": "Temporary browser storage is unavailable or the photo moment could not be saved.",
+      "emptyTitle": "No photo moments yet",
+      "emptyBody": "Your Soul Trace memories are already connected. Add pet photos whenever you are ready.",
+      "openGallery": "Open this photo moment",
+      "galleryLabel": "Photo viewer",
+      "galleryPhotoAlt": "Photo %NUMBER% of %TOTAL%",
+      "previousPhoto": "Previous photo",
+      "nextPhoto": "Next photo",
+      "closeGallery": "Close",
+      "delete": "Delete photo moment",
+      "favorite": "Favorite",
+      "unfavorite": "Unfavorite",
+      "favoriteError": "We couldn't update this favorite.",
+      "fullScreen": "View Full Screen",
+      "downloadCollage": "Download Collage",
+      "downloadError": "We couldn't prepare the collage download.",
+      "more": "More",
+      "deleteMoment": "Delete Moment",
+      "cancel": "Cancel",
+      "deleteAction": "Delete",
+      "deleteConfirm": "Delete this complete moment and all its photos?",
+      "deleteError": "We couldn't delete this photo moment.",
+      "clearAll": "Remove all temporary photo moments",
+      "clearConfirm": "Remove every temporary photo moment and stored photo from this browser?",
+      "clearError": "We couldn't clear the temporary photo data.",
+      "olderTextMemories": "Earlier text memories"
+    },
+    "videos": {
+      "add": "Add Video",
+      "select": "Select one video",
+      "help": "One video · Up to 30 seconds · Maximum 50 MB",
+      "caption": "A few words about this video (optional)",
+      "replace": "Replace video",
+      "remove": "Remove video",
+      "save": "Add Temporary Video",
+      "favorite": "Favorite",
+      "fullScreen": "View Full Screen",
+      "delete": "Delete video",
+      "unsupported": "Choose a supported video file.",
+      "oversized": "Choose a video no larger than 50 MB.",
+      "tooLong": "Choose a video that is 30 seconds or shorter.",
+      "previewUnsupported": "This browser cannot preview the selected video format.",
+      "temporaryWarning": "Temporary preview — this video will disappear after refreshing or leaving this page."
+    },
+    "empty": {
+      "title": "No new memories yet",
+      "body": "Your original Soul Trace memories are already connected.\nAdd another moment whenever you are ready."
+    },
+    "loading": "Loading your pet's journey…",
+    "error": {
+      "title": "We couldn't open this Life Archive.",
+      "body": "We could not safely load the selected pet and letter. Return to your letter and try again.",
+      "retry": "Try Again"
+    }
+  },
   "share": {
     "title": "Soul Trace letter",
     "text": "Sharing a letter from my companion on Soul Trace."
@@ -335,6 +617,41 @@
     "toneMultiHint": "Pick only what you want (optional)",
     "toneQ11None": "(none selected)",
     "examplePrefix": "e.g.",
+    "channelIntroductions": {
+      "pension": {
+        "headline": "What would they tell you from their stay?",
+        "subline": "Share the comfortable, playful, and little moments from today. We’ll turn them into a warm letter from your pet."
+      },
+      "grooming": {
+        "headline": "How did they shine today?",
+        "subline": "Tell us about their fresh look, mood, and most charming moment."
+      },
+      "hospital": {
+        "headline": "What would they tell you about today’s visit?",
+        "subline": "Share the calm and caring moments from today."
+      }
+    },
+    "channels": {
+      "pension": [
+        { "id": "pension-1", "promptText": "What happened with your pet today?", "placeholder": "Describe what happened today" },
+        { "id": "pension-2", "promptText": "How was your pet feeling today?", "placeholder": "Describe how your pet felt" },
+        { "id": "pension-3", "promptText": "What did your pet enjoy most?", "placeholder": "Describe what they enjoyed" },
+        { "id": "pension-4", "promptText": "Was there a cute or funny moment today?", "placeholder": "Share a cute or funny moment", "optional": true, "optionalNote": "You can skip this one.", "skipLabel": "Skip" }
+      ],
+      "grooming": [
+        { "id": "grooming-1", "promptText": "What grooming service did your pet receive today?", "placeholder": "Describe the grooming service" },
+        { "id": "grooming-2", "promptText": "What is the biggest before-and-after change?", "placeholder": "Describe the biggest change" },
+        { "id": "grooming-3", "promptText": "How did your pet react after grooming?", "placeholder": "Describe their reaction" },
+        { "id": "grooming-4", "promptText": "What looks especially cute today?", "placeholder": "Describe what looks cute" },
+        { "id": "grooming-5", "promptText": "Did the groomer notice a funny or lovely detail?", "placeholder": "Share a detail the groomer noticed", "optional": true, "optionalNote": "You can skip this one.", "skipLabel": "Skip" }
+      ],
+      "hospital": [
+        { "id": "hospital-1", "promptText": "What kind of visit did your pet have today?", "placeholder": "Describe today's visit" },
+        { "id": "hospital-2", "promptText": "How did your pet behave during the visit?", "placeholder": "Describe how your pet behaved" },
+        { "id": "hospital-3", "promptText": "Was there a comforting or cute moment?", "placeholder": "Share a comforting or cute moment", "optional": true, "optionalNote": "You can skip this one.", "skipLabel": "Skip" },
+        { "id": "hospital-4", "promptText": "Is there a confirmed care update you would like to mention?", "placeholder": "Share a confirmed care update", "optional": true, "optionalNote": "You can skip this one.", "skipLabel": "Skip" }
+      ]
+    },
     "video": {
       "kicker": "Choose a motion",
       "prompt": "Pick a gentle motion for ○○ in this photo.",
