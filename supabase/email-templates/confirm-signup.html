@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#000000;color:#f3ead8;font-family:Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#000000;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;border:1px solid #6f5c24;background:#100e0b;">
+            <tr>
+              <td style="padding:36px 32px;">
+                <p style="margin:0 0 28px;color:#d4af37;font-size:12px;letter-spacing:3px;">ETERNAL BEAM</p>
+                {{ if eq .Data.locale "ko" }}
+                <h1 style="margin:0 0 20px;color:#fff6e5;font-size:28px;font-weight:400;line-height:1.35;">Soul Trace에 오신 것을 환영합니다</h1>
+                <p style="margin:0 0 16px;font-size:17px;line-height:1.7;">모든 인연은 마음속에 흔적을 남깁니다.</p>
+                <p style="margin:0 0 16px;color:#e8dfcf;font-size:15px;line-height:1.8;">Soul Trace는 반려동물과 함께한 사랑과 이야기, 소중한 일상의 순간을 따뜻한 편지와 추억으로 간직할 수 있도록 Eternal Beam이 만든 서비스입니다.</p>
+                <p style="margin:0 0 26px;color:#e8dfcf;font-size:15px;line-height:1.8;">이메일을 확인하고 Soul Trace 여정을 시작해 주세요.</p>
+                <p style="margin:0 0 28px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;border-radius:24px;background:#b89a2e;color:#0b0907;padding:14px 24px;text-decoration:none;font-size:15px;">Soul Trace 시작하기</a></p>
+                <p style="margin:0 0 24px;color:#bdb3a1;font-size:12px;line-height:1.7;">이 링크는 회원님의 계정을 확인하고 안전하게 접속하기 위한 개인 링크입니다. Soul Trace 가입을 요청하지 않으셨다면 이 이메일을 무시하셔도 됩니다.</p>
+                <p style="margin:0;color:#e8dfcf;font-size:14px;line-height:1.7;">Eternal Beam 드림</p>
+                {{ else }}
+                <h1 style="margin:0 0 20px;color:#fff6e5;font-size:28px;font-weight:400;line-height:1.35;">Welcome to Soul Trace</h1>
+                <p style="margin:0 0 16px;font-size:17px;line-height:1.7;">Every bond leaves a trace.</p>
+                <p style="margin:0 0 16px;color:#e8dfcf;font-size:15px;line-height:1.8;">Soul Trace is an Eternal Beam experience created to preserve the love, stories, and everyday moments you share with your pet through meaningful letters and memories.</p>
+                <p style="margin:0 0 26px;color:#e8dfcf;font-size:15px;line-height:1.8;">Confirm your email and begin your Soul Trace journey.</p>
+                <p style="margin:0 0 28px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;border-radius:24px;background:#b89a2e;color:#0b0907;padding:14px 24px;text-decoration:none;font-size:15px;">Enter Soul Trace</a></p>
+                <p style="margin:0 0 24px;color:#bdb3a1;font-size:12px;line-height:1.7;">This link is personal and can only be used to access your account. If you did not create a Soul Trace account, you can safely ignore this email.</p>
+                <p style="margin:0;color:#e8dfcf;font-size:14px;line-height:1.7;">The Eternal Beam Team</p>
+                {{ end }}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

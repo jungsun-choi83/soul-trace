@@ -1,0 +1,1 @@
+{{ if eq .Data.locale "ko" }}Soul Trace 접속 링크{{ else }}Your Soul Trace access link{{ end }}

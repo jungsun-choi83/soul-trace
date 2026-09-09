@@ -1,0 +1,1 @@
+{{ if eq .Data.locale "ko" }}Soul Trace에 오신 것을 환영합니다 — 소중한 이야기가 시작됩니다{{ else }}Welcome to Soul Trace — Your Story Begins Here{{ end }}

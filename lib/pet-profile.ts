@@ -3,7 +3,18 @@ import type { LetterTonePrefs } from "@/lib/survey";
 
 export type PetType = "dog" | "cat" | "rabbit" | "hamster" | "bird" | "other";
 
-export type LetterRecipient = "mom" | "dad" | "both" | "sibling" | "byName" | "custom";
+export type LetterRecipient =
+  | "mom"
+  | "dad"
+  | "both"
+  | "sister"
+  | "brother"
+  | "byName"
+  // Legacy values remain readable for previously stored records.
+  | "sibling"
+  | "custom";
+
+export type SelectableLetterRecipient = Exclude<LetterRecipient, "sibling" | "custom">;
 
 export type PetIntroProfile = {
   petName: string;
@@ -31,9 +42,15 @@ export function letterPetName(profile: Pick<PetIntroProfile, "petName" | "petNic
 }
 
 export function yearsTogether(profile: Pick<PetIntroProfile, "yearMet" | "yearParted">): number | null {
+  if (!/^\d{4}$/.test(profile.yearMet.trim()) || !/^\d{4}$/.test(profile.yearParted.trim())) {
+    return null;
+  }
   const met = Number.parseInt(profile.yearMet, 10);
   const parted = Number.parseInt(profile.yearParted, 10);
-  if (!Number.isFinite(met) || !Number.isFinite(parted) || met > parted) return null;
+  const currentYear = new Date().getFullYear();
+  if (met < 1980 || parted < 1980 || met > currentYear || parted > currentYear || met > parted) {
+    return null;
+  }
   return parted - met + 1;
 }
 
@@ -156,6 +173,8 @@ const RECIPIENT_LABELS = {
     mom: "엄마",
     dad: "아빠",
     both: "엄마, 아빠",
+    sister: "누나/언니",
+    brother: "형/오빠",
     sibling: "누나/언니/형/오빠",
     byName: "이름으로 부르기",
     custom: "직접 입력",
@@ -164,6 +183,8 @@ const RECIPIENT_LABELS = {
     mom: "Mom",
     dad: "Dad",
     both: "Mom and Dad",
+    sister: "Sister",
+    brother: "Brother",
     sibling: "Sister / Brother",
     byName: "Call by name",
     custom: "Custom",
@@ -228,10 +249,14 @@ export function buildLetterAddressingBlock(
     const selfIntro = selfIntroSentence(name);
     const openingRule =
       profile.letterRecipient === "both"
-        ? `첫 문장은 반드시 '엄마, 아빠, ${selfIntro}.' 로 시작한다.`
-        : profile.letterRecipient === "sibling"
-          ? `첫 문장은 누나·언니·형·오빠 중 설문에 맞는 하나를 골라 '[호칭], ${selfIntro}.' 로 시작한다.`
-          : `첫 문장은 반드시 '${recipient}, ${selfIntro}.' 로 시작한다. 이름에 '이'를 더 붙이지 마.`;
+        ? `첫 1~2줄 안에서 엄마와 아빠에게 자연스럽게 말을 걸고 ${name}의 목소리임을 드러낸다. 고정된 인사 문구를 쓰지 말고 설문 장면과 분위기에 맞춰 매번 다르게 시작한다. 자기소개 문법은 '${selfIntro}' 형태가 자연스럽다.`
+        : profile.letterRecipient === "sister"
+          ? `첫 1~2줄 안에서 누나 또는 언니라는 관계를 자연스럽게 드러내며 말을 건다. 고정된 자기소개 문장을 쓰지 말고 설문 장면과 분위기에 맞춰 시작한다.`
+          : profile.letterRecipient === "brother"
+            ? `첫 1~2줄 안에서 형 또는 오빠라는 관계를 자연스럽게 드러내며 말을 건다. 고정된 자기소개 문장을 쓰지 말고 설문 장면과 분위기에 맞춰 시작한다.`
+            : profile.letterRecipient === "sibling"
+              ? `첫 1~2줄 안에서 누나·언니·형·오빠 중 저장된 관계에 맞는 호칭으로 자연스럽게 말을 건다. 고정된 자기소개 문장을 쓰지 말고 설문 장면과 분위기에 맞춰 시작한다.`
+          : `첫 1~2줄 안에서 ${recipient}에게 자연스럽게 말을 걸고 ${name}의 목소리임을 드러낸다. 고정된 인사 문구를 쓰지 말고 설문 장면과 분위기에 맞춰 매번 다르게 시작한다. 이름에 '이'를 더 붙이지 마.`;
     return [
       "[편지 호칭 — 가장 중요]",
       `편지는 **${name}**(애칭)이 **${recipient}**에게 직접 쓰는 1인칭 손편지다.`,
@@ -240,24 +265,20 @@ export function buildLetterAddressingBlock(
       `자기 자신: '나' 또는 이름 ${nameLit}. 상대와 나를 헷갈리지 마.`,
       `문장 예: '엄마, 그때 케이지에서…' / '엄마 손길이 기억나.' — '너 기억나?' 같은 표현 금지.`,
       mode === "living"
-        ? `마무리 필수 문장(한 번, 그대로): '오늘도 ${recipient} 옆에서 기다리고 있을게.' ('너를' 쓰지 마)`
-        : `마무리 필수 문장(한 번, 그대로): '언제든 빛으로 ${recipient} 곁에 있을게.' ('너를' 쓰지 마)`,
+        ? `마지막 1~2줄은 설문의 실제 기억·습관·장소 중 하나를 다시 떠올리며 현재나 가까운 미래로 자연스럽게 닫는다. 고정 문구나 '기다리고 있을게'를 반복하지 말고 매 편지 다르게 쓴다.`
+        : `마지막 1~2줄은 설문의 실제 기억·습관·장소 중 하나와 이어지게 조용히 닫는다. 고정 문구나 '빛으로 곁에 있을게'를 반복하지 말고 매 편지 다르게 쓴다.`,
       "톤: AI 산문 금지. **옆에서 말로 하는 대화** — 한 줄에 생각 하나, 설문에 나온 장면만.",
     ].join("\n");
   }
 
-  const openingEn =
-    profile.letterRecipient === "both"
-      ? `"Hi Mom and Dad, it's me, ${name}."`
-      : `"Hi ${recipient}, it's me, ${name}."`;
   return [
     "[Letter addressing — critical]",
     `The pet **${name}** writes in first person **to ${recipient}** only.`,
-    `Open with exactly: ${openingEn}`,
+    `Within the first two lines, address ${recipient} naturally and make ${name}'s identity clear. Do not use a fixed greeting or self-introduction; let the first supplied memory and selected mood shape a different opening each time.`,
     `Address them as ${recipientLit} throughout—never "you" as a distant pronoun; use Mom/Dad/their name like a real letter.`,
     mode === "living"
-      ? `Required closing (once, verbatim): "I'll be right here waiting for ${recipient}."`
-      : `Required closing (once, verbatim): "I'll always stay close to ${recipient} through the light."`,
+      ? `Close in one or two natural lines connected to a specific supplied memory, habit, or place and the present or near future. Vary the wording every time; do not use a stock promise about waiting or staying nearby.`
+      : `Close in one or two quiet lines connected to a specific supplied memory, habit, or place. Vary the wording every time; do not use a stock promise about light or always staying nearby.`,
     "Tone: spoken conversation, not polished AI prose. One thought per line. Only memories from the survey.",
   ].join("\n");
 }
@@ -276,12 +297,17 @@ export function buildLetterRequestFields(
   profile: PetIntroProfile,
   memoryAnswers: string[],
   tonePrefs: LetterTonePrefs,
-): (PetProfilePayload & { preferredScenery: string; tonePrefs: LetterTonePrefs }) | null {
+): (PetProfilePayload & {
+  relationship: LetterRecipient;
+  preferredScenery: string;
+  tonePrefs: LetterTonePrefs;
+}) | null {
   const payload = petProfilePayloadFromIntro(profile);
   if (!payload) return null;
   if (!tonePrefs.mood || !tonePrefs.length) return null;
   return {
     ...payload,
+    relationship: payload.letterRecipient,
     preferredScenery: (memoryAnswers[0] ?? "").trim(),
     tonePrefs,
   };

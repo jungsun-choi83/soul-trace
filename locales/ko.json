@@ -3,6 +3,70 @@
     "kr": "KR",
     "en": "EN"
   },
+  "welcome": {
+    "title": "마음에서 온 편지",
+    "cta": "여정을 시작하세요"
+  },
+  "auth": {
+    "eyebrow": "나의 소울 트레이스",
+    "signupTitle": "계정을 만들어 주세요",
+    "signupBody": "소중한 편지와 추억을 나의 기록으로 이어가세요.",
+    "signinTitle": "다시 만나 반가워요",
+    "signinBody": "Soul Trace에 연결된 이메일로 계속해 주세요.",
+    "continueEmail": "이메일로 계속하기",
+    "sending": "보내는 중…",
+    "checkEmailTitle": "이메일을 확인해 주세요",
+    "checkEmailBody": "계속하려면 보내드린 보안 링크를 열어 주세요.",
+    "registered": "이미 가입하셨나요?",
+    "signIn": "로그인",
+    "password": "비밀번호",
+    "confirmPassword": "비밀번호 확인",
+    "signUpButton": "가입하기",
+    "signInButton": "로그인",
+    "submitting": "처리 중…",
+    "forgotPassword": "비밀번호를 잊으셨나요?",
+    "createAccount": "계정 만들기",
+    "passwordlessGuidance": "이전에 이메일 링크로 로그인하셨다면 비밀번호를 설정하거나 재설정해 주세요.",
+    "passwordValidation": {
+      "required": "비밀번호를 입력해 주세요.",
+      "too_short": "8자 이상 입력해 주세요.",
+      "mismatch": "비밀번호가 일치하지 않습니다."
+    },
+    "newHere": "Soul Trace가 처음이신가요?",
+    "signUp": "계정 만들기",
+    "backHome": "Soul Trace로 돌아가기",
+    "recovery": {
+      "open": "비밀번호 설정 또는 재설정",
+      "requestTitle": "비밀번호 설정 또는 재설정",
+      "requestBody": "비밀번호 설정 링크를 받을 수 있는 주소라면 안전한 링크를 보내드립니다.",
+      "sendLink": "비밀번호 설정 링크 보내기",
+      "sending": "보내는 중…",
+      "checkEmail": "비밀번호 설정 링크를 받을 수 있는 주소라면 잠시 후 이메일이 도착합니다.",
+      "back": "로그인으로 돌아가기",
+      "updateTitle": "새 비밀번호를 설정해 주세요",
+      "updateBody": "Soul Trace 계정에 사용할 안전한 비밀번호를 설정해 주세요.",
+      "newPassword": "새 비밀번호",
+      "confirmPassword": "새 비밀번호 확인",
+      "savePassword": "비밀번호 저장",
+      "saving": "저장 중…",
+      "required": "비밀번호를 입력해 주세요.",
+      "too_short": "8자 이상 입력해 주세요.",
+      "mismatch": "비밀번호가 일치하지 않습니다.",
+      "policy_failed": "보안 기준을 충족하지 않습니다. 더 안전한 비밀번호를 사용해 주세요.",
+      "request_failed": "요청을 안전하게 완료하지 못했습니다. 다시 시도해 주세요.",
+      "updated": "비밀번호가 변경되었습니다. 새 비밀번호로 로그인해 주세요."
+    },
+    "errors": {
+      "invalid_link": "로그인 링크가 올바르지 않거나 만료되었습니다. 새 링크를 요청해 주세요.",
+      "unavailable": "현재 이메일 인증을 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+      "request_failed": "이메일을 보내지 못했습니다. 다시 시도해 주세요.",
+      "invalid_credentials": "입력한 정보로 로그인할 수 없습니다.",
+      "email_not_confirmed": "로그인하기 전에 이메일을 확인해 주세요.",
+      "signup_unavailable": "현재 계정을 만들 수 없습니다. 잠시 후 다시 시도해 주세요.",
+      "signin_unavailable": "현재 로그인할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+      "policy_failed": "보안 기준을 충족하지 않습니다. 더 안전한 비밀번호를 사용해 주세요."
+    }
+  },
   "hero": {
     "eyebrow": "Eternal Beam",
     "title": "Soul Trace",
@@ -10,7 +74,8 @@
   },
   "landing": {
     "prompt": "어떤 아이의 이야기를 들려드릴까요",
-    "back": "처음으로"
+    "back": "처음으로",
+    "navBack": "뒤로"
   },
   "modes": {
     "living": {
@@ -18,7 +83,7 @@
       "landingHint": "오늘도 곁에 있는 아이가, 오늘 하루를 편지로 들려줘요.",
       "headline": "그 아이가 오늘 하루 뭘 생각했을까요",
       "subline": "말로 못 할 뿐, 아이는 매일 하고 싶은 말이 있어요.",
-      "letterHeading": "우리 아이가 오늘 보내는 편지",
+      "letterHeading": "%RECIPIENT%에게 보내는 편지",
       "q1Label": "Q1. 아이의 이름은?",
       "q2Label": "Q2. 어떤 아이인가요?",
       "yearPartedPlaceholder": "지금 (올해)",
@@ -84,7 +149,7 @@
       "landingHint": "아직 전하지 못한 말이, 아이의 마음에 남아 있어요.",
       "headline": "그 아이가 마지막으로 전하지 못한 말",
       "subline": "아이의 마음속엔, 아직 전하지 못한 말이 있어요.",
-      "letterHeading": "엄마, 아빠에게 보내는 미래의 편지",
+      "letterHeading": "%RECIPIENT%에게 보내는 편지",
       "q1Label": "Q1. 아이의 이름은?",
       "q2Label": "Q2. 어떤 아이였나요?",
       "yearPartedPlaceholder": "헤어진 해",
@@ -164,6 +229,23 @@
     "photoPrivacyConsentAgree": "위 내용을 확인하였으며, 사진 수집·이용에 동의합니다.",
     "generateNeedAnswer": "현재 질문에 답하거나, 마지막 단계에서 필수 항목을 채워 주세요.",
     "generateNeedProfile": "STEP 1, 이메일, 개인정보 동의를 모두 완료해야 편지를 확인할 수 있습니다.",
+    "validation": {
+      "emailRequired": "이메일 주소를 입력해 주세요.",
+      "emailInvalid": "name@example.com과 같은 올바른 이메일 주소를 입력해 주세요.",
+      "petNameRequired": "아이의 이름을 입력해 주세요.",
+      "petTypeRequired": "아이의 종류를 선택해 주세요.",
+      "yearsRequired": "두 연도를 모두 입력해 주세요.",
+      "yearsRange": "1980년부터 올해 사이의 연도를 입력해 주세요.",
+      "yearsOrder": "처음 만난 해는 마지막 연도보다 늦을 수 없어요.",
+      "recipientRequired": "편지를 받을 사람을 선택해 주세요.",
+      "recipientDetailRequired": "편지에 사용할 이름이나 호칭을 입력해 주세요.",
+      "privacyRequired": "개인정보 내용을 확인하고 동의해 주세요.",
+      "memoryRequired": "다음으로 가기 전에 답변을 입력해 주세요.",
+      "photoChoiceRequired": "사진을 올리거나 사진 건너뛰기를 선택해 주세요.",
+      "photoConsentRequired": "사진 이용에 동의하거나 사진을 삭제한 뒤 건너뛰어 주세요.",
+      "moodRequired": "편지의 분위기를 선택해 주세요.",
+      "lengthRequired": "편지 길이를 선택해 주세요."
+    },
     "step1": {
       "kicker": "STEP 1 — 아이 소개",
       "q1Placeholder": "정식 이름",
@@ -186,6 +268,8 @@
         "mom": "엄마",
         "dad": "아빠",
         "both": "엄마랑 아빠",
+        "sister": "누나/언니",
+        "brother": "형/오빠",
         "sibling": "누나/언니/형/오빠",
         "byName": "이름으로 부르기",
         "custom": "직접 입력"
@@ -206,6 +290,14 @@
   "result": {
     "eyebrow": "Soul Trace Result",
     "soulTypeCardTitle": "「아이의 특징과 기질」",
+    "letterStyle": {
+      "label": "편지 스타일 선택",
+      "goldenMeadow": "황금빛 들판",
+      "nightSky": "밤하늘",
+      "softClouds": "포근한 구름",
+      "memoryPaper": "추억의 편지지",
+      "temporary": "임시"
+    },
     "eternalBridgePrompt": "이 소중한 편지를 이터널빔의 빛으로 영원히 간직하시겠어요?",
     "bgmOn": "잔잔한 배경음 켜기",
     "bgmOff": "배경음 끄기",
@@ -262,8 +354,19 @@
         "cta": "인스타그램 보기"
       }
     },
-    "instagramShareLead": "이 순간을 남겨보세요",
-    "instagramShareButton": "인스타 스토리로 바로 공유하기",
+    "instagramShareLead": "이 순간을 간직하세요",
+    "instagramShareButton": "인스타그램 스토리에 공유하기",
+    "lifeArchive": {
+      "cta": "아이의 여정을 계속 이어가기",
+      "preparing": "삶의 기록을 준비하고 있어요…",
+      "checkEmail": "Soul Trace에서 이미 사용한 이메일로 안전한 확인 링크를 보냈어요. 링크를 열어 계속해 주세요.",
+      "error": "삶의 기록을 열지 못했어요. 잠시 후 다시 시도해 주세요."
+    },
+    "restore": {
+      "errorTitle": "이 편지를 다시 불러오지 못했어요",
+      "errorBody": "저장된 Soul Trace 흐름에서 삶의 기록을 열고, 확인된 보호자 이메일로 로그인되어 있는지 확인해 주세요.",
+      "home": "Soul Trace로 돌아가기"
+    },
     "instagramFooter": "인스타그램에 추억 공유하기",
     "ctaEternalBeam": "이 빛을 실물로 예약하기",
     "connectLetterLink": "봉안당 아이에게 이 편지 보내기",
@@ -276,7 +379,7 @@
       "body": "이 편지가, 빛이 되어 당신 곁에 머물 수 있어요"
     },
     "saveImage": "내 폰에 저장",
-    "keepForever": "영원히 간직하기",
+    "keepForever": "이 편지를 간직하기",
     "instagramPrepare": "인스타용 이미지 준비 (1단계)",
     "instagramShare": "인스타에서 공유하기 (2단계)",
     "preparingImage": "이미지 준비 중...",
@@ -307,6 +410,186 @@
       "petStoryNameLead": "%NAME%가 전하는 맺음말"
     }
   },
+  "lifeArchive": {
+    "back": "편지로 돌아가기",
+    "temporaryNotice": "임시 개발 모드: 이 기록은 현재 브라우저 탭에만 남으며 서버에는 저장되지 않습니다.",
+    "authenticationRequired": {
+      "title": "이메일을 확인해 주세요",
+      "body": "Soul Trace에서 이미 사용한 이메일로 보낸 안전한 확인 링크를 열어 주세요."
+    },
+    "selectionRequired": {
+      "title": "편지에서 삶의 기록을 열어 주세요",
+      "body": "현재 Soul Trace 편지로 돌아가 ‘아이의 여정을 계속 이어가기’를 선택해 주세요."
+    },
+    "exampleNotice": "1단계 화면 미리보기 — 코코와 이 화면의 모든 편지 및 기억은 임시로 만든 예시입니다. 이 페이지에서는 아무것도 저장되지 않습니다.",
+    "title": "삶의 기록",
+    "hero": {
+      "keepMoments": "%NAME%의 이야기를 담은 순간들을 간직해 보세요."
+    },
+    "temporaryNoticeCompact": "임시 모드 · 추억은 현재 이 브라우저 탭에만 저장됩니다.",
+    "summary": {
+      "photoMoments": "사진 순간",
+      "photos": "사진",
+      "favorites": "즐겨찾기"
+    },
+    "origin": {
+      "label": "우리 이야기가 시작된 곳",
+      "createdFrom": "%COUNT%개의 추억으로 만든 기록"
+    },
+    "favorites": {
+      "title": "가장 소중한 순간들",
+      "photos": "사진",
+      "open": "소중한 추억 열기",
+      "previous": "이전 소중한 순간",
+      "next": "다음 소중한 순간"
+    },
+    "allMemories": {
+      "title": "모든 추억",
+      "subtitle": "시간 속에 간직된 모든 사진 순간.",
+      "allMoments": "모든 순간",
+      "favorites": "즐겨찾기",
+      "allYears": "전체 연도",
+      "yearLabel": "연도로 필터링",
+      "noDate": "날짜 미지정",
+      "photos": "사진",
+      "noMatch": "선택한 필터와 일치하는 추억이 없습니다.",
+      "clear": "필터 초기화"
+    },
+    "footer": {
+      "privacy": "당신의 추억은 당신의 것입니다. 우리는 개인정보를 소중히 지켜요."
+    },
+    "introduction": "%NAME%의 이야기를 이루는 순간들을 간직해 보세요.\nSoul Trace에서 만든 편지와 기억은 이미 이곳에 연결되어 있어요.",
+    "previewControls": {
+      "label": "1단계 화면 상태 미리보기",
+      "empty": "빈 상태",
+      "returning": "재방문",
+      "loading": "불러오는 중",
+      "error": "오류"
+    },
+    "journey": {
+      "title": "지금까지의 여정",
+      "letterCreated": "Soul Trace 편지 완성",
+      "soulTraceMemories": "Soul Trace에서 나눈 기억 %COUNT%개",
+      "archiveMemories": "새로 추가한 기록 %COUNT%개",
+      "photoMoments": "사진 순간 %COUNT%개",
+      "savedPhotos": "저장된 사진 %COUNT%장"
+    },
+    "letter": {
+      "title": "Soul Trace 편지에서",
+      "readSoulTrace": "Soul Trace 편지 읽기",
+      "readFull": "편지 전체 보기",
+      "closeFull": "전체 편지 닫기"
+    },
+    "archive": {
+      "title": "삶의 기록",
+      "count": "새로 추가한 기억 %COUNT%개",
+      "add": "기억 추가하기",
+      "phaseOneNote": "기억 저장 기능은 승인된 다음 단계에서 시작됩니다."
+    },
+    "memoryForm": {
+      "title": "기억 제목 (선택)",
+      "titlePlaceholder": "이 순간의 이름",
+      "date": "기억 날짜 (선택)",
+      "story": "기억 이야기",
+      "storyPlaceholder": "기억하는 그대로 이 순간을 적어 주세요…",
+      "cancel": "취소",
+      "save": "기억 저장하기",
+      "saving": "저장하는 중…",
+      "saveError": "이 기억을 저장하지 못했어요. 다시 시도해 주세요.",
+      "delete": "기억 삭제하기",
+      "deleting": "삭제하는 중…",
+      "deleteConfirm": "이 기억을 삭제할까요? 삭제하면 되돌릴 수 없어요.",
+      "deleteError": "이 기억을 삭제하지 못했어요. 다시 시도해 주세요."
+    },
+    "photos": {
+      "add": "사진 추가하기",
+      "addMoment": "사진 순간 추가하기",
+      "addFirstMoment": "첫 사진 순간 추가하기",
+      "summary": "사진 순간 %MOMENTS%개 · 사진 %PHOTOS%장",
+      "select": "반려동물 사진 선택",
+      "help": "JPEG, PNG 또는 WebP · 한 순간에 최대 %COUNT%장",
+      "selectedLabel": "저장 순서대로 선택한 사진",
+      "selectedCount": "%MAX%장 중 %SELECTED%장 선택",
+      "addMore": "더 추가",
+      "layoutTitle": "콜라주 배치 선택",
+      "layoutHelp": "저장하기 전에 배치를 바꿀 수 있어요.",
+      "classicCentre": "클래식 센터",
+      "classicDescription": "네 개의 프레임과 가운데 원형 사진",
+      "classicUnavailable": "클래식 센터는 사진을 정확히 5장 선택했을 때 사용할 수 있어요.",
+      "cleanGrid": "클린 그리드",
+      "cleanDescription": "부드러운 모서리와 균형 잡힌 격자",
+      "scrapbook": "스크랩북",
+      "scrapbookDescription": "따뜻한 종이 질감의 인화 사진 프레임",
+      "chooseCentre": "가운데로",
+      "centrePhoto": "가운데 사진",
+      "collagePreview": "콜라주 미리보기",
+      "previewAlt": "선택한 사진 %NUMBER%",
+      "moveEarlier": "앞으로 이동",
+      "moveLater": "뒤로 이동",
+      "remove": "삭제",
+      "caption": "이 순간에 대해 짧게 남겨 주세요",
+      "save": "이 순간 저장하기",
+      "saving": "저장 중…",
+      "required": "저장하려면 사진을 한 장 이상 선택해 주세요.",
+      "tooMany": "한 사진 순간에는 최대 %COUNT%장까지 저장할 수 있습니다.",
+      "unsupported": "JPEG, PNG 또는 WebP 사진만 선택해 주세요.",
+      "unreadable": "읽을 수 없는 사진이 있습니다. 해당 사진을 빼고 다시 시도해 주세요.",
+      "storageError": "임시 브라우저 저장소를 사용할 수 없거나 사진 순간을 저장하지 못했습니다.",
+      "emptyTitle": "아직 사진 순간이 없습니다",
+      "emptyBody": "Soul Trace 기억은 이미 연결되어 있습니다. 준비되면 반려동물 사진을 추가해 주세요.",
+      "openGallery": "이 사진 순간 열기",
+      "galleryLabel": "사진 보기",
+      "galleryPhotoAlt": "전체 %TOTAL%장 중 %NUMBER%번째 사진",
+      "previousPhoto": "이전 사진",
+      "nextPhoto": "다음 사진",
+      "closeGallery": "닫기",
+      "delete": "사진 순간 삭제",
+      "favorite": "즐겨찾기",
+      "unfavorite": "즐겨찾기 해제",
+      "favoriteError": "즐겨찾기 상태를 바꾸지 못했어요.",
+      "fullScreen": "전체 화면으로 보기",
+      "downloadCollage": "콜라주 저장",
+      "downloadError": "콜라주를 다운로드하지 못했어요.",
+      "more": "더 보기",
+      "deleteMoment": "순간 삭제",
+      "deleteConfirm": "이 순간과 사진을 모두 삭제할까요?",
+      "cancel": "취소",
+      "deleteAction": "삭제",
+      "deleteConfirm": "이 사진 순간과 임시 사진을 모두 삭제할까요?",
+      "deleteError": "사진 순간을 삭제하지 못했습니다.",
+      "clearAll": "모든 임시 사진 순간 삭제",
+      "clearConfirm": "이 브라우저에 저장된 모든 임시 사진 순간과 사진을 삭제할까요?",
+      "clearError": "임시 사진 데이터를 모두 삭제하지 못했습니다.",
+      "olderTextMemories": "이전에 작성한 글 기억"
+    },
+    "videos": {
+      "add": "동영상 추가",
+      "select": "동영상 한 개 선택",
+      "help": "동영상 1개 · 최대 30초 · 최대 50MB",
+      "caption": "이 동영상에 대한 짧은 글 (선택)",
+      "replace": "동영상 바꾸기",
+      "remove": "동영상 삭제",
+      "save": "임시 동영상 추가",
+      "favorite": "즐겨찾기",
+      "fullScreen": "전체 화면으로 보기",
+      "delete": "동영상 삭제",
+      "unsupported": "지원되는 동영상 파일을 선택해 주세요.",
+      "oversized": "50MB 이하의 동영상을 선택해 주세요.",
+      "tooLong": "30초 이하의 동영상을 선택해 주세요.",
+      "previewUnsupported": "이 브라우저에서는 선택한 동영상 형식을 미리 볼 수 없습니다.",
+      "temporaryWarning": "임시 미리보기 — 새로고침하거나 이 페이지를 떠나면 이 동영상은 사라집니다."
+    },
+    "empty": {
+      "title": "아직 새로 추가한 기억이 없어요",
+      "body": "Soul Trace에서 나눈 기억은 이미 연결되어 있어요.\n준비가 되었을 때 새로운 순간을 남겨 보세요."
+    },
+    "loading": "아이의 여정을 불러오는 중이에요…",
+    "error": {
+      "title": "삶의 기록을 열 수 없어요.",
+      "body": "선택한 아이와 편지를 안전하게 불러오지 못했어요. 편지로 돌아가 다시 시도해 주세요.",
+      "retry": "다시 시도"
+    }
+  },
   "share": {
     "title": "Soul Trace 편지",
     "text": "우리 아이가 남긴 Soul Trace 편지를 공유합니다."
@@ -335,6 +618,41 @@
     "toneMultiHint": "원하시는 것만 골라주세요 (선택)",
     "toneQ11None": "(선택 없음)",
     "examplePrefix": "예:",
+    "channelIntroductions": {
+      "pension": {
+        "headline": "머무는 동안 어떤 이야기를 전하고 싶을까요?",
+        "subline": "오늘 편안하고 즐거웠던 작은 순간들을 들려주세요. 반려동물의 따뜻한 편지로 전해 드릴게요."
+      },
+      "grooming": {
+        "headline": "오늘 어떤 모습으로 빛났을까요?",
+        "subline": "새로워진 모습과 기분, 가장 사랑스러웠던 순간을 들려주세요."
+      },
+      "hospital": {
+        "headline": "오늘의 방문에서 어떤 이야기를 전하고 싶을까요?",
+        "subline": "오늘 함께한 차분하고 따뜻한 순간을 들려주세요."
+      }
+    },
+    "channels": {
+      "pension": [
+        { "id": "pension-1", "promptText": "오늘 반려동물에게 어떤 일이 있었나요?", "placeholder": "오늘 있었던 일을 적어 주세요" },
+        { "id": "pension-2", "promptText": "오늘 반려동물의 기분은 어땠나요?", "placeholder": "반려동물의 기분을 적어 주세요" },
+        { "id": "pension-3", "promptText": "오늘 반려동물이 가장 좋아했던 것은 무엇인가요?", "placeholder": "가장 좋아했던 것을 적어 주세요" },
+        { "id": "pension-4", "promptText": "오늘 귀엽거나 재미있는 순간이 있었나요?", "placeholder": "귀엽거나 재미있는 순간을 남겨 주세요", "optional": true, "optionalNote": "이 질문은 건너뛰어도 괜찮아요.", "skipLabel": "건너뛰기" }
+      ],
+      "grooming": [
+        { "id": "grooming-1", "promptText": "오늘 반려동물은 어떤 미용 서비스를 받았나요?", "placeholder": "받은 미용 서비스를 적어 주세요" },
+        { "id": "grooming-2", "promptText": "미용 전후로 가장 크게 달라진 점은 무엇인가요?", "placeholder": "가장 크게 달라진 점을 적어 주세요" },
+        { "id": "grooming-3", "promptText": "미용 후 반려동물의 반응은 어땠나요?", "placeholder": "반려동물의 반응을 적어 주세요" },
+        { "id": "grooming-4", "promptText": "오늘 어떤 모습이 특히 귀여운가요?", "placeholder": "특히 귀여운 모습을 적어 주세요" },
+        { "id": "grooming-5", "promptText": "미용사가 발견한 귀엽거나 사랑스러운 모습이 있었나요?", "placeholder": "미용사가 발견한 모습을 남겨 주세요", "optional": true, "optionalNote": "이 질문은 건너뛰어도 괜찮아요.", "skipLabel": "건너뛰기" }
+      ],
+      "hospital": [
+        { "id": "hospital-1", "promptText": "오늘 반려동물은 어떤 진료를 받았나요?", "placeholder": "오늘 받은 진료를 적어 주세요" },
+        { "id": "hospital-2", "promptText": "진료 중 반려동물의 모습은 어땠나요?", "placeholder": "진료 중 모습을 적어 주세요" },
+        { "id": "hospital-3", "promptText": "마음을 편안하게 해 준 순간이나 귀여운 순간이 있었나요?", "placeholder": "편안하거나 귀여웠던 순간을 남겨 주세요", "optional": true, "optionalNote": "이 질문은 건너뛰어도 괜찮아요.", "skipLabel": "건너뛰기" },
+        { "id": "hospital-4", "promptText": "편지에 포함하고 싶은 확인된 돌봄 안내가 있나요?", "placeholder": "확인된 돌봄 안내를 적어 주세요", "optional": true, "optionalNote": "이 질문은 건너뛰어도 괜찮아요.", "skipLabel": "건너뛰기" }
+      ]
+    },
     "video": {
       "kicker": "영상 모션",
       "prompt": "이 사진 속 ○○에게 어떤 움직임을 주고 싶으세요?",

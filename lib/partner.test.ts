@@ -162,13 +162,13 @@ describe("partner_id 는 서버가 만든다", () => {
 describe("파트너 코드가 갈림길에서 사라지지 않는다", () => {
   it("랜딩이 ?p= 를 다음 화면으로 넘긴다", async () => {
     const { readFileSync } = await import("node:fs");
-    const page = readFileSync("app/page.tsx", "utf8");
+    const page = readFileSync("app/choose/page.tsx", "utf8");
     const choice = readFileSync("components/mode-choice.tsx", "utf8");
 
     // 예전에는 `href={letterModePath(mode)}` 라 QR 로 들어온 사람이 갈래를 고르는
     // 순간 코드가 사라졌다 — QR 은 멀쩡해 보이고 정산만 비었다.
     assert.ok(
-      choice.includes(`${"$"}{path}?${"$"}{PARTNER_CODE_PARAM}=`),
+      choice.includes("destinationParams.set(PARTNER_CODE_PARAM, partnerCode)"),
       "갈래 링크가 파트너 코드를 다시 싣지 않는다",
     );
     assert.ok(
