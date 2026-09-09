@@ -11,16 +11,37 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { ResultAmbientAudio } from "@/components/result-ambient-audio";
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
-import { modeCopy, type LetterMode } from "@/lib/letter-mode";
+import { letterModePath, modeCopy, type LetterMode } from "@/lib/letter-mode";
 import Link from "next/link";
 import { consumeLetterSseStream } from "@/lib/consume-letter-sse";
 import { readPartnerCode } from "@/lib/partner";
+import {
+  isServiceChannelCompatible,
+  serviceChannelMode,
+  type ServiceChannel,
+} from "@/lib/service-channel";
+import { serviceChannelBackground } from "@/lib/service-channel-background";
 import { userFacingErrorMessage } from "@/lib/user-facing-error";
 import { pickGenerationLoadingMessage } from "@/lib/generation-loading-messages";
 import { primeResultBgm, resolveResultBgmSrc, stopResultBgm } from "@/lib/result-bgm";
-import { heroImageSrcForApp } from "@/lib/hero-image-proxy";
 import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
+import {
+  loadTemporaryLifeArchive,
+  saveTemporaryLifeArchive,
+} from "@/lib/life-archive-temporary";
 import { pickEmotionalLetterSentence, pickRandomBestLetterSentence } from "@/lib/letter-emotional-line";
+import {
+  createGeneratedLetterStructure,
+  visibleStreamingBody,
+  type GeneratedLetterStructure,
+} from "@/lib/generated-letter";
+import {
+  DEFAULT_LETTER_THEME_ID,
+  getLetterTheme,
+  isLetterThemeId,
+  LETTER_THEMES,
+  type LetterThemeId,
+} from "@/lib/letter-themes";
 import {
   buildHandoffUrl,
   getEternalBeamInstagramUrl,
@@ -32,6 +53,7 @@ import {
   isPetIntroComplete,
   letterPetName,
   petProfilePayloadFromIntro,
+  resolveRecipientAddress,
   type PetIntroProfile,
 } from "@/lib/pet-profile";
 import {
@@ -39,9 +61,11 @@ import {
   EMPTY_TONE_PREFS,
   isSurveyComplete,
   isSurveyStepValid,
+  memoryQuestionCount,
   MEMORY_STEP_COUNT,
-  OPTIONAL_MEMORY_STEP,
-  SURVEY_STEP_COUNT,
+  PHOTO_STEP_COUNT,
+  surveyIntroduction,
+  TONE_STEP_COUNT,
   type LetterToneOption,
   type LetterTonePrefs,
   type VideoMotion,
@@ -50,11 +74,12 @@ import { toJpeg } from "html-to-image";
 import { flushSync } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-type GeneratedResult = {
+export type GeneratedResult = {
   personalityType: string;
   personalitySummary: string;
   personalityTags: string[];
   letter: string;
+  letterStructure?: GeneratedLetterStructure;
   heroImageUrl: string | null;
   /** 배경 이미지 단계 실패 또는 URL 없음 — 편지(GPT)는 성공했을 수 있음 */
   heroImageSkipped?: boolean;
@@ -70,6 +95,10 @@ type GeneratedResult = {
    * 조용히 넘기면 사용자는 저장됐다고 믿고 창을 닫고, 편지는 영영 사라진다.
    */
   persistenceFailed?: boolean;
+  /** Language used to generate this letter, independent from the current interface locale. */
+  generationLocale?: Locale;
+  /** Locale-aware identity for any future generated-letter cache. */
+  generationCacheKey?: string;
 };
 
 /** 첫 그래프클러스터(드롭캡)와 나머지 본문 분리 — 선행 공백은 유지 */
@@ -93,6 +122,9 @@ function splitLetterForDropCap(letter: string): { first: string; rest: string } 
 /** JPEG가 PNG보다 용량·인코딩 시간에 유리. pixelRatio 2로 디코드 부담 완화 */
 const CAPTURE_JPEG_QUALITY = 0.88;
 const CAPTURE_PIXEL_RATIO = 2;
+const LETTER_THEME_STORAGE_KEY = "soul-trace-letter-theme";
+const RESULT_ACTION_BUTTON_SIZE_CLASS =
+  "flex min-h-[56px] w-full items-center justify-center rounded-xl px-5 py-4 text-center text-sm font-light sm:text-base";
 
 function getSnapshotOptions(skipFonts: boolean) {
   return {
@@ -108,9 +140,16 @@ function getSnapshotOptions(skipFonts: boolean) {
 const SKIP_FIRST_HERO_IMAGE =
   typeof process.env.NEXT_PUBLIC_SKIP_RESULT_HERO_IMAGE === "string" &&
   process.env.NEXT_PUBLIC_SKIP_RESULT_HERO_IMAGE.trim() === "1";
+const SECURE_LIFE_ARCHIVE_CONFIGURED = Boolean(
+  process.env.NEXT_PUBLIC_LIFE_ARCHIVE_SECURE_MODE === "1" &&
+  process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim(),
+);
 
 type SoulTraceFlowProps = {
   mode: LetterMode;
+  initialResult?: GeneratedResult;
+  initialServiceChannel?: ServiceChannel | null;
 };
 
 /** 살아 있는 갈래는 "지금까지" 가 곧 올해다 — 사용자가 다시 고를 이유가 없다. */
@@ -118,7 +157,11 @@ function initialYearParted(mode: LetterMode): string {
   return mode === "living" ? String(new Date().getFullYear()) : "";
 }
 
-export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
+export function SoulTraceFlow({
+  mode,
+  initialResult,
+  initialServiceChannel = null,
+}: SoulTraceFlowProps) {
   const { lang, t, messages } = useLocale();
   const copy = modeCopy(messages, mode);
 
@@ -140,17 +183,32 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
   const [photoPrivacyConsent, setPhotoPrivacyConsent] = useState(false);
   const [mainPrivacySheetOpen, setMainPrivacySheetOpen] = useState(false);
   const [photoPrivacySheetOpen, setPhotoPrivacySheetOpen] = useState(false);
-  const [result, setResult] = useState<GeneratedResult | null>(null);
+  const [result, setResult] = useState<GeneratedResult | null>(initialResult ?? null);
   /** 마지막으로 생성된 편지·분석이 맞는 UI 언어 (언어 토글 시 API로 다시 맞춤) */
-  const [resultLocale, setResultLocale] = useState<Locale | null>(null);
+  const [resultLocale, setResultLocale] = useState<Locale | null>(
+    initialResult?.generationLocale ?? null,
+  );
+  const isRestoredResult = initialResult != null;
   const [isLoading, setIsLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [shareableFile, setShareableFile] = useState<File | null>(null);
+  const [letterThemeId, setLetterThemeId] = useState<LetterThemeId>(() => {
+    if (typeof window === "undefined") return DEFAULT_LETTER_THEME_ID;
+    const stored = window.localStorage.getItem(LETTER_THEME_STORAGE_KEY);
+    return isLetterThemeId(stored) ? stored : DEFAULT_LETTER_THEME_ID;
+  });
+  const [loadedThemeImages, setLoadedThemeImages] = useState<Set<LetterThemeId>>(
+    () => new Set(),
+  );
+  const [missingThemeImages, setMissingThemeImages] = useState<Set<LetterThemeId>>(
+    () => new Set(),
+  );
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** 이미 편지를 받은 이메일 — 설문 진행·생성 전에 안내 */
   const [profileEmailBlockedMessage, setProfileEmailBlockedMessage] = useState<string | null>(null);
   const [isCheckingProfileEmail, setIsCheckingProfileEmail] = useState(false);
-  const [heroLoaded, setHeroLoaded] = useState(false);
   /** 첫 생성 스트리밍 시에만 감성 로딩 한 줄 (언어 전환 시에는 null) */
   const [generationLoadingMessage, setGenerationLoadingMessage] = useState<string | null>(null);
   /** 스토리 캡처 직전 무작위로 고른 한 줄(매 공유마다 갱신) */
@@ -165,14 +223,56 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
   const [partnerCode] = useState<string | null>(() =>
     typeof window === "undefined" ? null : readPartnerCode(window.location.search),
   );
+  const serviceChannel = initialServiceChannel;
+  const channelBackground = serviceChannelBackground(serviceChannel);
+  const introduction = surveyIntroduction(messages, mode, serviceChannel);
+  const surveyStepCount = memoryQuestionCount(serviceChannel) + PHOTO_STEP_COUNT + TONE_STEP_COUNT;
   const [handoffBusy, setHandoffBusy] = useState(false);
   const [handoffError, setHandoffError] = useState<string | null>(null);
+  const [lifeArchiveBusy, setLifeArchiveBusy] = useState(false);
+  const [lifeArchiveNotice, setLifeArchiveNotice] = useState<string | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
   const instagramStoryRef = useRef<HTMLDivElement>(null);
   const bgmPrimeRef = useRef<HTMLAudioElement>(null);
 
+  useEffect(() => {
+    if (!serviceChannel || isServiceChannelCompatible(serviceChannel, mode)) return;
+
+    const destination = new URL(window.location.href);
+    destination.pathname = letterModePath(serviceChannelMode(serviceChannel));
+    window.location.replace(`${destination.pathname}${destination.search}${destination.hash}`);
+  }, [mode, serviceChannel]);
+
+  const letterTheme = getLetterTheme(letterThemeId);
+  const selectedThemeImageMissing = missingThemeImages.has(letterThemeId);
+  const selectedThemeImageReady =
+    loadedThemeImages.has(letterThemeId) || selectedThemeImageMissing;
+
+  const chooseLetterTheme = useCallback((id: LetterThemeId) => {
+    setLetterThemeId(id);
+    window.localStorage.setItem(LETTER_THEME_STORAGE_KEY, id);
+  }, []);
+
+  const markThemeImageLoaded = useCallback((id: LetterThemeId) => {
+    setLoadedThemeImages((previous) => new Set(previous).add(id));
+    setMissingThemeImages((previous) => {
+      if (!previous.has(id)) return previous;
+      const next = new Set(previous);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const markThemeImageMissing = useCallback((id: LetterThemeId) => {
+    setMissingThemeImages((previous) => new Set(previous).add(id));
+  }, []);
+
   const displayPetName = letterPetName(petIntro);
   const petProfilePayload = petProfilePayloadFromIntro(petIntro);
+  const letterHeading = copy.letterHeading.replace(
+    "%RECIPIENT%",
+    resolveRecipientAddress(petIntro, lang),
+  );
   const officialSiteUrl = useMemo(() => getEternalBeamMainUrl(), []);
 
   /**
@@ -210,6 +310,63 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
   }, [result?.letterId, handoffBusy, t]);
   const instagramProfileUrl = useMemo(() => getEternalBeamInstagramUrl(), []);
 
+  const continueToLifeArchive = useCallback(async () => {
+    const letterId = result?.letterId;
+    if (!result || lifeArchiveBusy) return;
+
+    if (!SECURE_LIFE_ARCHIVE_CONFIGURED) {
+      const petName = (result.savedPetName ?? displayPetName).trim() || "My Pet";
+      const existingArchive = loadTemporaryLifeArchive();
+      const reusableArchive = existingArchive?.letter === result.letter &&
+        existingArchive.petName === petName
+        ? existingArchive
+        : null;
+      saveTemporaryLifeArchive({
+        archiveKey: reusableArchive?.archiveKey ?? crypto.randomUUID(),
+        petName,
+        letter: result.letter,
+        generationLocale: result.generationLocale ?? resultLocale ?? lang,
+        createdAt: reusableArchive?.createdAt ?? new Date().toISOString(),
+        soulTraceMemoryCount: memoryAnswers.slice(0, MEMORY_STEP_COUNT).filter((answer) => answer.trim()).length,
+        archiveMemoryCount: reusableArchive?.memories.length ?? 0,
+        memories: reusableArchive?.memories ?? [],
+      });
+      window.location.assign("/life-archive");
+      return;
+    }
+
+    if (!letterId) return;
+
+    setLifeArchiveBusy(true);
+    setLifeArchiveNotice(null);
+    try {
+      const response = await fetch("/api/life-archive/access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ letterId }),
+      });
+      const data = (await response.json()) as {
+        status?: "ready" | "verification_required";
+        href?: string;
+      };
+      if (!response.ok) throw new Error("archive access failed");
+
+      if (data.status === "ready" && data.href === "/life-archive") {
+        window.location.assign(data.href);
+        return;
+      }
+      if (data.status === "verification_required") {
+        setLifeArchiveNotice(t("result.lifeArchive.checkEmail"));
+        return;
+      }
+      throw new Error("archive response incomplete");
+    } catch {
+      setLifeArchiveNotice(t("result.lifeArchive.error"));
+    } finally {
+      setLifeArchiveBusy(false);
+    }
+  }, [displayPetName, lang, lifeArchiveBusy, memoryAnswers, result, resultLocale, t]);
+
   useEffect(() => {
     if (!petPhotoFile) {
       setPetPhotoPreviewUrl(null);
@@ -238,38 +395,22 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
     setPetPhotoSkipped(true);
     setPhotoPrivacyConsent(false);
     setVideoMotion("");
-    setStep((prev) => Math.min(prev + 1, SURVEY_STEP_COUNT - 1));
-  }, []);
+    setShowValidationErrors(false);
+    setStep((prev) => Math.min(prev + 1, surveyStepCount - 1));
+  }, [surveyStepCount]);
 
   const patchPetIntro = useCallback((patch: Partial<PetIntroProfile>) => {
     setPetIntro((prev) => ({ ...prev, ...patch }));
   }, []);
-
-  /** 배경 URL 문자열만 추적한다. `result` 객체를 deps에 넣으면 스트리밍 편지 갱신마다 heroLoaded가 false로 깨져 onLoad가 다시 안 오고 버튼이 막힌다. */
-  const heroImageUrl = result?.heroImageUrl ?? null;
-  /** 동일 출처 프록시 — 외부 Blob URL은 CORS로 캔버스 캡처가 막히므로 html-to-image용 */
-  const { heroDisplaySrc, heroUsesProxy } = useMemo(() => {
-    if (!heroImageUrl) return { heroDisplaySrc: null as string | null, heroUsesProxy: false };
-    const proxied = heroImageSrcForApp(heroImageUrl);
-    return {
-      heroDisplaySrc: proxied ?? heroImageUrl,
-      heroUsesProxy: Boolean(proxied),
-    };
-  }, [heroImageUrl]);
-
-  useEffect(() => {
-    if (!heroImageUrl) {
-      setHeroLoaded(true);
-      return;
-    }
-    setHeroLoaded(false);
-  }, [heroImageUrl]);
 
   /** SSE로 `result` 참조가 매 델타마다 바뀌면 deps에 `result`가 있을 때 effect가 반복 실행 → fetch abort → 로딩 멈춤 등 버그 유발 */
   const resultHeroUrlForLocaleSwitch = result?.heroImageUrl ?? null;
   const hasResult = result != null;
 
   useEffect(() => {
+    // A restored letter is immutable user content. Switching UI labels must not
+    // regenerate, translate, or replace its saved language.
+    if (isRestoredResult) return;
     if (!hasResult || resultLocale === null) return;
     if (lang === resultLocale) return;
 
@@ -288,6 +429,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
           memoryAnswers,
           tonePrefs,
           displayPetName,
+          serviceChannel,
         );
 
         const response = await fetch("/api/generate-letter", {
@@ -297,6 +439,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
           body: JSON.stringify({
             locale: lang,
             mode,
+            channel: serviceChannel ?? undefined,
             userEmail: userEmail.trim(),
             partnerCode: partnerCode ?? undefined,
             ...buildLetterRequestFields(petIntro, memoryAnswers, tonePrefs)!,
@@ -317,15 +460,16 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
         const data = (await response.json()) as GeneratedResult;
         if (cancelled) return;
 
-        setResult({
+        setResult((previous) => ({
+          ...previous,
           ...data,
           personalityTags: normalizePersonalityTags(data.personalityTags, lang),
-          heroImageUrl: data.heroImageUrl ?? null,
+          heroImageUrl: data.heroImageUrl ?? previous?.heroImageUrl ?? null,
           heroImageSkipped: data.heroImageSkipped === true,
           savedPetName:
             typeof data.savedPetName === "string" ? data.savedPetName : displayPetName,
-        });
-        setResultLocale(lang);
+        }));
+        setResultLocale(data.generationLocale ?? lang);
         setShareableFile(null);
         setStoryShareLine(null);
       } catch (err) {
@@ -334,7 +478,6 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
           (err instanceof Error && err.name === "AbortError");
         if (cancelled || aborted) return;
         setError(userFacingErrorMessage(err, t("errors.generateFailed")));
-        setResultLocale(lang);
       } finally {
         setIsLoading(false);
       }
@@ -357,15 +500,18 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
     userEmail,
     petIntro,
     privacyConsent,
+    partnerCode,
+    serviceChannel,
     t,
+    isRestoredResult,
   ]);
 
-  const isLastQuestion = step === SURVEY_STEP_COUNT - 1;
+  const isLastQuestion = step === surveyStepCount - 1;
   const isAnswerValid = isSurveyStepValid(step, memoryAnswers, tonePrefs, {
     hasPhoto: petPhotoFile != null,
     skipped: petPhotoSkipped,
     photoConsent: photoPrivacyConsent,
-  });
+  }, serviceChannel);
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim());
   const isProfileValid = isEmailValid && isPetIntroComplete(petIntro) && privacyConsent;
 
@@ -422,8 +568,9 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
   };
 
   const handleSkipOptional = () => {
-    handleMemoryChange(OPTIONAL_MEMORY_STEP, "");
-    setStep((prev) => Math.min(prev + 1, SURVEY_STEP_COUNT - 1));
+    handleMemoryChange(step, "");
+    setShowValidationErrors(false);
+    setStep((prev) => Math.min(prev + 1, surveyStepCount - 1));
   };
 
   const handleToneOptionToggle = (option: LetterToneOption) => {
@@ -436,7 +583,10 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
   };
 
   const goNext = async () => {
-    if (!isAnswerValid) return;
+    if (!isAnswerValid) {
+      setShowValidationErrors(true);
+      return;
+    }
     if (step === 0 && isEmailValid) {
       setIsCheckingProfileEmail(true);
       setProfileEmailBlockedMessage(null);
@@ -448,19 +598,22 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
         return;
       }
     }
-    setStep((prev) => Math.min(prev + 1, SURVEY_STEP_COUNT - 1));
+    setShowValidationErrors(false);
+    setStep((prev) => Math.min(prev + 1, surveyStepCount - 1));
   };
 
   const goPrev = () => {
+    setShowValidationErrors(false);
     setStep((prev) => Math.max(prev - 1, 0));
   };
 
   const submitAnswers = async () => {
+    setShowValidationErrors(true);
     if (!privacyConsent) {
       setMainPrivacySheetOpen(true);
       return;
     }
-    if (!isSurveyComplete(memoryAnswers, tonePrefs)) {
+    if (!isSurveyComplete(memoryAnswers, tonePrefs, serviceChannel)) {
       setError(t("errors.fillAll"));
       return;
     }
@@ -489,9 +642,11 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
       personalitySummary: "",
       personalityTags: [],
       letter: "",
+      letterStructure: createGeneratedLetterStructure(letterHeading, "", "", lang),
       heroImageUrl: null,
       heroImageSkipped: false,
       savedPetName: displayPetName,
+      generationLocale: lang,
     });
     setResultLocale(lang);
     setIsLoading(true);
@@ -503,6 +658,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
         memoryAnswers,
         tonePrefs,
         displayPetName,
+        serviceChannel,
       );
 
       const response = await fetch("/api/generate-letter", {
@@ -513,6 +669,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
         body: JSON.stringify({
           locale: lang,
           mode,
+          channel: serviceChannel ?? undefined,
           userEmail: userEmail.trim(),
           partnerCode: partnerCode ?? undefined,
           ...buildLetterRequestFields(petIntro, memoryAnswers, tonePrefs)!,
@@ -561,6 +718,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
               personalitySummary: data.personalitySummary,
               personalityTags: normalizePersonalityTags(data.personalityTags, lang),
               letter: data.letter,
+              letterStructure: data.letterStructure,
               heroImageUrl: data.heroImageUrl ?? null,
               heroImageSkipped: data.heroImageSkipped === true,
               savedPetName:
@@ -569,8 +727,10 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
                   : displayPetName,
               letterId: data.letterId ?? null,
               persistenceFailed: data.persistenceFailed === true,
+              generationLocale: data.generationLocale ?? lang,
+              generationCacheKey: data.generationCacheKey,
             });
-            setResultLocale(lang);
+            setResultLocale(data.generationLocale ?? lang);
           },
         });
       } else {
@@ -582,7 +742,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
           heroImageSkipped: data.heroImageSkipped === true,
           savedPetName: typeof data.savedPetName === "string" ? data.savedPetName : displayPetName,
         });
-        setResultLocale(lang);
+        setResultLocale(data.generationLocale ?? lang);
       }
     } catch (err) {
       stopResultBgm(bgmPrimeRef);
@@ -596,13 +756,16 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
   };
 
   const captureToJpegDataUrl = async (skipFonts: boolean) => {
-    if (!captureRef.current) return "";
-    return toJpeg(captureRef.current, getSnapshotOptions(skipFonts));
+    const captureNode = captureRef.current;
+    if (!captureNode) return "";
+    await document.fonts.ready;
+    return await toJpeg(captureNode, getSnapshotOptions(skipFonts));
   };
 
   const handleDownloadImage = async () => {
     if (!captureRef.current) return;
     try {
+      setIsDownloading(true);
       setError(null);
       let dataUrl: string;
       try {
@@ -620,6 +783,8 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
           ? `${t("errors.saveImageFailed")} ${err.message}`
           : t("errors.saveImageGeneric"),
       );
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -639,14 +804,26 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
         setStoryShareLine(picked);
       });
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      const dataUrl = await toJpeg(source, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: "#0f1012",
-        quality: CAPTURE_JPEG_QUALITY,
-        skipFonts: true,
-        fontEmbedCSS: "",
-      });
+      await document.fonts.ready;
+      let dataUrl: string;
+      try {
+        dataUrl = await toJpeg(source, {
+          cacheBust: true,
+          pixelRatio: 2,
+          backgroundColor: "#0f1012",
+          quality: CAPTURE_JPEG_QUALITY,
+          skipFonts: false,
+        });
+      } catch {
+        dataUrl = await toJpeg(source, {
+          cacheBust: true,
+          pixelRatio: 2,
+          backgroundColor: "#0f1012",
+          quality: CAPTURE_JPEG_QUALITY,
+          skipFonts: true,
+          fontEmbedCSS: "",
+        });
+      }
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], "soultrace-story.jpg", { type: "image/jpeg" });
       setShareableFile(file);
@@ -745,8 +922,8 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
     setShareableFile(null);
     setError(null);
     setGenerationLoadingMessage(null);
-    setHeroLoaded(false);
     setStoryShareLine(null);
+    setShowValidationErrors(false);
     stopResultBgm(bgmPrimeRef);
   };
 
@@ -763,10 +940,24 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
     return template.replace(/%NAME%/g, name);
   }, [result?.savedPetName, displayPetName, t]);
 
-  const canCaptureArtwork = !result?.heroImageUrl || heroLoaded;
-  const letterSplit = result ? splitLetterForDropCap(result.letter) : null;
+  const canCaptureArtwork = selectedThemeImageReady;
+  const activeLetterStructure = result
+    ? isLoading
+      ? createGeneratedLetterStructure(
+          letterHeading,
+          visibleStreamingBody(result.letter),
+          "",
+          lang,
+        )
+      : result.letterStructure ??
+        createGeneratedLetterStructure(letterHeading, result.letter, "", lang)
+    : createGeneratedLetterStructure(letterHeading, "", "", lang);
+  const letterBody = activeLetterStructure.paragraphs.join("\n\n");
+  const letterSplit = result ? splitLetterForDropCap(letterBody) : null;
   const dropCap = letterSplit?.first ?? "";
   const letterRest = letterSplit?.rest ?? "";
+  const showChannelBackground =
+    channelBackground !== null && (!result || generationLoadingMessage !== null);
 
   return (
     <>
@@ -778,8 +969,25 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
         className="hidden"
         aria-hidden
       />
+      {showChannelBackground ? (
+        <div
+          data-service-channel-background={serviceChannel}
+          className="pointer-events-none fixed inset-0 z-0 bg-cover bg-no-repeat"
+          style={{
+            backgroundImage: `url(${channelBackground})`,
+            backgroundPosition: "center top",
+          }}
+          aria-hidden="true"
+        >
+          <div className="absolute inset-0 bg-black/35" />
+        </div>
+      ) : null}
       {result ? (
-        <main className="min-h-screen bg-black pb-10">
+        <main
+          className={`relative z-[1] min-h-screen pb-10 ${
+            showChannelBackground ? "bg-transparent" : "bg-black"
+          }`}
+        >
           <header className="flex w-full justify-end px-4 pt-6 sm:px-6">
             <LanguageToggle />
           </header>
@@ -793,114 +1001,148 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
                 {generationLoadingMessage ?? t("result.updatingLanguage")}
               </p>
             ) : null}
+            <fieldset
+              data-letter-style-selector
+              className="mx-auto min-w-0 w-full max-w-2xl"
+            >
+              <legend
+                className={`mb-3 text-xs font-light tracking-[0.14em] text-[#D9C6A4] ${
+                  lang === "ko" ? "font-ko" : "font-display-en"
+                }`}
+              >
+                {t("result.letterStyle.label")}
+              </legend>
+              <div className="-mx-1 flex max-w-full gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
+                {LETTER_THEMES.map((theme) => {
+                  const selected = letterThemeId === theme.id;
+                  const missing = missingThemeImages.has(theme.id);
+                  return (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => chooseLetterTheme(theme.id)}
+                      className={`relative flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-2.5 py-1.5 text-xs transition sm:text-sm ${
+                        selected
+                          ? "border-[#D4AF37] bg-[#D4AF37]/15 text-[#F5E6C8]"
+                          : "border-white/15 bg-white/[0.03] text-[#D5CDC0] hover:border-[#D4AF37]/55 hover:text-[#F5E6C8]"
+                      }`}
+                    >
+                      <span
+                        className="relative h-6 w-8 shrink-0 overflow-hidden rounded-md border border-white/15"
+                        style={{ background: theme.fallbackBackground }}
+                        aria-hidden
+                      >
+                        {!missing ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- exact user-supplied public asset
+                          <img
+                            src={theme.backgroundImage}
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover"
+                            onLoad={() => markThemeImageLoaded(theme.id)}
+                            onError={() => markThemeImageMissing(theme.id)}
+                          />
+                        ) : null}
+                      </span>
+                      <span className="whitespace-nowrap" style={{ fontFamily: theme.fontFamily }}>
+                        {t(theme.nameKey)}
+                      </span>
+                      {missing ? (
+                        <span className="rounded bg-amber-200/10 px-1 py-0.5 text-[8px] uppercase tracking-wide text-amber-100/75">
+                          {t("result.letterStyle.temporary")}
+                        </span>
+                      ) : null}
+                      {selected ? (
+                        <span className="text-[11px] font-bold text-[#D4AF37]" aria-hidden>
+                          ✓
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
             <div
               ref={captureRef}
               id="share-card"
-              className={`relative min-h-[100vh] w-full overflow-hidden rounded-sm shadow-[0_0_80px_rgba(212,175,55,0.12)] ${
+              data-letter-preview-theme={letterTheme.id}
+              className={`relative min-h-[520px] w-full overflow-hidden rounded-sm shadow-[0_0_80px_rgba(212,175,55,0.12)] ${
                 isLoading ? "pointer-events-none opacity-50" : ""
               }`}
+              style={{ background: letterTheme.fallbackBackground }}
             >
-              <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="result-hero-placeholder absolute inset-0" aria-hidden />
-                {heroDisplaySrc ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- dynamic hero URL + crossOrigin for html capture
-                  <img
-                    src={heroDisplaySrc}
-                    alt=""
-                    {...(heroUsesProxy ? {} : { crossOrigin: "anonymous" as const })}
-                    className={`ken-burns-img absolute inset-0 h-full w-full min-h-full min-w-full object-cover transition-opacity duration-700 ease-out ${
-                      heroLoaded ? "opacity-100" : "opacity-0"
-                    }`}
-                    onLoad={() => setHeroLoaded(true)}
-                    onError={() => setHeroLoaded(true)}
-                  />
-                ) : null}
-              </div>
+              {!selectedThemeImageMissing ? (
+                // eslint-disable-next-line @next/next/no-img-element -- exact user-supplied public asset
+                <img
+                  src={letterTheme.backgroundImage}
+                  alt=""
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                  onLoad={() => markThemeImageLoaded(letterTheme.id)}
+                  onError={() => markThemeImageMissing(letterTheme.id)}
+                />
+              ) : null}
 
               <div
-                className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/[0.42] via-black/[0.14] to-black/[0.48]"
-                aria-hidden
-              />
-
-              <div className="relative z-10 flex min-h-[100vh] flex-col justify-center px-6 py-14 sm:px-10 sm:py-20 md:px-14">
-                <div className="relative mx-auto w-full max-w-3xl">
-                  {/* 텍스트 영역 전용: 일러스트는 비추면서 글자 대비만 올리는 잡지형 스크림 */}
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute -inset-x-5 -inset-y-8 rounded-[1.25rem] bg-gradient-to-b from-[rgba(10,11,14,0.78)] via-[rgba(8,9,11,0.58)] to-[rgba(7,8,10,0.72)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] ring-1 ring-white/[0.06] sm:-inset-x-8 sm:-inset-y-10 md:-inset-x-10 md:-inset-y-12"
-                  />
-                  <div
-                    className={`relative z-[1] space-y-11 ${
-                      lang === "ko" ? "result-hero-text-ko font-ko" : "result-hero-text-en font-display-en"
-                    }`}
+                data-letter-scroll
+                className="relative z-10 px-5 py-8 sm:px-8 sm:py-10 md:px-12"
+              >
+                <div className="flex min-h-full items-center justify-center">
+                  <article
+                    className="mx-auto w-full max-w-2xl rounded-[1.25rem] border px-5 py-8 shadow-[0_18px_60px_rgba(0,0,0,0.22)] backdrop-blur-[7px] sm:px-9 sm:py-10 md:px-12"
+                    style={{
+                      backgroundColor: letterTheme.overlayColor,
+                      borderColor: letterTheme.panelBorderColor,
+                      color: letterTheme.textColor,
+                      fontFamily: letterTheme.fontFamily,
+                    }}
                   >
-                    <div className="space-y-5 text-center">
-                    <p className="font-display-en text-[10px] uppercase tracking-[0.42em] text-[#D4AF37]/72 sm:text-xs">
-                      {t("result.eyebrow")}
-                    </p>
-                    <h1
-                      className={`text-3xl font-extralight leading-snug text-[#EAD8B7] sm:text-4xl md:text-5xl ${
-                        isLoading && !result.personalityType.trim() ? "animate-pulse opacity-[0.78]" : ""
-                      }`}
+                    <h2
+                      className="text-center text-base font-semibold tracking-[0.08em] sm:text-lg"
+                      style={{ color: letterTheme.headingColor }}
                     >
-                      {isLoading && !result.personalityType.trim()
-                        ? t("result.streamingPersonalityTitle")
-                        : result.personalityType}
-                    </h1>
-                    <p
-                      className={`mx-auto max-w-2xl text-[15px] font-extralight leading-[1.9] text-[#F2EFE6] sm:text-base ${
-                        isLoading && !result.personalitySummary.trim()
-                          ? "animate-pulse opacity-[0.78]"
-                          : ""
-                      }`}
-                    >
-                      {isLoading && !result.personalitySummary.trim()
-                        ? t("result.streamingPersonalityBody")
-                        : result.personalitySummary}
-                    </p>
-                    {(result.personalityTags ?? []).length > 0 ? (
-                      <p className="text-xs font-extralight tracking-[0.16em] text-[#CDB894]/72 sm:text-sm">
-                        {(result.personalityTags ?? [])
-                          .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))
-                          .join("   ")}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="mx-auto h-px w-full max-w-xl bg-gradient-to-r from-transparent via-[#D4AF37]/32 to-transparent" />
-
-                  <div className="space-y-6 text-center">
-                    <p className="text-sm font-light tracking-[0.08em] text-[#D9C6A4] sm:text-base">
-                      {copy.letterHeading}
-                    </p>
+                      {activeLetterStructure.title || letterHeading}
+                    </h2>
                     {isLoading && !result.letter.trim() ? (
-                      <p
-                        className={`mx-auto max-w-2xl text-[17px] font-extralight leading-[2] text-[#ECE7DC]/84 sm:text-lg ${
-                          lang === "ko" ? "break-keep" : ""
-                        } animate-pulse`}
-                      >
+                      <p className="mt-7 animate-pulse text-center text-base leading-8 opacity-75">
                         {t("result.letterStarting")}
                       </p>
                     ) : null}
-                    <p
-                      className={`mx-auto max-w-2xl whitespace-pre-line text-left text-[17px] font-extralight leading-[2] text-[#F7F4EF] sm:text-lg ${
+                    <div
+                      data-letter-body
+                      className={`mt-7 whitespace-pre-line text-left text-[16px] font-normal leading-[1.85] tracking-normal sm:text-[17px] ${
                         lang === "ko" ? "break-keep" : ""
                       }`}
                     >
                       {dropCap ? (
                         <>
-                          <span className="drop-cap">{dropCap}</span>
+                          <span
+                            className="float-left mr-[0.12em] mt-[0.06em] text-[3.5rem] font-semibold leading-[0.8] sm:text-[4.25rem]"
+                            style={{
+                              color: letterTheme.dropCapColor,
+                              textShadow: "0 1px 2px rgba(0,0,0,0.18)",
+                            }}
+                          >
+                            {dropCap}
+                          </span>
                           {letterRest}
                         </>
                       ) : (
-                        result.letter
+                        letterBody
                       )}
-                    </p>
-                  </div>
+                    </div>
+                    {activeLetterStructure.endingPhrase ? (
+                      <p
+                        data-letter-ending-phrase
+                        className="mt-8 text-right text-[15px] font-semibold italic tracking-[0.04em] sm:text-base"
+                        style={{ color: letterTheme.headingColor }}
+                      >
+                        {activeLetterStructure.endingPhrase}
+                      </p>
+                    ) : null}
+                  </article>
                 </div>
               </div>
             </div>
-          </div>
 
             <div
               className={`mx-auto mt-10 max-w-xl space-y-10 px-1 text-center sm:mt-12 ${
@@ -940,20 +1182,49 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
               >
                 {t("result.instagramShareLead")}
               </p>
-              <button
-                type="button"
-                onClick={onInstagramButtonClick}
-                disabled={!canCaptureArtwork || isSharing}
-                className={`w-full rounded-xl border border-[rgba(255,255,255,0.1)] bg-[rgba(26,26,26,0.78)] px-5 py-4 text-sm font-light text-[#F3EAD8] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-[rgba(212,175,55,0.28)] hover:bg-[rgba(30,28,26,0.88)] disabled:cursor-not-allowed disabled:opacity-45 sm:text-base ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                {isSharing
-                  ? t("result.preparingImage")
-                  : shareableFile
-                    ? t("result.instagramCardReady")
-                    : t("result.instagramShareButton")}
-              </button>
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={handleDownloadImage}
+                  disabled={!canCaptureArtwork || isDownloading || isSharing}
+                  className={`${RESULT_ACTION_BUTTON_SIZE_CLASS} bg-[#b89a2e] text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-45 ${
+                    lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
+                  }`}
+                >
+                  {isDownloading ? t("result.preparingImage") : t("result.keepForever")}
+                </button>
+                <button
+                  type="button"
+                  onClick={onInstagramButtonClick}
+                  disabled={!canCaptureArtwork || isSharing || isDownloading}
+                  className={`${RESULT_ACTION_BUTTON_SIZE_CLASS} border border-[rgba(255,255,255,0.1)] bg-[rgba(26,26,26,0.78)] text-[#F3EAD8] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-[rgba(212,175,55,0.28)] hover:bg-[rgba(30,28,26,0.88)] disabled:cursor-not-allowed disabled:opacity-45 ${
+                    lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
+                  }`}
+                >
+                  {isSharing ? t("result.preparingImage") : t("result.instagramShareButton")}
+                </button>
+                <button
+                  type="button"
+                  onClick={continueToLifeArchive}
+                  disabled={
+                    lifeArchiveBusy ||
+                    (SECURE_LIFE_ARCHIVE_CONFIGURED &&
+                      (!result.letterId || result.persistenceFailed))
+                  }
+                  className={`${RESULT_ACTION_BUTTON_SIZE_CLASS} border border-[#D4AF37]/45 bg-[#D4AF37]/[0.08] text-[#F5E6C8] transition hover:border-[#D4AF37]/75 hover:bg-[#D4AF37]/15 disabled:cursor-not-allowed disabled:opacity-45 ${
+                    lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
+                  }`}
+                >
+                  {lifeArchiveBusy
+                    ? t("result.lifeArchive.preparing")
+                    : t("result.lifeArchive.cta")}
+                </button>
+              </div>
+              {lifeArchiveNotice ? (
+                <p className={`mt-4 whitespace-pre-line text-sm font-light leading-relaxed text-[#D9C6A4] ${lang === "ko" ? "font-ko" : "font-display-en"}`} role="status">
+                  {lifeArchiveNotice}
+                </p>
+              ) : null}
             </div>
 
             <div className="mx-auto mt-12 w-full max-w-xl space-y-5">
@@ -1069,20 +1340,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
               </article>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] font-extralight text-[#4a4744]/95 sm:text-[11px]">
-              <button
-                type="button"
-                onClick={handleDownloadImage}
-                disabled={!canCaptureArtwork || isSharing}
-                className={`transition hover:text-[#6b6865] disabled:cursor-not-allowed disabled:opacity-40 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                {t("result.keepForever")}
-              </button>
-              <span className="select-none text-[#3a3634]" aria-hidden>
-                ·
-              </span>
+            <div className="mt-8 flex items-center justify-center text-[10px] font-extralight text-[#4a4744]/95 sm:text-[11px]">
               <button
                 type="button"
                 onClick={resetTest}
@@ -1100,7 +1358,10 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
           >
             <InstagramStoryCard
               ref={instagramStoryRef}
-              heroSrc={heroDisplaySrc}
+              theme={letterTheme}
+              backgroundImageReady={
+                loadedThemeImages.has(letterTheme.id) && !selectedThemeImageMissing
+              }
               nameLead={storyPetNameLead}
               personalityTitle={result.personalityType}
               emotionalLine={storyCardQuote || result.letter.trim()}
@@ -1112,12 +1373,16 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
           <ResultAmbientAudio active={!!result} audioRef={bgmPrimeRef} />
         </main>
       ) : (
-      <main className="relative isolate flex min-h-screen flex-col bg-black">
+      <main
+        className={`relative isolate z-[1] flex min-h-screen flex-col ${
+          showChannelBackground ? "bg-transparent" : "bg-black"
+        }`}
+      >
         <WarmRisingSparkles />
         <header className="relative z-[2] flex w-full shrink-0 items-center justify-between px-5 pt-6 md:px-8 md:pt-8">
           {/* 갈래를 잘못 골랐을 때 되돌아갈 길 — 없으면 새로고침밖에 방법이 없다. */}
           <Link
-            href="/"
+            href="/choose"
             className={`text-xs font-extralight text-[#EDE4D3]/60 transition hover:text-[#D4AF37] ${
               lang === "ko" ? "font-ko" : "font-display-en"
             }`}
@@ -1142,8 +1407,8 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
                   : "font-display-en text-sm font-extralight leading-[2.05] tracking-[0.2em] sm:text-base sm:leading-[2.15] sm:tracking-[0.18em]"
               }`}
             >
-              <p className="whitespace-pre-line">{copy.headline}</p>
-              <p>{copy.subline}</p>
+              <p className="whitespace-pre-line">{introduction.headline}</p>
+              <p>{introduction.subline}</p>
             </div>
           </div>
 
@@ -1168,15 +1433,38 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
                 }}
                 onBlur={handleEmailBlur}
                 placeholder={t("form.emailPlaceholder")}
-                className={`font-ko w-full rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-transparent px-4 py-3 text-base font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 focus:border-[#D4AF37] md:text-sm`}
+                aria-invalid={showValidationErrors && !isEmailValid}
+                aria-describedby={showValidationErrors && !isEmailValid ? "email-error" : undefined}
+                className={`font-ko w-full rounded-xl border-[0.5px] bg-transparent px-4 py-3 text-base font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 md:text-sm ${
+                  showValidationErrors && !isEmailValid
+                    ? "border-red-300/75 focus:border-red-300"
+                    : "border-[rgba(212,175,55,0.35)] focus:border-[#D4AF37]"
+                }`}
               />
+              {showValidationErrors && !isEmailValid ? (
+                <p id="email-error" className="text-xs font-extralight text-red-200" role="alert">
+                  {userEmail.trim()
+                    ? t("form.validation.emailInvalid")
+                    : t("form.validation.emailRequired")}
+                </p>
+              ) : null}
               </div>
-              <PetIntroForm mode={mode} profile={petIntro} onChange={patchPetIntro} />
+              <PetIntroForm
+                mode={mode}
+                profile={petIntro}
+                onChange={patchPetIntro}
+                showErrors={showValidationErrors}
+              />
               <PrivacyConsentTrigger
                 agreed={privacyConsent}
                 onOpen={() => setMainPrivacySheetOpen(true)}
                 labelPath="form.privacyConsentLink"
               />
+              {showValidationErrors && !privacyConsent ? (
+                <p className="text-xs font-extralight text-red-200" role="alert">
+                  {t("form.validation.privacyRequired")}
+                </p>
+              ) : null}
             </div>
 
             <PrivacyConsentSheet
@@ -1213,6 +1501,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
             <div key={step} className="animate-fade-in">
               <SurveyFlow
                 mode={mode}
+                serviceChannel={serviceChannel}
                 step={step}
                 petDisplayName={displayPetName}
                 memoryAnswers={memoryAnswers}
@@ -1229,6 +1518,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
                 onToneOptionToggle={handleToneOptionToggle}
                 onToneLength={(length) => setTonePrefs((prev) => ({ ...prev, length }))}
                 onSkipOptional={handleSkipOptional}
+                showValidationError={showValidationErrors && !isAnswerValid}
               />
             </div>
 
@@ -1245,12 +1535,7 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
                 <button
                   type="button"
                   onClick={submitAnswers}
-                  disabled={
-                    isLoading ||
-                    !isSurveyComplete(memoryAnswers, tonePrefs) ||
-                    !isProfileValid ||
-                    Boolean(profileEmailBlockedMessage)
-                  }
+                  disabled={isLoading || Boolean(profileEmailBlockedMessage)}
                   className="font-ko min-h-[44px] rounded-xl bg-[#b89a2e] px-4 py-3 text-sm font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {isLoading ? t("buttons.generating") : t("buttons.generate")}
@@ -1260,10 +1545,9 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
                   type="button"
                   onClick={() => void goNext()}
                   disabled={
-                    !isAnswerValid ||
-                    (step === 0 &&
+                    step === 0 &&
                       isEmailValid &&
-                      (!!profileEmailBlockedMessage || isCheckingProfileEmail))
+                      (!!profileEmailBlockedMessage || isCheckingProfileEmail)
                   }
                   className="font-ko min-h-[44px] rounded-xl border-[0.5px] border-[rgba(212,175,55,0.55)] bg-transparent px-4 py-3 text-sm font-light text-[#FFFFFF] transition hover:bg-[rgba(212,175,55,0.06)] active:bg-[rgba(212,175,55,0.1)] disabled:cursor-not-allowed disabled:opacity-45"
                 >
@@ -1271,17 +1555,6 @@ export function SoulTraceFlow({ mode }: SoulTraceFlowProps) {
                 </button>
               )}
             </div>
-            {isLastQuestion && !isLoading && (!isSurveyComplete(memoryAnswers, tonePrefs) || !isProfileValid) ? (
-              <p
-                className={`mt-3 text-center text-xs font-extralight leading-relaxed text-[#D4AF37]/90 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                {!isSurveyComplete(memoryAnswers, tonePrefs)
-                  ? t("form.generateNeedAnswer")
-                  : t("form.generateNeedProfile")}
-              </p>
-            ) : null}
             {isLoading ? (
               <p
                 className={`mt-4 text-center text-xs font-extralight leading-relaxed text-[#D4AF37]/85 ${

@@ -23,6 +23,7 @@ export function letterModePath(mode: LetterMode): string {
 }
 
 export type ModeSurveyItem = {
+  id?: string;
   promptText: string;
   placeholder: string;
   example?: string;

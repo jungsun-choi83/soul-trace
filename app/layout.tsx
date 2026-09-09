@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
-import { Marcellus } from "next/font/google";
+import {
+  Cormorant_Garamond,
+  Courier_Prime,
+  Inter,
+  Marcellus,
+  Nanum_Myeongjo,
+  Noto_Serif_KR,
+  Playfair_Display,
+} from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -7,6 +15,42 @@ const marcellus = Marcellus({
   variable: "--font-marcellus",
   subsets: ["latin"],
   weight: "400",
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+});
+
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const courierPrime = Courier_Prime({
+  variable: "--font-courier-prime",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const notoSerifKr = Noto_Serif_KR({
+  variable: "--font-noto-serif-kr",
+  weight: ["200", "300"],
+  display: "swap",
+  preload: false,
+});
+
+const nanumMyeongjo = Nanum_Myeongjo({
+  variable: "--font-nanum-myeongjo",
+  weight: ["400", "700"],
+  display: "swap",
+  preload: false,
 });
 
 const siteUrl =
@@ -28,15 +72,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className={`${marcellus.variable} h-full antialiased`}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Noto+Serif+KR:wght@200;300&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="ko"
+      translate="no"
+      suppressHydrationWarning
+      className={`${marcellus.variable} ${playfair.variable} ${cormorant.variable} ${inter.variable} ${courierPrime.variable} ${notoSerifKr.variable} ${nanumMyeongjo.variable} notranslate h-full antialiased`}
+    >
       <body className="font-ko min-h-full flex flex-col bg-black text-[#FFFFFF]">
         <Providers>{children}</Providers>
       </body>

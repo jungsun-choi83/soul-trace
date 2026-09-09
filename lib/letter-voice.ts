@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 import type { LetterMode } from "@/lib/letter-mode";
+import type { ServiceChannel } from "@/lib/service-channel";
 
 /**
  * 편지의 목소리와 전제 — 이 앱의 실제 제품이 여기 들어 있다.
@@ -102,8 +103,48 @@ export function conversationalLetterVoiceRules(locale: Locale): string {
     "- No emojis, slang overkill, or text-speak.",
     "",
     "Survey use (required) — the letter's facts come ONLY from the guardian's answers.",
-    "- Weave every answered memory question (1–5) into the talk. Re-say the scene, habit, sound, or touch in their own words.",
+    "- Select the most meaningful answered memories and connect them naturally. Give important details room; do not march through every question or preserve questionnaire order.",
     "- Don't paste answers verbatim. Don't invent episodes that aren't in the survey.",
     "- Skip empty / '(none selected)' answers. Don't fill the gap with made-up details.",
   ].join("\n");
+}
+
+/** Trusted server-owned context for optional service channels. User text is supplied separately as facts. */
+export function serviceChannelPromptBlock(channel: ServiceChannel): string | null {
+  switch (channel) {
+    case "pension":
+      return [
+        "Trusted service context: PENSION / boarding stay for a living pet.",
+        "Write in the pet's warm, reassuring, affectionate voice using present or recent-past tense.",
+        "Use only the supplied typed answers as facts; mention mood, favorite activity, and a cute moment only when supplied.",
+        "Do not invent meals, activities, staff behavior, health information, pickup times, or return dates.",
+        "Never suggest death, memorialization, funeral, heaven, rainbow bridge, or permanent separation.",
+      ].join("\n");
+    case "grooming":
+      return [
+        "Trusted service context: GROOMING for a living pet.",
+        "Write in a bright, playful, affectionate, proud pet voice using present or recent-past tense.",
+        "Use only the supplied typed answers about the service, appearance, reaction, cute feature, or groomer detail.",
+        "Do not invent a service, appearance, reaction, or compliment.",
+        "Never suggest death, loss, grief, heaven, rainbow bridge, final goodbye, permanent separation, or memorialization.",
+      ].join("\n");
+    case "hospital":
+      return [
+        "Trusted service context: HOSPITAL / veterinary visit for a living pet.",
+        "Write in a calm, gentle, caring, encouraging pet voice using only the submitted answers.",
+        "Treat medical details as factual user-provided text; do not interpret or expand them.",
+        "Never invent a diagnosis, test result, medication, treatment, medical advice, recovery promise, or health claim.",
+        "Never suggest death, memorialization, heaven, rainbow bridge, or permanent separation.",
+      ].join("\n");
+    case "funeral":
+      return null;
+  }
+}
+
+export function withServiceChannelPrompt(
+  payload: string,
+  channel: ServiceChannel | null | undefined,
+): string {
+  const block = channel ? serviceChannelPromptBlock(channel) : null;
+  return block ? `${block}\n\n${payload}` : payload;
 }

@@ -128,7 +128,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "partnerName is required." }, { status: 400 });
   }
   if (!isPartnerType(body.partnerType)) {
-    return NextResponse.json({ error: "partnerType must be HOSPITAL or FUNERAL." }, { status: 400 });
+    return NextResponse.json(
+      { error: "partnerType must be HOSPITAL, FUNERAL, GROOMING, or PENSION." },
+      { status: 400 },
+    );
   }
   const shareRate = parseShareRate(body.shareRate ?? 0);
   if (shareRate === null) {

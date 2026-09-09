@@ -29,12 +29,22 @@ export const PARTNER_CODE_PARAM = "p";
 /** 발급 코드 모양: base64url 16자(96비트). 추측 불가하고 QR 에 부담이 없다. */
 const CODE_RE = /^[A-Za-z0-9_-]{8,64}$/;
 
-export type PartnerType = "HOSPITAL" | "FUNERAL";
+export type PartnerType = "HOSPITAL" | "FUNERAL" | "GROOMING" | "PENSION";
 
-export const PARTNER_TYPES: readonly PartnerType[] = ["HOSPITAL", "FUNERAL"];
+export const PARTNER_TYPES: readonly PartnerType[] = [
+  "HOSPITAL",
+  "FUNERAL",
+  "GROOMING",
+  "PENSION",
+];
 
 export function isPartnerType(value: unknown): value is PartnerType {
-  return value === "HOSPITAL" || value === "FUNERAL";
+  return (
+    value === "HOSPITAL" ||
+    value === "FUNERAL" ||
+    value === "GROOMING" ||
+    value === "PENSION"
+  );
 }
 
 export interface ResolvedPartner {
@@ -60,9 +70,15 @@ export interface ResolvedPartner {
  * **코드(QR)와 달리 partner_id 는 공개되지 않으므로** 추측 가능해도 무해하다.
  * 뒤에 무작위를 붙이는 것은 같은 이름의 병원이 둘일 때 충돌을 피하기 위함이다.
  */
+const PARTNER_ID_PREFIX: Record<PartnerType, string> = {
+  HOSPITAL: "ptn_hosp",
+  FUNERAL: "ptn_fnrl",
+  GROOMING: "ptn_groom",
+  PENSION: "ptn_pens",
+};
+
 export function createPartnerId(type: PartnerType): string {
-  const prefix = type === "HOSPITAL" ? "ptn_hosp" : "ptn_fnrl";
-  return `${prefix}_${randomBytes(6).toString("hex")}`;
+  return `${PARTNER_ID_PREFIX[type]}_${randomBytes(6).toString("hex")}`;
 }
 
 /**
@@ -150,7 +166,7 @@ export async function resolvePartnerCode(
     | undefined;
 
   if (!p?.partner_id || p.active !== true) return null;
-  if (p.partner_type !== "HOSPITAL" && p.partner_type !== "FUNERAL") return null;
+  if (!isPartnerType(p.partner_type)) return null;
 
   // track 이 이상한 값이면 **귀속은 살리고 갈래만 버린다.** 갈래는 편의(첫 화면
   // 건너뛰기)일 뿐이고, 그것 때문에 정산 귀속을 잃을 이유가 없다.
