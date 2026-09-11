@@ -7,6 +7,11 @@
     "title": "A letter from the heart",
     "cta": "Begin Your Journey"
   },
+  "partnerEntry": {
+    "unavailableTitle": "This partner link is unavailable",
+    "unavailableBody": "The link may be inactive or no longer valid. You can still begin from the Soul Trace welcome page.",
+    "backToWelcome": "Go to Welcome"
+  },
   "auth": {
     "eyebrow": "Your Soul Trace",
     "signupTitle": "Create your account",
@@ -84,15 +89,10 @@
       "headline": "What were they thinking today?",
       "subline": "They can't say it out loud, but there's something they'd tell you every day.",
       "letterHeading": "A letter to %RECIPIENT%",
-      "q1Label": "Q1. What is their name?",
-      "q2Label": "Q2. What kind of companion are they?",
+      "q1Label": "Pet's Name",
+      "q2Label": "Pet Type",
       "yearPartedPlaceholder": "Now (this year)",
       "memory": [
-        {
-          "promptText": "When you first met ○○, what scene comes to mind?",
-          "placeholder": "Describe that first day",
-          "example": "Hiding in the corner of the crate / Nibbling your fingers"
-        },
         {
           "promptText": "What little habit or quirk is unique to ○○?",
           "placeholder": "Small, specific habits",
@@ -127,16 +127,8 @@
           ]
         },
         {
-          "id": "q11",
-          "promptText": "Q11. Anything else?",
-          "options": [
-            { "id": "comfort", "label": "Include reassurance like \"you're doing just fine\"" },
-            { "id": "frequent_name", "label": "Use their name often" }
-          ]
-        },
-        {
           "id": "q12",
-          "promptText": "Q12. How long should the letter be?",
+          "promptText": "Letter Length",
           "options": [
           { "id": "short", "label": "Short (~12 lines)" },
           { "id": "normal", "label": "Medium (~20 lines)" }
@@ -150,15 +142,10 @@
       "headline": "The words they never got to say",
       "subline": "They still had words left in their heart—words they never got to share.",
       "letterHeading": "A letter to %RECIPIENT%",
-      "q1Label": "Q1. What was their name?",
-      "q2Label": "Q2. What kind of companion were they?",
+      "q1Label": "Pet's Name",
+      "q2Label": "Pet Type",
       "yearPartedPlaceholder": "Year they passed",
       "memory": [
-        {
-          "promptText": "When you first met ○○, what scene comes to mind?",
-          "placeholder": "Describe that first day",
-          "example": "Hiding in the corner of the crate / Nibbling your fingers"
-        },
         {
           "promptText": "What little habit or quirk was unique to ○○?",
           "placeholder": "Small, specific habits",
@@ -193,17 +180,8 @@
           ]
         },
         {
-          "id": "q11",
-          "promptText": "Q11. Anything else?",
-          "options": [
-            { "id": "comfort", "label": "Include reassurance like \"it wasn't your fault\"" },
-            { "id": "no_heaven", "label": "Skip rainbow bridge / heaven references" },
-            { "id": "frequent_name", "label": "Use their name often" }
-          ]
-        },
-        {
           "id": "q12",
-          "promptText": "Q12. How long should the letter be?",
+          "promptText": "Letter Length",
           "options": [
           { "id": "short", "label": "Short (~12 lines)" },
           { "id": "normal", "label": "Medium (~20 lines)" }
@@ -232,28 +210,32 @@
     "validation": {
       "emailRequired": "Enter your email address.",
       "emailInvalid": "Enter a valid email address, such as name@example.com.",
-      "petNameRequired": "Enter your pet's name.",
-      "petTypeRequired": "Choose your pet's type.",
-      "yearsRequired": "Enter both years.",
+      "petNameRequired": "Please enter your pet's name.",
+      "petTypeRequired": "Please select your pet type.",
+      "petBreedRequired": "Please select your pet's breed.",
+      "yearsRequired": "Enter the pet's age as a whole number.",
+      "petAgeRequired": "Please enter the number of years together.",
       "yearsRange": "Enter years between 1980 and the current year.",
       "yearsOrder": "The year you met cannot be later than the ending year.",
-      "recipientRequired": "Choose who should receive the letter.",
+      "recipientRequired": "Please select who this letter is for.",
       "recipientDetailRequired": "Enter the name or wording to use in the letter.",
       "privacyRequired": "Review and agree to the privacy consent.",
-      "memoryRequired": "Write an answer before continuing.",
+      "memoryRequired": "Please answer this question before continuing.",
       "photoChoiceRequired": "Upload a photo or choose Skip photo.",
       "photoConsentRequired": "Agree to the photo consent, or remove and skip the photo.",
-      "moodRequired": "Choose a tone for the letter.",
-      "lengthRequired": "Choose the letter length."
+      "moodRequired": "Please choose a letter tone.",
+      "lengthRequired": "Please choose a letter length."
     },
     "step1": {
       "kicker": "STEP 1 — About your pet",
       "q1Placeholder": "Full name",
       "q1bLabel": "Q1-b. What did you usually call them?",
-      "q1bPlaceholder": "e.g. Coco, Bean (optional)",
-      "q3Label": "Q3. Years together",
+      "q1bPlaceholder": "How do you call them",
+      "q2bLabel": "Breed of your pet?",
+      "q3Label": "Years Together",
+      "q3Placeholder": "Enter number of years",
       "yearMetPlaceholder": "Year you met",
-      "q4Label": "Q4. Who is this letter for?",
+      "q4Label": "Letter For?",
       "recipientByNamePlaceholder": "Name for the letter",
       "recipientCustomPlaceholder": "Your own wording",
       "petTypes": {
@@ -263,6 +245,17 @@
         "hamster": "Hamster",
         "bird": "Bird",
         "other": "Other"
+      },
+      "petBreeds": {
+        "golden-retriever": "Golden Retriever", "labrador-retriever": "Labrador Retriever",
+        "poodle": "Poodle", "maltese": "Maltese", "pomeranian": "Pomeranian",
+        "shih-tzu": "Shih Tzu", "chihuahua": "Chihuahua", "jindo": "Jindo",
+        "korean-shorthair": "Korean Shorthair", "persian": "Persian", "russian-blue": "Russian Blue",
+        "siamese": "Siamese", "british-shorthair": "British Shorthair", "scottish-fold": "Scottish Fold", "ragdoll": "Ragdoll",
+        "lop": "Lop", "dutch": "Dutch", "lionhead": "Lionhead", "netherland-dwarf": "Netherland Dwarf",
+        "syrian": "Syrian", "dwarf": "Dwarf", "roborovski": "Roborovski", "chinese": "Chinese",
+        "parakeet": "Parakeet", "cockatiel": "Cockatiel", "lovebird": "Lovebird", "finch": "Finch",
+        "mixed-not-sure": "Mixed / Not Sure"
       },
       "recipients": {
         "mom": "Mom",
@@ -278,7 +271,8 @@
   },
   "questionHeader": {
     "label": "QUESTION",
-    "of": "/"
+    "of": "OF",
+    "left": "questions left"
   },
   "buttons": {
     "prev": "Back",
@@ -600,8 +594,6 @@
     "privacyRequired": "Please agree to the privacy consent to continue.",
     "photoPrivacyRequired": "Please agree to photo consent before uploading.",
     "generateFailed": "We couldn't create your letter right now. Please try again in a moment.",
-    "alreadyGenerated": "A letter was already created with this email. Each email can only be used once.",
-    "emailAlreadyUsedSoft": "We already sent a letter to this email—one letter per address. Please use a different email.",
     "unknown": "Something went wrong. Please try again.",
     "saveImageFailed": "Couldn’t save the image:",
     "saveImageGeneric": "Something went wrong while saving the image.",
@@ -610,12 +602,14 @@
     "shareFailed": "Something went wrong while sharing."
   },
   "survey": {
+    "stampPhoto": {
+      "label": "Stamp Photo",
+      "helper": "Skip it for a paw print stamp instead."
+    },
     "memoryKicker": "STEP 2 — Memories",
     "photoStepKicker": "STEP 2 — Upload a photo",
     "memoryHint": "A sentence or two is plenty",
     "toneKicker": "STEP 3 — Letter tone",
-    "toneMultiHint": "Pick only what you want (optional)",
-    "toneQ11None": "(none selected)",
     "examplePrefix": "e.g.",
     "channelIntroductions": {
       "pension": {

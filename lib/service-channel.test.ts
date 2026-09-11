@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
   isServiceChannelCompatible,
   isCustomizedServiceChannel,
   parseServiceChannel,
+  partnerTypeToServiceChannel,
   serviceChannelMode,
   type ServiceChannel,
 } from "./service-channel.ts";
@@ -41,6 +43,25 @@ test("maps each service channel to the existing letter mode", () => {
   };
   for (const [channel, mode] of Object.entries(expected) as [ServiceChannel, "living" | "memorial"][]) {
     assert.equal(serviceChannelMode(channel), mode);
+  }
+});
+
+test("maps Ops partner types to service channels", () => {
+  assert.equal(partnerTypeToServiceChannel("PENSION"), "pension");
+  assert.equal(partnerTypeToServiceChannel("GROOMING"), "grooming");
+  assert.equal(partnerTypeToServiceChannel("HOSPITAL"), "hospital");
+  assert.equal(partnerTypeToServiceChannel("FUNERAL"), "funeral");
+});
+
+test("partner entry and internal APIs use the canonical channel mapper", () => {
+  for (const file of [
+    "lib/partner-entry.ts",
+    "app/api/internal/partners/route.ts",
+    "app/api/internal/partner-codes/route.ts",
+  ]) {
+    const source = readFileSync(file, "utf8");
+    assert.match(source, /partnerTypeToServiceChannel/);
+    assert.doesNotMatch(source, /const PARTNER_TYPE_CHANNELS/);
   }
 });
 

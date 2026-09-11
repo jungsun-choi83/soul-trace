@@ -1,4 +1,5 @@
 import type { LetterMode } from "./letter-mode.ts";
+import type { PartnerType } from "./partner.ts";
 
 /** Optional service context supplied by a partner or campaign URL. */
 export type ServiceChannel = "pension" | "grooming" | "hospital" | "funeral";
@@ -17,6 +18,19 @@ const SERVICE_CHANNEL_MODES: Readonly<Record<ServiceChannel, LetterMode>> = {
   hospital: "living",
   funeral: "memorial",
 };
+
+/** Partner type on the QR’s partner row → survey/channel for that visit. */
+const PARTNER_TYPE_CHANNELS: Readonly<Record<PartnerType, ServiceChannel>> = {
+  PENSION: "pension",
+  GROOMING: "grooming",
+  HOSPITAL: "hospital",
+  FUNERAL: "funeral",
+};
+
+/** Maps Ops partner type to the Soul Trace `ch=` service channel. */
+export function partnerTypeToServiceChannel(type: PartnerType): ServiceChannel {
+  return PARTNER_TYPE_CHANNELS[type];
+}
 
 /** Strictly parses an unknown value; missing, empty, and unsupported values return null. */
 export function parseServiceChannel(value: unknown): ServiceChannel | null {

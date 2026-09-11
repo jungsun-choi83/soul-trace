@@ -47,6 +47,13 @@ export function isPartnerType(value: unknown): value is PartnerType {
   );
 }
 
+/** Accepts legacy casing/whitespace while keeping the four-value trusted vocabulary. */
+export function normalizePartnerType(value: unknown): PartnerType | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toUpperCase();
+  return isPartnerType(normalized) ? normalized : null;
+}
+
 export interface ResolvedPartner {
   partnerId: string;
   partnerType: PartnerType;
@@ -166,7 +173,8 @@ export async function resolvePartnerCode(
     | undefined;
 
   if (!p?.partner_id || p.active !== true) return null;
-  if (!isPartnerType(p.partner_type)) return null;
+  const partnerType = normalizePartnerType(p.partner_type);
+  if (!partnerType) return null;
 
   // track 이 이상한 값이면 **귀속은 살리고 갈래만 버린다.** 갈래는 편의(첫 화면
   // 건너뛰기)일 뿐이고, 그것 때문에 정산 귀속을 잃을 이유가 없다.
@@ -174,7 +182,7 @@ export async function resolvePartnerCode(
 
   return {
     partnerId: p.partner_id,
-    partnerType: p.partner_type,
+    partnerType,
     partnerName: String(p.partner_name ?? ""),
     partnerCode: String((data as { code?: unknown }).code ?? code),
     partnerTrack: isLetterMode(track) ? track : null,

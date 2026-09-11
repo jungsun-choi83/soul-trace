@@ -21,6 +21,7 @@
 create table if not exists public.partners (
   partner_id  text primary key,
   -- HOSPITAL = 동물병원 / FUNERAL = 반려동물 장례식장
+  -- (GROOMING/PENSION 은 migration_add_partner_types_grooming_pension.sql 에서 추가)
   partner_type text not null check (partner_type in ('HOSPITAL', 'FUNERAL')),
   partner_name text not null,
   -- 끄면 새 귀속이 생기지 않는다. **이미 귀속된 편지는 그대로 유지된다.**
@@ -40,6 +41,12 @@ create table if not exists public.partner_codes (
 create index if not exists partner_codes_partner_idx
   on public.partner_codes (partner_id);
 
+-- These tables are resolved only by trusted server code. Enabling RLS without
+-- client policies keeps partner data private; the service-role internal APIs
+-- continue to bypass RLS.
+alter table public.partners enable row level security;
+alter table public.partner_codes enable row level security;
+
 -- ── 편지에 귀속을 남긴다 ────────────────────────────────────────────────────
 -- **nullable 이다.** 파트너 없이 직접 들어온 고객이 다수이고, 그들의 흐름은
 -- 조금도 달라지지 않아야 한다. NULL = 직접 유입.
@@ -52,7 +59,7 @@ create index if not exists soul_trace_profiles_partner_idx
   where partner_id is not null;
 
 comment on table public.partners is
-  '제휴 동물병원·장례식장. 정산 대상이며 코드와 분리돼 있다';
+  '제휴 서비스 사업자. 정산 대상이며 공개 QR 코드와 분리돼 있다';
 comment on table public.partner_codes is
   'QR 에 찍히는 불투명 코드. 파트너당 여러 개 가능하고 개별로 끌 수 있다';
 comment on column public.soul_trace_profiles.partner_id is

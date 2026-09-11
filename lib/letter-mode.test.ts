@@ -29,11 +29,11 @@ describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () 
     for (const mode of LETTER_MODES) {
       it(`${name}/${mode}: 설문 5문항 + 톤 3문항이 채워져 있다`, () => {
         const copy = modeCopy(messages, mode);
-        assert.equal(copy.memory.length, 5);
-        assert.equal(copy.tone.length, 3);
+        assert.equal(copy.memory.length, 4);
+        assert.equal(copy.tone.length, 2);
         assert.deepEqual(
           copy.tone.map((q) => q.id),
-          ["q10", "q11", "q12"],
+          ["q10", "q12"],
         );
         for (const item of copy.memory) {
           assert.ok(item.promptText.trim().length > 0);
@@ -41,8 +41,8 @@ describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () 
         }
         // 마지막 기억 질문만 건너뛸 수 있다. 건너뛰기 버튼 문구가 없으면
         // 사용자는 답할 수도 넘어갈 수도 없는 화면에 갇힌다.
-        assert.equal(copy.memory[4].optional, true);
-        assert.ok((copy.memory[4].skipLabel ?? "").trim().length > 0);
+        assert.equal(copy.memory[3].optional, true);
+        assert.ok((copy.memory[3].skipLabel ?? "").trim().length > 0);
       });
 
       it(`${name}/${mode}: 화면에 바로 박히는 문구가 비어 있지 않다`, () => {
@@ -63,18 +63,18 @@ describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () 
     }
 
     it(`${name}: 살아 있는 갈래에는 무지개다리 선택지가 없다`, () => {
-      const living = modeCopy(messages, "living").tone[1].options.map((o) => o.id);
-      const memorial = modeCopy(messages, "memorial").tone[1].options.map((o) => o.id);
+      const living = modeCopy(messages, "living").tone.map((o) => o.id);
+      const memorial = modeCopy(messages, "memorial").tone.map((o) => o.id);
       // 살아 있는 아이에게 "하늘·무지개다리 표현을 빼 달라"고 묻는 것 자체가
       // 아이가 죽었다는 전제를 깔고 있다. 그 선택지는 추모 갈래에만 있어야 한다.
-      assert.ok(!living.includes("no_heaven"));
-      assert.ok(memorial.includes("no_heaven"));
+      assert.ok(!living.includes("q11"));
+      assert.ok(!memorial.includes("q11"));
     });
 
     it(`${name}: 톤 선택지 id 는 서버가 아는 값만 쓴다`, () => {
-      const known = new Set(["comfort", "no_heaven", "frequent_name"]);
+      const known = new Set(["q10", "q12"]);
       for (const mode of LETTER_MODES) {
-        for (const option of modeCopy(messages, mode).tone[1].options) {
+        for (const option of modeCopy(messages, mode).tone) {
           // 서버의 parseTonePrefs 가 모르는 id 는 조용히 버려진다 —
           // 사용자가 고른 옵션이 편지에 반영되지 않는 조용한 실패다.
           assert.ok(known.has(option.id), `${mode}: 알 수 없는 톤 옵션 ${option.id}`);
@@ -92,7 +92,7 @@ describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () 
 
     it(`${name}: 보통 길이는 20줄, 짧은 길이는 12줄이라고 적혀 있다`, () => {
       for (const mode of LETTER_MODES) {
-        const lengthOpts = modeCopy(messages, mode).tone[2].options;
+        const lengthOpts = modeCopy(messages, mode).tone.find((item) => item.id === "q12")?.options ?? [];
         const short = lengthOpts.find((o) => o.id === "short")?.label ?? "";
         const normal = lengthOpts.find((o) => o.id === "normal")?.label ?? "";
         // 화면 숫자와 프롬프트 숫자가 어긋나면 사용자는 10줄을 골랐는데 20줄이 온다.

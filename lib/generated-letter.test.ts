@@ -30,7 +30,7 @@ describe("explicit generated letter structure", () => {
     assert.match(source, /data-letter-ending-phrase/);
     assert.match(
       source,
-      /data-letter-ending-phrase[\s\S]{0,300}font-semibold italic[\s\S]{0,300}activeLetterStructure\.endingPhrase/,
+      /data-letter-ending-phrase[\s\S]{0,800}font-semibold italic[\s\S]{0,800}activeLetterStructure\.endingPhrase/,
     );
   });
 

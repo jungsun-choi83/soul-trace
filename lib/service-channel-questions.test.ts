@@ -60,15 +60,17 @@ test("channel questions have no predefined answer choices and optional fields st
 });
 
 test("required channel answers use existing completion validation", () => {
-  assert.equal(isSurveyComplete(["one", "two", "three", ""], tonePrefs, "pension"), true);
-  assert.equal(isSurveyComplete(["one", "", "three", "four"], tonePrefs, "pension"), false);
-  assert.equal(isSurveyComplete(["one", "two", "three", "four", ""], tonePrefs, "grooming"), true);
+  assert.equal(isSurveyComplete(["one", "two", "three", ""], tonePrefs, en, "living", "pension"), true);
+  assert.equal(isSurveyComplete(["one", "", "three", "four"], tonePrefs, en, "living", "pension"), false);
+  assert.equal(isSurveyComplete(["one", "two", "three", "four", ""], tonePrefs, en, "living", "grooming"), true);
+  assert.equal(isSurveyComplete(["one", "two", "three", "", "optional"], tonePrefs, en, "living", "grooming"), false);
+  assert.equal(isSurveyComplete(["one", "two", "three", ""], tonePrefs, en, "living", null), true);
 });
 
-test("no channel keeps the existing five-question flow and typed answers survive locale changes", () => {
-  assert.equal(memoryQuestionCount(null), 5);
-  const answers = buildSurveyAnswers(en, "living", ["typed answer", "", "", "", ""], tonePrefs, "Milo");
-  const switched = buildSurveyAnswers(ko, "living", ["typed answer", "", "", "", ""], tonePrefs, "Milo");
+test("no channel keeps the default four-question flow and typed answers survive locale changes", () => {
+  assert.equal(memoryQuestionCount(null), 4);
+  const answers = buildSurveyAnswers(en, "living", ["typed answer", "", "", ""], tonePrefs, "Milo");
+  const switched = buildSurveyAnswers(ko, "living", ["typed answer", "", "", ""], tonePrefs, "Milo");
   assert.equal(answers[0].answer, "typed answer");
   assert.equal(switched[0].answer, "typed answer");
   assert.equal(channelMemoryQuestions(en, null), null);
@@ -102,8 +104,8 @@ test("legacy funeral channel uses the exact normal memorial questionnaire in bot
   assert.equal(channelMemoryQuestions(en, "funeral"), null);
   assert.equal(channelMemoryQuestions(ko, "funeral"), null);
   assert.equal(memoryQuestionCount("funeral"), memoryQuestionCount(null));
-  assert.equal(isSurveyComplete(memoryAnswers, tonePrefs, "funeral"), true);
-  assert.equal(isSurveyComplete(memoryAnswers, tonePrefs, null), true);
+  assert.equal(isSurveyComplete(memoryAnswers, tonePrefs, en, "memorial", "funeral"), true);
+  assert.equal(isSurveyComplete(memoryAnswers, tonePrefs, en, "memorial", null), true);
 });
 
 test("Korean locale contains every channel question without English fallback", () => {

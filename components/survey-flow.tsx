@@ -6,17 +6,13 @@ import { modeCopy, type LetterMode } from "@/lib/letter-mode";
 import type { ServiceChannel } from "@/lib/service-channel";
 import { PetPhotoUpload } from "@/components/pet-photo-upload";
 import { PrivacyConsentTrigger } from "@/components/privacy-consent-trigger";
-import { VideoMotionPicker } from "@/components/video-motion-picker";
 import {
   formatSurveyName,
   channelMemoryQuestions,
   memoryQuestionCount,
   PET_PHOTO_UPLOAD_ENABLED,
   PHOTO_STEP_COUNT,
-  TONE_STEP_COUNT,
-  type LetterToneOption,
   type LetterTonePrefs,
-  type VideoMotion,
 } from "@/lib/survey";
 
 type SurveyFlowProps = {
@@ -31,11 +27,8 @@ type SurveyFlowProps = {
   onSkipPhoto: () => void;
   photoPrivacyConsent: boolean;
   onOpenPhotoPrivacy: () => void;
-  videoMotion: VideoMotion | "";
-  onVideoMotionChange: (motion: VideoMotion) => void;
   onMemoryChange: (index: number, value: string) => void;
   onToneMood: (mood: LetterTonePrefs["mood"]) => void;
-  onToneOptionToggle: (option: LetterToneOption) => void;
   onToneLength: (length: LetterTonePrefs["length"]) => void;
   onSkipOptional: () => void;
   showValidationError?: boolean;
@@ -63,11 +56,8 @@ export function SurveyFlow({
   onSkipPhoto,
   photoPrivacyConsent,
   onOpenPhotoPrivacy,
-  videoMotion,
-  onVideoMotionChange,
   onMemoryChange,
   onToneMood,
-  onToneOptionToggle,
   onToneLength,
   onSkipOptional,
   showValidationError = false,
@@ -77,10 +67,10 @@ export function SurveyFlow({
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
   const channelMemory = channelMemoryQuestions(messages, serviceChannel);
   const memoryCount = memoryQuestionCount(serviceChannel);
-  const isPhoto = PET_PHOTO_UPLOAD_ENABLED && step === memoryCount;
+  const isPhoto = PET_PHOTO_UPLOAD_ENABLED && step === memoryCount + 1;
   const isMemory = step < memoryCount;
   const memoryItem = isMemory ? (channelMemory?.[step] ?? copy.memory[step]) : null;
-  const toneIndex = step - memoryCount - PHOTO_STEP_COUNT;
+  const toneIndex = step === memoryCount ? 0 : step - memoryCount - PHOTO_STEP_COUNT;
   const toneItem = !isMemory && !isPhoto ? copy.tone[toneIndex] : null;
   const validationMessage = !showValidationError
     ? null
@@ -98,30 +88,19 @@ export function SurveyFlow({
 
   return (
     <div className={bodyFont}>
-      <div className="mb-6 flex items-center justify-between text-xs">
-        <span className="font-display-en uppercase text-[#D4AF37]">
-          {t("questionHeader.label")} {step + 1}
-        </span>
-        <span className="font-display-en text-[#D4AF37]">{memoryCount + PHOTO_STEP_COUNT + TONE_STEP_COUNT}</span>
-      </div>
-      <div className="mb-4 h-px overflow-hidden rounded-full bg-[rgba(243,234,216,0.12)]">
-        <div
-          className="h-full rounded-full bg-[#D4AF37] transition-all duration-700 ease-out"
-          style={{ width: `${((step + 1) / (memoryCount + PHOTO_STEP_COUNT + TONE_STEP_COUNT)) * 100}%` }}
-        />
-      </div>
-
       <p className="step-kicker">
-        {isPhoto ? t("survey.photoStepKicker") : isMemory ? t("survey.memoryKicker") : t("survey.toneKicker")}
+        {isPhoto ? t("survey.stampPhoto.label") : isMemory ? t("survey.memoryKicker") : t("survey.toneKicker")}
       </p>
 
       {isPhoto ? (
         <div className="mt-4 space-y-4">
+          <p className="survey-hint font-extralight text-[#D4AF37]/85">{t("survey.stampPhoto.helper")}</p>
           <PetPhotoUpload
             petDisplayName={petDisplayName}
             previewUrl={petPhotoPreviewUrl}
             onFileChange={onPetPhotoChange}
             showKicker={false}
+            showGuidance={false}
           />
           {petPhotoPreviewUrl ? (
             <PrivacyConsentTrigger
@@ -130,13 +109,6 @@ export function SurveyFlow({
               labelPath="form.photoPrivacyConsentLink"
             />
           ) : null}
-          <VideoMotionPicker
-            petDisplayName={petDisplayName}
-            value={videoMotion}
-            onChange={onVideoMotionChange}
-            disabled={!petPhotoPreviewUrl || !photoPrivacyConsent}
-            embedded
-          />
           <button
             type="button"
             onClick={onSkipPhoto}
@@ -150,7 +122,7 @@ export function SurveyFlow({
       {isMemory && memoryItem ? (
         <div className="mt-4 space-y-4">
           <p className="text-xl font-extralight leading-relaxed text-[#FFFFFF] md:text-2xl">
-            {formatSurveyName(memoryItem.promptText, petDisplayName)}
+            {`Q${step + 1}. ${formatSurveyName(memoryItem.promptText, petDisplayName)}`}
           </p>
           {memoryItem.optional ? (
             <p className="survey-hint font-extralight text-[#C4B8A8]/90">
@@ -186,11 +158,8 @@ export function SurveyFlow({
       {!isMemory && !isPhoto && toneItem ? (
         <div className="mt-4 space-y-4">
           <p className="text-xl font-extralight leading-relaxed text-[#FFFFFF] md:text-2xl">
-            {toneItem.promptText}
+            {`${toneItem.id === "q10" ? "Q1" : "Q2"}. ${toneItem.promptText.replace(/^Q\d+\.\s*/, "")}`}
           </p>
-          {toneItem.id === "q11" ? (
-            <p className="survey-hint font-extralight text-[#D4AF37]/85">{t("survey.toneMultiHint")}</p>
-          ) : null}
           <div className="flex flex-wrap gap-2">
             {toneItem.id === "q10"
               ? toneItem.options.map((opt) => (
@@ -202,26 +171,6 @@ export function SurveyFlow({
                   >
                     {opt.label}
                   </button>
-                ))
-              : null}
-            {toneItem.id === "q11"
-              ? toneItem.options.map((opt) => (
-                  <label
-                    key={opt.id}
-                    className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 text-sm font-extralight leading-relaxed transition ${
-                      tonePrefs.options.includes(opt.id as LetterToneOption)
-                        ? "border-[rgba(212,175,55,0.55)] bg-[rgba(212,175,55,0.1)] text-[#F5E6B8]"
-                        : "border-[rgba(212,175,55,0.22)] bg-transparent text-[#EDE4D3]/90 hover:border-[rgba(212,175,55,0.4)]"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={tonePrefs.options.includes(opt.id as LetterToneOption)}
-                      onChange={() => onToneOptionToggle(opt.id as LetterToneOption)}
-                      className="mt-0.5 h-4 w-4 shrink-0 accent-[#D4AF37]"
-                    />
-                    <span>{opt.label}</span>
-                  </label>
                 ))
               : null}
             {toneItem.id === "q12"

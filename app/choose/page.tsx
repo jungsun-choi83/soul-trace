@@ -1,11 +1,11 @@
 import { ModeChoice } from "@/components/mode-choice";
-import { letterModePath } from "@/lib/letter-mode";
 import {
   PARTNER_CODE_PARAM,
   looksLikePartnerCode,
   resolvePartnerCode,
 } from "@/lib/partner";
 import type { ServerSearchParams } from "@/lib/search-params";
+import { partnerEntryDestination } from "@/lib/partner-entry";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 
@@ -35,12 +35,9 @@ export default async function ModeChoicePage({
 
   const supabase = createSupabaseServerClient();
   const partner = supabase ? await resolvePartnerCode(supabase, code) : null;
+  if (!partner) redirect("/");
 
-  if (partner?.partnerTrack) {
-    redirect(
-      `${letterModePath(partner.partnerTrack)}?${PARTNER_CODE_PARAM}=${encodeURIComponent(code)}`,
-    );
-  }
-
-  return <ModeChoice partnerCode={code} preservedQuery={preservedQuery} />;
+  // Compatibility for old links that entered through /choose: partner type, never a
+  // caller-provided broad mode, is the trusted route source.
+  redirect(partnerEntryDestination(partner.partnerType, partner.partnerCode, params));
 }

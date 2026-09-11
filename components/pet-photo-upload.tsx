@@ -13,6 +13,7 @@ type PetPhotoUploadProps = {
   previewUrl: string | null;
   onFileChange: (file: File | null) => void;
   showKicker?: boolean;
+  showGuidance?: boolean;
 };
 
 export function PetPhotoUpload({
@@ -20,6 +21,7 @@ export function PetPhotoUpload({
   previewUrl,
   onFileChange,
   showKicker = true,
+  showGuidance = true,
 }: PetPhotoUploadProps) {
   const { t, lang } = useLocale();
   const inputId = useId();
@@ -77,12 +79,12 @@ export function PetPhotoUpload({
           {t("survey.video.photoKicker")}
         </p>
       ) : null}
-      <p className={`text-sm font-extralight leading-relaxed text-[#EDE4D3] sm:text-[15px] ${showKicker ? "mt-3" : ""}`}>
+      {showGuidance ? <><p className={`text-sm font-extralight leading-relaxed text-[#EDE4D3] sm:text-[15px] ${showKicker ? "mt-3" : ""}`}>
         {hint}
       </p>
       <p className="survey-hint mt-3 font-extralight text-[#D4AF37]/88">
         {t("survey.video.photoGuideline")}
-      </p>
+      </p></> : null}
 
       <input
         ref={inputRef}

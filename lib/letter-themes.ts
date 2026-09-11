@@ -11,6 +11,11 @@ export type LetterTheme = {
   headingColor: string;
   dropCapColor: string;
   panelBorderColor: string;
+  cardBackground: string;
+  dividerColor: string;
+  stampAccentColor: string;
+  stampInkColor: string;
+  endingColor: string;
 };
 
 /**
@@ -30,6 +35,11 @@ export const LETTER_THEMES: readonly LetterTheme[] = [
     headingColor: "#9a7426",
     dropCapColor: "#9a7426",
     panelBorderColor: "rgba(154, 116, 38, 0.34)",
+    cardBackground: "radial-gradient(circle at 15% 12%, rgba(255,255,255,0.82), transparent 27%), repeating-linear-gradient(0deg, rgba(96,66,31,0.025) 0 1px, transparent 1px 4px), linear-gradient(145deg, #fffaf0 0%, #f7ecd5 58%, #edddbd 100%)",
+    dividerColor: "rgba(154, 113, 52, 0.25)",
+    stampAccentColor: "#a77c3d",
+    stampInkColor: "#775f48",
+    endingColor: "#9a7134",
   },
   {
     id: "night-sky",
@@ -43,6 +53,11 @@ export const LETTER_THEMES: readonly LetterTheme[] = [
     headingColor: "#d0ad62",
     dropCapColor: "#d0ad62",
     panelBorderColor: "rgba(208, 173, 98, 0.34)",
+    cardBackground: "radial-gradient(circle at 18% 10%, rgba(52,72,118,0.72), transparent 32%), repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 4px), linear-gradient(150deg, #192744 0%, #101a31 62%, #091123 100%)",
+    dividerColor: "rgba(208, 173, 98, 0.34)",
+    stampAccentColor: "#d0ad62",
+    stampInkColor: "#c49b50",
+    endingColor: "#dfbd70",
   },
   {
     id: "soft-clouds",
@@ -56,6 +71,11 @@ export const LETTER_THEMES: readonly LetterTheme[] = [
     headingColor: "#9a7b38",
     dropCapColor: "#9a7b38",
     panelBorderColor: "rgba(154, 123, 56, 0.28)",
+    cardBackground: "radial-gradient(circle at 20% 12%, rgba(255,255,255,0.95), transparent 30%), linear-gradient(145deg, #fffefa 0%, #f2f5f4 55%, #e5edf0 100%)",
+    dividerColor: "rgba(154, 123, 56, 0.22)",
+    stampAccentColor: "#a58a50",
+    stampInkColor: "#71808a",
+    endingColor: "#967631",
   },
   {
     id: "memory-paper",
@@ -69,6 +89,11 @@ export const LETTER_THEMES: readonly LetterTheme[] = [
     headingColor: "#9a742f",
     dropCapColor: "#8d6429",
     panelBorderColor: "rgba(112, 78, 42, 0.3)",
+    cardBackground: "repeating-linear-gradient(0deg, rgba(92,65,37,0.04) 0 1px, transparent 1px 4px), linear-gradient(145deg, #f5ead3 0%, #e9d7b7 58%, #dbc29a 100%)",
+    dividerColor: "rgba(112, 78, 42, 0.28)",
+    stampAccentColor: "#936b35",
+    stampInkColor: "#71563b",
+    endingColor: "#8d6429",
   },
 ] as const;
 
