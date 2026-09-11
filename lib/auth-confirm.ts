@@ -1,4 +1,5 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
+import { logAuthFailure } from "./auth-diagnostics.ts";
 
 export type AuthConfirmationClient = {
   auth: {
@@ -39,13 +40,20 @@ export async function authenticateAuthCallback(
     return "verification_failed";
   }
 
-  if (authenticationError) return "verification_failed";
+  if (authenticationError) {
+    logAuthFailure(
+      code ? "callback-code-exchange" : "callback-otp-verification",
+      authenticationError,
+    );
+    return "verification_failed";
+  }
 
   const { error: claimError } = await supabase.rpc(
     "claim_soul_trace_legacy_records",
   );
 
   if (claimError) {
+    logAuthFailure("callback-legacy-claim", claimError);
     await supabase.auth.signOut();
     return "claim_failed";
   }

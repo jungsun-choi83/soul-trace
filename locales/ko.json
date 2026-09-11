@@ -7,6 +7,11 @@
     "title": "마음에서 온 편지",
     "cta": "여정을 시작하세요"
   },
+  "partnerEntry": {
+    "unavailableTitle": "이 제휴 링크를 사용할 수 없습니다",
+    "unavailableBody": "링크가 비활성화되었거나 더 이상 유효하지 않을 수 있습니다. Soul Trace 시작 화면에서 계속하실 수 있습니다.",
+    "backToWelcome": "시작 화면으로 이동"
+  },
   "auth": {
     "eyebrow": "나의 소울 트레이스",
     "signupTitle": "계정을 만들어 주세요",
@@ -84,15 +89,10 @@
       "headline": "그 아이가 오늘 하루 뭘 생각했을까요",
       "subline": "말로 못 할 뿐, 아이는 매일 하고 싶은 말이 있어요.",
       "letterHeading": "%RECIPIENT%에게 보내는 편지",
-      "q1Label": "Q1. 아이의 이름은?",
-      "q2Label": "Q2. 어떤 아이인가요?",
+      "q1Label": "아이 이름",
+      "q2Label": "반려동물 종류",
       "yearPartedPlaceholder": "지금 (올해)",
       "memory": [
-        {
-          "promptText": "○○을 처음 만난 날, 어떤 장면이 기억나세요?",
-          "placeholder": "그날의 장면을 적어주세요",
-          "example": "케이지 구석에서 안 나오려고 버텼어요 / 손가락을 자꾸 물었어요"
-        },
         {
           "promptText": "○○만 하는 이상한 버릇이나 고집이 있나요?",
           "placeholder": "사소하고 특별한 습관을 적어주세요",
@@ -127,16 +127,8 @@
           ]
         },
         {
-          "id": "q11",
-          "promptText": "Q11. 원하시는 걸 골라주세요",
-          "options": [
-            { "id": "comfort", "label": "\"괜찮아, 잘하고 있어\" 같은 위로를 넣어주세요" },
-            { "id": "frequent_name", "label": "이름을 자주 불러주세요" }
-          ]
-        },
-        {
           "id": "q12",
-          "promptText": "Q12. 길이",
+          "promptText": "편지 길이",
           "options": [
           { "id": "short", "label": "짧게 (12줄)" },
           { "id": "normal", "label": "보통 (20줄)" }
@@ -150,15 +142,10 @@
       "headline": "그 아이가 마지막으로 전하지 못한 말",
       "subline": "아이의 마음속엔, 아직 전하지 못한 말이 있어요.",
       "letterHeading": "%RECIPIENT%에게 보내는 편지",
-      "q1Label": "Q1. 아이의 이름은?",
-      "q2Label": "Q2. 어떤 아이였나요?",
+      "q1Label": "아이 이름",
+      "q2Label": "반려동물 종류",
       "yearPartedPlaceholder": "헤어진 해",
       "memory": [
-        {
-          "promptText": "○○을 처음 만난 날, 어떤 장면이 기억나세요?",
-          "placeholder": "그날의 장면을 적어주세요",
-          "example": "케이지 구석에서 안 나오려고 버텼어요 / 손가락을 자꾸 물었어요"
-        },
         {
           "promptText": "○○만 하던 이상한 버릇이나 고집이 있었나요?",
           "placeholder": "사소하고 특별한 습관을 적어주세요",
@@ -193,17 +180,8 @@
           ]
         },
         {
-          "id": "q11",
-          "promptText": "Q11. 원하시는 걸 골라주세요",
-          "options": [
-            { "id": "comfort", "label": "\"네 잘못이 아니야\" 같은 위로를 넣어주세요" },
-            { "id": "no_heaven", "label": "하늘, 무지개다리 같은 표현은 빼주세요" },
-            { "id": "frequent_name", "label": "이름을 자주 불러주세요" }
-          ]
-        },
-        {
           "id": "q12",
-          "promptText": "Q12. 길이",
+          "promptText": "편지 길이",
           "options": [
           { "id": "short", "label": "짧게 (12줄)" },
           { "id": "normal", "label": "보통 (20줄)" }
@@ -233,27 +211,31 @@
       "emailRequired": "이메일 주소를 입력해 주세요.",
       "emailInvalid": "name@example.com과 같은 올바른 이메일 주소를 입력해 주세요.",
       "petNameRequired": "아이의 이름을 입력해 주세요.",
-      "petTypeRequired": "아이의 종류를 선택해 주세요.",
-      "yearsRequired": "두 연도를 모두 입력해 주세요.",
+      "petTypeRequired": "반려동물 종류를 선택해 주세요.",
+      "petBreedRequired": "아이의 품종을 선택해 주세요.",
+      "yearsRequired": "아이의 나이를 정수로 입력해 주세요.",
+      "petAgeRequired": "함께한 연수를 입력해 주세요.",
       "yearsRange": "1980년부터 올해 사이의 연도를 입력해 주세요.",
       "yearsOrder": "처음 만난 해는 마지막 연도보다 늦을 수 없어요.",
-      "recipientRequired": "편지를 받을 사람을 선택해 주세요.",
+      "recipientRequired": "편지를 받을 분을 선택해 주세요.",
       "recipientDetailRequired": "편지에 사용할 이름이나 호칭을 입력해 주세요.",
       "privacyRequired": "개인정보 내용을 확인하고 동의해 주세요.",
-      "memoryRequired": "다음으로 가기 전에 답변을 입력해 주세요.",
+      "memoryRequired": "이 질문에 답한 뒤 다음으로 이동해 주세요.",
       "photoChoiceRequired": "사진을 올리거나 사진 건너뛰기를 선택해 주세요.",
       "photoConsentRequired": "사진 이용에 동의하거나 사진을 삭제한 뒤 건너뛰어 주세요.",
-      "moodRequired": "편지의 분위기를 선택해 주세요.",
+      "moodRequired": "편지 분위기를 선택해 주세요.",
       "lengthRequired": "편지 길이를 선택해 주세요."
     },
     "step1": {
       "kicker": "STEP 1 — 아이 소개",
       "q1Placeholder": "정식 이름",
       "q1bLabel": "Q1-b. 평소엔 뭐라고 부르셨나요?",
-      "q1bPlaceholder": "예: 콩아, 콩디, 뚱아 (선택)",
-      "q3Label": "Q3. 함께한 시간",
+      "q1bPlaceholder": "평소엔 뭐라고 부르셨나요?",
+      "q2bLabel": "아이의 품종은 무엇인가요?",
+      "q3Label": "함께한 기간",
+      "q3Placeholder": "함께한 연수를 입력해 주세요",
       "yearMetPlaceholder": "만난 해",
-      "q4Label": "Q4. 이 편지를 받는 사람은?",
+      "q4Label": "편지를 받을 분은?",
       "recipientByNamePlaceholder": "부르는 이름",
       "recipientCustomPlaceholder": "직접 입력",
       "petTypes": {
@@ -263,6 +245,17 @@
         "hamster": "햄스터",
         "bird": "새",
         "other": "기타"
+      },
+      "petBreeds": {
+        "golden-retriever": "골든 리트리버", "labrador-retriever": "래브라도 리트리버",
+        "poodle": "푸들", "maltese": "말티즈", "pomeranian": "포메라니안",
+        "shih-tzu": "시추", "chihuahua": "치와와", "jindo": "진돗개",
+        "korean-shorthair": "코리안 쇼트헤어", "persian": "페르시안", "russian-blue": "러시안 블루",
+        "siamese": "샴", "british-shorthair": "브리티시 쇼트헤어", "scottish-fold": "스코티시 폴드", "ragdoll": "랙돌",
+        "lop": "롭", "dutch": "더치", "lionhead": "라이언헤드", "netherland-dwarf": "네덜란드 드워프",
+        "syrian": "시리안", "dwarf": "드워프", "roborovski": "로보로브스키", "chinese": "차이니즈",
+        "parakeet": "잉꼬", "cockatiel": "왕관앵무", "lovebird": "모란앵무", "finch": "핀치",
+        "mixed-not-sure": "믹스 / 잘 모르겠어요"
       },
       "recipients": {
         "mom": "엄마",
@@ -278,7 +271,8 @@
   },
   "questionHeader": {
     "label": "QUESTION",
-    "of": "/"
+    "of": "/",
+    "left": "개 질문 남음"
   },
   "buttons": {
     "prev": "이전 질문",
@@ -601,8 +595,6 @@
     "privacyRequired": "개인정보 수집·이용 동의가 필요합니다.",
     "photoPrivacyRequired": "사진을 올리려면 사진 수집·이용 동의가 필요합니다.",
     "generateFailed": "지금은 편지를 만들 수 없어요. 잠시 후 다시 시도해 주세요.",
-    "alreadyGenerated": "이 이메일로는 이미 편지를 만든 기록이 있어요. 같은 이메일로는 한 번만 이용할 수 있습니다.",
-    "emailAlreadyUsedSoft": "이 이메일로는 이미 편지를 받아보신 적이 있어요. 한 이메일당 한 번만 드릴 수 있어요. 다른 이메일을 입력해 주세요.",
     "unknown": "알 수 없는 오류가 발생했습니다.",
     "saveImageFailed": "이미지 저장에 실패했습니다:",
     "saveImageGeneric": "이미지 저장 중 오류가 발생했습니다.",
@@ -611,12 +603,14 @@
     "shareFailed": "공유 중 오류가 발생했습니다."
   },
   "survey": {
+    "stampPhoto": {
+      "label": "스탬프 사진",
+      "helper": "사진을 건너뛰면 발바닥 스탬프로 대신할게요."
+    },
     "memoryKicker": "STEP 2 — 기억",
     "photoStepKicker": "STEP 2 — 영상용 사진",
     "memoryHint": "한두 문장이면 충분해요",
     "toneKicker": "STEP 3 — 편지 톤",
-    "toneMultiHint": "원하시는 것만 골라주세요 (선택)",
-    "toneQ11None": "(선택 없음)",
     "examplePrefix": "예:",
     "channelIntroductions": {
       "pension": {

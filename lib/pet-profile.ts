@@ -20,6 +20,8 @@ export type PetIntroProfile = {
   petName: string;
   petNickname: string;
   petType: PetType | "";
+  petBreed?: string;
+  petAge?: string;
   yearMet: string;
   yearParted: string;
   letterRecipient: LetterRecipient | "";
@@ -30,6 +32,8 @@ export const EMPTY_PET_INTRO: PetIntroProfile = {
   petName: "",
   petNickname: "",
   petType: "",
+  petBreed: "",
+  petAge: "",
   yearMet: "",
   yearParted: "",
   letterRecipient: "",
@@ -41,7 +45,12 @@ export function letterPetName(profile: Pick<PetIntroProfile, "petName" | "petNic
   return profile.petNickname.trim() || profile.petName.trim();
 }
 
-export function yearsTogether(profile: Pick<PetIntroProfile, "yearMet" | "yearParted">): number | null {
+export function yearsTogether(profile: Pick<PetIntroProfile, "yearMet" | "yearParted" | "petAge">): number | null {
+  if (profile.petAge !== undefined && profile.petAge !== "") {
+    if (!/^\d+$/.test(profile.petAge)) return null;
+    const age = Number(profile.petAge);
+    return Number.isSafeInteger(age) && age >= 0 ? age : null;
+  }
   if (!/^\d{4}$/.test(profile.yearMet.trim()) || !/^\d{4}$/.test(profile.yearParted.trim())) {
     return null;
   }
@@ -78,6 +87,9 @@ export function buildPetProfilePromptBlock(
   const years = yearsTogether(profile);
   const typeLabels = PET_TYPE_LABELS[locale];
   const recipientLabels = RECIPIENT_LABELS[locale];
+  const breed = profile.petBreed === "mixed-not-sure"
+    ? locale === "ko" ? "믹스 / 잘 모르겠음 (품종을 추측하지 말 것)" : "Mixed / Not Sure (do not infer a breed)"
+    : (profile.petBreed ?? "").split("-").filter(Boolean).join(" ");
 
   const petTypeLine = profile.petType
     ? `${typeLabels[profile.petType]} (${profile.petType})`
@@ -98,7 +110,10 @@ export function buildPetProfilePromptBlock(
       `정식 이름: ${formalName}`,
       `편지 속 호칭(애칭 우선): ${name}`,
       `종류: ${petTypeLine}`,
-      years !== null
+      `품종: ${breed || "알 수 없음 (품종을 추측하지 말 것)"}`,
+      profile.petAge !== undefined && profile.petAge !== ""
+        ? `함께한 시간: ${profile.petAge}년`
+        : years !== null
         ? mode === "living"
           ? `함께한 시간: ${profile.yearMet}년부터 지금까지 (${years}년째, 여전히 함께 있다)`
           : `함께한 시간: ${profile.yearMet}년 ~ ${profile.yearParted}년 (${years}년)`
@@ -124,8 +139,11 @@ export function buildPetProfilePromptBlock(
     "[Companion profile — STEP 1]",
     `Formal name: ${formalName}`,
     `Name in letter (nickname first): ${name}`,
-    `Species: ${petTypeLine}`,
-    years !== null
+      `Species: ${petTypeLine}`,
+    `Breed: ${breed || "Not Sure (do not infer a breed)"}`,
+    profile.petAge !== undefined && profile.petAge !== ""
+      ? `Years together: ${profile.petAge} years`
+      : years !== null
       ? mode === "living"
         ? `Years together: ${profile.yearMet} to now (${years} years and counting—they are still here)`
         : `Years together: ${profile.yearMet} – ${profile.yearParted} (${years} years)`
@@ -287,6 +305,8 @@ export type PetProfilePayload = {
   petName: string;
   petNickname: string;
   petType: PetType;
+  petBreed?: string;
+  petAge?: string;
   yearMet: number;
   yearParted: number;
   letterRecipient: LetterRecipient;
@@ -295,11 +315,9 @@ export type PetProfilePayload = {
 
 export function buildLetterRequestFields(
   profile: PetIntroProfile,
-  memoryAnswers: string[],
   tonePrefs: LetterTonePrefs,
 ): (PetProfilePayload & {
   relationship: LetterRecipient;
-  preferredScenery: string;
   tonePrefs: LetterTonePrefs;
 }) | null {
   const payload = petProfilePayloadFromIntro(profile);
@@ -308,8 +326,7 @@ export function buildLetterRequestFields(
   return {
     ...payload,
     relationship: payload.letterRecipient,
-    preferredScenery: (memoryAnswers[0] ?? "").trim(),
-    tonePrefs,
+    tonePrefs: { ...tonePrefs, options: [] },
   };
 }
 
@@ -324,12 +341,21 @@ export function petProfilePayloadFromIntro(profile: PetIntroProfile): PetProfile
   ) {
     return null;
   }
+  const currentYear = new Date().getFullYear();
+  const compatibilityYearParted = profile.petAge !== undefined && profile.petAge !== ""
+    ? currentYear
+    : Number.parseInt(profile.yearParted, 10);
+  const compatibilityYearMet = profile.petAge !== undefined && profile.petAge !== ""
+    ? currentYear - Math.max(years, 1) + 1
+    : Number.parseInt(profile.yearMet, 10);
   return {
     petName: profile.petName.trim(),
     petNickname: profile.petNickname.trim(),
     petType: profile.petType,
-    yearMet: Number.parseInt(profile.yearMet, 10),
-    yearParted: Number.parseInt(profile.yearParted, 10),
+    petBreed: profile.petBreed,
+    petAge: profile.petAge,
+    yearMet: compatibilityYearMet,
+    yearParted: compatibilityYearParted,
     letterRecipient: profile.letterRecipient,
     letterRecipientDetail: profile.letterRecipientDetail.trim(),
   };

@@ -48,7 +48,7 @@ describe("separate sister and brother relationships", () => {
   ] as const) {
     it(`sends ${relationship} and generates the correct title`, () => {
       const value = profile(relationship);
-      const payload = buildLetterRequestFields(value, [], {
+      const payload = buildLetterRequestFields(value, {
         ...EMPTY_TONE_PREFS,
         mood: "warm",
         length: "short",

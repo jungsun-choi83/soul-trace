@@ -5,6 +5,7 @@ import { useLocale } from "@/components/locale-provider";
 import { PrivacyConsentSheet } from "@/components/privacy-consent-sheet";
 import { PrivacyConsentTrigger } from "@/components/privacy-consent-trigger";
 import { authCallbackUrl, passwordRecoveryCallbackUrl } from "@/lib/auth-redirect";
+import { logAuthFailure } from "@/lib/auth-diagnostics";
 import { createPasswordAccount, signInWithPassword, type PasswordAuthResult } from "@/lib/password-auth";
 import { normalizeAuthEmail, type AuthMode } from "@/lib/passwordless-auth";
 import { passwordValidationError, requestPasswordRecovery } from "@/lib/password-recovery";
@@ -61,7 +62,8 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
       }
       setStatus("idle");
       setAuthError(result === "invalid_email" ? "request_failed" : result);
-    } catch {
+    } catch (error) {
+      logAuthFailure("browser-client", error);
       setStatus("idle");
       setAuthError(mode === "signup" ? "signup_unavailable" : "signin_unavailable");
     } finally {

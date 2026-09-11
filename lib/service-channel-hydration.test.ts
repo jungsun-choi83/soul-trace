@@ -17,12 +17,12 @@ test("server-provided channels select channel questions on the initial render", 
   assert.equal(totalQuestionCount("pension"), 7);
   assert.equal(totalQuestionCount("grooming"), 8);
   assert.equal(totalQuestionCount("hospital"), 7);
-  assert.equal(totalQuestionCount("funeral"), 8);
+  assert.equal(totalQuestionCount("funeral"), 7);
 });
 
 test("missing and invalid channels keep the existing normal questionnaire", () => {
-  assert.equal(totalQuestionCount(undefined), 8);
-  assert.equal(totalQuestionCount("invalid"), 8);
+  assert.equal(totalQuestionCount(undefined), 7);
+  assert.equal(totalQuestionCount("invalid"), 7);
 });
 
 test("legacy funeral alias hydrates with the normal memorial question count", () => {
