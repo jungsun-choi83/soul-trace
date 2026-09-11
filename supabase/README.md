@@ -12,6 +12,8 @@ For an existing database, take a current backup and verify each migration in a s
 6. `migration_enable_life_archive_memory_writes.sql`
 7. `migration_add_life_archive_photos.sql`
 8. `migration_add_persistent_letter_result.sql`
+9. `migration_add_stamp_photos.sql`
+10. `migration_allow_multiple_letters_per_account.sql`
 
 The partner migrations are ordered prerequisites: the partner foundation creates the original `HOSPITAL`/`FUNERAL` tables and profile attribution, the track/rate migration adds the settlement and legacy Living/Memorial fields used by the APIs, and the final partner-type migration widens the trusted type constraint to include `GROOMING` and `PENSION`. The widening migration does not rewrite partners or codes, so existing IDs, codes, status, settlement data, and printed `/?p=code` links remain intact. Deploy application code that creates Grooming or Pension partners only after all three partner migrations have been verified in that environment.
 

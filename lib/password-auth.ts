@@ -1,6 +1,7 @@
 import { normalizeAuthEmail, normalizeAuthLocale, type AuthLocale } from "./passwordless-auth.ts";
+import { logAuthFailure } from "./auth-diagnostics.ts";
 
-type AuthFailure = { code?: unknown } | null;
+type AuthFailure = { code?: unknown; status?: unknown; name?: unknown; message?: unknown } | null;
 
 export type MainPasswordAuthClient = {
   auth: {
@@ -47,6 +48,7 @@ export async function createPasswordAccount(
     },
   });
   if (error) {
+    logAuthFailure("signup", error);
     return errorCode(error) === "weak_password" ? "policy_failed" : "request_failed";
   }
   return data.session ? "authenticated" : "check_email";
@@ -64,6 +66,7 @@ export async function signInWithPassword(
     password: input.password,
   });
   if (error) {
+    logAuthFailure("signin", error);
     return errorCode(error) === "email_not_confirmed"
       ? "email_not_confirmed"
       : "invalid_credentials";

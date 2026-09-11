@@ -75,7 +75,18 @@ test("main auth UI has credential fields, consent, recovery actions, and clears 
   assert.match(component, /auth\.recovery\.open/);
   assert.match(component, /setPassword\(""\)/);
   assert.match(component, /setPasswordConfirmation\(""\)/);
-  assert.doesNotMatch(component, /localStorage|sessionStorage|indexedDB|searchParams\.set\("password"|console\./);
+  assert.doesNotMatch(component, /localStorage|sessionStorage|indexedDB|searchParams\.set\("password"/);
+  assert.match(component, /logAuthFailure\("browser-client", error\)/);
+});
+
+test("authentication diagnostics contain stages without passing email or password", () => {
+  const helper = readFileSync("lib/auth-diagnostics.ts", "utf8");
+  const passwordAuth = readFileSync("lib/password-auth.ts", "utf8");
+  assert.match(helper, /\[redacted-email\]/);
+  assert.match(helper, /\[redacted-token\]/);
+  assert.doesNotMatch(passwordAuth, /logAuthFailure\([^\n]+email|logAuthFailure\([^\n]+password/);
+  assert.match(passwordAuth, /logAuthFailure\("signup", error\)/);
+  assert.match(passwordAuth, /logAuthFailure\("signin", error\)/);
 });
 
 test("English and Korean credential labels match the approved interface", () => {

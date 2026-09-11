@@ -220,6 +220,28 @@ export async function POST(request: Request) {
     heroImageUrl = profile.hero_image_url ? String(profile.hero_image_url) : null;
   }
 
+  let stampType: "photo" | "paw" = "paw";
+  let stampPhotoRef: string | null = null;
+  let stampPhotoUrl: string | null = null;
+  const { data: stampRow, error: stampError } = await supabase
+    .from("soul_trace_profiles")
+    .select("stamp_type, stamp_photo_ref")
+    .eq("letter_id", traceId)
+    .maybeSingle();
+  if (stampError) {
+    console.error("[internal/letter] stamp selection unavailable:", stampError.message);
+  } else {
+    const row = stampRow as { stamp_type?: unknown; stamp_photo_ref?: unknown } | null;
+    stampType = row?.stamp_type === "photo" ? "photo" : "paw";
+    stampPhotoRef = typeof row?.stamp_photo_ref === "string" && row.stamp_photo_ref.trim()
+      ? row.stamp_photo_ref.trim() : null;
+    if (stampType === "photo" && stampPhotoRef) {
+      const { data } = await supabase.storage.from("soul-trace-stamp-photos")
+        .createSignedUrl(stampPhotoRef, CLAIM_SIGNED_URL_TTL_SECONDS);
+      stampPhotoUrl = data?.signedUrl ?? null;
+    }
+  }
+
   // 정산 비율은 **지금의 계약**이다. 이 값을 얼리는 것은 주문 생성 시점이고
   // (Eternal Beam physical_orders), 여기서는 그때 쓸 입력으로 실어 보낸다.
   const rawRate = partner?.share_rate;
@@ -247,6 +269,9 @@ export async function POST(request: Request) {
       // 안정 참조. Eternal Beam 은 자기 사본을 쓰므로 필요하지 않지만, 배경이
       // 빈 편지를 조사할 때 "보관이 됐는가"를 한눈에 가른다.
       heroImageRef,
+      stampType,
+      stampPhotoUrl,
+      stampPhotoRef,
     },
     { status: 200, headers: { "Cache-Control": "no-store" } },
   );

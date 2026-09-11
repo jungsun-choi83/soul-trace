@@ -29,9 +29,10 @@ import {
 } from "@/lib/generation-language";
 import {
   buildTonePromptBlock,
-  isChannelMemoryOptional,
+  activeMemoryQuestions,
+  isMemoryQuestionRequired,
   memoryQuestionCount,
-  type LetterToneOption,
+  TONE_STEP_COUNT,
   type LetterTonePrefs,
 } from "@/lib/survey";
 import { DEFAULT_LETTER_MODE, isLetterMode, type LetterMode } from "@/lib/letter-mode";
@@ -49,8 +50,8 @@ import {
   isRetryableSupabaseMessage,
   sleep,
 } from "@/lib/supabase-server";
+import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 import { resolvePartnerCode } from "@/lib/partner";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { after } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -61,19 +62,20 @@ type AnswerInput = {
 };
 
 type RequestBody = {
+  letterId?: string;
   locale?: string;
   /** 편지 갈래. 없으면 추모 — 이 필드가 생기기 전 클라이언트와 같은 동작. */
   mode?: string;
-  userEmail?: string;
   petName?: string;
   petNickname?: string;
   petType?: string;
+  petBreed?: string;
+  petAge?: string;
   yearMet?: number;
   yearParted?: number;
   letterRecipient?: string;
   relationship?: string;
   letterRecipientDetail?: string;
-  preferredScenery?: string;
   tonePrefs?: {
     mood?: string;
     options?: string[];
@@ -134,6 +136,8 @@ function parsePetProfileFromBody(body: RequestBody): PetIntroProfile | null {
     petName,
     petNickname: body.petNickname?.trim() ?? "",
     petType: petType as PetType,
+    petBreed: body.petBreed?.trim() || "mixed-not-sure",
+    petAge: body.petAge?.trim() ?? "",
     yearMet,
     yearParted,
     letterRecipient: letterRecipient as LetterRecipient,
@@ -141,9 +145,7 @@ function parsePetProfileFromBody(body: RequestBody): PetIntroProfile | null {
   };
 }
 
-function sceneryFallback(locale: Locale, answers: AnswerInput[]): string {
-  const fromSurvey = answers[0]?.answer?.trim() ?? "";
-  if (fromSurvey) return fromSurvey;
+function sceneryFallback(locale: Locale): string {
   return locale === "ko" ? "함께했던 추억의 장소" : "a place you shared together";
 }
 
@@ -154,10 +156,7 @@ function parseTonePrefs(body: RequestBody): LetterTonePrefs | null {
   if (mood !== "bright" && mood !== "calm" && mood !== "warm") return null;
   const length = raw.length;
   if (length !== "short" && length !== "normal") return null;
-  const options = (raw.options ?? []).filter(
-    (o): o is LetterToneOption => o === "comfort" || o === "no_heaven" || o === "frequent_name",
-  );
-  return { mood, length, options };
+  return { mood, length, options: [] };
 }
 
 type ParsedResponse = {
@@ -315,11 +314,9 @@ function letterRoleAndStyle(
   locale: Locale,
   petProfile: PetIntroProfile,
   companionName: string,
-  favoriteScenery: string,
   mode: LetterMode,
 ): string {
   const nameLiteral = JSON.stringify(companionName);
-  const sceneryLiteral = JSON.stringify(favoriteScenery);
   const addressingBlock = buildLetterAddressingBlock(locale, petProfile, mode);
   if (locale === "ko") {
     return [
@@ -328,12 +325,12 @@ function letterRoleAndStyle(
       "",
       letterPremiseBlock("ko", mode),
       `아이 이름(편지 속): ${nameLiteral}. h, hj, 'g' 같은 플레이스홀더·이니셜 금지.`,
-      `첫 만남·기억 장면은 설문에서 골라 문장 속에 녹여. 장면 힌트: ${sceneryLiteral}`,
+      "기억 장면은 현재 설문 답변에서만 골라 문장 속에 자연스럽게 녹여.",
       "문체·인칭(엄격): **다정한 반말 하나로 끝까지 통일** (~했어, ~야, ~할게). 해요체만 쓸 거면 처음부터 끝까지 해요체만.",
       "절대 금지: '저희', '귀하', '본인', '너', '너희', '당신', 뉴스·공문체.",
       "어휘: 한자어 위주의 어색한 말·비문 금지(예: 지평 요청, 화져 지낼, 영원히 신뢰 같은 표현). 일상에서 쓰는 쉬운 말만.",
       "personalityType: MBTI 용어·코드 금지. 아이 특징을 살린 **감성 별명 한 줄**만 (예: 꼬리를 흔드는 사랑스러운 친구).",
-      "personalitySummary: **편지와 완전히 다른 목소리**로 쓴다. **제3자 관찰자**가 부모에게 아이의 기질을 설명하는 **분석형 문장**(해요체 또는 합니다체로 통일, 반말·1인칭 아이 금지). 설문과 이름·좋아했던 풍경만 근거로, 예시 느낌: 「[이름]은(는) 주변에 기쁨을 주는 일을 큰 행복으로 여겼던 아이예요. 특히 [좋아했던 장소] 같은 개방된 공간에서 에너지를 얻었고, 보호자의 눈빛만으로도 마음을 읽어내는 섬세한 공감을 보였어요.」— 예문을 그대로 복붙하지 말고 실제 설문 문장으로 채울 것. 3~6문장.",
+      "personalitySummary: **편지와 완전히 다른 목소리**로 쓴다. **제3자 관찰자**가 보호자에게 아이의 기질을 설명하는 **분석형 문장**으로, 현재 설문 답변과 이름만 근거로 쓴다. 반말과 1인칭 아이 시점은 쓰지 않는다. 3~6문장.",
       "personalityTags: **정확히 3개**의 짧은 키워드만 담은 JSON 배열(문자열). 띄어쓰기 없이 2~6자 내외 한 단어 위주. 해시 기호는 있어도 되고 없어도 된다(서버에서 # 정리). 설문에서 읽히는 성향만.",
       "letter는 **오직 1인칭 아이**의 편지: 반말 하나로 통일. personalitySummary·personalityTags와 문체·시점을 섞지 마라.",
       "모든 필드에서 메타 언급 절대 금지: 프롬프트, 시스템, 모델, API, 요청, JSON, 키 이름, 템플릿 같은 단어를 문장에 섞으면 실패.",
@@ -348,9 +345,9 @@ function letterRoleAndStyle(
     sourceAnswerLanguageRule(locale),
     "",
     letterPremiseBlock("en", mode),
-    "Ground EVERYTHING in the pet’s real name, favorite scenery, and all five survey answers—especially bright, happy moments. Never invent facts.",
+    "Ground EVERYTHING in the pet’s real name and the current answered survey fields. Never invent facts or assume a deleted or unanswered memory.",
     `The pet’s name in prose must match this exact string (character-for-character): ${nameLiteral}. Never print placeholders, code fragments, or stray initials such as h or hj in quotes—only this name when you mean the pet.`,
-    `Use ${sceneryLiteral} and only sensory details explicitly present in the answers to form felt scenes. Do not import reusable scenery, sounds, smells, touch, or weather from examples.`,
+    "Use only sensory details explicitly present in the current answers. Do not import reusable scenery, sounds, smells, touch, or weather from examples.",
     "Diction: avoid academic or formal English—no “embodying moments,” “manifested,” “commenced,” “dearest companion.” Prefer remembering, felt, stayed with you, always close, little things we did.",
     "Use contractions wherever a real voice would (I'm, you're, we've, it's, that's, wasn't). Short sentences beat long polished ones.",
     "Open naturally from a concrete supplied memory, feeling, sound, habit, or place. Make the recipient and pet identity clear early, but never reuse a greeting template or choose from a stock list of openings.",
@@ -479,7 +476,6 @@ async function extractPersonalityFields(
   locale: Locale,
   letter: string,
   petName: string,
-  preferredScenery: string,
   promptFormattedAnswers: string,
 ): Promise<PersonalityExtractResult> {
   const completion = await openai.chat.completions.create({
@@ -497,9 +493,6 @@ async function extractPersonalityFields(
           "",
           "[아이 이름 / Companion name]",
           petName,
-          "",
-          "[풍경 / Scenery]",
-          preferredScenery,
           "",
           "[설문 / Survey]",
           promptFormattedAnswers,
@@ -581,36 +574,9 @@ function logSupabaseFailure(
  * 실패로 만들면 배포와 마이그레이션의 순서가 어긋나는 것만으로 편지가 유실된다.
  * 그래서 null 로 물러선다 — 편지는 정상 저장되고, 핸드오프만 아직 제공되지 않는다.
  */
-async function fetchLetterId(
-  supabase: SupabaseClient,
-  userEmail: string,
-): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("soul_trace_profiles")
-    .select("letter_id")
-    .eq("user_email", userEmail)
-    .maybeSingle();
-
-  if (error) {
-    logSupabaseFailure("letter_id read-back", error, { userEmail });
-    return null;
-  }
-  const value = data?.letter_id;
-  if (typeof value !== "string" || value.trim().length === 0) {
-    // 행은 저장됐는데 letter_id 를 못 읽었다. 마이그레이션이 적용된 환경에서는
-    // letter_id 가 NOT NULL + DEFAULT 라 일어날 수 없다 — 일어났다면 스키마가
-    // 예상과 다르다는 뜻이므로 조용히 넘기지 않는다. 핸드오프는 불가능해진다.
-    console.error(
-      `[generate-letter] 저장은 됐으나 letter_id 가 비었다 — user=${userEmail}. ` +
-        `핸드오프 CTA 가 뜨지 않는다. soul_trace_profiles.letter_id 스키마를 확인하라.`,
-    );
-    return null;
-  }
-  return value;
-}
-
 async function saveProfileAndAnswersOnce(
   locale: Locale,
+  letterId: string,
   userEmail: string,
   petName: string,
   preferredScenery: string,
@@ -635,6 +601,7 @@ async function saveProfileAndAnswersOnce(
   }
 
   const profileRow: Record<string, string | null> = {
+    letter_id: letterId,
     user_email: userEmail,
     pet_name: petName,
     personality_type: personalityType,
@@ -658,7 +625,7 @@ async function saveProfileAndAnswersOnce(
 
   const { error: profileError } = await supabase
     .from("soul_trace_profiles")
-    .upsert(profileRow, { onConflict: "user_email" });
+    .upsert(profileRow, { onConflict: "letter_id" });
 
   if (profileError) {
     const msg = profileError.message;
@@ -686,36 +653,21 @@ async function saveProfileAndAnswersOnce(
       letter_ending_phrase: letterStructure.endingPhrase,
       letter_mode: mode,
     })
-    .eq("user_email", userEmail);
+    .eq("letter_id", letterId);
   if (presentationError) {
     logSupabaseFailure("persistent result fields", presentationError, { userEmail });
   }
 
   const answerRows = answers.map((item, index) => ({
+    letter_id: letterId,
     user_email: userEmail,
     answer_order: index + 1,
     question: item.question,
     answer: item.answer,
   }));
 
-  const { error: deleteError } = await supabase
-    .from("soul_trace_answers")
-    .delete()
-    .eq("user_email", userEmail);
-  if (deleteError) {
-    const msg = deleteError.message;
-    logSupabaseFailure("answers delete", deleteError, { userEmail });
-    return {
-      ok: false,
-      message:
-        locale === "ko"
-          ? `기존 답변 정리 중 오류가 발생했습니다: ${msg}`
-          : `Could not reset previous answers: ${msg}`,
-      retryable: isRetryableSupabaseMessage(msg),
-    };
-  }
-
-  const { error: answerSaveError } = await supabase.from("soul_trace_answers").insert(answerRows);
+  const { error: answerSaveError } = await supabase.from("soul_trace_answers")
+    .upsert(answerRows, { onConflict: "letter_id,answer_order" });
   if (answerSaveError) {
     const msg = answerSaveError.message;
     logSupabaseFailure("answers insert", answerSaveError, {
@@ -736,11 +688,12 @@ async function saveProfileAndAnswersOnce(
   // 저장이 끝난 뒤에 **따로** 읽는다. upsert 문에 .select() 를 붙이지 않는 이유는,
   // 마이그레이션 전 환경에서 그 한 줄이 쓰기 자체를 실패시키기 때문이다.
   // 여기서는 실패해도 null 이 되고 편지는 이미 저장돼 있다.
-  return { ok: true, letterId: await fetchLetterId(supabase, userEmail) };
+  return { ok: true, letterId };
 }
 
 async function saveProfileAndAnswers(
   locale: Locale,
+  letterId: string,
   userEmail: string,
   petName: string,
   preferredScenery: string,
@@ -768,6 +721,7 @@ async function saveProfileAndAnswers(
   for (let i = 0; i < attempts.length; i++) {
     last = await saveProfileAndAnswersOnce(
       locale,
+      letterId,
       userEmail,
       petName,
       preferredScenery,
@@ -789,6 +743,7 @@ async function saveProfileAndAnswers(
 
 async function storeRegeneratedLetterLocale(
   userEmail: string,
+  letterId: string,
   letter: string,
   letterStructure: GeneratedLetterStructure,
   mode: LetterMode,
@@ -799,6 +754,7 @@ async function storeRegeneratedLetterLocale(
   const { error } = await supabase
     .from("soul_trace_profiles")
     .update({ generated_letter: letter, generation_locale: locale })
+    .eq("letter_id", letterId)
     .eq("user_email", userEmail);
   if (error) {
     logSupabaseFailure("language regeneration update", error, { userEmail, locale });
@@ -812,6 +768,7 @@ async function storeRegeneratedLetterLocale(
       letter_ending_phrase: letterStructure.endingPhrase,
       letter_mode: mode,
     })
+    .eq("letter_id", letterId)
     .eq("user_email", userEmail);
   if (presentationError) {
     logSupabaseFailure("persistent result locale fields", presentationError, {
@@ -911,20 +868,26 @@ export async function POST(request: Request) {
       return err(locale, "profileIncomplete", 400);
     }
 
+    const authClient = await createSupabaseAuthServerClient();
+    const { data: authData } = authClient
+      ? await authClient.auth.getUser()
+      : { data: { user: null } };
+    const userEmail = authData.user?.email?.trim().toLowerCase() ?? "";
+    if (!authData.user || !userEmail) {
+      return NextResponse.json(
+        { error: locale === "ko" ? "로그인이 필요합니다." : "Please sign in to continue." },
+        { status: 401 },
+      );
+    }
+
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: friendlyGenerateError(locale) }, { status: 503 });
     }
 
-    const userEmail = body.userEmail?.trim().toLowerCase() ?? "";
     const petProfile = parsePetProfileFromBody(body);
     const privacyConsent = body.privacyConsent ?? false;
     const answers = body.answers ?? [];
-    const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail);
-
-    if (!isEmailValid) {
-      return err(locale, "invalidEmail", 400);
-    }
     if (!petProfile) {
       return err(locale, "profileIncomplete", 400);
     }
@@ -963,7 +926,7 @@ export async function POST(request: Request) {
     }
     const petName = petProfile.petName;
     const letterName = letterPetName(petProfile);
-    const preferredScenery = body.preferredScenery?.trim() || sceneryFallback(locale, answers);
+    const preferredScenery = sceneryFallback(locale);
     const profilePromptBlock = buildPetProfilePromptBlock(locale, petProfile, mode);
     const tonePromptBlock = buildTonePromptBlock(
       locale,
@@ -972,19 +935,28 @@ export async function POST(request: Request) {
       mode,
     );
 
-    const expectedAnswerCount = memoryQuestionCount(channel) + 3;
+    const expectedAnswerCount = memoryQuestionCount(channel) + TONE_STEP_COUNT;
     if (!Array.isArray(answers) || answers.length !== expectedAnswerCount) {
       return NextResponse.json(
-        { error: locale === "ko" ? "질문 답변 8개가 필요합니다." : "Eight answers are required." },
+        {
+          error: locale === "ko"
+            ? `현재 설문 답변 ${expectedAnswerCount}개가 필요합니다.`
+            : `${expectedAnswerCount} questionnaire answers are required.`,
+        },
         { status: 400 },
       );
     }
 
     const memoryCount = memoryQuestionCount(channel);
+    const memoryQuestions = activeMemoryQuestions(locale === "ko" ? ko : en, mode, channel);
     for (let i = 0; i < memoryCount; i++) {
-      if (!isChannelMemoryOptional(channel, i) && !answers[i]?.answer?.trim()) {
+      if (isMemoryQuestionRequired(memoryQuestions[i]) && !answers[i]?.answer?.trim()) {
         return NextResponse.json(
-          { error: locale === "ko" ? "기억 질문(Q5–Q8)을 모두 입력해 주세요." : "Please answer memory questions Q5–Q8." },
+          {
+            error: locale === "ko"
+              ? "필수 기억 질문에 답해 주세요."
+              : "Please answer every required memory question.",
+          },
           { status: 400 },
         );
       }
@@ -1005,29 +977,14 @@ export async function POST(request: Request) {
     ].filter((value) => value.trim().length > 0);
     const generationKey = generationCacheKey(userEmail, mode, locale);
 
-    let hasSavedLetter = false;
-    const supabaseGate = createSupabaseServerClient();
-    if (supabaseGate) {
-      const { data: existingProfile, error: gateError } = await supabaseGate
-        .from("soul_trace_profiles")
-        .select("generated_letter")
-        .eq("user_email", userEmail)
-        .maybeSingle();
-      if (gateError) {
-        console.error("[generate-letter] duplicate check skipped:", gateError.message);
-      } else {
-        hasSavedLetter = Boolean(
-          existingProfile?.generated_letter &&
-            String(existingProfile.generated_letter).trim().length > 0,
-        );
-      }
-    }
     /** 언어 전환만: stream 없음 + skipImageGeneration — 기존 편지·배경 유지한 채 문구만 다시 생성 */
     const isLanguageRerunOnly =
       body.skipImageGeneration === true && body.stream !== true;
-    if (hasSavedLetter && !isLanguageRerunOnly) {
-      return err(locale, "alreadyGenerated", 403);
-    }
+    const existingLetterId = typeof body.letterId === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.letterId)
+      ? body.letterId
+      : null;
+    const persistenceLetterId = isLanguageRerunOnly ? existingLetterId : crypto.randomUUID();
 
     const languageInstruction =
       locale === "ko"
@@ -1064,10 +1021,7 @@ export async function POST(request: Request) {
             "[아이 이름 — 편지에서 자연스럽게 부를 것 (애칭 우선)]",
             letterName,
             "",
-            "[보호자가 적어 준, 아이가 사랑했던 풍경·장소 — 분위기와 은유에 반영할 것]",
-            preferredScenery,
-            "",
-            "[설문 8문항과 답변 — 편지의 **유일한** 근거. 기억 답을 빠짐없이 대화에 녹여 쓸 것. 없는 일은 짓지 말 것]",
+            "[현재 설문 답변 — 편지에 사용할 수 있는 유일한 사실. 답변에 없는 일은 짓지 말 것]",
             promptFormattedAnswers,
           ].join("\n")
         : [
@@ -1079,9 +1033,6 @@ export async function POST(request: Request) {
             "",
             "[Companion’s name — use naturally in the letter (nickname first)]",
             letterName,
-            "",
-            "[Scenery or place they loved — reflect in mood and metaphor]",
-            preferredScenery,
             "",
             "[Survey Q&As — the letter's only facts. Select and connect the most meaningful answered memories; do not follow questionnaire order or invent anything.]",
             promptFormattedAnswers,
@@ -1106,10 +1057,7 @@ export async function POST(request: Request) {
               "[아이 이름 — 편지에서 자연스럽게 부를 것 (애칭 우선)]",
               letterName,
               "",
-              "[보호자가 적어 준, 아이가 사랑했던 풍경·장소 — 분위기와 은유에 반영할 것]",
-              preferredScenery,
-              "",
-              "[설문 8문항과 답변 — 편지의 **유일한** 근거. 기억 답을 빠짐없이 대화에 녹여 쓸 것. 없는 일은 짓지 말 것]",
+              "[현재 설문 답변 — 편지에 사용할 수 있는 유일한 사실. 답변에 없는 일은 짓지 말 것]",
               promptFormattedAnswers,
             ].join("\n")
           : [
@@ -1119,9 +1067,6 @@ export async function POST(request: Request) {
               "",
               "[Companion’s name — use naturally in the letter (nickname first)]",
               letterName,
-              "",
-              "[Scenery or place they loved — reflect in mood and metaphor]",
-              preferredScenery,
               "",
               "[Survey Q&As — the letter's only facts. Select and connect the most meaningful answered memories; do not follow questionnaire order or invent anything.]",
               promptFormattedAnswers,
@@ -1243,7 +1188,6 @@ export async function POST(request: Request) {
               locale,
               trimmedLetter,
               letterName,
-              preferredScenery,
               promptFormattedAnswers,
             );
             if (!personality.ok) {
@@ -1254,6 +1198,7 @@ export async function POST(request: Request) {
 
             const saveResult = await saveProfileAndAnswers(
               locale,
+              persistenceLetterId!,
               userEmail,
               petName,
               preferredScenery,
@@ -1337,7 +1282,7 @@ export async function POST(request: Request) {
         {
           role: "system",
           content: [
-            letterRoleAndStyle(locale, petProfile, letterName, preferredScenery, mode),
+            letterRoleAndStyle(locale, petProfile, letterName, mode),
             languageInstruction,
           ].join(
             "\n\n",
@@ -1442,6 +1387,7 @@ export async function POST(request: Request) {
     if (isLanguageRerunOnly) {
       const regenerationStored = await storeRegeneratedLetterLocale(
         userEmail,
+        persistenceLetterId ?? "",
         serializedLetter,
         letterStructure,
         mode,
@@ -1462,6 +1408,7 @@ export async function POST(request: Request) {
 
     const saveResult = await saveProfileAndAnswers(
       locale,
+      persistenceLetterId!,
       userEmail,
       petName,
       preferredScenery,

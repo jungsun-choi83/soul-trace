@@ -2,17 +2,19 @@
 
 import { PrivacyConsentTrigger } from "@/components/privacy-consent-trigger";
 import { PrivacyConsentSheet } from "@/components/privacy-consent-sheet";
-import { PetIntroForm } from "@/components/pet-intro-form";
+import { petIntroQuestionIds, PetIntroForm } from "@/components/pet-intro-form";
 import { SurveyFlow } from "@/components/survey-flow";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
 import { InstagramStoryCard } from "@/components/instagram-story-card";
 import { EternalBeamPreview } from "@/components/eternal-beam-preview";
 import { LanguageToggle } from "@/components/language-toggle";
 import { ResultAmbientAudio } from "@/components/result-ambient-audio";
+import { LetterPostageStamp } from "@/components/letter-postage-stamp";
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 import { letterModePath, modeCopy, type LetterMode } from "@/lib/letter-mode";
 import Link from "next/link";
+import Image from "next/image";
 import { consumeLetterSseStream } from "@/lib/consume-letter-sse";
 import { readPartnerCode } from "@/lib/partner";
 import {
@@ -56,19 +58,17 @@ import {
   resolveRecipientAddress,
   type PetIntroProfile,
 } from "@/lib/pet-profile";
+import { getQuestionnairePetTheme } from "@/lib/pet-theme";
 import {
   buildSurveyAnswers,
+  channelMemoryQuestions,
   EMPTY_TONE_PREFS,
   isSurveyComplete,
   isSurveyStepValid,
-  memoryQuestionCount,
   MEMORY_STEP_COUNT,
   PHOTO_STEP_COUNT,
   surveyIntroduction,
-  TONE_STEP_COUNT,
-  type LetterToneOption,
   type LetterTonePrefs,
-  type VideoMotion,
 } from "@/lib/survey";
 import { toJpeg } from "html-to-image";
 import { flushSync } from "react-dom";
@@ -165,16 +165,14 @@ export function SoulTraceFlow({
   const { lang, t, messages } = useLocale();
   const copy = modeCopy(messages, mode);
 
-  const [step, setStep] = useState(0);
+  const [questionIndex, setQuestionIndex] = useState(0);
   const [memoryAnswers, setMemoryAnswers] = useState<string[]>(() =>
     Array(MEMORY_STEP_COUNT).fill(""),
   );
   const [tonePrefs, setTonePrefs] = useState<LetterTonePrefs>(() => ({ ...EMPTY_TONE_PREFS }));
-  const [videoMotion, setVideoMotion] = useState<VideoMotion | "">("");
   const [petPhotoFile, setPetPhotoFile] = useState<File | null>(null);
   const [petPhotoPreviewUrl, setPetPhotoPreviewUrl] = useState<string | null>(null);
   const [petPhotoSkipped, setPetPhotoSkipped] = useState(false);
-  const [userEmail, setUserEmail] = useState("");
   const [petIntro, setPetIntro] = useState<PetIntroProfile>(() => ({
     ...EMPTY_PET_INTRO,
     yearParted: initialYearParted(mode),
@@ -206,9 +204,6 @@ export function SoulTraceFlow({
   );
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /** 이미 편지를 받은 이메일 — 설문 진행·생성 전에 안내 */
-  const [profileEmailBlockedMessage, setProfileEmailBlockedMessage] = useState<string | null>(null);
-  const [isCheckingProfileEmail, setIsCheckingProfileEmail] = useState(false);
   /** 첫 생성 스트리밍 시에만 감성 로딩 한 줄 (언어 전환 시에는 null) */
   const [generationLoadingMessage, setGenerationLoadingMessage] = useState<string | null>(null);
   /** 스토리 캡처 직전 무작위로 고른 한 줄(매 공유마다 갱신) */
@@ -226,7 +221,22 @@ export function SoulTraceFlow({
   const serviceChannel = initialServiceChannel;
   const channelBackground = serviceChannelBackground(serviceChannel);
   const introduction = surveyIntroduction(messages, mode, serviceChannel);
-  const surveyStepCount = memoryQuestionCount(serviceChannel) + PHOTO_STEP_COUNT + TONE_STEP_COUNT;
+  const memoryCount = channelMemoryQuestions(messages, serviceChannel)?.length ?? copy.memory.length;
+  const surveyStepCount = memoryCount + PHOTO_STEP_COUNT + copy.tone.length;
+  const introQuestions = petIntroQuestionIds(petIntro.petType);
+  const introQuestionCount = introQuestions.length;
+  const petTypeQuestionIndex = introQuestions.indexOf("type");
+  const petTypeQuestionCompleted =
+    petTypeQuestionIndex >= 0 && questionIndex > petTypeQuestionIndex;
+  const questionnairePetTheme = getQuestionnairePetTheme(
+    petIntro.petType,
+    petTypeQuestionCompleted,
+  );
+  const totalQuestionCount = introQuestionCount + surveyStepCount;
+  const isIntroQuestion = questionIndex < introQuestionCount;
+  const isSurveyQuestion = questionIndex >= introQuestionCount && questionIndex < introQuestionCount + surveyStepCount;
+  const step = questionIndex - introQuestionCount;
+  const questionsLeft = Math.max(totalQuestionCount - questionIndex - 1, 0);
   const [handoffBusy, setHandoffBusy] = useState(false);
   const [handoffError, setHandoffError] = useState<string | null>(null);
   const [lifeArchiveBusy, setLifeArchiveBusy] = useState(false);
@@ -381,7 +391,6 @@ export function SoulTraceFlow({
     setPetPhotoFile(file);
     setPetPhotoSkipped(false);
     if (!file) {
-      setVideoMotion("");
       setPhotoPrivacyConsent(false);
       return;
     }
@@ -394,10 +403,33 @@ export function SoulTraceFlow({
     setPetPhotoFile(null);
     setPetPhotoSkipped(true);
     setPhotoPrivacyConsent(false);
-    setVideoMotion("");
     setShowValidationErrors(false);
-    setStep((prev) => Math.min(prev + 1, surveyStepCount - 1));
-  }, [surveyStepCount]);
+    setQuestionIndex((prev) => Math.min(prev + 1, totalQuestionCount - 1));
+  }, [totalQuestionCount]);
+
+  const persistStampSelection = useCallback(async (letterId: string | null | undefined) => {
+    if (!letterId) return;
+    const stampType = petPhotoFile && photoPrivacyConsent ? "photo" : "paw";
+    const form = new FormData();
+    form.set("letterId", letterId);
+    form.set("stampType", stampType);
+    if (stampType === "photo" && petPhotoFile) form.set("stampPhoto", petPhotoFile);
+    try {
+      const response = await fetch("/api/stamp-photo", { method: "POST", body: form });
+      if (!response.ok) {
+        const responseBody = await response.text().catch(() => "");
+        console.error("[stamp-photo] Could not persist the stamp selection.", {
+          status: response.status,
+          statusText: response.statusText,
+          responseBody: responseBody || "(empty response)",
+        });
+      }
+    } catch (error) {
+      console.error("[stamp-photo] Request failed before receiving a response.", {
+        message: error instanceof Error ? error.message : "Unknown network error",
+      });
+    }
+  }, [petPhotoFile, photoPrivacyConsent]);
 
   const patchPetIntro = useCallback((patch: Partial<PetIntroProfile>) => {
     setPetIntro((prev) => ({ ...prev, ...patch }));
@@ -405,6 +437,8 @@ export function SoulTraceFlow({
 
   /** SSE로 `result` 참조가 매 델타마다 바뀌면 deps에 `result`가 있을 때 effect가 반복 실행 → fetch abort → 로딩 멈춤 등 버그 유발 */
   const resultHeroUrlForLocaleSwitch = result?.heroImageUrl ?? null;
+  const resultLetterIdForLocaleSwitchRef = useRef<string | null>(result?.letterId ?? null);
+  resultLetterIdForLocaleSwitchRef.current = result?.letterId ?? null;
   const hasResult = result != null;
 
   useEffect(() => {
@@ -437,12 +471,12 @@ export function SoulTraceFlow({
           headers: { "Content-Type": "application/json" },
           signal: ac.signal,
           body: JSON.stringify({
+            letterId: resultLetterIdForLocaleSwitchRef.current ?? undefined,
             locale: lang,
             mode,
             channel: serviceChannel ?? undefined,
-            userEmail: userEmail.trim(),
             partnerCode: partnerCode ?? undefined,
-            ...buildLetterRequestFields(petIntro, memoryAnswers, tonePrefs)!,
+            ...buildLetterRequestFields(petIntro, tonePrefs)!,
             privacyConsent,
             answers: surveyPayload,
             skipImageGeneration: true,
@@ -497,7 +531,6 @@ export function SoulTraceFlow({
     messages,
     mode,
     displayPetName,
-    userEmail,
     petIntro,
     privacyConsent,
     partnerCode,
@@ -506,58 +539,26 @@ export function SoulTraceFlow({
     isRestoredResult,
   ]);
 
-  const isLastQuestion = step === surveyStepCount - 1;
-  const isAnswerValid = isSurveyStepValid(step, memoryAnswers, tonePrefs, {
-    hasPhoto: petPhotoFile != null,
-    skipped: petPhotoSkipped,
-    photoConsent: photoPrivacyConsent,
-  }, serviceChannel);
-  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail.trim());
-  const isProfileValid = isEmailValid && isPetIntroComplete(petIntro) && privacyConsent;
-
-  const checkEmailEligibility = useCallback(async (): Promise<"eligible" | "used" | "error"> => {
-    const email = userEmail.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return "eligible";
-    }
-    try {
-      const response = await fetch("/api/check-letter-eligibility", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        eligible?: boolean;
-        checkSkipped?: boolean;
-      };
-      if (!response.ok) {
-        // DB·네트워크 오류 시 설문 진행은 허용 (generate-letter에서 재검증)
-        return "eligible";
-      }
-      if (data.checkSkipped === true) return "eligible";
-      return data.eligible === true ? "eligible" : "used";
-    } catch {
-      return "eligible";
-    }
-  }, [userEmail]);
-
-  const handleEmailBlur = useCallback(() => {
-    const trimmed = userEmail.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setProfileEmailBlockedMessage(null);
-      return;
-    }
-    void (async () => {
-      setIsCheckingProfileEmail(true);
-      const result = await checkEmailEligibility();
-      setIsCheckingProfileEmail(false);
-      if (result === "used") {
-        setProfileEmailBlockedMessage(t("errors.emailAlreadyUsedSoft"));
-      } else {
-        setProfileEmailBlockedMessage(null);
-      }
-    })();
-  }, [userEmail, checkEmailEligibility, t]);
+  const isLastQuestion = questionIndex === totalQuestionCount - 1;
+  const isProfileValid = isPetIntroComplete(petIntro) && privacyConsent;
+  const introQuestionId = introQuestions[questionIndex] ?? "name";
+  const isIntroAnswerValid =
+    introQuestionId === "name" ? Boolean(petIntro.petName.trim()) :
+    introQuestionId === "type" ? Boolean(petIntro.petType) :
+    introQuestionId === "breed" ? Boolean(petIntro.petBreed) :
+    introQuestionId === "years" ? /^\d+$/.test(petIntro.petAge ?? "") :
+    introQuestionId === "recipient" ? Boolean(
+      petIntro.letterRecipient &&
+      ((petIntro.letterRecipient !== "byName" && petIntro.letterRecipient !== "custom") ||
+        petIntro.letterRecipientDetail.trim()) && privacyConsent
+    ) : false;
+  const isAnswerValid = isIntroQuestion
+    ? isIntroAnswerValid
+    : isSurveyStepValid(step, memoryAnswers, tonePrefs, {
+        hasPhoto: petPhotoFile != null,
+        skipped: petPhotoSkipped,
+        photoConsent: photoPrivacyConsent,
+      }, messages, mode, serviceChannel);
 
   const handleMemoryChange = (index: number, value: string) => {
     setMemoryAnswers((prev) => {
@@ -570,16 +571,7 @@ export function SoulTraceFlow({
   const handleSkipOptional = () => {
     handleMemoryChange(step, "");
     setShowValidationErrors(false);
-    setStep((prev) => Math.min(prev + 1, surveyStepCount - 1));
-  };
-
-  const handleToneOptionToggle = (option: LetterToneOption) => {
-    setTonePrefs((prev) => ({
-      ...prev,
-      options: prev.options.includes(option)
-        ? prev.options.filter((o) => o !== option)
-        : [...prev.options, option],
-    }));
+    setQuestionIndex((prev) => Math.min(prev + 1, totalQuestionCount - 1));
   };
 
   const goNext = async () => {
@@ -587,34 +579,23 @@ export function SoulTraceFlow({
       setShowValidationErrors(true);
       return;
     }
-    if (step === 0 && isEmailValid) {
-      setIsCheckingProfileEmail(true);
-      setProfileEmailBlockedMessage(null);
-      setError(null);
-      const result = await checkEmailEligibility();
-      setIsCheckingProfileEmail(false);
-      if (result === "used") {
-        setProfileEmailBlockedMessage(t("errors.emailAlreadyUsedSoft"));
-        return;
-      }
-    }
     setShowValidationErrors(false);
-    setStep((prev) => Math.min(prev + 1, surveyStepCount - 1));
+    setQuestionIndex((prev) => Math.min(prev + 1, totalQuestionCount - 1));
   };
 
   const goPrev = () => {
     setShowValidationErrors(false);
-    setStep((prev) => Math.max(prev - 1, 0));
+    setQuestionIndex((prev) => Math.max(prev - 1, 0));
   };
 
   const submitAnswers = async () => {
     setShowValidationErrors(true);
+    if (!isAnswerValid) return;
     if (!privacyConsent) {
       setMainPrivacySheetOpen(true);
       return;
     }
-    if (!isSurveyComplete(memoryAnswers, tonePrefs, serviceChannel)) {
-      setError(t("errors.fillAll"));
+    if (!isSurveyComplete(memoryAnswers, tonePrefs, messages, mode, serviceChannel)) {
       return;
     }
     if (!isProfileValid) {
@@ -623,14 +604,6 @@ export function SoulTraceFlow({
     }
 
     setError(null);
-    if (isEmailValid) {
-      const elig = await checkEmailEligibility();
-      if (elig === "used") {
-        setProfileEmailBlockedMessage(t("errors.emailAlreadyUsedSoft"));
-        return;
-      }
-    }
-
     await primeResultBgm(bgmPrimeRef);
 
     setError(null);
@@ -670,9 +643,8 @@ export function SoulTraceFlow({
           locale: lang,
           mode,
           channel: serviceChannel ?? undefined,
-          userEmail: userEmail.trim(),
           partnerCode: partnerCode ?? undefined,
-          ...buildLetterRequestFields(petIntro, memoryAnswers, tonePrefs)!,
+          ...buildLetterRequestFields(petIntro, tonePrefs)!,
           privacyConsent,
           answers: surveyPayload,
           stream: true,
@@ -731,6 +703,7 @@ export function SoulTraceFlow({
               generationCacheKey: data.generationCacheKey,
             });
             setResultLocale(data.generationLocale ?? lang);
+            void persistStampSelection(data.letterId);
           },
         });
       } else {
@@ -743,6 +716,7 @@ export function SoulTraceFlow({
           savedPetName: typeof data.savedPetName === "string" ? data.savedPetName : displayPetName,
         });
         setResultLocale(data.generationLocale ?? lang);
+        void persistStampSelection(data.letterId);
       }
     } catch (err) {
       stopResultBgm(bgmPrimeRef);
@@ -904,19 +878,16 @@ export function SoulTraceFlow({
   };
 
   const resetTest = () => {
-    setStep(0);
+    setQuestionIndex(0);
     setMemoryAnswers(Array(MEMORY_STEP_COUNT).fill(""));
     setTonePrefs({ ...EMPTY_TONE_PREFS });
-    setVideoMotion("");
     setPetPhotoFile(null);
     setPetPhotoSkipped(false);
-    setUserEmail("");
     setPetIntro({ ...EMPTY_PET_INTRO, yearParted: initialYearParted(mode) });
     setPrivacyConsent(false);
     setPhotoPrivacyConsent(false);
     setMainPrivacySheetOpen(false);
     setPhotoPrivacySheetOpen(false);
-    setProfileEmailBlockedMessage(null);
     setResult(null);
     setResultLocale(null);
     setShareableFile(null);
@@ -1088,17 +1059,46 @@ export function SoulTraceFlow({
               >
                 <div className="flex min-h-full items-center justify-center">
                   <article
-                    className="mx-auto w-full max-w-2xl rounded-[1.25rem] border px-5 py-8 shadow-[0_18px_60px_rgba(0,0,0,0.22)] backdrop-blur-[7px] sm:px-9 sm:py-10 md:px-12"
+                    className="relative mx-auto w-full max-w-2xl overflow-hidden rounded-[1.35rem] border px-5 pb-9 pt-[9rem] shadow-[0_24px_70px_rgba(8,10,20,0.34),inset_0_0_70px_rgba(130,91,35,0.06)] sm:px-10 sm:pb-12 sm:pt-[11rem] md:px-14"
                     style={{
-                      backgroundColor: letterTheme.overlayColor,
+                      background: letterTheme.cardBackground,
                       borderColor: letterTheme.panelBorderColor,
                       color: letterTheme.textColor,
-                      fontFamily: letterTheme.fontFamily,
+                      fontFamily: "var(--font-playfair), var(--font-noto-serif-kr), Georgia, serif",
                     }}
                   >
+                    <div
+                      className="absolute inset-x-5 top-5 h-px sm:inset-x-9"
+                      style={{ background: `linear-gradient(to right, transparent, ${letterTheme.dividerColor}, transparent)` }}
+                    />
+                    <LetterPostageStamp
+                      photoUrl={petPhotoPreviewUrl && photoPrivacyConsent ? petPhotoPreviewUrl : null}
+                      accentColor={letterTheme.stampAccentColor}
+                      inkColor={letterTheme.stampInkColor}
+                    />
+                    <aside
+                      data-letter-margin-decoration
+                      className="absolute bottom-10 left-3 top-[8.4rem] hidden w-8 flex-col items-center sm:flex md:left-5 md:w-10"
+                      style={{ color: letterTheme.stampAccentColor }}
+                      aria-hidden="true"
+                    >
+                      <svg viewBox="0 0 28 30" className="h-7 w-7 shrink-0 opacity-75">
+                        <g fill="currentColor" transform="translate(3 2) rotate(-8 11 13)">
+                          <ellipse cx="11" cy="18" rx="7.5" ry="6.2" />
+                          <ellipse cx="3" cy="10" rx="2.8" ry="4" transform="rotate(-22 3 10)" />
+                          <ellipse cx="8.5" cy="5" rx="2.8" ry="4" transform="rotate(-7 8.5 5)" />
+                          <ellipse cx="14.8" cy="4.8" rx="2.8" ry="4" transform="rotate(8 14.8 4.8)" />
+                          <ellipse cx="20" cy="9.5" rx="2.8" ry="4" transform="rotate(23 20 9.5)" />
+                        </g>
+                      </svg>
+                      <span
+                        className="mt-3 w-px flex-1 opacity-65"
+                        style={{ background: `linear-gradient(to bottom, ${letterTheme.stampAccentColor}, ${letterTheme.dividerColor}, transparent)` }}
+                      />
+                    </aside>
                     <h2
-                      className="text-center text-base font-semibold tracking-[0.08em] sm:text-lg"
-                      style={{ color: letterTheme.headingColor }}
+                      className="border-b pb-5 text-center text-lg font-semibold leading-relaxed tracking-[0.07em] sm:mx-6 sm:text-xl md:mx-8"
+                      style={{ color: letterTheme.headingColor, borderColor: letterTheme.dividerColor }}
                     >
                       {activeLetterStructure.title || letterHeading}
                     </h2>
@@ -1109,7 +1109,7 @@ export function SoulTraceFlow({
                     ) : null}
                     <div
                       data-letter-body
-                      className={`mt-7 whitespace-pre-line text-left text-[16px] font-normal leading-[1.85] tracking-normal sm:text-[17px] ${
+                      className={`mt-7 whitespace-pre-line text-left text-[15px] font-normal leading-[1.95] tracking-[0.012em] sm:pl-6 sm:text-[17px] sm:leading-[2] md:pl-8 ${
                         lang === "ko" ? "break-keep" : ""
                       }`}
                     >
@@ -1119,7 +1119,7 @@ export function SoulTraceFlow({
                             className="float-left mr-[0.12em] mt-[0.06em] text-[3.5rem] font-semibold leading-[0.8] sm:text-[4.25rem]"
                             style={{
                               color: letterTheme.dropCapColor,
-                              textShadow: "0 1px 2px rgba(0,0,0,0.18)",
+                              textShadow: "0 1px 1px rgba(83,55,24,0.15)",
                             }}
                           >
                             {dropCap}
@@ -1133,8 +1133,14 @@ export function SoulTraceFlow({
                     {activeLetterStructure.endingPhrase ? (
                       <p
                         data-letter-ending-phrase
-                        className="mt-8 text-right text-[15px] font-semibold italic tracking-[0.04em] sm:text-base"
-                        style={{ color: letterTheme.headingColor }}
+                        className="mt-10 ml-auto max-w-[90%] -rotate-[0.8deg] border-t pt-5 text-right text-[20px] font-semibold italic leading-relaxed tracking-[0.025em] sm:max-w-[82%] sm:text-[24px]"
+                        style={{
+                          color: letterTheme.endingColor,
+                          borderColor: letterTheme.dividerColor,
+                          fontFamily: lang === "ko"
+                            ? "var(--font-nanum-myeongjo), var(--font-noto-serif-kr), serif"
+                            : "var(--font-cormorant), var(--font-playfair), cursive",
+                        }}
                       >
                         {activeLetterStructure.endingPhrase}
                       </p>
@@ -1374,10 +1380,28 @@ export function SoulTraceFlow({
         </main>
       ) : (
       <main
+        data-questionnaire-pet-theme={questionnairePetTheme.key}
         className={`relative isolate z-[1] flex min-h-screen flex-col ${
           showChannelBackground ? "bg-transparent" : "bg-black"
         }`}
       >
+        {questionnairePetTheme.background ? (
+          <div
+            data-questionnaire-pet-background
+            className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+            aria-hidden="true"
+          >
+            <Image
+              src={questionnairePetTheme.background}
+              alt=""
+              fill
+              sizes="100vw"
+              className="object-cover object-[62%_top] opacity-50 sm:object-center sm:opacity-55"
+            />
+            <div className="absolute inset-0 bg-black/70 sm:bg-black/60" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.42)_58%,rgba(0,0,0,0.82)_100%)]" />
+          </div>
+        ) : null}
         <WarmRisingSparkles />
         <header className="relative z-[2] flex w-full shrink-0 items-center justify-between px-5 pt-6 md:px-8 md:pt-8">
           {/* 갈래를 잘못 골랐을 때 되돌아갈 길 — 없으면 새로고침밖에 방법이 없다. */}
@@ -1413,59 +1437,40 @@ export function SoulTraceFlow({
           </div>
 
           <article className="rounded-3xl border-[0.5px] border-[rgba(212,175,55,0.3)] bg-transparent p-6 md:p-10">
-            <div className="mb-8 space-y-6">
-              <div className="space-y-2">
-                <label
-                  htmlFor="user-email"
-                  className={`text-sm font-extralight text-[#F3EAD8] sm:text-[15px] ${
-                    lang === "ko" ? "font-ko" : "font-display-en"
-                  }`}
-                >
-                  {t("form.emailLabel")}
-                </label>
-                <input
-                  id="user-email"
-                  type="email"
-                value={userEmail}
-                onChange={(event) => {
-                  setProfileEmailBlockedMessage(null);
-                  setUserEmail(event.target.value);
-                }}
-                onBlur={handleEmailBlur}
-                placeholder={t("form.emailPlaceholder")}
-                aria-invalid={showValidationErrors && !isEmailValid}
-                aria-describedby={showValidationErrors && !isEmailValid ? "email-error" : undefined}
-                className={`font-ko w-full rounded-xl border-[0.5px] bg-transparent px-4 py-3 text-base font-extralight text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/50 md:text-sm ${
-                  showValidationErrors && !isEmailValid
-                    ? "border-red-300/75 focus:border-red-300"
-                    : "border-[rgba(212,175,55,0.35)] focus:border-[#D4AF37]"
-                }`}
+            <div className="mb-6 flex items-center justify-between gap-4 text-xs text-[#D4AF37]">
+              <span className="font-display-en uppercase">
+                {t("questionHeader.label")} {questionIndex + 1} {t("questionHeader.of")} {totalQuestionCount}
+              </span>
+              <span className={lang === "ko" ? "font-ko" : "font-display-en"}>
+                {questionsLeft} {t("questionHeader.left")}
+              </span>
+            </div>
+            <div className="mb-8 h-px overflow-hidden rounded-full bg-[rgba(243,234,216,0.12)]">
+              <div
+                className="h-full rounded-full bg-[#D4AF37] transition-all duration-700 ease-out"
+                style={{ width: `${((questionIndex + 1) / totalQuestionCount) * 100}%` }}
               />
-              {showValidationErrors && !isEmailValid ? (
-                <p id="email-error" className="text-xs font-extralight text-red-200" role="alert">
-                  {userEmail.trim()
-                    ? t("form.validation.emailInvalid")
-                    : t("form.validation.emailRequired")}
-                </p>
-              ) : null}
-              </div>
+            </div>
+
+            {isIntroQuestion ? <div key={questionIndex} className="animate-fade-in mb-8 space-y-6">
               <PetIntroForm
                 mode={mode}
+                questionId={introQuestionId}
                 profile={petIntro}
                 onChange={patchPetIntro}
                 showErrors={showValidationErrors}
               />
-              <PrivacyConsentTrigger
+              {introQuestionId === "recipient" ? <PrivacyConsentTrigger
                 agreed={privacyConsent}
                 onOpen={() => setMainPrivacySheetOpen(true)}
                 labelPath="form.privacyConsentLink"
-              />
-              {showValidationErrors && !privacyConsent ? (
+              /> : null}
+              {introQuestionId === "recipient" && showValidationErrors && !privacyConsent ? (
                 <p className="text-xs font-extralight text-red-200" role="alert">
                   {t("form.validation.privacyRequired")}
                 </p>
               ) : null}
-            </div>
+            </div> : null}
 
             <PrivacyConsentSheet
               open={mainPrivacySheetOpen}
@@ -1487,18 +1492,7 @@ export function SoulTraceFlow({
               onConfirm={() => setPhotoPrivacyConsent(true)}
             />
 
-            {profileEmailBlockedMessage ? (
-              <p
-                className={`mb-6 rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-[rgba(212,175,55,0.06)] px-4 py-3 text-xs font-extralight leading-relaxed text-[#F3EAD8]/95 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-                role="alert"
-              >
-                {profileEmailBlockedMessage}
-              </p>
-            ) : null}
-
-            <div key={step} className="animate-fade-in">
+            {isSurveyQuestion ? <div key={step} className="animate-fade-in">
               <SurveyFlow
                 mode={mode}
                 serviceChannel={serviceChannel}
@@ -1511,22 +1505,19 @@ export function SoulTraceFlow({
                 onSkipPhoto={handleSkipPhoto}
                 photoPrivacyConsent={photoPrivacyConsent}
                 onOpenPhotoPrivacy={() => setPhotoPrivacySheetOpen(true)}
-                videoMotion={videoMotion}
-                onVideoMotionChange={setVideoMotion}
                 onMemoryChange={handleMemoryChange}
                 onToneMood={(mood) => setTonePrefs((prev) => ({ ...prev, mood }))}
-                onToneOptionToggle={handleToneOptionToggle}
                 onToneLength={(length) => setTonePrefs((prev) => ({ ...prev, length }))}
                 onSkipOptional={handleSkipOptional}
                 showValidationError={showValidationErrors && !isAnswerValid}
               />
-            </div>
+            </div> : null}
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={goPrev}
-                disabled={step === 0}
+                disabled={questionIndex === 0}
                 className="font-ko min-h-[44px] rounded-xl border-[0.5px] border-[rgba(212,175,55,0.45)] bg-transparent px-4 py-3 text-sm font-light text-[#FFFFFF] transition hover:bg-[rgba(212,175,55,0.06)] active:bg-[rgba(212,175,55,0.1)] disabled:cursor-not-allowed disabled:opacity-35"
               >
                 {t("buttons.prev")}
@@ -1535,7 +1526,7 @@ export function SoulTraceFlow({
                 <button
                   type="button"
                   onClick={submitAnswers}
-                  disabled={isLoading || Boolean(profileEmailBlockedMessage)}
+                  disabled={isLoading}
                   className="font-ko min-h-[44px] rounded-xl bg-[#b89a2e] px-4 py-3 text-sm font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {isLoading ? t("buttons.generating") : t("buttons.generate")}
@@ -1544,11 +1535,6 @@ export function SoulTraceFlow({
                 <button
                   type="button"
                   onClick={() => void goNext()}
-                  disabled={
-                    step === 0 &&
-                      isEmailValid &&
-                      (!!profileEmailBlockedMessage || isCheckingProfileEmail)
-                  }
                   className="font-ko min-h-[44px] rounded-xl border-[0.5px] border-[rgba(212,175,55,0.55)] bg-transparent px-4 py-3 text-sm font-light text-[#FFFFFF] transition hover:bg-[rgba(212,175,55,0.06)] active:bg-[rgba(212,175,55,0.1)] disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {t("buttons.next")}
