@@ -42,7 +42,9 @@ create table if not exists public.soul_trace_profiles (
   letter_mode text
     check (letter_mode is null or letter_mode in ('living', 'memorial')),
   partner_id text references public.partners (partner_id) on delete set null,
-  partner_code text
+  partner_code text,
+  pet_id uuid,
+  service_channel text check (service_channel is null or service_channel in ('pension', 'grooming', 'hospital', 'funeral'))
 );
 
 create index if not exists soul_trace_profiles_user_email_idx
@@ -98,6 +100,10 @@ create table if not exists public.soul_trace_pets (
 create index if not exists soul_trace_pets_owner_idx
   on public.soul_trace_pets (owner_user_id);
 
+alter table public.soul_trace_profiles
+  add constraint soul_trace_profiles_pet_id_fkey
+  foreign key (pet_id) references public.soul_trace_pets (pet_id) on delete set null;
+
 create table if not exists public.soul_trace_submissions (
   submission_id uuid primary key default gen_random_uuid(),
   pet_id uuid not null references public.soul_trace_pets (pet_id) on delete cascade,
@@ -107,6 +113,7 @@ create table if not exists public.soul_trace_submissions (
   letter_title text,
   letter_ending_phrase text,
   letter_mode text check (letter_mode is null or letter_mode in ('living', 'memorial')),
+  service_channel text check (service_channel is null or service_channel in ('pension', 'grooming', 'hospital', 'funeral')),
   personality_type text not null,
   preferred_scenery text not null,
   generation_locale text
@@ -121,6 +128,10 @@ create index if not exists soul_trace_submissions_owner_idx
   on public.soul_trace_submissions (owner_user_id);
 create index if not exists soul_trace_submissions_pet_idx
   on public.soul_trace_submissions (pet_id);
+create index if not exists soul_trace_submissions_owner_pet_created_idx
+  on public.soul_trace_submissions (owner_user_id, pet_id, created_at desc);
+create index if not exists soul_trace_submissions_service_channel_idx
+  on public.soul_trace_submissions (service_channel) where service_channel is not null;
 
 create table if not exists public.soul_trace_submission_answers (
   answer_id uuid primary key default gen_random_uuid(),
@@ -154,7 +165,7 @@ create index if not exists life_archive_memories_archive_idx
 
 create table if not exists public.soul_trace_legacy_links (
   user_email text not null,
-  pet_id uuid not null unique references public.soul_trace_pets (pet_id) on delete cascade,
+  pet_id uuid not null references public.soul_trace_pets (pet_id) on delete cascade,
   submission_id uuid not null unique references public.soul_trace_submissions (submission_id) on delete cascade,
   letter_id uuid primary key,
   created_at timestamptz not null default now()
@@ -199,6 +210,26 @@ create index if not exists life_archive_photo_moments_archive_idx
 create index if not exists life_archive_photos_moment_idx
   on public.life_archive_photos (moment_id, photo_order);
 
+create table if not exists public.life_archive_videos (
+  video_id uuid primary key default gen_random_uuid(),
+  owner_user_id uuid not null references public.soul_trace_owners (user_id) on delete cascade,
+  pet_id uuid not null references public.soul_trace_pets (pet_id) on delete cascade,
+  submission_id uuid not null,
+  storage_path text not null unique,
+  caption text,
+  memory_date date,
+  content_type text not null check (content_type in ('video/mp4', 'video/webm', 'video/quicktime')),
+  byte_size bigint not null check (byte_size > 0 and byte_size <= 52428800),
+  duration_seconds numeric check (duration_seconds is null or (duration_seconds > 0 and duration_seconds <= 30)),
+  is_favorite boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  foreign key (submission_id, pet_id, owner_user_id)
+    references public.soul_trace_submissions (submission_id, pet_id, owner_user_id) on delete cascade
+);
+create index if not exists life_archive_videos_archive_idx
+  on public.life_archive_videos (owner_user_id, pet_id, submission_id, created_at desc);
+
 create or replace function public.sync_soul_trace_legacy_profile()
 returns trigger
 language plpgsql
@@ -208,24 +239,39 @@ as $$
 declare
   linked_pet_id uuid;
   linked_submission_id uuid;
+  account_user_id uuid;
 begin
   select pet_id, submission_id
     into linked_pet_id, linked_submission_id
     from public.soul_trace_legacy_links
    where letter_id = new.letter_id;
 
+  select id into account_user_id from auth.users
+   where lower(email) = lower(new.user_email) and email_confirmed_at is not null
+   order by created_at limit 1;
+  if account_user_id is not null then
+    insert into public.soul_trace_owners(user_id) values (account_user_id)
+    on conflict (user_id) do update set verified_at = now();
+  end if;
+
   if linked_pet_id is null then
-    insert into public.soul_trace_pets (pet_name, created_at)
-    values (new.pet_name, new.created_at)
-    returning pet_id into linked_pet_id;
+    if new.pet_id is not null and account_user_id is not null then
+      select pet_id into linked_pet_id from public.soul_trace_pets
+       where pet_id = new.pet_id and owner_user_id = account_user_id;
+      if linked_pet_id is null then raise exception 'Selected pet does not belong to the authenticated owner'; end if;
+    else
+      insert into public.soul_trace_pets (owner_user_id, pet_name, created_at)
+      values (account_user_id, new.pet_name, new.created_at)
+      returning pet_id into linked_pet_id;
+    end if;
 
     insert into public.soul_trace_submissions (
-      pet_id, letter_id, generated_letter, letter_title, letter_ending_phrase,
-      letter_mode, personality_type, preferred_scenery, generation_locale,
+      pet_id, owner_user_id, letter_id, generated_letter, letter_title, letter_ending_phrase,
+      letter_mode, service_channel, personality_type, preferred_scenery, generation_locale,
       hero_image_url, hero_image_ref, created_at
     ) values (
-      linked_pet_id, new.letter_id, new.generated_letter, new.letter_title,
-      new.letter_ending_phrase, new.letter_mode, new.personality_type,
+      linked_pet_id, account_user_id, new.letter_id, new.generated_letter, new.letter_title,
+      new.letter_ending_phrase, new.letter_mode, new.service_channel, new.personality_type,
       new.preferred_scenery, new.generation_locale, new.hero_image_url,
       new.hero_image_ref, new.created_at
     ) returning submission_id into linked_submission_id;
@@ -237,15 +283,18 @@ begin
     );
   else
     update public.soul_trace_pets
-       set pet_name = new.pet_name
+       set pet_name = new.pet_name,
+           owner_user_id = coalesce(owner_user_id, account_user_id)
      where pet_id = linked_pet_id;
 
     update public.soul_trace_submissions
        set letter_id = new.letter_id,
+           owner_user_id = coalesce(owner_user_id, account_user_id),
            generated_letter = new.generated_letter,
            letter_title = new.letter_title,
            letter_ending_phrase = new.letter_ending_phrase,
            letter_mode = new.letter_mode,
+           service_channel = new.service_channel,
            personality_type = new.personality_type,
            preferred_scenery = new.preferred_scenery,
            generation_locale = new.generation_locale,
@@ -262,8 +311,8 @@ end;
 $$;
 
 create trigger sync_soul_trace_legacy_profile_trigger
-after insert or update of pet_name, personality_type, generated_letter,
-  letter_title, letter_ending_phrase, letter_mode, preferred_scenery,
+after insert or update of pet_name, pet_id, personality_type, generated_letter,
+  letter_title, letter_ending_phrase, letter_mode, service_channel, preferred_scenery,
   generation_locale, hero_image_url, hero_image_ref, letter_id
 on public.soul_trace_profiles
 for each row execute function public.sync_soul_trace_legacy_profile();
@@ -378,6 +427,7 @@ alter table public.life_archive_memories enable row level security;
 alter table public.soul_trace_legacy_links enable row level security;
 alter table public.life_archive_photo_moments enable row level security;
 alter table public.life_archive_photos enable row level security;
+alter table public.life_archive_videos enable row level security;
 
 create policy "Owners can read their owner record"
 on public.soul_trace_owners for select to authenticated
@@ -437,6 +487,16 @@ on public.life_archive_photos for all to authenticated
 using (owner_user_id = auth.uid())
 with check (owner_user_id = auth.uid());
 
+create policy "life archive videos owner access"
+on public.life_archive_videos for all to authenticated
+using (owner_user_id = auth.uid())
+with check (owner_user_id = auth.uid() and exists (
+  select 1 from public.soul_trace_submissions submissions
+   where submissions.submission_id = life_archive_videos.submission_id
+     and submissions.pet_id = life_archive_videos.pet_id
+     and submissions.owner_user_id = auth.uid()
+));
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'hero-images', 'hero-images', false, 12582912,
@@ -456,6 +516,12 @@ on conflict (id) do update
 set public = false,
     file_size_limit = excluded.file_size_limit,
     allowed_mime_types = excluded.allowed_mime_types;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('life-archive-videos', 'life-archive-videos', false, 52428800,
+  array['video/mp4', 'video/webm', 'video/quicktime'])
+on conflict (id) do update set public = false, file_size_limit = 52428800,
+  allowed_mime_types = array['video/mp4', 'video/webm', 'video/quicktime'];
 
 create policy "life archive photo storage owner read"
 on storage.objects for select to authenticated
@@ -477,6 +543,13 @@ using (
   bucket_id = 'life-archive-photos'
   and (storage.foldername(name))[1] = auth.uid()::text
 );
+
+create policy "life archive video storage owner read" on storage.objects for select to authenticated
+using (bucket_id = 'life-archive-videos' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "life archive video storage owner upload" on storage.objects for insert to authenticated
+with check (bucket_id = 'life-archive-videos' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "life archive video storage owner delete" on storage.objects for delete to authenticated
+using (bucket_id = 'life-archive-videos' and (storage.foldername(name))[1] = auth.uid()::text);
 
 comment on column public.soul_trace_profiles.letter_id is
   'Eternal Beam source letter ID. Generated by the database and preserved during regeneration.';

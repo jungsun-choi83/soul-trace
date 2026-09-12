@@ -75,11 +75,30 @@ test("auth page provides localized email, privacy, and signup/sign-in controls",
   assert.match(component, /LanguageToggle/);
   assert.equal(en.auth.continueEmail, "Continue with Email");
   assert.equal(en.auth.registered, "Already registered?");
+  assert.equal(ko.auth.eyebrow, "SOUL TRACE 시작하기");
+  assert.equal(ko.auth.signupTitle, "계정 만들기");
+  assert.equal(ko.auth.signupBody, "소중한 편지와 추억을 오래 간직해보세요.");
+  assert.equal(ko.auth.registered, "이미 계정이 있으신가요?");
   assert.equal(en.auth.signIn, "Sign in");
   assert.ok(ko.auth.continueEmail);
   assert.deepEqual(Object.keys(ko.auth).sort(), Object.keys(en.auth).sort());
   assert.match(component, /authCallbackUrl\(window\.location\.origin, returnTo, lang\)/);
   assert.match(component, /locale: lang/);
+});
+
+test("password fields provide independent localized visibility controls", () => {
+  assert.match(component, /const \[passwordVisible, setPasswordVisible\] = useState\(false\)/);
+  assert.match(component, /const \[passwordConfirmationVisible, setPasswordConfirmationVisible\] = useState\(false\)/);
+  assert.match(component, /type=\{visible \? "text" : "password"\}/);
+  assert.match(component, /<button type="button" onClick=\{onToggle\}/);
+  assert.equal(en.auth.showPassword, "Show password");
+  assert.equal(en.auth.hidePassword, "Hide password");
+  assert.equal(en.auth.showConfirmPassword, "Show confirm password");
+  assert.equal(en.auth.hideConfirmPassword, "Hide confirm password");
+  assert.equal(ko.auth.showPassword, "비밀번호 보기");
+  assert.equal(ko.auth.hidePassword, "비밀번호 숨기기");
+  assert.equal(ko.auth.showConfirmPassword, "비밀번호 확인 내용 보기");
+  assert.equal(ko.auth.hideConfirmPassword, "비밀번호 확인 내용 숨기기");
 });
 
 test("signup normalizes email and permits account creation", async () => {
@@ -202,6 +221,14 @@ test("normal callback defaults to choose and dedicated Life Archive stays separa
   const callback = readFileSync("app/auth/confirm/route.ts", "utf8");
   assert.match(lifeArchiveAuth, /returnPath = "\/life-archive"/);
   assert.match(callback, /safeAuthConfirmationPath\([\s\S]*?"\/life-archive"/);
+});
+
+test("successful confirmation cannot be routed back to auth by an ancillary claim failure", () => {
+  const callback = readFileSync("app/auth/confirm/route.ts", "utf8");
+  const confirmation = readFileSync("lib/auth-confirm.ts", "utf8");
+  assert.doesNotMatch(callback, /result === "claim_failed"/);
+  assert.doesNotMatch(confirmation, /auth\.signOut\(\)/);
+  assert.match(confirmation, /authenticationError \|\| !session/);
 });
 
 test("signup metadata accepts only Korean or English and defaults to English", async () => {

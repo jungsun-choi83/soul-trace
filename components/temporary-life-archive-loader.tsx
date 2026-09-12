@@ -6,7 +6,15 @@ import { useEffect, useState } from "react";
 
 type LoadedArchive = ReturnType<typeof loadTemporaryLifeArchive>;
 
-export function TemporaryLifeArchiveLoader() {
+export function TemporaryLifeArchiveLoader({
+  navigationOrigin,
+  backHref,
+  archiveQuery,
+}: {
+  navigationOrigin: "letter" | "choose";
+  backHref: string;
+  archiveQuery: string;
+}) {
   const [archive, setArchive] = useState<LoadedArchive | undefined>(undefined);
 
   useEffect(() => {
@@ -16,7 +24,8 @@ export function TemporaryLifeArchiveLoader() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  if (archive === undefined) return <LifeArchivePreview status="loading" />;
-  if (!archive) return <LifeArchivePreview status="selection-required" />;
-  return <LifeArchivePreview status="ready" archive={archive} storageMode="temporary" />;
+  const navigation = { navigationOrigin, backHref, archiveQuery };
+  if (archive === undefined) return <LifeArchivePreview status="loading" {...navigation} />;
+  if (!archive) return <LifeArchivePreview status="selection-required" {...navigation} />;
+  return <LifeArchivePreview status="ready" archive={archive} storageMode="temporary" {...navigation} />;
 }

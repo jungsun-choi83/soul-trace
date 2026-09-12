@@ -58,11 +58,6 @@ export async function GET(request: NextRequest) {
     return redirectWithLocale(errorDestination);
   }
 
-  if (result === "claim_failed") {
-    errorDestination.searchParams.set("authError", "claim_failed");
-    return redirectWithLocale(errorDestination);
-  }
-
   const response = redirectWithLocale(destination);
   const pendingLetterId = request.cookies.get(PENDING_LETTER_COOKIE)?.value;
   const { data: userData } = await supabase.auth.getUser();

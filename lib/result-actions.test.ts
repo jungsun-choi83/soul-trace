@@ -3,6 +3,14 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 describe("result download and Instagram actions", () => {
+  it("reuses the ambient sparkle layer behind result content", () => {
+    assert.match(
+      source,
+      /\{result \? \([\s\S]*?<main[\s\S]*?<WarmRisingSparkles \/>[\s\S]*?<section className="relative z-\[2\]/,
+    );
+    assert.match(source, /<header className="relative z-\[2\]/);
+  });
+
   const source = readFileSync("components/soul-trace-flow.tsx", "utf8");
 
   it("orders heading, download, Instagram, and start-over controls", () => {
@@ -43,7 +51,9 @@ describe("result download and Instagram actions", () => {
   it("uses a session-only archive while Supabase is not configured", () => {
     assert.match(source, /if \(!SECURE_LIFE_ARCHIVE_CONFIGURED\)/);
     assert.match(source, /saveTemporaryLifeArchive\(\{/);
-    assert.match(source, /window\.location\.assign\("\/life-archive"\)/);
+    assert.match(source, /new URL\("\/life-archive", window\.location\.origin\)/);
+    assert.match(source, /searchParams\.set\("from", "letter"\)/);
+    assert.match(source, /searchParams\.set\("returnTo"/);
     assert.doesNotMatch(source, /sessionStorage\.setItem\([\s\S]*userEmail/);
   });
 

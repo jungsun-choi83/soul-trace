@@ -59,8 +59,11 @@ describe("temporary Life Archive video memories", () => {
     assert.match(ui, /probe\.onerror[\s\S]*previewUnsupported/);
   });
 
-  it("keeps videos only in component memory and warns in both locales", () => {
-    assert.doesNotMatch(ui, /sessionStorage|localStorage|indexedDB|fetch\(|supabase/i);
+  it("keeps the temporary in-memory fallback while secure mode uses the video API", () => {
+    assert.doesNotMatch(ui, /sessionStorage|localStorage|indexedDB/i);
+    assert.match(ui, /storageMode === "secure"/);
+    assert.match(ui, /fetch\(videoApiUrl/);
+    assert.match(ui, /storageMode === "temporary"[\s\S]*temporaryWarning/);
     assert.match(en.lifeArchive.videos.temporaryWarning, /refreshing or leaving/);
     assert.match(ko.lifeArchive.videos.temporaryWarning, /새로고침.*떠나면/);
     assert.equal(en.lifeArchive.videos.add, "Add Video");

@@ -103,6 +103,7 @@ export function TemporaryPhotoMoments({
   const favoriteScrollRef = useRef<HTMLDivElement>(null);
   const [favoriteScroll, setFavoriteScroll] = useState({ left: false, right: false });
   const isKorean = lang === "ko";
+  const photoApiUrl = `/api/life-archive/photos?submissionId=${encodeURIComponent(archiveKey)}`;
   const visibleMoments = latestOnly ? moments.slice(0, 1) : moments;
   const favoriteMoments = useMemo(
     () => moments.filter((moment) => moment.isFavorite).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
@@ -149,7 +150,7 @@ export function TemporaryPhotoMoments({
 
   const loadMoments = useCallback(async () => {
     if (storageMode === "secure") {
-      const response = await fetch("/api/life-archive/photos");
+      const response = await fetch(photoApiUrl);
       if (!response.ok) throw new Error("photo load failed");
       const payload = await response.json() as { moments: Array<{ moment_id: string; caption: string | null; memory_date: string | null; layout: PhotoCollageLayout; center_photo_id: string | null; is_favorite: boolean; created_at: string; photos: Array<{ photoId: string; url: string }> }> };
       const display = payload.moments.map((moment) => ({ momentId: moment.moment_id, archiveKey, caption: moment.caption ?? "", memoryDate: moment.memory_date, layout: moment.layout, centerPhotoId: moment.center_photo_id, isFavorite: moment.is_favorite, createdAt: moment.created_at, photoIds: moment.photos.map((photo) => photo.photoId), photoSettings: {}, photos: moment.photos.map((photo) => ({ photoId: photo.photoId, momentId: moment.moment_id, name: photo.photoId, type: "image/jpeg", blob: new Blob() })), urls: moment.photos.map((photo) => photo.url) }));
@@ -167,27 +168,17 @@ export function TemporaryPhotoMoments({
     displayRef.current = display;
     setMoments(display);
     publishCounts(display);
-  }, [archiveKey, publishCounts, storageMode]);
+  }, [archiveKey, photoApiUrl, publishCounts, storageMode]);
 
   useEffect(() => {
     let active = true;
-    (storageMode === "secure" ? fetch("/api/life-archive/photos").then((response) => response.json()).then((payload) => payload.moments.map((moment: { moment_id: string; caption: string | null; memory_date: string | null; layout: PhotoCollageLayout; center_photo_id: string | null; is_favorite: boolean; created_at: string; photos: Array<{ photoId: string; url: string }> }) => ({ momentId: moment.moment_id, archiveKey, caption: moment.caption ?? "", memoryDate: moment.memory_date, layout: moment.layout, centerPhotoId: moment.center_photo_id, isFavorite: moment.is_favorite, createdAt: moment.created_at, photoIds: moment.photos.map((photo) => photo.photoId), photoSettings: {}, photos: moment.photos.map((photo) => ({ photoId: photo.photoId, momentId: moment.moment_id, name: photo.photoId, type: "image/jpeg", blob: new Blob() })), urls: moment.photos.map((photo) => photo.url) }))) : listTemporaryPhotoMoments(archiveKey))
-      .then((records: Awaited<ReturnType<typeof listTemporaryPhotoMoments>>) => {
-        if (!active) return;
-        const display = records.map((moment) => ({
-          ...moment,
-          urls: moment.photos.map((photo) => URL.createObjectURL(photo.blob)),
-        }));
-        displayRef.current = display;
-        setMoments(display);
-        publishCounts(display);
-      })
+    loadMoments()
       .catch(() => active && setError(t("lifeArchive.photos.storageError")));
     return () => {
       active = false;
-      displayRef.current.forEach((moment) => moment.urls.forEach(URL.revokeObjectURL));
+      if (storageMode === "temporary") displayRef.current.forEach((moment) => moment.urls.forEach(URL.revokeObjectURL));
     };
-  }, [archiveKey, publishCounts, storageMode, t]);
+  }, [loadMoments, storageMode, t]);
 
   useEffect(() => {
     selectedRef.current = selected;
@@ -292,7 +283,7 @@ export function TemporaryPhotoMoments({
         form.set("caption", caption);
         form.set("memoryDate", memoryDate);
         form.set("layout", layout);
-        const response = await fetch("/api/life-archive/photos", { method: "POST", body: form });
+        const response = await fetch(photoApiUrl, { method: "POST", body: form });
         if (!response.ok) throw new Error("photo upload failed");
         resetForm();
         await loadMoments();
@@ -323,7 +314,7 @@ export function TemporaryPhotoMoments({
     setError(null);
     try {
       if (storageMode === "secure") {
-        const response = await fetch("/api/life-archive/photos", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ momentId }) });
+        const response = await fetch(photoApiUrl, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ momentId }) });
         if (!response.ok) throw new Error("photo deletion failed");
       } else {
         await deleteTemporaryPhotoMoment(momentId);
@@ -344,7 +335,7 @@ export function TemporaryPhotoMoments({
     try {
       const isFavorite = !moment.isFavorite;
       if (storageMode === "secure") {
-        const response = await fetch("/api/life-archive/photos", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ momentId: moment.momentId, isFavorite }) });
+        const response = await fetch(photoApiUrl, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ momentId: moment.momentId, isFavorite }) });
         if (!response.ok) throw new Error("favorite update failed");
       } else {
         await updateTemporaryPhotoMoment(moment.momentId, { isFavorite });

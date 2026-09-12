@@ -12,7 +12,9 @@ export default async function MemorialPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const initialServiceChannel = parseServiceChannel((await searchParams).ch);
+  const params = await searchParams;
+  const initialServiceChannel = parseServiceChannel(params.ch);
+  const initialPetId = typeof params.petId === "string" ? params.petId : null;
 
-  return <SoulTraceFlow mode="memorial" initialServiceChannel={initialServiceChannel} />;
+  return <SoulTraceFlow mode="memorial" initialServiceChannel={initialServiceChannel} initialPetId={initialPetId} />;
 }

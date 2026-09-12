@@ -31,7 +31,8 @@ test("legacy funeral alias hydrates with the normal memorial question count", ()
 
 test("route pages await, validate, and pass the initial channel to the client flow", () => {
   for (const page of [livingPage, memorialPage]) {
-    assert.match(page, /parseServiceChannel\(\(await searchParams\)\.ch\)/);
+    assert.match(page, /const params = await searchParams/);
+    assert.match(page, /parseServiceChannel\(params\.ch\)/);
     assert.match(page, /initialServiceChannel=\{initialServiceChannel\}/);
   }
 });

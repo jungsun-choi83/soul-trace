@@ -10,7 +10,8 @@ const TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 async function archiveContext(request: NextRequest) {
   const supabase = await createSupabaseAuthServerClient();
   const user = (await supabase?.auth.getUser())?.data.user;
-  const submissionId = request.cookies.get(ACTIVE_SUBMISSION_COOKIE)?.value;
+  const submissionId = request.nextUrl.searchParams.get("submissionId")
+    || request.cookies.get(ACTIVE_SUBMISSION_COOKIE)?.value;
   if (!supabase || !user || !submissionId) return null;
   const { data: submission } = await supabase
     .from("soul_trace_submissions")

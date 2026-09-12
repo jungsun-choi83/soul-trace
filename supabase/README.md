@@ -14,10 +14,16 @@ For an existing database, take a current backup and verify each migration in a s
 8. `migration_add_persistent_letter_result.sql`
 9. `migration_add_stamp_photos.sql`
 10. `migration_allow_multiple_letters_per_account.sql`
+11. `migration_account_archive_persistence.sql`
 
 The partner migrations are ordered prerequisites: the partner foundation creates the original `HOSPITAL`/`FUNERAL` tables and profile attribution, the track/rate migration adds the settlement and legacy Living/Memorial fields used by the APIs, and the final partner-type migration widens the trusted type constraint to include `GROOMING` and `PENSION`. The widening migration does not rewrite partners or codes, so existing IDs, codes, status, settlement data, and printed `/?p=code` links remain intact. Deploy application code that creates Grooming or Pension partners only after all three partner migrations have been verified in that environment.
 
 Keep `NEXT_PUBLIC_LIFE_ARCHIVE_SECURE_MODE` disabled until every required migration has completed successfully and the resulting tables, functions, triggers, storage bucket, grants, and RLS policies have been verified. Temporary Life Archive mode remains available while secure mode is disabled.
+
+After migration 11 has been verified in the target Supabase project, set
+`NEXT_PUBLIC_LIFE_ARCHIVE_SECURE_MODE=1` in that deployment and redeploy. This
+enables account discovery and remote photo/video persistence; it does not migrate
+temporary browser-only media.
 
 Authentication confirmation and password recovery call `claim_soul_trace_legacy_records()`. Confirmation flows therefore require the foundation migration before they can complete successfully.
 

@@ -66,7 +66,8 @@ test("main auth UI has credential fields, consent, recovery actions, and clears 
   assert.match(component, /createPasswordAccount/);
   assert.match(component, /signInWithPassword/);
   assert.doesNotMatch(component, /requestPasswordlessEmail|signInWithOtp/);
-  assert.match(component, /type="password"/);
+  assert.match(component, /useState\(false\)/);
+  assert.match(component, /type=\{visible \? "text" : "password"\}/);
   assert.match(component, /new-password/);
   assert.match(component, /current-password/);
   assert.match(component, /auth-password-confirmation/);

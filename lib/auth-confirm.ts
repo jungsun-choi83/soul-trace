@@ -3,20 +3,24 @@ import { logAuthFailure } from "./auth-diagnostics.ts";
 
 export type AuthConfirmationClient = {
   auth: {
-    exchangeCodeForSession: (code: string) => Promise<{ error: unknown | null }>;
+    exchangeCodeForSession: (code: string) => Promise<{
+      data?: { session?: unknown | null };
+      error: unknown | null;
+    }>;
     verifyOtp: (input: {
       token_hash: string;
       type: EmailOtpType;
-    }) => Promise<{ error: unknown | null }>;
-    signOut: () => Promise<unknown>;
+    }) => Promise<{
+      data?: { session?: unknown | null };
+      error: unknown | null;
+    }>;
   };
   rpc: (name: string) => PromiseLike<{ error: unknown | null }>;
 };
 
 export type AuthConfirmationResult =
   | "authenticated"
-  | "verification_failed"
-  | "claim_failed";
+  | "verification_failed";
 
 export async function authenticateAuthCallback(
   supabase: AuthConfirmationClient,
@@ -28,19 +32,24 @@ export async function authenticateAuthCallback(
 ): Promise<AuthConfirmationResult> {
   const code = input.code?.trim();
   let authenticationError: unknown | null;
+  let session: unknown | null | undefined;
 
   if (code) {
-    ({ error: authenticationError } = await supabase.auth.exchangeCodeForSession(code));
+    const result = await supabase.auth.exchangeCodeForSession(code);
+    authenticationError = result.error;
+    session = result.data?.session;
   } else if (input.tokenHash && input.type) {
-    ({ error: authenticationError } = await supabase.auth.verifyOtp({
+    const result = await supabase.auth.verifyOtp({
       token_hash: input.tokenHash,
       type: input.type,
-    }));
+    });
+    authenticationError = result.error;
+    session = result.data?.session;
   } else {
     return "verification_failed";
   }
 
-  if (authenticationError) {
+  if (authenticationError || !session) {
     logAuthFailure(
       code ? "callback-code-exchange" : "callback-otp-verification",
       authenticationError,
@@ -54,8 +63,6 @@ export async function authenticateAuthCallback(
 
   if (claimError) {
     logAuthFailure("callback-legacy-claim", claimError);
-    await supabase.auth.signOut();
-    return "claim_failed";
   }
 
   return "authenticated";

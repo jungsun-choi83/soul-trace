@@ -15,8 +15,9 @@ const migration = readFileSync(
 describe("Life Archive Phase 5 persistent letter return", () => {
   it("uses a stable server-loaded result route without an ID in the URL", () => {
     assert.match(page, /loadPersistentLetterResult/);
-    assert.match(archive, /window\.location\.assign\("\/letter-result"\)/);
-    assert.doesNotMatch(archive, /letter-result\?/);
+    assert.match(archive, /href=\{backHref\}/);
+    assert.match(archive, /navigationOrigin === "letter"/);
+    assert.doesNotMatch(archive, /window\.location\.assign\("\/letter-result"\)/);
   });
 
   it("requires both session owner and the HTTP-only selected submission", () => {

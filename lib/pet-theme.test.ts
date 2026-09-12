@@ -30,10 +30,26 @@ test("other, missing, empty, and unknown pet types retain the neutral theme", ()
   }
 });
 
-test("pet theming remains neutral through Question 2 and follows the latest answer afterward", () => {
+test("pet theming remains neutral through Q2.A, starts at Q2.B, and remains active afterward", () => {
   assert.equal(getQuestionnairePetTheme("dog", false), DEFAULT_PET_THEME);
   assert.equal(getQuestionnairePetTheme("dog", true).key, "dog");
   assert.equal(getQuestionnairePetTheme("bird", true).key, "bird");
+
+  const introQuestionIds = ["name", "type", "breed", "years", "recipient"];
+  const petTypeQuestionIndex = introQuestionIds.indexOf("type");
+  for (const [questionIndex, expected] of [
+    [0, "default"],
+    [1, "default"],
+    [2, "cat"],
+    [3, "cat"],
+    [4, "cat"],
+    [12, "cat"],
+  ] as const) {
+    assert.equal(
+      getQuestionnairePetTheme("cat", questionIndex > petTypeQuestionIndex).key,
+      expected,
+    );
+  }
 });
 
 test("questionnaire background wiring reuses petIntro state and centralized paths", () => {
@@ -46,8 +62,9 @@ test("questionnaire background wiring reuses petIntro state and centralized path
   assert.doesNotMatch(flow, /useState<[^>]*PetTheme|setPetTheme/);
   assert.match(flow, /src=\{questionnairePetTheme\.background\}/);
   assert.match(flow, /data-questionnaire-pet-background/);
-  assert.match(flow, /object-cover[\s\S]*sm:object-center/);
-  assert.match(flow, /bg-black\/70 sm:bg-black\/60/);
+  assert.match(flow, /object-cover object-\[18%_top\][\s\S]*sm:object-\[24%_top\][\s\S]*lg:object-center/);
+  assert.match(flow, /opacity-80 brightness-\[0\.9\][\s\S]*sm:opacity-70 sm:brightness-\[0\.85\]/);
+  assert.match(flow, /bg-black\/40 sm:bg-black\/45 lg:bg-black\/50/);
   assert.doesNotMatch(flow, /backgrounds\/pets\/(?:dog|cat|rabbit|hamster|bird)-bg/);
 });
 
