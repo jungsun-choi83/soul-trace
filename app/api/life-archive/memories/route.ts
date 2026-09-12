@@ -13,12 +13,12 @@ function isRealDate(value: string): boolean {
   return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value;
 }
 
-async function selectedArchive(request: NextRequest) {
+async function selectedArchive(request: NextRequest, requestedSubmissionId?: string) {
   const supabase = await createSupabaseAuthServerClient();
   if (!supabase) return null;
 
   const { data: userData } = await supabase.auth.getUser();
-  const submissionId = request.cookies.get(ACTIVE_SUBMISSION_COOKIE)?.value;
+  const submissionId = requestedSubmissionId || request.cookies.get(ACTIVE_SUBMISSION_COOKIE)?.value;
   if (!userData.user || !submissionId || !UUID_PATTERN.test(submissionId)) return null;
 
   const { data: submission } = await supabase
@@ -34,16 +34,17 @@ async function selectedArchive(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const archive = await selectedArchive(request);
-  if (!archive) {
-    return NextResponse.json({ error: "archive_forbidden" }, { status: 403 });
-  }
-
   const body = (await request.json().catch(() => null)) as {
+    submissionId?: unknown;
     title?: unknown;
     story?: unknown;
     memoryDate?: unknown;
   } | null;
+  const submissionId = typeof body?.submissionId === "string" ? body.submissionId : "";
+  const archive = await selectedArchive(request, submissionId);
+  if (!archive) {
+    return NextResponse.json({ error: "archive_forbidden" }, { status: 403 });
+  }
   const title = typeof body?.title === "string" ? body.title : "";
   const story = typeof body?.story === "string" ? body.story : "";
   const memoryDate = typeof body?.memoryDate === "string" ? body.memoryDate : "";
@@ -75,12 +76,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const archive = await selectedArchive(request);
+  const body = (await request.json().catch(() => null)) as { memoryId?: unknown; submissionId?: unknown } | null;
+  const submissionId = typeof body?.submissionId === "string" ? body.submissionId : "";
+  const archive = await selectedArchive(request, submissionId);
   if (!archive) {
     return NextResponse.json({ error: "archive_forbidden" }, { status: 403 });
   }
-
-  const body = (await request.json().catch(() => null)) as { memoryId?: unknown } | null;
   const memoryId = typeof body?.memoryId === "string" ? body.memoryId : "";
   if (!UUID_PATTERN.test(memoryId)) {
     return NextResponse.json({ error: "invalid_memory" }, { status: 400 });

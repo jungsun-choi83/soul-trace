@@ -7,6 +7,7 @@ import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 import { saveTemporaryLifeArchive } from "@/lib/life-archive-temporary";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useRef, useState } from "react";
 
@@ -35,6 +36,16 @@ type LifeArchivePreviewProps = {
   status: ArchiveStatus;
   archive?: ArchiveData;
   storageMode?: "secure" | "temporary";
+  accountPets?: Array<{
+    petId: string;
+    petName: string;
+    letters: Array<{ submissionId: string; letterId: string; title: string | null; mode: string | null; channel: string | null; locale: Locale; createdAt: string }>;
+  }>;
+  selectedPetId?: string;
+  selectedSubmissionId?: string;
+  navigationOrigin?: "letter" | "choose";
+  backHref?: string;
+  archiveQuery?: string;
 };
 
 function exactLetterParagraphs(letter: string): string[] {
@@ -50,6 +61,12 @@ export function LifeArchivePreview({
   status,
   archive,
   storageMode = "secure",
+  accountPets = [],
+  selectedPetId,
+  selectedSubmissionId,
+  navigationOrigin = "choose",
+  backHref = "/choose",
+  archiveQuery = "",
 }: LifeArchivePreviewProps) {
   const { lang, t } = useLocale();
   const router = useRouter();
@@ -75,6 +92,12 @@ export function LifeArchivePreview({
     () => (archive ? exactLetterParagraphs(archive.letter) : []),
     [archive],
   );
+  const archiveHref = (petId: string, submissionId?: string) => {
+    const query = new URLSearchParams(archiveQuery);
+    query.set("pet", petId);
+    if (submissionId) query.set("letter", submissionId);
+    return `/life-archive?${query.toString()}`;
+  };
 
   const saveMemory = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -107,7 +130,7 @@ export function LifeArchivePreview({
       const response = await fetch("/api/life-archive/memories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, story, memoryDate }),
+        body: JSON.stringify({ submissionId: archive?.archiveKey, title, story, memoryDate }),
       });
       if (!response.ok) throw new Error("memory save failed");
       setTitle("");
@@ -141,7 +164,7 @@ export function LifeArchivePreview({
       const response = await fetch("/api/life-archive/memories", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ memoryId }),
+        body: JSON.stringify({ submissionId: archive?.archiveKey, memoryId }),
       });
       if (!response.ok) throw new Error("memory delete failed");
       router.refresh();
@@ -205,17 +228,12 @@ export function LifeArchivePreview({
       </div>
       <div className="relative z-10 mx-auto max-w-5xl px-5 pb-16 pt-6 sm:px-8 md:pb-24 md:pt-8">
         <header className="flex min-w-0 items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() =>
-              storageMode === "temporary"
-                ? window.history.back()
-                : window.location.assign("/letter-result")
-            }
-            className={`min-h-11 rounded-lg px-1 text-left text-sm font-light text-[#C4B8A8] transition hover:text-[#D4AF37] ${isKorean ? "font-ko" : "font-display-en"}`}
+          <Link
+            href={backHref}
+            className={`inline-flex min-h-11 items-center rounded-lg px-1 text-left text-sm font-light text-[#C4B8A8] transition hover:text-[#D4AF37] ${isKorean ? "font-ko" : "font-display-en"}`}
           >
-            <span aria-hidden>← </span>{t("lifeArchive.back")}
-          </button>
+            <span aria-hidden>← </span>{navigationOrigin === "letter" ? t("lifeArchive.back") : t("landing.navBack")}
+          </Link>
           <LanguageToggle />
         </header>
 
@@ -243,6 +261,20 @@ export function LifeArchivePreview({
             </section>
 
             <div className="space-y-8 sm:space-y-10">
+              {storageMode === "secure" && accountPets.length ? (
+                <nav aria-label={isKorean ? "내 반려동물과 편지" : "My pets and letters"} className="rounded-3xl border border-[#D4AF37]/25 bg-[#12100E]/80 p-5 sm:p-7">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <SectionLabel>{isKorean ? "내 반려동물" : "My Pets"}</SectionLabel>
+                    {selectedPetId ? <a href={`/choose?petId=${encodeURIComponent(selectedPetId)}`} className="text-sm text-[#D4AF37] underline underline-offset-4">{isKorean ? "이 반려동물의 새 편지" : "New letter for this pet"}</a> : null}
+                  </div>
+                  <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
+                    {accountPets.map((pet) => <a key={pet.petId} href={archiveHref(pet.petId)} aria-current={pet.petId === selectedPetId ? "page" : undefined} className={`min-h-11 shrink-0 rounded-full border px-4 py-2.5 text-sm ${pet.petId === selectedPetId ? "border-[#D4AF37] bg-[#D4AF37]/15 text-[#F5E6C8]" : "border-white/15 text-[#AFA598]"}`}>{pet.petName}</a>)}
+                  </div>
+                  <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                    {(accountPets.find((pet) => pet.petId === selectedPetId)?.letters ?? []).map((letter) => <a key={letter.submissionId} href={archiveHref(selectedPetId ?? "", letter.submissionId)} aria-current={letter.submissionId === selectedSubmissionId ? "page" : undefined} className={`rounded-xl border p-4 ${letter.submissionId === selectedSubmissionId ? "border-[#D4AF37]/70 bg-[#D4AF37]/10" : "border-white/10 bg-black/25"}`}><span className="block text-sm text-[#F3EAD8]">{letter.title || (isKorean ? "마음이 담긴 편지" : "A letter from the heart")}</span><span className="mt-1 block text-xs text-[#A99B87]">{new Intl.DateTimeFormat(isKorean ? "ko-KR" : "en-US", { dateStyle: "medium" }).format(new Date(letter.createdAt))}{letter.channel ? ` · ${letter.channel}` : letter.mode ? ` · ${letter.mode}` : ""}</span></a>)}
+                  </div>
+                </nav>
+              ) : null}
               <section className={`rounded-3xl border border-[#D4AF37]/25 bg-[#12100E]/80 p-6 shadow-[0_0_50px_rgba(212,175,55,0.06)] sm:p-8 ${isKorean ? "font-ko" : "font-display-en"}`}>
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <SectionLabel>{t("lifeArchive.archive.title")}</SectionLabel>
@@ -270,7 +302,7 @@ export function LifeArchivePreview({
                   </section>
                   <section id="life-archive-video-upload" ref={videoSectionRef} aria-labelledby="life-archive-video-upload-heading" className="scroll-mt-6">
                     <h2 id="life-archive-video-upload-heading" ref={videoHeadingRef} tabIndex={-1} className="sr-only">{t("lifeArchive.videos.add")}</h2>
-                    <TemporaryVideoMemories formOpen={videoFormOpen} onCloseForm={() => setVideoFormOpen(false)} />
+                    <TemporaryVideoMemories archiveKey={archive.archiveKey} storageMode={storageMode} formOpen={videoFormOpen} onCloseForm={() => setVideoFormOpen(false)} />
                   </section>
                 </>
               ) : null}

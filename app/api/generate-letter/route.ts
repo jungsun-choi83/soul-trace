@@ -63,6 +63,7 @@ type AnswerInput = {
 
 type RequestBody = {
   letterId?: string;
+  petId?: string;
   locale?: string;
   /** 편지 갈래. 없으면 추모 — 이 필드가 생기기 전 클라이언트와 같은 동작. */
   mode?: string;
@@ -539,7 +540,7 @@ async function extractPersonalityFields(
 }
 
 type SaveProfileResult =
-  | { ok: true; letterId: string | null }
+  | { ok: true; letterId: string; petId: string | null }
   | { ok: false; message: string; retryable: boolean };
 
 /**
@@ -586,7 +587,7 @@ async function saveProfileAndAnswersOnce(
   mode: LetterMode,
   heroImageUrl: string | null,
   answers: AnswerInput[],
-  options: { includeHeroImage: boolean; partnerId: string | null; partnerCode: string | null },
+  options: { includeHeroImage: boolean; includeArchiveFields: boolean; partnerId: string | null; partnerCode: string | null; petId: string | null; serviceChannel: string | null },
 ): Promise<SaveProfileResult> {
   const supabase = createSupabaseServerClient();
   if (!supabase) {
@@ -609,6 +610,10 @@ async function saveProfileAndAnswersOnce(
     generation_locale: locale,
     preferred_scenery: preferredScenery,
   };
+  if (options.includeArchiveFields) {
+    profileRow.pet_id = options.petId;
+    profileRow.service_channel = options.serviceChannel;
+  }
   if (options.includeHeroImage) {
     profileRow.hero_image_url = heroImageUrl;
   }
@@ -688,7 +693,12 @@ async function saveProfileAndAnswersOnce(
   // 저장이 끝난 뒤에 **따로** 읽는다. upsert 문에 .select() 를 붙이지 않는 이유는,
   // 마이그레이션 전 환경에서 그 한 줄이 쓰기 자체를 실패시키기 때문이다.
   // 여기서는 실패해도 null 이 되고 편지는 이미 저장돼 있다.
-  return { ok: true, letterId };
+  const { data: legacyLink } = await supabase
+    .from("soul_trace_legacy_links")
+    .select("pet_id")
+    .eq("letter_id", letterId)
+    .maybeSingle();
+  return { ok: true, letterId, petId: legacyLink?.pet_id ?? options.petId };
 }
 
 async function saveProfileAndAnswers(
@@ -705,11 +715,13 @@ async function saveProfileAndAnswers(
   answers: AnswerInput[],
   partnerId: string | null,
   partnerCode: string | null,
+  petId: string | null,
+  serviceChannel: string | null,
 ): Promise<SaveProfileResult> {
   const attempts = [
-    { includeHeroImage: true, partnerId, partnerCode },
-    { includeHeroImage: true, partnerId, partnerCode },
-    { includeHeroImage: false, partnerId, partnerCode },
+    { includeHeroImage: true, includeArchiveFields: true, partnerId, partnerCode, petId, serviceChannel },
+    { includeHeroImage: true, includeArchiveFields: true, partnerId, partnerCode, petId, serviceChannel },
+    { includeHeroImage: false, includeArchiveFields: false, partnerId, partnerCode, petId, serviceChannel },
   ] as const;
 
   let last: SaveProfileResult = {
@@ -878,6 +890,25 @@ export async function POST(request: Request) {
         { error: locale === "ko" ? "로그인이 필요합니다." : "Please sign in to continue." },
         { status: 401 },
       );
+    }
+
+    const requestedPetId = typeof body.petId === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.petId)
+      ? body.petId
+      : null;
+    if (body.petId && !requestedPetId) {
+      return NextResponse.json({ error: "Invalid pet selection." }, { status: 400 });
+    }
+    if (requestedPetId) {
+      const { data: ownedPet } = await authClient!
+        .from("soul_trace_pets")
+        .select("pet_id")
+        .eq("pet_id", requestedPetId)
+        .eq("owner_user_id", authData.user.id)
+        .maybeSingle();
+      if (!ownedPet) {
+        return NextResponse.json({ error: "Pet selection is unavailable." }, { status: 403 });
+      }
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -1210,6 +1241,8 @@ export async function POST(request: Request) {
               answers,
               partnerId,
               partnerCode,
+              requestedPetId,
+              channel,
             );
             if (!saveResult.ok) {
               // **성공인 척하지 않는다.** 여기서 조용히 넘어가면 사용자는 완벽한
@@ -1251,6 +1284,7 @@ export async function POST(request: Request) {
               // Eternal Beam 핸드오프의 source_letter_id. 저장이 실패했거나
               // 마이그레이션 전이면 null 이다 — 편지 표시는 그대로 동작한다.
               letterId: saveResult.ok ? saveResult.letterId : null,
+              petId: saveResult.ok ? saveResult.petId : requestedPetId,
               generationLocale: locale,
               generationCacheKey: generationKey,
             });
@@ -1420,6 +1454,8 @@ export async function POST(request: Request) {
       answers,
       partnerId,
       partnerCode,
+      requestedPetId,
+      channel,
     );
     if (!saveResult.ok) {
       return saveFailureResponse(locale, saveResult.message);
@@ -1451,6 +1487,7 @@ export async function POST(request: Request) {
         persistenceFailed: false,
         // Eternal Beam 핸드오프의 source_letter_id. 마이그레이션 전이면 null 이다.
         letterId: saveResult.letterId,
+        petId: saveResult.petId,
         generationLocale: locale,
         generationCacheKey: generationKey,
       }),

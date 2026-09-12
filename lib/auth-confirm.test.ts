@@ -18,16 +18,12 @@ function createMockClient(options: {
       async exchangeCodeForSession() {
         calls.push("exchange");
         if (!options.codeError) writtenCookies.push("session");
-        return { error: options.codeError ?? null };
+        return { data: { session: options.codeError ? null : {} }, error: options.codeError ?? null };
       },
       async verifyOtp() {
         calls.push("verify");
         if (!options.otpError) writtenCookies.push("session");
-        return { error: options.otpError ?? null };
-      },
-      async signOut() {
-        calls.push("signOut");
-        writtenCookies.splice(0);
+        return { data: { session: options.otpError ? null : {} }, error: options.otpError ?? null };
       },
     },
     async rpc(name) {
@@ -115,18 +111,28 @@ test("PKCE code takes precedence when both supported formats are present", async
   assert.deepEqual(mock.calls, ["exchange", "claim"]);
 });
 
-test("claim failure signs out after either successful authentication format", async () => {
+test("legacy claim failure does not undo successful authentication", async () => {
   for (const input of [
     { code: "safe-test-code", tokenHash: null, type: null },
     { code: null, tokenHash: "safe-test-hash", type: "email" as const },
   ]) {
     const mock = createMockClient({ claimError: new Error("mock failure") });
-    assert.equal(
-      await authenticateAuthCallback(mock.client, input),
-      "claim_failed",
-    );
-    assert.equal(mock.calls.at(-2), "claim");
-    assert.equal(mock.calls.at(-1), "signOut");
-    assert.deepEqual(mock.writtenCookies, []);
+    assert.equal(await authenticateAuthCallback(mock.client, input), "authenticated");
+    assert.equal(mock.calls.at(-1), "claim");
+    assert.deepEqual(mock.writtenCookies, ["session"]);
   }
+});
+
+test("a callback response without a session is rejected", async () => {
+  const mock = createMockClient();
+  mock.client.auth.exchangeCodeForSession = async () => ({
+    data: { session: null },
+    error: null,
+  });
+  assert.equal(await authenticateAuthCallback(mock.client, {
+    code: "safe-test-code",
+    tokenHash: null,
+    type: null,
+  }), "verification_failed");
+  assert.deepEqual(mock.calls, []);
 });
