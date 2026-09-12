@@ -4,8 +4,27 @@
     "en": "EN"
   },
   "welcome": {
-    "title": "A letter from the heart",
-    "cta": "Begin Your Journey"
+    "eyebrow": "A letter from your pet's heart",
+    "title": "Your Pet's Story,\nin a Letter",
+    "description": "Answer a few simple questions about your pet. Soul Trace turns those moments into a personal letter you can keep and share.",
+    "cta": "Start Creating Your Letter →",
+    "navHowItWorks": "How It Works",
+    "howItWorks": "How It Works",
+    "steps": {
+      "pet": {
+        "title": "Tell us about your pet",
+        "body": "Share a few details and memories."
+      },
+      "questions": {
+        "title": "Answer a few questions",
+        "body": "We'll guide you through a short, simple set of questions."
+      },
+      "letter": {
+        "title": "Receive your personal letter",
+        "body": "Get a heartfelt letter you can keep or share."
+      }
+    },
+    "letterPreview": "To my favorite human,\n\nThank you for all the little moments we've shared.\nEven ordinary days feel special when I'm with you.\n\nAlways yours."
   },
   "partnerEntry": {
     "unavailableTitle": "This partner link is unavailable",
@@ -26,6 +45,10 @@
     "signIn": "Sign in",
     "password": "Password",
     "confirmPassword": "Confirm password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "showConfirmPassword": "Show confirm password",
+    "hideConfirmPassword": "Hide confirm password",
     "signUpButton": "Sign Up",
     "signInButton": "Sign In",
     "submitting": "Please wait…",
@@ -570,6 +593,7 @@
       "oversized": "Choose a video no larger than 50 MB.",
       "tooLong": "Choose a video that is 30 seconds or shorter.",
       "previewUnsupported": "This browser cannot preview the selected video format.",
+      "storageError": "We couldn't save or load this video. Please try again.",
       "temporaryWarning": "Temporary preview — this video will disappear after refreshing or leaving this page."
     },
     "empty": {

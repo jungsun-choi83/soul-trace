@@ -48,11 +48,10 @@ test("generation identity differs by locale", () => {
   );
 });
 
-test("locale switching regenerates on the server instead of translating in the browser", () => {
+test("locale switching preserves an existing generated letter without translating or regenerating", () => {
   const source = readFileSync("components/soul-trace-flow.tsx", "utf8");
-  assert.match(source, /if \(lang === resultLocale\) return/);
-  assert.match(source, /fetch\("\/api\/generate-letter"/);
-  assert.match(source, /locale: lang/);
-  assert.match(source, /skipImageGeneration: true/);
+  assert.match(source, /const isRestoredResult = initialResult != null \|\| result != null/);
+  assert.match(source, /if \(isRestoredResult\) return/);
+  assert.match(source, /setResultLocale\(completed\.resultLocale\)/);
   assert.doesNotMatch(source, /translate(?:Letter|GeneratedLetter)\s*\(/);
 });

@@ -12,7 +12,9 @@ export default async function LivingPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const initialServiceChannel = parseServiceChannel((await searchParams).ch);
+  const params = await searchParams;
+  const initialServiceChannel = parseServiceChannel(params.ch);
+  const initialPetId = typeof params.petId === "string" ? params.petId : null;
 
-  return <SoulTraceFlow mode="living" initialServiceChannel={initialServiceChannel} />;
+  return <SoulTraceFlow mode="living" initialServiceChannel={initialServiceChannel} initialPetId={initialPetId} />;
 }

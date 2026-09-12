@@ -35,7 +35,6 @@ import { pickEmotionalLetterSentence, pickRandomBestLetterSentence } from "@/lib
 import {
   createGeneratedLetterStructure,
   visibleStreamingBody,
-  type GeneratedLetterStructure,
 } from "@/lib/generated-letter";
 import {
   DEFAULT_LETTER_THEME_ID,
@@ -60,6 +59,17 @@ import {
 } from "@/lib/pet-profile";
 import { getQuestionnairePetTheme } from "@/lib/pet-theme";
 import {
+  completedResultKey,
+  parseCompletedResult,
+  type CompletedResultSession,
+  type SessionGeneratedResult,
+} from "@/lib/completed-result-session";
+import {
+  parseQuestionnaireDraft,
+  questionnaireDraftKey,
+  type QuestionnaireDraft,
+} from "@/lib/questionnaire-draft";
+import {
   buildSurveyAnswers,
   channelMemoryQuestions,
   EMPTY_TONE_PREFS,
@@ -74,32 +84,7 @@ import { toJpeg } from "html-to-image";
 import { flushSync } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-export type GeneratedResult = {
-  personalityType: string;
-  personalitySummary: string;
-  personalityTags: string[];
-  letter: string;
-  letterStructure?: GeneratedLetterStructure;
-  heroImageUrl: string | null;
-  /** 배경 이미지 단계 실패 또는 URL 없음 — 편지(GPT)는 성공했을 수 있음 */
-  heroImageSkipped?: boolean;
-  /** API에 전달된 반려 이름(모달 등에 그대로 표시) */
-  savedPetName?: string;
-  /**
-   * 저장된 편지의 letter_id — Eternal Beam 핸드오프의 traceId.
-   * 저장 실패·마이그레이션 전이면 null 이라 핸드오프 CTA 가 나오지 않는다.
-   */
-  letterId?: string | null;
-  /**
-   * 서버가 편지를 **저장하지 못했다.** 화면에는 편지가 보이지만 DB 에는 없다.
-   * 조용히 넘기면 사용자는 저장됐다고 믿고 창을 닫고, 편지는 영영 사라진다.
-   */
-  persistenceFailed?: boolean;
-  /** Language used to generate this letter, independent from the current interface locale. */
-  generationLocale?: Locale;
-  /** Locale-aware identity for any future generated-letter cache. */
-  generationCacheKey?: string;
-};
+export type GeneratedResult = SessionGeneratedResult;
 
 /** 첫 그래프클러스터(드롭캡)와 나머지 본문 분리 — 선행 공백은 유지 */
 function splitLetterForDropCap(letter: string): { first: string; rest: string } {
@@ -150,6 +135,7 @@ type SoulTraceFlowProps = {
   mode: LetterMode;
   initialResult?: GeneratedResult;
   initialServiceChannel?: ServiceChannel | null;
+  initialPetId?: string | null;
 };
 
 /** 살아 있는 갈래는 "지금까지" 가 곧 올해다 — 사용자가 다시 고를 이유가 없다. */
@@ -161,6 +147,7 @@ export function SoulTraceFlow({
   mode,
   initialResult,
   initialServiceChannel = null,
+  initialPetId = null,
 }: SoulTraceFlowProps) {
   const { lang, t, messages } = useLocale();
   const copy = modeCopy(messages, mode);
@@ -182,11 +169,12 @@ export function SoulTraceFlow({
   const [mainPrivacySheetOpen, setMainPrivacySheetOpen] = useState(false);
   const [photoPrivacySheetOpen, setPhotoPrivacySheetOpen] = useState(false);
   const [result, setResult] = useState<GeneratedResult | null>(initialResult ?? null);
+  const [draftReady, setDraftReady] = useState(initialResult != null);
   /** 마지막으로 생성된 편지·분석이 맞는 UI 언어 (언어 토글 시 API로 다시 맞춤) */
   const [resultLocale, setResultLocale] = useState<Locale | null>(
     initialResult?.generationLocale ?? null,
   );
-  const isRestoredResult = initialResult != null;
+  const isRestoredResult = initialResult != null || result != null;
   const [isLoading, setIsLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -219,6 +207,14 @@ export function SoulTraceFlow({
     typeof window === "undefined" ? null : readPartnerCode(window.location.search),
   );
   const serviceChannel = initialServiceChannel;
+  const draftStorageKey = useMemo(
+    () => questionnaireDraftKey(mode, serviceChannel),
+    [mode, serviceChannel],
+  );
+  const resultStorageKey = useMemo(
+    () => completedResultKey(mode, serviceChannel),
+    [mode, serviceChannel],
+  );
   const channelBackground = serviceChannelBackground(serviceChannel);
   const introduction = surveyIntroduction(messages, mode, serviceChannel);
   const memoryCount = channelMemoryQuestions(messages, serviceChannel)?.length ?? copy.memory.length;
@@ -252,6 +248,142 @@ export function SoulTraceFlow({
     destination.pathname = letterModePath(serviceChannelMode(serviceChannel));
     window.location.replace(`${destination.pathname}${destination.search}${destination.hash}`);
   }, [mode, serviceChannel]);
+
+  useEffect(() => {
+    if (initialResult) {
+      setDraftReady(true);
+      return;
+    }
+    if (serviceChannel && !isServiceChannelCompatible(serviceChannel, mode)) {
+      setDraftReady(true);
+      return;
+    }
+
+    try {
+      const completed = parseCompletedResult(
+        window.sessionStorage.getItem(resultStorageKey),
+        mode,
+        serviceChannel,
+      );
+      if (completed) {
+        setResult(completed.result);
+        setResultLocale(completed.resultLocale);
+        setPetIntro(completed.petIntro);
+        setMemoryAnswers(completed.memoryAnswers);
+        return;
+      }
+
+      const restored = parseQuestionnaireDraft(
+        window.sessionStorage.getItem(draftStorageKey),
+        mode,
+        serviceChannel,
+      );
+      if (restored) {
+        const restoredIntroCount = petIntroQuestionIds(restored.petIntro.petType).length;
+        const restoredTotal = restoredIntroCount + surveyStepCount;
+        setPetIntro(restored.petIntro);
+        setMemoryAnswers(restored.memoryAnswers);
+        setTonePrefs(restored.tonePrefs);
+        setPetPhotoSkipped(restored.petPhotoSkipped);
+        setPrivacyConsent(restored.privacyConsent);
+        setQuestionIndex(Math.min(restored.questionIndex, Math.max(restoredTotal - 1, 0)));
+      }
+    } catch {
+      // sessionStorage can be unavailable in restricted/private browsing contexts.
+    } finally {
+      setDraftReady(true);
+    }
+  }, [draftStorageKey, initialResult, mode, resultStorageKey, serviceChannel, surveyStepCount]);
+
+  useEffect(() => {
+    if (!draftReady || initialResult || result) return;
+    const hasMeaningfulProgress =
+      questionIndex > 0 ||
+      Boolean(
+        petIntro.petName ||
+        petIntro.petNickname ||
+        petIntro.petType ||
+        petIntro.petBreed ||
+        petIntro.petAge ||
+        petIntro.yearMet ||
+        petIntro.letterRecipient ||
+        petIntro.letterRecipientDetail,
+      ) ||
+      memoryAnswers.some(Boolean) ||
+      Boolean(tonePrefs.mood || tonePrefs.length || tonePrefs.options.length) ||
+      petPhotoSkipped ||
+      privacyConsent;
+    if (!hasMeaningfulProgress) {
+      try {
+        window.sessionStorage.removeItem(draftStorageKey);
+      } catch {
+        // The empty flow is still valid when browser storage is unavailable.
+      }
+      return;
+    }
+    const draft: QuestionnaireDraft = {
+      version: 1,
+      mode,
+      channel: serviceChannel,
+      questionIndex,
+      petIntro,
+      memoryAnswers,
+      tonePrefs,
+      petPhotoSkipped,
+      privacyConsent,
+    };
+    try {
+      window.sessionStorage.setItem(draftStorageKey, JSON.stringify(draft));
+    } catch {
+      // Keep the questionnaire usable when browser storage is unavailable or full.
+    }
+  }, [
+    draftReady,
+    draftStorageKey,
+    initialResult,
+    memoryAnswers,
+    mode,
+    petIntro,
+    petPhotoSkipped,
+    privacyConsent,
+    questionIndex,
+    result,
+    serviceChannel,
+    tonePrefs,
+  ]);
+
+  const clearQuestionnaireDraft = useCallback(() => {
+    try {
+      window.sessionStorage.removeItem(draftStorageKey);
+    } catch {
+      // Reset/completion still succeeds if browser storage is unavailable.
+    }
+  }, [draftStorageKey]);
+
+  const persistCompletedResult = useCallback((completedResult: GeneratedResult) => {
+    const completed: CompletedResultSession = {
+      version: 1,
+      mode,
+      channel: serviceChannel,
+      resultLocale: completedResult.generationLocale ?? lang,
+      petIntro,
+      memoryAnswers,
+      result: completedResult,
+    };
+    try {
+      window.sessionStorage.setItem(resultStorageKey, JSON.stringify(completed));
+    } catch {
+      // The in-memory result remains usable when browser storage is unavailable or full.
+    }
+  }, [lang, memoryAnswers, mode, petIntro, resultStorageKey, serviceChannel]);
+
+  const clearCompletedResult = useCallback(() => {
+    try {
+      window.sessionStorage.removeItem(resultStorageKey);
+    } catch {
+      // Starting over still succeeds if browser storage is unavailable.
+    }
+  }, [resultStorageKey]);
 
   const letterTheme = getLetterTheme(letterThemeId);
   const selectedThemeImageMissing = missingThemeImages.has(letterThemeId);
@@ -341,7 +473,10 @@ export function SoulTraceFlow({
         archiveMemoryCount: reusableArchive?.memories.length ?? 0,
         memories: reusableArchive?.memories ?? [],
       });
-      window.location.assign("/life-archive");
+      const archiveUrl = new URL("/life-archive", window.location.origin);
+      archiveUrl.searchParams.set("from", "letter");
+      archiveUrl.searchParams.set("returnTo", `${window.location.pathname}${window.location.search}${window.location.hash}`);
+      window.location.assign(`${archiveUrl.pathname}${archiveUrl.search}`);
       return;
     }
 
@@ -362,7 +497,10 @@ export function SoulTraceFlow({
       if (!response.ok) throw new Error("archive access failed");
 
       if (data.status === "ready" && data.href === "/life-archive") {
-        window.location.assign(data.href);
+        const archiveUrl = new URL(data.href, window.location.origin);
+        archiveUrl.searchParams.set("from", "letter");
+        archiveUrl.searchParams.set("returnTo", `${window.location.pathname}${window.location.search}${window.location.hash}`);
+        window.location.assign(`${archiveUrl.pathname}${archiveUrl.search}`);
         return;
       }
       if (data.status === "verification_required") {
@@ -439,6 +577,8 @@ export function SoulTraceFlow({
   const resultHeroUrlForLocaleSwitch = result?.heroImageUrl ?? null;
   const resultLetterIdForLocaleSwitchRef = useRef<string | null>(result?.letterId ?? null);
   resultLetterIdForLocaleSwitchRef.current = result?.letterId ?? null;
+  const resultPetIdForLocaleSwitchRef = useRef<string | null>(result?.petId ?? initialPetId);
+  resultPetIdForLocaleSwitchRef.current = result?.petId ?? initialPetId;
   const hasResult = result != null;
 
   useEffect(() => {
@@ -472,6 +612,7 @@ export function SoulTraceFlow({
           signal: ac.signal,
           body: JSON.stringify({
             letterId: resultLetterIdForLocaleSwitchRef.current ?? undefined,
+            petId: resultPetIdForLocaleSwitchRef.current ?? undefined,
             locale: lang,
             mode,
             channel: serviceChannel ?? undefined,
@@ -641,6 +782,7 @@ export function SoulTraceFlow({
         },
         body: JSON.stringify({
           locale: lang,
+          petId: initialPetId ?? undefined,
           mode,
           channel: serviceChannel ?? undefined,
           partnerCode: partnerCode ?? undefined,
@@ -685,7 +827,7 @@ export function SoulTraceFlow({
             );
           },
           onDone: (data) => {
-            setResult({
+            const completedResult: GeneratedResult = {
               personalityType: data.personalityType,
               personalitySummary: data.personalitySummary,
               personalityTags: normalizePersonalityTags(data.personalityTags, lang),
@@ -698,23 +840,31 @@ export function SoulTraceFlow({
                   ? data.savedPetName.trim()
                   : displayPetName,
               letterId: data.letterId ?? null,
+              petId: data.petId ?? initialPetId,
               persistenceFailed: data.persistenceFailed === true,
               generationLocale: data.generationLocale ?? lang,
               generationCacheKey: data.generationCacheKey,
-            });
+            };
+            persistCompletedResult(completedResult);
+            clearQuestionnaireDraft();
+            setResult(completedResult);
             setResultLocale(data.generationLocale ?? lang);
             void persistStampSelection(data.letterId);
           },
         });
       } else {
         const data = (await response.json()) as GeneratedResult;
-        setResult({
+        const completedResult: GeneratedResult = {
           ...data,
           personalityTags: normalizePersonalityTags(data.personalityTags, lang),
           heroImageUrl: data.heroImageUrl ?? null,
           heroImageSkipped: data.heroImageSkipped === true,
           savedPetName: typeof data.savedPetName === "string" ? data.savedPetName : displayPetName,
-        });
+          generationLocale: data.generationLocale ?? lang,
+        };
+        persistCompletedResult(completedResult);
+        clearQuestionnaireDraft();
+        setResult(completedResult);
         setResultLocale(data.generationLocale ?? lang);
         void persistStampSelection(data.letterId);
       }
@@ -878,6 +1028,8 @@ export function SoulTraceFlow({
   };
 
   const resetTest = () => {
+    clearQuestionnaireDraft();
+    clearCompletedResult();
     setQuestionIndex(0);
     setMemoryAnswers(Array(MEMORY_STEP_COUNT).fill(""));
     setTonePrefs({ ...EMPTY_TONE_PREFS });
@@ -930,6 +1082,10 @@ export function SoulTraceFlow({
   const showChannelBackground =
     channelBackground !== null && (!result || generationLoadingMessage !== null);
 
+  if (!draftReady) {
+    return <main className="min-h-screen bg-black" aria-busy="true" aria-label="Restoring questionnaire" />;
+  }
+
   return (
     <>
       <audio
@@ -959,10 +1115,11 @@ export function SoulTraceFlow({
             showChannelBackground ? "bg-transparent" : "bg-black"
           }`}
         >
-          <header className="flex w-full justify-end px-4 pt-6 sm:px-6">
+          <WarmRisingSparkles />
+          <header className="relative z-[2] flex w-full justify-end px-4 pt-6 sm:px-6">
             <LanguageToggle />
           </header>
-          <section className="mx-auto w-full max-w-3xl space-y-8 px-4 sm:px-6">
+          <section className="relative z-[2] mx-auto w-full max-w-3xl space-y-8 px-4 sm:px-6">
             {isLoading ? (
               <p
                 className={`text-center text-sm font-extralight text-[#D4AF37] ${
@@ -1396,10 +1553,10 @@ export function SoulTraceFlow({
               alt=""
               fill
               sizes="100vw"
-              className="object-cover object-[62%_top] opacity-50 sm:object-center sm:opacity-55"
+              className="object-cover object-[18%_top] opacity-80 brightness-[0.9] sm:object-[24%_top] sm:opacity-70 sm:brightness-[0.85] lg:object-center"
             />
-            <div className="absolute inset-0 bg-black/70 sm:bg-black/60" />
-            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.42)_58%,rgba(0,0,0,0.82)_100%)]" />
+            <div className="absolute inset-0 bg-black/40 sm:bg-black/45 lg:bg-black/50" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.02)_0%,rgba(0,0,0,0.26)_58%,rgba(0,0,0,0.62)_100%)] lg:bg-[linear-gradient(to_bottom,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.34)_58%,rgba(0,0,0,0.72)_100%)]" />
           </div>
         ) : null}
         <WarmRisingSparkles />

@@ -31,7 +31,8 @@ describe("Life Archive Phase 3 connection", () => {
     assert.match(access, /auth\.getUser\(\)/);
     assert.match(access, /\.eq\("owner_user_id", userData\.user\.id\)/);
     assert.match(page, /ACTIVE_SUBMISSION_COOKIE/);
-    assert.match(page, /\.eq\("submission_id", submissionId\)/);
+    assert.match(page, /from\("soul_trace_submissions"\)/);
+    assert.match(page, /preferredSubmissionId/);
     assert.match(page, /\.eq\("owner_user_id", userData\.user\.id\)/);
   });
 

@@ -21,6 +21,8 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [passwordConfirmationVisible, setPasswordConfirmationVisible] = useState(false);
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [privacySheetOpen, setPrivacySheetOpen] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -93,6 +95,8 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
     setMode((current) => current === "signup" ? "signin" : "signup");
     setPassword("");
     setPasswordConfirmation("");
+    setPasswordVisible(false);
+    setPasswordConfirmationVisible(false);
     setShowErrors(false);
     setAuthError(null);
     setStatus("idle");
@@ -101,6 +105,8 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
     setRecoveryOpen(true);
     setPassword("");
     setPasswordConfirmation("");
+    setPasswordVisible(false);
+    setPasswordConfirmationVisible(false);
     setShowErrors(false);
     setRecoveryStatus("idle");
   };
@@ -133,8 +139,8 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
           <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
             <Field id="auth-email" label={t("form.emailLabel")} type="email" autoComplete="email" value={email} onChange={setEmail} className={inputClass} />
             {showErrors && !emailValid ? <p role="alert" className="text-xs text-red-200">{t(email.trim() ? "form.validation.emailInvalid" : "form.validation.emailRequired")}</p> : null}
-            <Field id="auth-password" label={t("auth.password")} type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} value={password} onChange={setPassword} className={inputClass} />
-            {mode === "signup" ? <Field id="auth-password-confirmation" label={t("auth.confirmPassword")} type="password" autoComplete="new-password" value={passwordConfirmation} onChange={setPasswordConfirmation} className={inputClass} /> : null}
+            <PasswordField id="auth-password" label={t("auth.password")} autoComplete={mode === "signup" ? "new-password" : "current-password"} value={password} onChange={setPassword} className={inputClass} visible={passwordVisible} onToggle={() => setPasswordVisible((current) => !current)} toggleLabel={t(passwordVisible ? "auth.hidePassword" : "auth.showPassword")} />
+            {mode === "signup" ? <PasswordField id="auth-password-confirmation" label={t("auth.confirmPassword")} autoComplete="new-password" value={passwordConfirmation} onChange={setPasswordConfirmation} className={inputClass} visible={passwordConfirmationVisible} onToggle={() => setPasswordConfirmationVisible((current) => !current)} toggleLabel={t(passwordConfirmationVisible ? "auth.hideConfirmPassword" : "auth.showConfirmPassword")} /> : null}
             {showErrors && passwordError ? <p role="alert" className="text-xs text-red-200">{t(`auth.passwordValidation.${passwordError}`)}</p> : null}
             {mode === "signup" ? <div className="space-y-2"><PrivacyConsentTrigger agreed={privacyConsent} onOpen={() => setPrivacySheetOpen(true)} labelPath="form.privacyConsentLink" />{showErrors && !privacyConsent ? <p role="alert" className={`text-xs text-red-200 ${bodyFont}`}>{t("form.validation.privacyRequired")}</p> : null}</div> : null}
             <PrimaryButton disabled={status === "submitting"} className={bodyFont}>{t(status === "submitting" ? "auth.submitting" : mode === "signup" ? "auth.signUpButton" : "auth.signInButton")}</PrimaryButton>
@@ -152,6 +158,12 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
 
 function Field({ id, label, type, autoComplete, value, onChange, className }: { id: string; label: string; type: "email" | "password"; autoComplete: string; value: string; onChange: (value: string) => void; className: string }) {
   return <div className="space-y-2"><label htmlFor={id} className="text-sm font-light">{label}</label><input id={id} type={type} inputMode={type === "email" ? "email" : undefined} autoComplete={autoComplete} value={value} onChange={(event) => onChange(event.target.value)} className={className} /></div>;
+}
+function PasswordField({ id, label, autoComplete, value, onChange, className, visible, onToggle, toggleLabel }: { id: string; label: string; autoComplete: string; value: string; onChange: (value: string) => void; className: string; visible: boolean; onToggle: () => void; toggleLabel: string }) {
+  return <div className="space-y-2"><label htmlFor={id} className="text-sm font-light">{label}</label><div className="relative"><input id={id} type={visible ? "text" : "password"} autoComplete={autoComplete} value={value} onChange={(event) => onChange(event.target.value)} className={`${className} pr-14`} /><button type="button" onClick={onToggle} aria-label={toggleLabel} aria-pressed={visible} className="absolute inset-y-0 right-1 flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#E8D6B4]/65 transition hover:text-[#D4AF37] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#D4AF37]"><PasswordVisibilityIcon visible={visible} /></button></div></div>;
+}
+function PasswordVisibilityIcon({ visible }: { visible: boolean }) {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-5">{visible ? <><path d="M3 3l18 18" /><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" /><path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c5.5 0 9 8 9 8a16 16 0 0 1-2.1 3.3" /><path d="M6.6 6.6C4.2 8.2 3 12 3 12s3.5 8 9 8a9.7 9.7 0 0 0 4-.9" /></> : <><path d="M3 12s3.5-8 9-8 9 8 9 8-3.5 8-9 8-9-8-9-8Z" /><circle cx="12" cy="12" r="2.5" /></>}</svg>;
 }
 function PrimaryButton({ disabled, className, children }: { disabled: boolean; className: string; children: ReactNode }) {
   return <button type="submit" disabled={disabled} className={`min-h-14 w-full rounded-xl bg-[#B89A2E] px-5 py-4 text-base font-light text-black transition hover:bg-[#C6A637] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F3EAD8] disabled:cursor-not-allowed disabled:opacity-55 ${className}`}>{children}</button>;

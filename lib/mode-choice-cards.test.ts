@@ -29,6 +29,17 @@ test("complete cards keep the existing living and memorial destinations", () => 
   assert.match(component, /href=\{hrefFor\(mode\)\}/);
 });
 
+test("offers a subtle localized Life Archive link after the cards", () => {
+  assert.match(component, /archiveParams\.set\("from", "choose"\)/);
+  assert.match(component, /href=\{archiveHref\}/);
+  assert.match(component, /t\("lifeArchive\.title"\)/);
+  assert.match(component, /mt-5 flex justify-end/);
+  assert.match(component, /min-h-\[100svh\] overflow-x-hidden/);
+  assert.doesNotMatch(component, /h-\[100svh\] overflow-hidden/);
+  assert.equal(en.lifeArchive.title, "Life Archive");
+  assert.equal(ko.lifeArchive.title, "삶의 기록");
+});
+
 test("back and card destinations preserve validated query parameters", () => {
   assert.match(page, /Object\.entries\(params\)/);
   assert.match(page, /preservedParams\.append\(key, item\)/);
@@ -39,7 +50,7 @@ test("back and card destinations preserve validated query parameters", () => {
 });
 
 test("cards have responsive, accessible, reduced-motion presentation", () => {
-  assert.match(component, /h-\[100svh\] overflow-hidden/);
+  assert.match(component, /min-h-\[100svh\] overflow-x-hidden/);
   assert.match(component, /max-w-\[460px\]/);
   assert.match(component, /aspect-\[1\.65\/1\]/);
   assert.doesNotMatch(component, /sm:grid-cols-2/);
