@@ -21,6 +21,7 @@ export type PasswordAuthResult =
   | "authenticated"
   | "check_email"
   | "invalid_email"
+  | "already_registered"
   | "invalid_credentials"
   | "email_not_confirmed"
   | "policy_failed"
@@ -49,7 +50,11 @@ export async function createPasswordAccount(
   });
   if (error) {
     logAuthFailure("signup", error);
-    return errorCode(error) === "weak_password" ? "policy_failed" : "request_failed";
+    const code = errorCode(error);
+    if (code === "user_already_exists" || code === "email_exists") {
+      return "already_registered";
+    }
+    return code === "weak_password" ? "policy_failed" : "request_failed";
   }
   return data.session ? "authenticated" : "check_email";
 }

@@ -83,6 +83,12 @@ test("welcome action keeps the provided authenticated destination and query para
   assert.doesNotMatch(experience, /href=["']\/?(?:auth|choose|living|memorial)/);
 });
 
+test("welcome CTA remains on an explicit foreground layer after video compositing", () => {
+  assert.match(experience, /href=\{choiceHref\} className=\{`relative z-20/);
+  assert.match(experience, /relative z-20[\s\S]*?opacity-100/);
+  assert.doesNotMatch(experience, /href=\{choiceHref\}[\s\S]{0,300}\bhidden\b/);
+});
+
 test("root routing and the welcome alias remain intact", () => {
   assert.match(page, /WelcomeExperience/);
   assert.match(page, /resolvePartnerCode/);
