@@ -13,7 +13,7 @@ import { createSupabaseBrowserAuthClient } from "@/lib/supabase-auth-browser";
 import Link from "next/link";
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 
-type AuthErrorState = "invalid_link" | "unavailable" | "signup_unavailable" | "signin_unavailable" | "request_failed" | "invalid_credentials" | "email_not_confirmed" | "policy_failed" | null;
+type AuthErrorState = "invalid_link" | "unavailable" | "signup_unavailable" | "signin_unavailable" | "request_failed" | "already_registered" | "invalid_credentials" | "email_not_confirmed" | "policy_failed" | null;
 
 export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated = false }: { returnTo: string; initialAuthError?: AuthErrorState; passwordUpdated?: boolean }) {
   const { lang, t } = useLocale();
@@ -60,6 +60,15 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
         setPassword("");
         setPasswordConfirmation("");
         setStatus("check_email");
+        return;
+      }
+      if (result === "already_registered") {
+        setMode("signin");
+        setPassword("");
+        setPasswordConfirmation("");
+        setShowErrors(false);
+        setStatus("idle");
+        setAuthError("already_registered");
         return;
       }
       setStatus("idle");

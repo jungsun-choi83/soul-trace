@@ -41,6 +41,18 @@ test("signup check-email and immediate-session responses are handled separately"
   assert.equal(await createPasswordAccount(mockClient({ signupSession: {} }).client, { email: "a@b.co", password: "password", redirectTo: "https://example.test/auth/confirm", locale: "en" }), "authenticated");
 });
 
+test("signup recognizes an existing account and directs the user to sign in", async () => {
+  for (const code of ["user_already_exists", "email_exists"]) {
+    assert.equal(
+      await createPasswordAccount(
+        mockClient({ signupError: { code } }).client,
+        { email: "existing@example.com", password: "password", redirectTo: "https://example.test/auth/confirm", locale: "en" },
+      ),
+      "already_registered",
+    );
+  }
+});
+
 test("password sign-in sends credentials only to signInWithPassword and sends no email", async () => {
   const mock = mockClient({ signinSession: {} });
   assert.equal(await signInWithPassword(mock.client, { email: " Person@Example.COM ", password: "password-8" }), "authenticated");
