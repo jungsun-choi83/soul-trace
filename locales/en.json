@@ -88,6 +88,7 @@
       "invalid_link": "This sign-in link is invalid or has expired. Request a new link to continue.",
       "unavailable": "Email authentication is temporarily unavailable. Please try again later.",
       "request_failed": "We couldn't send the email. Please try again.",
+      "already_registered": "An account already exists for this email. Sign in with your password instead.",
       "invalid_credentials": "We couldn't sign you in with those credentials.",
       "email_not_confirmed": "Confirm your email before signing in.",
       "signup_unavailable": "Account creation is temporarily unavailable. Please try again later.",
