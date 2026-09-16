@@ -19,8 +19,8 @@ export const TONE_STEP_COUNT = 2;
 export const SURVEY_STEP_COUNT = MEMORY_STEP_COUNT + PHOTO_STEP_COUNT + TONE_STEP_COUNT;
 /** Final default memory question — 0-based index 3 */
 export const OPTIONAL_MEMORY_STEP = 3;
-/** 기억 질문 직후 — 영상용 사진 업로드 */
-export const PHOTO_SURVEY_STEP = MEMORY_STEP_COUNT + 1;
+/** 기억 질문과 편지 스타일 질문 직후 — 영상용 사진 업로드 */
+export const PHOTO_SURVEY_STEP = MEMORY_STEP_COUNT + TONE_STEP_COUNT;
 
 export type LetterToneMood = "bright" | "calm" | "warm";
 export type LetterToneOption = "comfort" | "no_heaven" | "frequent_name";
@@ -85,8 +85,12 @@ export function surveyIntroduction(
   return messages.survey.channelIntroductions[channel];
 }
 
-export function memoryQuestionCount(channel?: ServiceChannel | null): number {
-  return isCustomizedServiceChannel(channel) ? CHANNEL_MEMORY_COUNTS[channel] : MEMORY_STEP_COUNT;
+export function memoryQuestionCount(
+  channel?: ServiceChannel | null,
+  mode: LetterMode = "memorial",
+): number {
+  if (isCustomizedServiceChannel(channel)) return CHANNEL_MEMORY_COUNTS[channel];
+  return mode === "living" ? 3 : MEMORY_STEP_COUNT;
 }
 
 export function isChannelMemoryOptional(
@@ -211,14 +215,14 @@ export function isSurveyStepValid(
   mode: LetterMode,
   channel?: ServiceChannel | null,
 ): boolean {
-  const memoryCount = memoryQuestionCount(channel);
+  const memoryCount = memoryQuestionCount(channel, mode);
   if (step < memoryCount) {
     return isMemoryStepValid(step, memoryAnswers, activeMemoryQuestions(messages, mode, channel));
   }
-  if (PET_PHOTO_UPLOAD_ENABLED && step === memoryCount + 1) {
+  if (PET_PHOTO_UPLOAD_ENABLED && step === memoryCount + TONE_STEP_COUNT) {
     return isPhotoStepValid(photoReady.hasPhoto, photoReady.skipped, photoReady.photoConsent);
   }
-  const toneIndex = step === memoryCount ? 0 : step - memoryCount - PHOTO_STEP_COUNT;
+  const toneIndex = step - memoryCount;
   return isToneStepValid(toneIndex, tonePrefs);
 }
 

@@ -5,13 +5,11 @@ import type { Locale } from "@/lib/i18n";
 import { modeCopy, type LetterMode } from "@/lib/letter-mode";
 import type { ServiceChannel } from "@/lib/service-channel";
 import { PetPhotoUpload } from "@/components/pet-photo-upload";
-import { PrivacyConsentTrigger } from "@/components/privacy-consent-trigger";
 import {
   formatSurveyName,
   channelMemoryQuestions,
   memoryQuestionCount,
   PET_PHOTO_UPLOAD_ENABLED,
-  PHOTO_STEP_COUNT,
   type LetterTonePrefs,
 } from "@/lib/survey";
 
@@ -25,8 +23,6 @@ type SurveyFlowProps = {
   petPhotoPreviewUrl: string | null;
   onPetPhotoChange: (file: File | null) => void;
   onSkipPhoto: () => void;
-  photoPrivacyConsent: boolean;
-  onOpenPhotoPrivacy: () => void;
   onMemoryChange: (index: number, value: string) => void;
   onToneMood: (mood: LetterTonePrefs["mood"]) => void;
   onToneLength: (length: LetterTonePrefs["length"]) => void;
@@ -54,8 +50,6 @@ export function SurveyFlow({
   petPhotoPreviewUrl,
   onPetPhotoChange,
   onSkipPhoto,
-  photoPrivacyConsent,
-  onOpenPhotoPrivacy,
   onMemoryChange,
   onToneMood,
   onToneLength,
@@ -66,18 +60,16 @@ export function SurveyFlow({
   const copy = modeCopy(messages, mode);
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
   const channelMemory = channelMemoryQuestions(messages, serviceChannel);
-  const memoryCount = memoryQuestionCount(serviceChannel);
-  const isPhoto = PET_PHOTO_UPLOAD_ENABLED && step === memoryCount + 1;
+  const memoryCount = memoryQuestionCount(serviceChannel, mode);
+  const isPhoto = PET_PHOTO_UPLOAD_ENABLED && step === memoryCount + copy.tone.length;
   const isMemory = step < memoryCount;
   const memoryItem = isMemory ? (channelMemory?.[step] ?? copy.memory[step]) : null;
-  const toneIndex = step === memoryCount ? 0 : step - memoryCount - PHOTO_STEP_COUNT;
+  const toneIndex = step - memoryCount;
   const toneItem = !isMemory && !isPhoto ? copy.tone[toneIndex] : null;
   const validationMessage = !showValidationError
     ? null
     : isPhoto
-      ? petPhotoPreviewUrl && !photoPrivacyConsent
-        ? t("form.validation.photoConsentRequired")
-        : t("form.validation.photoChoiceRequired")
+      ? t("form.validation.photoChoiceRequired")
       : isMemory && !memoryItem?.optional && !(memoryAnswers[step] ?? "").trim()
         ? t("form.validation.memoryRequired")
         : toneItem?.id === "q10" && !tonePrefs.mood
@@ -102,13 +94,6 @@ export function SurveyFlow({
             showKicker={false}
             showGuidance={false}
           />
-          {petPhotoPreviewUrl ? (
-            <PrivacyConsentTrigger
-              agreed={photoPrivacyConsent}
-              onOpen={onOpenPhotoPrivacy}
-              labelPath="form.photoPrivacyConsentLink"
-            />
-          ) : null}
           <button
             type="button"
             onClick={onSkipPhoto}
@@ -122,7 +107,7 @@ export function SurveyFlow({
       {isMemory && memoryItem ? (
         <div className="mt-4 space-y-4">
           <p className="text-xl font-extralight leading-relaxed text-[#FFFFFF] md:text-2xl">
-            {`Q${step + 1}. ${formatSurveyName(memoryItem.promptText, petDisplayName)}`}
+            {formatSurveyName(memoryItem.promptText, petDisplayName)}
           </p>
           {memoryItem.optional ? (
             <p className="survey-hint font-extralight text-[#C4B8A8]/90">
@@ -158,7 +143,9 @@ export function SurveyFlow({
       {!isMemory && !isPhoto && toneItem ? (
         <div className="mt-4 space-y-4">
           <p className="text-xl font-extralight leading-relaxed text-[#FFFFFF] md:text-2xl">
-            {`${toneItem.id === "q10" ? "Q1" : "Q2"}. ${toneItem.promptText.replace(/^Q\d+\.\s*/, "")}`}
+            {toneItem.id === "q10"
+              ? t("survey.letterToneTitle")
+              : toneItem.promptText.replace(/^Q\d+\.\s*/, "")}
           </p>
           <div className="flex flex-wrap gap-2">
             {toneItem.id === "q10"

@@ -1,6 +1,8 @@
 import { SoulTraceFlow } from "@/components/soul-trace-flow";
 import { parseServiceChannel } from "@/lib/service-channel";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { ETERNAL_BEAM_ACCESS_COOKIE, verifyEternalBeamAccessSession } from "@/lib/eternal-beam-access";
 
 export const metadata: Metadata = {
   title: "Soul Trace | 지금 곁에 있는 아이",
@@ -15,6 +17,8 @@ export default async function LivingPage({
   const params = await searchParams;
   const initialServiceChannel = parseServiceChannel(params.ch);
   const initialPetId = typeof params.petId === "string" ? params.petId : null;
+  const cookieStore = await cookies();
+  const hasEternalBeamAccess = await verifyEternalBeamAccessSession(cookieStore.get(ETERNAL_BEAM_ACCESS_COOKIE)?.value);
 
-  return <SoulTraceFlow mode="living" initialServiceChannel={initialServiceChannel} initialPetId={initialPetId} />;
+  return <SoulTraceFlow mode="living" initialServiceChannel={initialServiceChannel} initialPetId={initialPetId} hasEternalBeamAccess={hasEternalBeamAccess} />;
 }

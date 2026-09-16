@@ -29,15 +29,11 @@ test("complete cards keep the existing living and memorial destinations", () => 
   assert.match(component, /href=\{hrefFor\(mode\)\}/);
 });
 
-test("offers a subtle localized Life Archive link after the cards", () => {
-  assert.match(component, /archiveParams\.set\("from", "choose"\)/);
-  assert.match(component, /href=\{archiveHref\}/);
-  assert.match(component, /t\("lifeArchive\.title"\)/);
-  assert.match(component, /mt-5 flex justify-end/);
+test("does not offer Life Archive from the choose page", () => {
+  assert.doesNotMatch(component, /archiveParams|archiveHref/);
+  assert.doesNotMatch(component, /t\("lifeArchive\.title"\)/);
   assert.match(component, /min-h-\[100svh\] overflow-x-hidden/);
   assert.doesNotMatch(component, /h-\[100svh\] overflow-hidden/);
-  assert.equal(en.lifeArchive.title, "Life Archive");
-  assert.equal(ko.lifeArchive.title, "삶의 기록");
 });
 
 test("back and card destinations preserve validated query parameters", () => {

@@ -2,8 +2,9 @@ import { isLetterMode, type LetterMode } from "./letter-mode.ts";
 import type { PetIntroProfile } from "./pet-profile.ts";
 import { parseServiceChannel, type ServiceChannel } from "./service-channel.ts";
 import type { LetterTonePrefs } from "./survey.ts";
+import { isPrivacySelections, type PrivacySelections } from "./privacy-consent-selection.ts";
 
-export const QUESTIONNAIRE_DRAFT_VERSION = 1;
+export const QUESTIONNAIRE_DRAFT_VERSION = 5;
 
 export type QuestionnaireDraft = {
   version: typeof QUESTIONNAIRE_DRAFT_VERSION;
@@ -15,6 +16,8 @@ export type QuestionnaireDraft = {
   tonePrefs: LetterTonePrefs;
   petPhotoSkipped: boolean;
   privacyConsent: boolean;
+  privacySelections: PrivacySelections;
+  email: string;
 };
 
 export function questionnaireDraftKey(
@@ -81,11 +84,16 @@ export function parseQuestionnaireDraft(
       !value.memoryAnswers.every(isString) ||
       !isTonePrefs(value.tonePrefs) ||
       typeof value.petPhotoSkipped !== "boolean" ||
-      typeof value.privacyConsent !== "boolean"
+      typeof value.privacyConsent !== "boolean" ||
+      !isPrivacySelections(value.privacySelections) ||
+      (value.email !== undefined && !isString(value.email))
     ) {
       return null;
     }
-    return value as QuestionnaireDraft;
+    return {
+      ...(value as QuestionnaireDraft),
+      email: typeof value.email === "string" ? value.email : "",
+    };
   } catch {
     return null;
   }

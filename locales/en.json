@@ -131,13 +131,6 @@
           "promptText": "What lets you know ○○ is excited?",
           "placeholder": "Sounds, habits, little triggers",
           "example": "Treat bag rustling / The door code beeping / Running when the leash comes out"
-        },
-        {
-          "promptText": "(Optional) Is there something you still wish you could give ○○?",
-          "placeholder": "Anything on your mind",
-          "optional": true,
-          "optionalNote": "You can skip this one.",
-          "skipLabel": "Skip"
         }
       ],
       "tone": [
@@ -215,6 +208,100 @@
     }
   },
   "form": {
+    "consents": {
+      "title": "Before We Continue",
+      "helper": "A few quick consents to help us create a safe and meaningful experience.",
+      "privacy": "I agree to the Privacy Policy and consent to my questionnaire answers being used to generate my pet's AI letter. (Required)",
+      "marketing": "I want to receive email updates, exclusive launch offers, and marketing announcements from Eternal Beam. (Optional)",
+      "aiImprovement": "I consent to my pet's photo, pet details, and my written answers being used to help develop and improve AI features across Eternal Beam services.",
+      "agreeAll": "I agree all",
+      "policyLink": "Privacy Policy",
+      "requiredError": "Please agree to the required consent to continue.",
+      "continue": "Continue",
+      "close": "Close consent"
+    },
+    "emailStep": {
+      "kicker": "EMAIL ADDRESS",
+      "label": "Email address",
+      "placeholder": "Enter email to reveal the letter",
+      "validation": "Please enter a valid email address."
+    },
+    "privacyNotices": {
+      "us": {
+      "title": "U.S. PRIVACY NOTICE AT COLLECTION",
+      "heading": "Please review this before creating your letter.",
+      "body": "If you continue, the questionnaire answers and photo you selected will be sent to SoulTrace when you create your letter and used to generate the letter and related content you requested.",
+      "collectTitle": "Personal Information We Collect",
+      "collectBody": "• Questionnaire answers\n• Selected or uploaded photo\n• Pet-related information, including name, type, and characteristics\n• Email address\n• Technical information necessary to provide the service",
+      "purposeTitle": "Purpose of Use",
+      "purposeBody": "• SoulTrace letter and content generation\n• Delivering the result\n• Service operation and security\n• Requested Archive functionality where applicable",
+      "retentionTitle": "Retention",
+      "retentionBody": "Personal information is retained for as long as reasonably necessary for the disclosed purposes, with detailed retention criteria available in the Privacy Policy.",
+      "providersTitle": "Service Providers",
+      "providersBody": "AI and cloud service providers may process information necessary to provide SoulTrace services on our behalf.",
+      "rightsTitle": "Your Privacy Rights",
+      "rightsBody": "Depending on applicable U.S. state law, you may have rights such as access, deletion, correction, or opting out of certain processing.",
+      "policyLink": "Privacy Policy",
+      "rightsLink": "U.S. Privacy Rights",
+      "aiDetailLink": "AI processing and overseas transfer details →",
+      "confirm": "Confirm and Continue",
+      "aiDetailTitle": "AI Processing and Overseas Transfer Notice",
+      "aiDetailClose": "Back to Privacy Notice",
+      "aiDetail": {
+        "providerTitle": "Processor",
+        "providerBody": "OpenAI, the configured AI service provider",
+        "transferredTitle": "Information Transferred",
+        "transferredBody": "Written content needed to generate the letter and, when necessary, an uploaded image",
+        "countryTitle": "Destination Country",
+        "countryBody": "[Actual destination country requires confirmation]",
+        "timingTitle": "Timing and Method",
+        "timingBody": "Transferred over an encrypted network when content generation is requested",
+        "purposeTitle": "Purpose",
+        "purposeBody": "SoulTrace content generation",
+        "retentionTitle": "Retention Period",
+        "retentionBody": "[Actual provider retention policy requires confirmation]",
+        "declineTitle": "If You Do Not Want the Transfer",
+        "declineBody": "It may be difficult to provide AI-based letter generation without this processing."
+      }
+      },
+      "korea": {
+        "title": "PRIVACY PROCESSING NOTICE",
+        "heading": "Please review this before creating your letter.",
+        "body": "If you continue, the answers you have provided and the photo you selected will be sent to SoulTrace when you create your letter and used to create the letter you requested.",
+        "collectTitle": "Information We Process",
+        "collectBody": "Your questionnaire answers, selected photo, information you provide about your pet such as name, type, and characteristics, and your email address",
+        "purposeTitle": "Purpose of Use",
+        "purposeBody": "Generating SoulTrace letters, delivering generated results, and providing Archive features you request",
+        "retentionTitle": "Retention",
+        "retentionBody": "Information is deleted without delay after the collection and use purposes have been fulfilled, except when retention is required by applicable law, in which case it is retained for the legally required period.",
+        "providersTitle": "Processor",
+        "providersBody": "AI and cloud service providers may process information necessary to provide SoulTrace services on our behalf.",
+        "rightsTitle": "Privacy Rights",
+        "rightsBody": "You may request access, correction, deletion, or suspension of processing as provided by applicable law.",
+        "policyLink": "View Privacy Policy",
+        "rightsLink": "View Privacy Rights",
+        "aiDetailLink": "View AI processing and overseas transfer notice →",
+        "confirm": "Confirm and Continue",
+        "aiDetailTitle": "AI Processing and Overseas Transfer Notice",
+        "aiDetailClose": "Back to Privacy Notice",
+        "aiDetail": {
+          "providerTitle": "Processor",
+          "providerBody": "OpenAI, the configured AI service provider",
+          "transferredTitle": "Information Transferred",
+          "transferredBody": "Written content needed to generate the letter and, when necessary, an uploaded image",
+          "countryTitle": "Destination Country",
+          "countryBody": "[Actual destination country requires confirmation]",
+          "timingTitle": "Timing and Method",
+          "timingBody": "Transferred over an encrypted network when content generation is requested",
+          "purposeTitle": "Purpose",
+          "purposeBody": "SoulTrace content generation",
+          "retentionTitle": "Retention Period",
+          "retentionBody": "[Actual provider retention policy requires confirmation]",
+          "declineTitle": "If You Do Not Want the Transfer",
+          "declineBody": "It may be difficult to provide AI-based letter generation without this processing."
+        }
+      }
+    },
     "emailLabel": "Email address",
     "emailPlaceholder": "name@example.com",
     "privacyConsentTitle": "[Required] Privacy consent",
@@ -255,11 +342,13 @@
       "q1Placeholder": "Full name",
       "q1bLabel": "Q1-b. What did you usually call them?",
       "q1bPlaceholder": "How do you call them",
-      "q2bLabel": "Breed of your pet?",
+      "q2bLabel": "Breed of your pet",
+      "otherBreed": "Other",
+      "otherBreedPlaceholder": "Enter the breed or type",
       "q3Label": "Years Together",
       "q3Placeholder": "Enter number of years",
       "yearMetPlaceholder": "Year you met",
-      "q4Label": "Letter For?",
+      "q4Label": "Letter For",
       "recipientByNamePlaceholder": "Name for the letter",
       "recipientCustomPlaceholder": "Your own wording",
       "petTypes": {
@@ -272,7 +361,7 @@
       },
       "petBreeds": {
         "golden-retriever": "Golden Retriever", "labrador-retriever": "Labrador Retriever",
-        "poodle": "Poodle", "maltese": "Maltese", "pomeranian": "Pomeranian",
+        "poodle": "Poodle", "maltese": "Maltese", "pomeranian": "Pomeranian", "shiba-inu": "Shiba Inu",
         "shih-tzu": "Shih Tzu", "chihuahua": "Chihuahua", "jindo": "Jindo",
         "korean-shorthair": "Korean Shorthair", "persian": "Persian", "russian-blue": "Russian Blue",
         "siamese": "Siamese", "british-shorthair": "British Shorthair", "scottish-fold": "Scottish Fold", "ragdoll": "Ragdoll",
@@ -288,7 +377,7 @@
         "sister": "Sister",
         "brother": "Brother",
         "sibling": "Sister / Brother",
-        "byName": "Use a name",
+        "byName": "Custom",
         "custom": "Custom"
       }
     }
@@ -301,7 +390,7 @@
   "buttons": {
     "prev": "Back",
     "next": "Next",
-    "generate": "Read their letter",
+    "generate": "Reveal the Letter",
     "generating": "Writing their letter…",
     "generatingMusicHint": "Soft background music plays while we prepare your letter."
   },
@@ -376,6 +465,13 @@
     "instagramShareButton": "Share to Instagram Stories",
     "lifeArchive": {
       "cta": "Continue Your Pet's Journey",
+      "journeyCta": "Continue Your Pet’s Journey ✨",
+      "accessTitle": "Keep Their Story Growing ✨",
+      "lockedBody": "Your pet’s story doesn’t have to end with one letter.\n\nWith Life Archive, you can keep your pet’s letters, photos, videos, and special memories together in one place and continue building their story over time.\n\nLife Archive is part of the Eternal Beam experience.",
+      "lockedCta": "Life Archive",
+      "close": "Close Life Archive explanation",
+      "readyBody": "Your Life Archive is ready.",
+      "openCta": "Open Life Archive",
       "preparing": "Preparing your Life Archive…",
       "checkEmail": "We sent a secure verification link to the email already used for this Soul Trace. Open it to continue.",
       "error": "We couldn't open the Life Archive. Please try again in a moment."
@@ -430,6 +526,14 @@
   },
   "lifeArchive": {
     "back": "Back to Letter",
+    "accessRequired": {
+      "title": "Life Archive",
+      "body": "Life Archive is available with verified Eternal Beam access.",
+      "back": "Return to Soul Trace"
+    },
+    "accessHandoffError": {
+      "body": "We couldn't verify your Eternal Beam access.\nPlease return to Eternal Beam and try again."
+    },
     "temporaryNotice": "Temporary build mode: this archive stays only in this browser tab and is not saved to a server.",
     "authenticationRequired": {
       "title": "Check your email to continue",
@@ -634,7 +738,8 @@
     "memoryKicker": "STEP 2 — Memories",
     "photoStepKicker": "STEP 2 — Upload a photo",
     "memoryHint": "A sentence or two is plenty",
-    "toneKicker": "STEP 3 — Letter tone",
+    "toneKicker": "STEP 3 — Letter style",
+    "letterToneTitle": "Letter Tone",
     "examplePrefix": "e.g.",
     "channelIntroductions": {
       "pension": {

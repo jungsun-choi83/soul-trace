@@ -1,7 +1,6 @@
 "use client";
 
-import { PrivacyConsentTrigger } from "@/components/privacy-consent-trigger";
-import { PrivacyConsentSheet } from "@/components/privacy-consent-sheet";
+import { QuestionnairePrivacyNotice } from "@/components/questionnaire-privacy-notice";
 import { petIntroQuestionIds, PetIntroForm } from "@/components/pet-intro-form";
 import { SurveyFlow } from "@/components/survey-flow";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
@@ -66,9 +65,15 @@ import {
 } from "@/lib/completed-result-session";
 import {
   parseQuestionnaireDraft,
+  QUESTIONNAIRE_DRAFT_VERSION,
   questionnaireDraftKey,
   type QuestionnaireDraft,
 } from "@/lib/questionnaire-draft";
+import {
+  isValidQuestionnaireEmail,
+  normalizeQuestionnaireEmail,
+} from "@/lib/questionnaire-email";
+import { requiredPrivacyItemsAgreed, setAllPrivacyItems, EMPTY_PRIVACY_SELECTIONS, type PrivacySectionKey, type PrivacySelections } from "@/lib/privacy-consent-selection";
 import {
   buildSurveyAnswers,
   channelMemoryQuestions,
@@ -111,6 +116,25 @@ const LETTER_THEME_STORAGE_KEY = "soul-trace-letter-theme";
 const RESULT_ACTION_BUTTON_SIZE_CLASS =
   "flex min-h-[56px] w-full items-center justify-center rounded-xl px-5 py-4 text-center text-sm font-light sm:text-base";
 
+function InstagramIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-[1.15em] shrink-0"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.4" cy="6.6" r="0.8" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 function getSnapshotOptions(skipFonts: boolean) {
   return {
     cacheBust: true,
@@ -136,6 +160,7 @@ type SoulTraceFlowProps = {
   initialResult?: GeneratedResult;
   initialServiceChannel?: ServiceChannel | null;
   initialPetId?: string | null;
+  hasEternalBeamAccess?: boolean;
 };
 
 /** 살아 있는 갈래는 "지금까지" 가 곧 올해다 — 사용자가 다시 고를 이유가 없다. */
@@ -148,6 +173,7 @@ export function SoulTraceFlow({
   initialResult,
   initialServiceChannel = null,
   initialPetId = null,
+  hasEternalBeamAccess = false,
 }: SoulTraceFlowProps) {
   const { lang, t, messages } = useLocale();
   const copy = modeCopy(messages, mode);
@@ -160,14 +186,14 @@ export function SoulTraceFlow({
   const [petPhotoFile, setPetPhotoFile] = useState<File | null>(null);
   const [petPhotoPreviewUrl, setPetPhotoPreviewUrl] = useState<string | null>(null);
   const [petPhotoSkipped, setPetPhotoSkipped] = useState(false);
+  const [email, setEmail] = useState("");
   const [petIntro, setPetIntro] = useState<PetIntroProfile>(() => ({
     ...EMPTY_PET_INTRO,
     yearParted: initialYearParted(mode),
   }));
   const [privacyConsent, setPrivacyConsent] = useState(false);
-  const [photoPrivacyConsent, setPhotoPrivacyConsent] = useState(false);
-  const [mainPrivacySheetOpen, setMainPrivacySheetOpen] = useState(false);
-  const [photoPrivacySheetOpen, setPhotoPrivacySheetOpen] = useState(false);
+  const [privacySelections, setPrivacySelections] = useState<PrivacySelections>(() => ({ ...EMPTY_PRIVACY_SELECTIONS }));
+  const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
   const [result, setResult] = useState<GeneratedResult | null>(initialResult ?? null);
   const [draftReady, setDraftReady] = useState(initialResult != null);
   /** 마지막으로 생성된 편지·분석이 맞는 UI 언어 (언어 토글 시 API로 다시 맞춤) */
@@ -228,18 +254,23 @@ export function SoulTraceFlow({
     petIntro.petType,
     petTypeQuestionCompleted,
   );
-  const totalQuestionCount = introQuestionCount + surveyStepCount;
+  const emailQuestionIndex = introQuestionCount + surveyStepCount;
+  const totalQuestionCount = emailQuestionIndex + 1;
   const isIntroQuestion = questionIndex < introQuestionCount;
   const isSurveyQuestion = questionIndex >= introQuestionCount && questionIndex < introQuestionCount + surveyStepCount;
+  const isEmailQuestion = questionIndex === emailQuestionIndex;
   const step = questionIndex - introQuestionCount;
+  const isStampPhotoQuestion = PHOTO_STEP_COUNT === 1 && isSurveyQuestion && step === surveyStepCount - 1;
   const questionsLeft = Math.max(totalQuestionCount - questionIndex - 1, 0);
   const [handoffBusy, setHandoffBusy] = useState(false);
   const [handoffError, setHandoffError] = useState<string | null>(null);
   const [lifeArchiveBusy, setLifeArchiveBusy] = useState(false);
   const [lifeArchiveNotice, setLifeArchiveNotice] = useState<string | null>(null);
+  const [lifeArchiveExplanationOpen, setLifeArchiveExplanationOpen] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
   const instagramStoryRef = useRef<HTMLDivElement>(null);
   const bgmPrimeRef = useRef<HTMLAudioElement>(null);
+  const privacyTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!serviceChannel || isServiceChannelCompatible(serviceChannel, mode)) return;
@@ -280,13 +311,20 @@ export function SoulTraceFlow({
       );
       if (restored) {
         const restoredIntroCount = petIntroQuestionIds(restored.petIntro.petType).length;
-        const restoredTotal = restoredIntroCount + surveyStepCount;
+        const restoredEmailIndex = restoredIntroCount + surveyStepCount;
+        const restoredTotal = restoredEmailIndex + 1;
         setPetIntro(restored.petIntro);
         setMemoryAnswers(restored.memoryAnswers);
         setTonePrefs(restored.tonePrefs);
         setPetPhotoSkipped(restored.petPhotoSkipped);
         setPrivacyConsent(restored.privacyConsent);
-        setQuestionIndex(Math.min(restored.questionIndex, Math.max(restoredTotal - 1, 0)));
+        setPrivacySelections(restored.privacySelections);
+        setEmail(restored.email);
+        setQuestionIndex(
+          !restored.privacyConsent && restored.questionIndex > restoredEmailIndex
+            ? restoredEmailIndex
+            : Math.min(restored.questionIndex, Math.max(restoredTotal - 1, 0)),
+        );
       }
     } catch {
       // sessionStorage can be unavailable in restricted/private browsing contexts.
@@ -312,6 +350,7 @@ export function SoulTraceFlow({
       memoryAnswers.some(Boolean) ||
       Boolean(tonePrefs.mood || tonePrefs.length || tonePrefs.options.length) ||
       petPhotoSkipped ||
+      Boolean(email.trim()) ||
       privacyConsent;
     if (!hasMeaningfulProgress) {
       try {
@@ -322,7 +361,7 @@ export function SoulTraceFlow({
       return;
     }
     const draft: QuestionnaireDraft = {
-      version: 1,
+      version: QUESTIONNAIRE_DRAFT_VERSION,
       mode,
       channel: serviceChannel,
       questionIndex,
@@ -331,6 +370,8 @@ export function SoulTraceFlow({
       tonePrefs,
       petPhotoSkipped,
       privacyConsent,
+      privacySelections,
+      email,
     };
     try {
       window.sessionStorage.setItem(draftStorageKey, JSON.stringify(draft));
@@ -340,12 +381,14 @@ export function SoulTraceFlow({
   }, [
     draftReady,
     draftStorageKey,
+    email,
     initialResult,
     memoryAnswers,
     mode,
     petIntro,
     petPhotoSkipped,
     privacyConsent,
+    privacySelections,
     questionIndex,
     result,
     serviceChannel,
@@ -515,6 +558,23 @@ export function SoulTraceFlow({
     }
   }, [displayPetName, lang, lifeArchiveBusy, memoryAnswers, result, resultLocale, t]);
 
+  const handleLifeArchiveJourney = useCallback(() => {
+    if (hasEternalBeamAccess) {
+      void continueToLifeArchive();
+      return;
+    }
+    setLifeArchiveExplanationOpen(true);
+  }, [continueToLifeArchive, hasEternalBeamAccess]);
+
+  useEffect(() => {
+    if (!lifeArchiveExplanationOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLifeArchiveExplanationOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [lifeArchiveExplanationOpen]);
+
   useEffect(() => {
     if (!petPhotoFile) {
       setPetPhotoPreviewUrl(null);
@@ -528,28 +588,22 @@ export function SoulTraceFlow({
   const onPetPhotoChange = useCallback((file: File | null) => {
     setPetPhotoFile(file);
     setPetPhotoSkipped(false);
-    if (!file) {
-      setPhotoPrivacyConsent(false);
-      return;
-    }
-    if (!photoPrivacyConsent) {
-      setPhotoPrivacySheetOpen(true);
-    }
-  }, [photoPrivacyConsent]);
+    setPrivacyConsent(false);
+  }, []);
 
   const handleSkipPhoto = useCallback(() => {
     setPetPhotoFile(null);
     setPetPhotoSkipped(true);
-    setPhotoPrivacyConsent(false);
+    setPrivacyConsent(false);
     setShowValidationErrors(false);
-    setQuestionIndex((prev) => Math.min(prev + 1, totalQuestionCount - 1));
-  }, [totalQuestionCount]);
+  }, []);
 
   const persistStampSelection = useCallback(async (letterId: string | null | undefined) => {
     if (!letterId) return;
-    const stampType = petPhotoFile && photoPrivacyConsent ? "photo" : "paw";
+    const stampType = petPhotoFile && privacyConsent ? "photo" : "paw";
     const form = new FormData();
     form.set("letterId", letterId);
+    form.set("email", normalizeQuestionnaireEmail(email));
     form.set("stampType", stampType);
     if (stampType === "photo" && petPhotoFile) form.set("stampPhoto", petPhotoFile);
     try {
@@ -567,9 +621,10 @@ export function SoulTraceFlow({
         message: error instanceof Error ? error.message : "Unknown network error",
       });
     }
-  }, [petPhotoFile, photoPrivacyConsent]);
+  }, [email, petPhotoFile, privacyConsent]);
 
   const patchPetIntro = useCallback((patch: Partial<PetIntroProfile>) => {
+    setPrivacyConsent(false);
     setPetIntro((prev) => ({ ...prev, ...patch }));
   }, []);
 
@@ -617,8 +672,9 @@ export function SoulTraceFlow({
             mode,
             channel: serviceChannel ?? undefined,
             partnerCode: partnerCode ?? undefined,
+            email: normalizeQuestionnaireEmail(email),
+            privacyConsent: true,
             ...buildLetterRequestFields(petIntro, tonePrefs)!,
-            privacyConsent,
             answers: surveyPayload,
             skipImageGeneration: true,
             existingHeroImageUrl: heroUrl,
@@ -672,8 +728,8 @@ export function SoulTraceFlow({
     messages,
     mode,
     displayPetName,
+    email,
     petIntro,
-    privacyConsent,
     partnerCode,
     serviceChannel,
     t,
@@ -681,7 +737,7 @@ export function SoulTraceFlow({
   ]);
 
   const isLastQuestion = questionIndex === totalQuestionCount - 1;
-  const isProfileValid = isPetIntroComplete(petIntro) && privacyConsent;
+  const isProfileValid = isPetIntroComplete(petIntro);
   const introQuestionId = introQuestions[questionIndex] ?? "name";
   const isIntroAnswerValid =
     introQuestionId === "name" ? Boolean(petIntro.petName.trim()) :
@@ -691,17 +747,20 @@ export function SoulTraceFlow({
     introQuestionId === "recipient" ? Boolean(
       petIntro.letterRecipient &&
       ((petIntro.letterRecipient !== "byName" && petIntro.letterRecipient !== "custom") ||
-        petIntro.letterRecipientDetail.trim()) && privacyConsent
+        petIntro.letterRecipientDetail.trim())
     ) : false;
-  const isAnswerValid = isIntroQuestion
-    ? isIntroAnswerValid
-    : isSurveyStepValid(step, memoryAnswers, tonePrefs, {
+  const isAnswerValid = isEmailQuestion
+    ? isValidQuestionnaireEmail(email)
+    : isIntroQuestion
+      ? isIntroAnswerValid
+      : isSurveyStepValid(step, memoryAnswers, tonePrefs, {
         hasPhoto: petPhotoFile != null,
         skipped: petPhotoSkipped,
-        photoConsent: photoPrivacyConsent,
+        photoConsent: true,
       }, messages, mode, serviceChannel);
 
   const handleMemoryChange = (index: number, value: string) => {
+    setPrivacyConsent(false);
     setMemoryAnswers((prev) => {
       const next = [...prev];
       next[index] = value;
@@ -715,12 +774,27 @@ export function SoulTraceFlow({
     setQuestionIndex((prev) => Math.min(prev + 1, totalQuestionCount - 1));
   };
 
+  const handleToneMood = (mood: LetterTonePrefs["mood"]) => {
+    setPrivacyConsent(false);
+    setTonePrefs((prev) => ({ ...prev, mood }));
+  };
+
+  const handleToneLength = (length: LetterTonePrefs["length"]) => {
+    setPrivacyConsent(false);
+    setTonePrefs((prev) => ({ ...prev, length }));
+  };
+
   const goNext = async () => {
     if (!isAnswerValid) {
       setShowValidationErrors(true);
       return;
     }
     setShowValidationErrors(false);
+    if (isStampPhotoQuestion) {
+      privacyTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setPrivacyModalOpen(true);
+      return;
+    }
     setQuestionIndex((prev) => Math.min(prev + 1, totalQuestionCount - 1));
   };
 
@@ -729,13 +803,42 @@ export function SoulTraceFlow({
     setQuestionIndex((prev) => Math.max(prev - 1, 0));
   };
 
+  const confirmPrivacyNotice = () => {
+    if (!requiredPrivacyItemsAgreed(privacySelections)) return;
+    setPrivacyConsent(true);
+    setPrivacyModalOpen(false);
+    setShowValidationErrors(false);
+    setQuestionIndex(emailQuestionIndex);
+  };
+
+  const changePrivacySelection = (key: PrivacySectionKey, checked: boolean) => {
+    setPrivacySelections((current) => {
+      const next = { ...current, [key]: checked };
+      setPrivacyConsent(next.privacy);
+      return next;
+    });
+  };
+
+  const agreeToAllPrivacy = (checked: boolean) => {
+    setPrivacySelections(setAllPrivacyItems(checked));
+    setPrivacyConsent(checked);
+  };
+
+  const closePrivacyNotice = useCallback(() => {
+    setPrivacyModalOpen(false);
+    window.requestAnimationFrame(() => privacyTriggerRef.current?.focus());
+  }, []);
+
   const submitAnswers = async () => {
     setShowValidationErrors(true);
-    if (!isAnswerValid) return;
     if (!privacyConsent) {
-      setMainPrivacySheetOpen(true);
+      privacyTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setPrivacyModalOpen(true);
       return;
     }
+    if (!isAnswerValid) return;
+    const normalizedEmail = normalizeQuestionnaireEmail(email);
+    setEmail(normalizedEmail);
     if (!isSurveyComplete(memoryAnswers, tonePrefs, messages, mode, serviceChannel)) {
       return;
     }
@@ -786,8 +889,9 @@ export function SoulTraceFlow({
           mode,
           channel: serviceChannel ?? undefined,
           partnerCode: partnerCode ?? undefined,
+          email: normalizedEmail,
+          privacyConsent: true,
           ...buildLetterRequestFields(petIntro, tonePrefs)!,
-          privacyConsent,
           answers: surveyPayload,
           stream: true,
           ...(SKIP_FIRST_HERO_IMAGE
@@ -976,17 +1080,8 @@ export function SoulTraceFlow({
     const isLikelyMobile =
       /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
 
-    const downloadThenOpenInstagramTab = () => {
-      const url = URL.createObjectURL(activeFile);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = activeFile.name || "soultrace-story.jpg";
-      anchor.rel = "noopener noreferrer";
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 4000);
-      window.open(instagramProfileUrl, "_blank", "noopener,noreferrer");
+    const openInstagramWebsite = () => {
+      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
     };
 
     try {
@@ -1006,12 +1101,12 @@ export function SoulTraceFlow({
           return;
         }
       }
-      downloadThenOpenInstagramTab();
+      openInstagramWebsite();
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       if (err instanceof Error && err.name === "AbortError") return;
       try {
-        downloadThenOpenInstagramTab();
+        openInstagramWebsite();
       } catch (fallbackErr) {
         setError(fallbackErr instanceof Error ? fallbackErr.message : t("errors.shareFailed"));
       }
@@ -1027,6 +1122,21 @@ export function SoulTraceFlow({
     })();
   };
 
+  const goBackFromResult = () => {
+    if (!initialResult) {
+      setResult(null);
+      setResultLocale(null);
+      setShareableFile(null);
+      setError(null);
+      return;
+    }
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    window.location.assign(letterModePath(mode));
+  };
+
   const resetTest = () => {
     clearQuestionnaireDraft();
     clearCompletedResult();
@@ -1035,11 +1145,11 @@ export function SoulTraceFlow({
     setTonePrefs({ ...EMPTY_TONE_PREFS });
     setPetPhotoFile(null);
     setPetPhotoSkipped(false);
+    setEmail("");
     setPetIntro({ ...EMPTY_PET_INTRO, yearParted: initialYearParted(mode) });
     setPrivacyConsent(false);
-    setPhotoPrivacyConsent(false);
-    setMainPrivacySheetOpen(false);
-    setPhotoPrivacySheetOpen(false);
+    setPrivacySelections({ ...EMPTY_PRIVACY_SELECTIONS });
+    setPrivacyModalOpen(false);
     setResult(null);
     setResultLocale(null);
     setShareableFile(null);
@@ -1116,7 +1226,18 @@ export function SoulTraceFlow({
           }`}
         >
           <WarmRisingSparkles />
-          <header className="relative z-[2] flex w-full justify-end px-4 pt-6 sm:px-6">
+          <header className="relative z-[2] flex w-full items-center justify-between px-4 pt-6 sm:px-6">
+            <button
+              type="button"
+              onClick={goBackFromResult}
+              aria-label={t("landing.navBack")}
+              className={`flex h-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 text-sm font-light text-[#EDE4D3]/80 transition hover:border-[#D4AF37]/40 hover:text-[#D4AF37] ${
+                lang === "ko" ? "font-ko" : "font-display-en"
+              }`}
+            >
+              <span aria-hidden className="text-xl">←</span>
+              <span>{t("landing.navBack")}</span>
+            </button>
             <LanguageToggle />
           </header>
           <section className="relative z-[2] mx-auto w-full max-w-3xl space-y-8 px-4 sm:px-6">
@@ -1229,7 +1350,7 @@ export function SoulTraceFlow({
                       style={{ background: `linear-gradient(to right, transparent, ${letterTheme.dividerColor}, transparent)` }}
                     />
                     <LetterPostageStamp
-                      photoUrl={petPhotoPreviewUrl && photoPrivacyConsent ? petPhotoPreviewUrl : null}
+                      photoUrl={petPhotoPreviewUrl && privacyConsent ? petPhotoPreviewUrl : null}
                       accentColor={letterTheme.stampAccentColor}
                       inkColor={letterTheme.stampInkColor}
                     />
@@ -1364,25 +1485,64 @@ export function SoulTraceFlow({
                     lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
                   }`}
                 >
-                  {isSharing ? t("result.preparingImage") : t("result.instagramShareButton")}
-                </button>
-                <button
-                  type="button"
-                  onClick={continueToLifeArchive}
-                  disabled={
-                    lifeArchiveBusy ||
-                    (SECURE_LIFE_ARCHIVE_CONFIGURED &&
-                      (!result.letterId || result.persistenceFailed))
-                  }
-                  className={`${RESULT_ACTION_BUTTON_SIZE_CLASS} border border-[#D4AF37]/45 bg-[#D4AF37]/[0.08] text-[#F5E6C8] transition hover:border-[#D4AF37]/75 hover:bg-[#D4AF37]/15 disabled:cursor-not-allowed disabled:opacity-45 ${
-                    lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
-                  }`}
-                >
-                  {lifeArchiveBusy
-                    ? t("result.lifeArchive.preparing")
-                    : t("result.lifeArchive.cta")}
+                  <span className="inline-flex items-center justify-center gap-2.5">
+                    <InstagramIcon />
+                    <span>{isSharing ? t("result.preparingImage") : t("result.instagramShareButton")}</span>
+                  </span>
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={handleLifeArchiveJourney}
+                disabled={lifeArchiveBusy || (hasEternalBeamAccess && SECURE_LIFE_ARCHIVE_CONFIGURED && (!result.letterId || result.persistenceFailed))}
+                className={`${RESULT_ACTION_BUTTON_SIZE_CLASS} mt-3 border border-[#D4AF37]/45 bg-[#D4AF37]/[0.08] text-[#F5E6C8] transition hover:border-[#D4AF37]/75 hover:bg-[#D4AF37]/15 disabled:cursor-not-allowed disabled:opacity-45 ${
+                  lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
+                }`}
+              >
+                {lifeArchiveBusy ? t("result.lifeArchive.preparing") : t("result.lifeArchive.journeyCta")}
+              </button>
+              {lifeArchiveExplanationOpen && !hasEternalBeamAccess ? (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-5 py-8 backdrop-blur-sm"
+                  role="presentation"
+                  onMouseDown={(event) => {
+                    if (event.target === event.currentTarget) setLifeArchiveExplanationOpen(false);
+                  }}
+                >
+                  <section
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="life-archive-explanation-title"
+                    className={`relative w-full max-w-xl rounded-2xl border border-[#D4AF37]/35 bg-[rgba(24,20,14,0.98)] px-5 py-7 text-left shadow-[0_0_70px_rgba(212,175,55,0.14)] sm:px-8 sm:py-8 ${
+                      lang === "ko" ? "font-ko" : "font-display-en"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setLifeArchiveExplanationOpen(false)}
+                      aria-label={t("result.lifeArchive.close")}
+                      className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-xl font-light text-[#C4B8A8] transition hover:bg-white/5 hover:text-[#F5E6C8]"
+                    >
+                      <span aria-hidden>×</span>
+                    </button>
+                    <h3 id="life-archive-explanation-title" className="pr-10 text-xl font-light leading-snug text-[#F5E6C8] sm:text-2xl">
+                      {t("result.lifeArchive.accessTitle")}
+                    </h3>
+                    <p className="mt-4 whitespace-pre-line text-sm font-extralight leading-[1.9] text-[#C4B8A8] sm:text-[15px]">
+                      {t("result.lifeArchive.lockedBody")}
+                    </p>
+                    <button
+                      type="button"
+                      disabled
+                      aria-disabled="true"
+                      className="mt-6 flex min-h-[56px] w-full cursor-not-allowed items-center justify-center rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/[0.05] px-5 py-4 text-center text-sm font-light text-[#D9C6A4]/65 sm:text-base"
+                    >
+                      <span aria-hidden className="mr-2">&#128274;</span>
+                      {t("result.lifeArchive.lockedCta")}
+                    </button>
+                  </section>
+                </div>
+              ) : null}
               {lifeArchiveNotice ? (
                 <p className={`mt-4 whitespace-pre-line text-sm font-light leading-relaxed text-[#D9C6A4] ${lang === "ko" ? "font-ko" : "font-display-en"}`} role="status">
                   {lifeArchiveNotice}
@@ -1423,22 +1583,20 @@ export function SoulTraceFlow({
                     lang === "ko" ? "font-ko" : "font-display-en"
                   }`}
                 >
-                  <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/95 sm:text-xs">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-[#D4AF37]/95 sm:text-xs">
                     {t("result.destinationDeck.continueToEternalBeam.label")}
                   </p>
-                  <h3 className="mt-3 text-[15px] font-extralight leading-snug text-[#EDE4D3] sm:text-base">
+                  <h3 className="mt-3 text-[15px] font-light leading-snug text-[#EDE4D3] sm:text-base">
                     {t("result.destinationDeck.continueToEternalBeam.title")}
                   </h3>
-                  <p className="mt-3 text-sm font-extralight leading-relaxed text-[#C4B8A8] sm:text-[15px]">
+                  <p className="mt-3 text-sm font-extralight leading-[1.9] text-[#C4B8A8] sm:text-[15px]">
                     {t("result.destinationDeck.continueToEternalBeam.body")}
                   </p>
                   <button
                     type="button"
                     onClick={continueToEternalBeam}
                     disabled={handoffBusy}
-                    className={`mt-6 flex w-full items-center justify-center rounded-2xl bg-[#b89a2e] px-5 py-3.5 text-center text-base font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-60 ${
-                      lang === "ko" ? "font-ko" : "font-display-en"
-                    }`}
+                    className="mt-6 flex w-full items-center justify-center rounded-2xl bg-[#b89a2e] px-5 py-3.5 text-center text-base font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {handoffBusy
                       ? t("result.destinationDeck.continueToEternalBeam.pending")
@@ -1617,37 +1775,7 @@ export function SoulTraceFlow({
                 onChange={patchPetIntro}
                 showErrors={showValidationErrors}
               />
-              {introQuestionId === "recipient" ? <PrivacyConsentTrigger
-                agreed={privacyConsent}
-                onOpen={() => setMainPrivacySheetOpen(true)}
-                labelPath="form.privacyConsentLink"
-              /> : null}
-              {introQuestionId === "recipient" && showValidationErrors && !privacyConsent ? (
-                <p className="text-xs font-extralight text-red-200" role="alert">
-                  {t("form.validation.privacyRequired")}
-                </p>
-              ) : null}
             </div> : null}
-
-            <PrivacyConsentSheet
-              open={mainPrivacySheetOpen}
-              onClose={() => setMainPrivacySheetOpen(false)}
-              titlePath="form.privacyConsentTitle"
-              bodyPath="form.privacyConsentBody"
-              agreePath="form.privacyConsentAgree"
-              checked={privacyConsent}
-              onConfirm={() => setPrivacyConsent(true)}
-            />
-
-            <PrivacyConsentSheet
-              open={photoPrivacySheetOpen}
-              onClose={() => setPhotoPrivacySheetOpen(false)}
-              titlePath="form.photoPrivacyConsentTitle"
-              bodyPath="form.photoPrivacyConsentBody"
-              agreePath="form.photoPrivacyConsentAgree"
-              checked={photoPrivacyConsent}
-              onConfirm={() => setPhotoPrivacyConsent(true)}
-            />
 
             {isSurveyQuestion ? <div key={step} className="animate-fade-in">
               <SurveyFlow
@@ -1660,15 +1788,49 @@ export function SoulTraceFlow({
                 petPhotoPreviewUrl={petPhotoPreviewUrl}
                 onPetPhotoChange={onPetPhotoChange}
                 onSkipPhoto={handleSkipPhoto}
-                photoPrivacyConsent={photoPrivacyConsent}
-                onOpenPhotoPrivacy={() => setPhotoPrivacySheetOpen(true)}
                 onMemoryChange={handleMemoryChange}
-                onToneMood={(mood) => setTonePrefs((prev) => ({ ...prev, mood }))}
-                onToneLength={(length) => setTonePrefs((prev) => ({ ...prev, length }))}
+                onToneMood={handleToneMood}
+                onToneLength={handleToneLength}
                 onSkipOptional={handleSkipOptional}
                 showValidationError={showValidationErrors && !isAnswerValid}
               />
             </div> : null}
+
+            {isEmailQuestion ? (
+              <div className={`animate-fade-in space-y-5 ${lang === "ko" ? "font-ko" : "font-display-en"}`}>
+                <div className="space-y-2">
+                  <p className="step-kicker">{t("form.emailStep.kicker")}</p>
+                </div>
+                <div className="space-y-2">
+                  <input
+                    id="questionnaire-email"
+                    type="email"
+                    aria-label={t("form.emailStep.label")}
+                    inputMode="email"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    maxLength={254}
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    onBlur={() => setEmail((current) => normalizeQuestionnaireEmail(current))}
+                    placeholder={t("form.emailStep.placeholder")}
+                    aria-invalid={showValidationErrors && !isValidQuestionnaireEmail(email)}
+                    aria-describedby={showValidationErrors && !isValidQuestionnaireEmail(email) ? "questionnaire-email-error" : undefined}
+                    className={`w-full rounded-xl border-[0.5px] bg-transparent px-4 py-3 text-base font-extralight text-white outline-none transition placeholder:text-[#EDE4D3]/50 md:text-sm ${
+                      showValidationErrors && !isValidQuestionnaireEmail(email)
+                        ? "border-red-300/75 focus:border-red-300"
+                        : "border-[rgba(212,175,55,0.35)] focus:border-[#D4AF37]"
+                    }`}
+                  />
+                  {showValidationErrors && !isValidQuestionnaireEmail(email) ? (
+                    <p id="questionnaire-email-error" className="text-xs font-extralight leading-relaxed text-red-200" role="alert">
+                      {t("form.emailStep.validation")}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               <button
@@ -1708,6 +1870,15 @@ export function SoulTraceFlow({
               </p>
             ) : null}
           </article>
+          {privacyModalOpen ? (
+            <QuestionnairePrivacyNotice
+              selections={privacySelections}
+              onSelectionChange={changePrivacySelection}
+              onAgreeAll={agreeToAllPrivacy}
+              onBack={closePrivacyNotice}
+              onConfirm={confirmPrivacyNotice}
+            />
+          ) : null}
           {error ? <p className="mt-4 text-center text-sm text-red-300">{error}</p> : null}
         </section>
         </div>

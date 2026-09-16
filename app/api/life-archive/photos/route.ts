@@ -2,12 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { ACTIVE_SUBMISSION_COOKIE } from "@/lib/life-archive-session";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
+import { requestHasEternalBeamAccess } from "@/lib/eternal-beam-access";
 
 const MAX_PHOTOS = 5;
 const MAX_BYTES = 10 * 1024 * 1024;
 const TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 async function archiveContext(request: NextRequest) {
+  if (!(await requestHasEternalBeamAccess(request))) return null;
   const supabase = await createSupabaseAuthServerClient();
   const user = (await supabase?.auth.getUser())?.data.user;
   const submissionId = request.nextUrl.searchParams.get("submissionId")

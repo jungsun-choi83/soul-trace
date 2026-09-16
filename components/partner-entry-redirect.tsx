@@ -1,20 +1,18 @@
 "use client";
 
-import { partnerEntryPath } from "@/lib/partner-entry";
 import { useEffect } from "react";
 
 export function PartnerEntryRedirect({
   destination,
-  authenticated,
 }: {
   destination: string;
-  authenticated: boolean;
 }) {
   useEffect(() => {
-    window.location.replace(
-      partnerEntryPath(destination, authenticated, window.location.hash),
-    );
-  }, [authenticated, destination]);
+    // FUTURE AUTH FEATURE
+    // Keep /auth and partnerEntryPath for future Sign Up / Sign In implementation.
+    // Authentication is not part of the current SoulTrace questionnaire flow.
+    window.location.replace(`${destination}${window.location.hash}`);
+  }, [destination]);
 
   return <main className="min-h-screen bg-black" aria-busy="true" />;
 }

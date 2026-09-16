@@ -1,7 +1,7 @@
 import { looksLikeLetterId } from "@/lib/handoff";
 import { validatePetPhotoFile } from "@/lib/pet-photo";
+import { isValidQuestionnaireEmail, normalizeQuestionnaireEmail } from "@/lib/questionnaire-email";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 import { NextResponse } from "next/server";
 
 const BUCKET = "soul-trace-stamp-photos";
@@ -11,24 +11,24 @@ export async function POST(request: Request) {
   if (!form) return NextResponse.json({ error: "Invalid form data." }, { status: 400 });
   const letterId = form?.get("letterId");
   const stampType = form?.get("stampType");
+  const submittedEmail = form?.get("email");
   if (!looksLikeLetterId(letterId) || (stampType !== "photo" && stampType !== "paw")) {
     return NextResponse.json({ error: "Invalid stamp selection." }, { status: 400 });
   }
 
-  const authClient = await createSupabaseAuthServerClient();
-  const { data: authData } = authClient
-    ? await authClient.auth.getUser()
-    : { data: { user: null } };
-  const normalizedEmail = authData.user?.email?.trim().toLowerCase() ?? "";
-  if (!authData.user || !normalizedEmail) {
-    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  const normalizedEmail = normalizeQuestionnaireEmail(
+    typeof submittedEmail === "string" ? submittedEmail : "",
+  );
+  if (!isValidQuestionnaireEmail(normalizedEmail)) {
+    return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
   }
 
   const supabase = createSupabaseServerClient();
   if (!supabase) return NextResponse.json({ error: "Unavailable." }, { status: 503 });
-  const { data: profile } = await supabase.from("soul_trace_profiles")
+  const { data: profile, error: ownershipError } = await supabase.from("soul_trace_profiles")
     .select("letter_id").eq("letter_id", letterId).eq("user_email", normalizedEmail).maybeSingle();
-  if (!profile) return NextResponse.json({ error: "Letter not found." }, { status: 404 });
+  if (ownershipError) return NextResponse.json({ error: "Could not verify stamp ownership." }, { status: 503 });
+  if (!profile) return NextResponse.json({ error: "Stamp ownership does not match." }, { status: 403 });
 
   let stampPhotoRef: string | null = null;
   if (stampType === "photo") {

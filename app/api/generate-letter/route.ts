@@ -4,6 +4,7 @@ import type { Locale } from "@/lib/i18n";
 import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
 import OpenAI from "openai";
 import { appendSoulTraceToGoogleSheets } from "@/lib/google-sheets-ingest";
+import { isValidQuestionnaireEmail, normalizeQuestionnaireEmail } from "@/lib/questionnaire-email";
 import { createHeroStorageFromEnv, persistHeroImage } from "@/lib/hero-image-store";
 import {
   buildLetterAddressingBlock,
@@ -50,7 +51,6 @@ import {
   isRetryableSupabaseMessage,
   sleep,
 } from "@/lib/supabase-server";
-import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 import { resolvePartnerCode } from "@/lib/partner";
 import { after } from "next/server";
 import { NextResponse } from "next/server";
@@ -62,6 +62,7 @@ type AnswerInput = {
 };
 
 type RequestBody = {
+  email?: string;
   letterId?: string;
   petId?: string;
   locale?: string;
@@ -875,20 +876,47 @@ export async function POST(request: Request) {
     const body = (await request.json()) as RequestBody;
     const locale: Locale = body.locale === "en" ? "en" : "ko";
     const mode: LetterMode = isLetterMode(body.mode) ? body.mode : DEFAULT_LETTER_MODE;
+    if (body.privacyConsent !== true) {
+      return err(locale, "privacyRequired", 400);
+    }
+    const submittedEmail = normalizeQuestionnaireEmail(body.email ?? "");
+    if (!isValidQuestionnaireEmail(submittedEmail)) {
+      return NextResponse.json(
+        { error: locale === "ko" ? "올바른 이메일 주소를 입력해주세요." : "Please enter a valid email address." },
+        { status: 400 },
+      );
+    }
     const channel = parseServiceChannel(body.channel);
     if (channel && !isServiceChannelCompatible(channel, mode)) {
       return err(locale, "profileIncomplete", 400);
     }
 
-    const authClient = await createSupabaseAuthServerClient();
-    const { data: authData } = authClient
-      ? await authClient.auth.getUser()
-      : { data: { user: null } };
-    const userEmail = authData.user?.email?.trim().toLowerCase() ?? "";
-    if (!authData.user || !userEmail) {
+    // FUTURE AUTH FEATURE
+    // Authenticated account ownership can be restored/used later. The current
+    // SoulTrace flow identifies ownership using the submitted email.
+    const ownershipClient = createSupabaseServerClient();
+    const userEmail = submittedEmail;
+    if (!ownershipClient) {
       return NextResponse.json(
-        { error: locale === "ko" ? "로그인이 필요합니다." : "Please sign in to continue." },
-        { status: 401 },
+        { error: locale === "ko" ? "저장소에 연결할 수 없습니다." : "Could not connect to storage." },
+        { status: 503 },
+      );
+    }
+
+    // soul_trace_profiles intentionally stores one row per letter. This read
+    // establishes the email ownership namespace without changing older records;
+    // the save step creates a fresh letter row after generation succeeds.
+    const { error: ownerLookupError } = await ownershipClient
+      .from("soul_trace_profiles")
+      .select("letter_id")
+      .eq("user_email", userEmail)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (ownerLookupError) {
+      logSupabaseFailure("email owner lookup", ownerLookupError, { userEmail });
+      return NextResponse.json(
+        { error: locale === "ko" ? "이메일 소유 정보를 확인할 수 없습니다." : "Could not establish email ownership." },
+        { status: 503 },
       );
     }
 
@@ -900,12 +928,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid pet selection." }, { status: 400 });
     }
     if (requestedPetId) {
-      const { data: ownedPet } = await authClient!
-        .from("soul_trace_pets")
+      const { data: ownedPet, error: ownedPetError } = await ownershipClient
+        .from("soul_trace_legacy_links")
         .select("pet_id")
         .eq("pet_id", requestedPetId)
-        .eq("owner_user_id", authData.user.id)
+        .eq("user_email", userEmail)
         .maybeSingle();
+      if (ownedPetError) {
+        logSupabaseFailure("email pet ownership lookup", ownedPetError, { userEmail });
+        return NextResponse.json({ error: "Could not verify pet ownership." }, { status: 503 });
+      }
       if (!ownedPet) {
         return NextResponse.json({ error: "Pet selection is unavailable." }, { status: 403 });
       }
@@ -917,7 +949,6 @@ export async function POST(request: Request) {
     }
 
     const petProfile = parsePetProfileFromBody(body);
-    const privacyConsent = body.privacyConsent ?? false;
     const answers = body.answers ?? [];
     if (!petProfile) {
       return err(locale, "profileIncomplete", 400);
@@ -928,10 +959,6 @@ export async function POST(request: Request) {
     ) {
       return err(locale, "profileIncomplete", 400);
     }
-    if (!privacyConsent) {
-      return err(locale, "privacyRequired", 400);
-    }
-
     // 파트너 귀속은 **서버가** 정한다. 코드가 틀렸거나 꺼졌으면 조용히 null —
     // 편지 생성을 막지 않는다(고객 잘못이 아니다). 틀린 귀속보다 없는 귀속이 낫다.
     let partnerId: string | null = null;
@@ -966,7 +993,7 @@ export async function POST(request: Request) {
       mode,
     );
 
-    const expectedAnswerCount = memoryQuestionCount(channel) + TONE_STEP_COUNT;
+    const expectedAnswerCount = memoryQuestionCount(channel, mode) + TONE_STEP_COUNT;
     if (!Array.isArray(answers) || answers.length !== expectedAnswerCount) {
       return NextResponse.json(
         {
@@ -978,7 +1005,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const memoryCount = memoryQuestionCount(channel);
+    const memoryCount = memoryQuestionCount(channel, mode);
     const memoryQuestions = activeMemoryQuestions(locale === "ko" ? ko : en, mode, channel);
     for (let i = 0; i < memoryCount; i++) {
       if (isMemoryQuestionRequired(memoryQuestions[i]) && !answers[i]?.answer?.trim()) {
@@ -1016,6 +1043,24 @@ export async function POST(request: Request) {
       ? body.letterId
       : null;
     const persistenceLetterId = isLanguageRerunOnly ? existingLetterId : crypto.randomUUID();
+    if (isLanguageRerunOnly) {
+      if (!existingLetterId) {
+        return NextResponse.json({ error: "Invalid letter selection." }, { status: 400 });
+      }
+      const { data: ownedLetter, error: ownedLetterError } = await ownershipClient
+        .from("soul_trace_profiles")
+        .select("letter_id")
+        .eq("letter_id", existingLetterId)
+        .eq("user_email", userEmail)
+        .maybeSingle();
+      if (ownedLetterError) {
+        logSupabaseFailure("email letter ownership lookup", ownedLetterError, { userEmail });
+        return NextResponse.json({ error: "Could not verify letter ownership." }, { status: 503 });
+      }
+      if (!ownedLetter) {
+        return NextResponse.json({ error: "Letter selection is unavailable." }, { status: 403 });
+      }
+    }
 
     const languageInstruction =
       locale === "ko"
