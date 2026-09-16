@@ -1,5 +1,6 @@
 import { LifeArchivePreview } from "@/components/life-archive-preview";
 import { TemporaryLifeArchiveLoader } from "@/components/temporary-life-archive-loader";
+import { LifeArchiveAccessRequired } from "@/components/life-archive-access-required";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
@@ -7,6 +8,7 @@ import { ACTIVE_SUBMISSION_COOKIE } from "@/lib/life-archive-session";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 import type { ServerSearchParams } from "@/lib/search-params";
 import { resolveLifeArchiveNavigation } from "@/lib/life-archive-navigation";
+import { ETERNAL_BEAM_ACCESS_COOKIE, verifyEternalBeamAccessSession } from "@/lib/eternal-beam-access";
 
 export const metadata: Metadata = {
   title: "Life Archive | Soul Trace",
@@ -14,6 +16,12 @@ export const metadata: Metadata = {
 };
 
 export default async function LifeArchivePage({ searchParams }: { searchParams: Promise<ServerSearchParams> }) {
+  const cookieStore = await cookies();
+  const hasEternalBeamAccess = await verifyEternalBeamAccessSession(
+    cookieStore.get(ETERNAL_BEAM_ACCESS_COOKIE)?.value,
+  );
+  if (!hasEternalBeamAccess) return <LifeArchiveAccessRequired />;
+
   const params = await searchParams;
   const navigation = resolveLifeArchiveNavigation(params);
   const previewNavigation = {
@@ -30,9 +38,21 @@ export default async function LifeArchivePage({ searchParams }: { searchParams: 
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return <LifeArchivePreview status="authentication-required" {...previewNavigation} />;
 
+  // Password sign-in can return through /choose instead of the email callback
+  // that normally connects older email-keyed letters to the authenticated user.
+  // The database function is idempotent, so run it before account discovery on
+  // every direct archive visit. A claim failure must not hide records that are
+  // already owned by this account.
+  const { error: claimError } = await supabase.rpc("claim_soul_trace_legacy_records");
+  if (claimError) {
+    console.error("[life-archive] Legacy ownership claim failed", {
+      code: claimError.code,
+      message: claimError.message,
+    });
+  }
+
   const requestedPetId = typeof params.pet === "string" ? params.pet : null;
   const requestedSubmissionId = typeof params.letter === "string" ? params.letter : null;
-  const cookieStore = await cookies();
   const preferredSubmissionId = requestedSubmissionId ?? cookieStore.get(ACTIVE_SUBMISSION_COOKIE)?.value ?? null;
 
   const [petsResult, submissionsResult] = await Promise.all([

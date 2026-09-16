@@ -1,6 +1,8 @@
 import { SoulTraceFlow } from "@/components/soul-trace-flow";
 import { parseServiceChannel } from "@/lib/service-channel";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { ETERNAL_BEAM_ACCESS_COOKIE, verifyEternalBeamAccessSession } from "@/lib/eternal-beam-access";
 
 export const metadata: Metadata = {
   title: "Soul Trace | 무지개 다리를 건넌 아이",
@@ -15,6 +17,8 @@ export default async function MemorialPage({
   const params = await searchParams;
   const initialServiceChannel = parseServiceChannel(params.ch);
   const initialPetId = typeof params.petId === "string" ? params.petId : null;
+  const cookieStore = await cookies();
+  const hasEternalBeamAccess = await verifyEternalBeamAccessSession(cookieStore.get(ETERNAL_BEAM_ACCESS_COOKIE)?.value);
 
-  return <SoulTraceFlow mode="memorial" initialServiceChannel={initialServiceChannel} initialPetId={initialPetId} />;
+  return <SoulTraceFlow mode="memorial" initialServiceChannel={initialServiceChannel} initialPetId={initialPetId} hasEternalBeamAccess={hasEternalBeamAccess} />;
 }

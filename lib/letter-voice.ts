@@ -37,6 +37,7 @@ export function letterPremiseBlock(locale: Locale, mode: LetterMode): string {
       "Premise (strict): they are ALIVE. Never mention death, goodbye, farewell, passing, the rainbow bridge, heaven, or an afterlife.",
       "Memories may be past tense, but right now is present tense—'I'm still here', 'I'll see you tomorrow'.",
       "Ground everything in the given name and survey answers. Never invent facts.",
+      "Never invent an unprovided wish, regret, apology, gift, or something the guardian has not done for the pet.",
     ].join("\n");
   }
   return [

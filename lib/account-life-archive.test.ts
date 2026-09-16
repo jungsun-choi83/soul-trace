@@ -12,6 +12,9 @@ const memories = readFileSync("app/api/life-archive/memories/route.ts", "utf8");
 const confirmation = readFileSync("lib/auth-confirm.ts", "utf8");
 
 test("secure archive discovers every owned pet and submission without an active cookie", () => {
+  const claim = archivePage.indexOf('rpc("claim_soul_trace_legacy_records")');
+  const discovery = archivePage.indexOf('from("soul_trace_pets")');
+  assert.ok(claim >= 0 && claim < discovery, "legacy records must be claimed before account discovery");
   assert.match(archivePage, /from\("soul_trace_pets"\)[\s\S]*?eq\("owner_user_id", userData\.user\.id\)/);
   assert.match(archivePage, /from\("soul_trace_submissions"\)[\s\S]*?eq\("owner_user_id", userData\.user\.id\)/);
   assert.match(archivePage, /preferredSubmissionId = requestedSubmissionId \?\?/);
@@ -21,7 +24,7 @@ test("secure archive discovers every owned pet and submission without an active 
 
 test("stable pet identity is explicit, owner-validated, and never name-merged", () => {
   assert.match(generation, /body\.petId/);
-  assert.match(generation, /eq\("pet_id", requestedPetId\)[\s\S]*?eq\("owner_user_id", authData\.user\.id\)/);
+  assert.match(generation, /from\("soul_trace_legacy_links"\)[\s\S]*?eq\("pet_id", requestedPetId\)[\s\S]*?eq\("user_email", userEmail\)/);
   assert.match(migration, /if new\.pet_id is not null[\s\S]*?pets\.owner_user_id = account_user_id/);
   assert.match(migration, /values \(new\.user_email, linked_pet_id, linked_submission_id, new\.letter_id\)/);
   assert.match(migration, /drop constraint if exists soul_trace_legacy_links_pet_id_key/);
@@ -64,6 +67,7 @@ test("private videos validate, persist, sign, update, and delete", () => {
 
 test("legacy claims stay discoverable and cannot make authentication depend on claiming", () => {
   assert.match(migration, /owner_user_id = coalesce\(owner_user_id, account_user_id\)/);
+  assert.match(archivePage, /if \(claimError\)[\s\S]*?from\("soul_trace_pets"\)/);
   assert.doesNotMatch(confirmation, /auth\.signOut\(\)/);
   assert.match(confirmation, /logAuthFailure\("callback-legacy-claim"/);
 });

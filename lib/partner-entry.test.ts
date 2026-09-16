@@ -8,11 +8,12 @@ import { partnerEntryDestination, partnerEntryPath } from "./partner-entry.ts";
 
 const CODE = "partner_code_123";
 
-test("general QR keeps the normal Welcome to auth to choose journey", () => {
+test("general entry keeps the normal Welcome to choose journey without active auth", () => {
   const page = readFileSync("app/page.tsx", "utf8");
   assert.match(page, /candidate !== undefined/);
   assert.match(page, /hrefWithSearchParams\("\/choose", params\)/);
-  assert.match(page, /choiceHref=\{authEntryPath\(choiceHref\)\}/);
+  assert.match(page, /choiceHref=\{choiceHref\}/);
+  assert.doesNotMatch(page, /authEntryPath|auth\.getUser/);
   assert.doesNotMatch(page, /destination=.*pension/);
 });
 

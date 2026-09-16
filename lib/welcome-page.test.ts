@@ -4,7 +4,6 @@ import test from "node:test";
 
 import en from "../locales/en.json" with { type: "json" };
 import ko from "../locales/ko.json" with { type: "json" };
-import { authEntryPath } from "./auth-redirect.ts";
 
 const page = readFileSync("app/page.tsx", "utf8");
 const alias = readFileSync("app/welcome/page.tsx", "utf8");
@@ -71,14 +70,10 @@ test("welcome page has exact localized explanatory copy", () => {
   }
 });
 
-test("welcome action keeps the provided authenticated destination and query parameters", () => {
-  assert.equal(authEntryPath("/choose"), "/auth?returnTo=%2Fchoose");
-  assert.equal(
-    authEntryPath("/choose?p=partner-code&campaign=one&campaign=two#mode"),
-    "/auth?returnTo=%2Fchoose%3Fp%3Dpartner-code%26campaign%3Done%26campaign%3Dtwo%23mode",
-  );
+test("welcome action enters the questionnaire journey directly and keeps query parameters", () => {
   assert.match(page, /hrefWithSearchParams\("\/choose", params\)/);
-  assert.match(page, /choiceHref=\{authEntryPath\(choiceHref\)\}/);
+  assert.match(page, /choiceHref=\{choiceHref\}/);
+  assert.doesNotMatch(page, /authEntryPath|createSupabaseAuthServerClient|auth\.getUser/);
   assert.match(experience, /href=\{choiceHref\}/);
   assert.doesNotMatch(experience, /href=["']\/?(?:auth|choose|living|memorial)/);
 });

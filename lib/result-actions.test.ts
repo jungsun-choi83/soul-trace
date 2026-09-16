@@ -25,6 +25,16 @@ describe("result download and Instagram actions", () => {
     assert.equal(source.match(/onClick=\{handleDownloadImage\}/g)?.length, 1);
   });
 
+  it("offers an accessible result back arrow with a safe fallback", () => {
+    assert.match(source, /onClick=\{goBackFromResult\}/);
+    assert.match(source, /aria-label=\{t\("landing\.navBack"\)\}/);
+    assert.match(source, /<span>\{t\("landing\.navBack"\)\}<\/span>/);
+    assert.match(source, /if \(!initialResult\) \{[\s\S]*?setResult\(null\);[\s\S]*?return;/);
+    assert.match(source, /window\.history\.back\(\)/);
+    assert.match(source, /window\.location\.assign\(letterModePath\(mode\)\)/);
+    assert.doesNotMatch(source, /window\.location\.assign\("\/choose"\)/);
+  });
+
   it("enforces identical responsive measurements through one shared class", () => {
     assert.match(
       source,
@@ -36,7 +46,7 @@ describe("result download and Instagram actions", () => {
 
   it("always shows Life Archive directly below Instagram", () => {
     const instagram = source.indexOf("onClick={onInstagramButtonClick}");
-    const archive = source.indexOf("onClick={continueToLifeArchive}");
+    const archive = source.indexOf("onClick={handleLifeArchiveJourney}");
     assert.ok(instagram >= 0 && instagram < archive);
     assert.doesNotMatch(
       source.slice(instagram, archive),
@@ -44,7 +54,7 @@ describe("result download and Instagram actions", () => {
     );
     assert.match(
       source,
-      /SECURE_LIFE_ARCHIVE_CONFIGURED &&\s*\(!result\.letterId \|\| result\.persistenceFailed\)/,
+      /hasEternalBeamAccess && SECURE_LIFE_ARCHIVE_CONFIGURED && \(!result\.letterId \|\| result\.persistenceFailed\)/,
     );
   });
 
@@ -61,6 +71,22 @@ describe("result download and Instagram actions", () => {
     assert.match(source, /setIsDownloading\(true\)/);
     assert.match(source, /finally\s*\{\s*setIsDownloading\(false\)/);
     assert.match(source, /isDownloading \? t\("result.preparingImage"\)/);
+  });
+
+  it("shows one accessible Instagram icon without changing the share action", () => {
+    assert.equal(source.match(/<InstagramIcon \/>/g)?.length, 1);
+    assert.match(source, /function InstagramIcon\(\)[\s\S]*?aria-hidden="true"/);
+    assert.match(source, /<InstagramIcon \/>[\s\S]*?t\("result\.instagramShareButton"\)/);
+    assert.equal(source.match(/onClick=\{onInstagramButtonClick\}/g)?.length, 1);
+  });
+
+  it("opens generic Instagram without duplicating the letter download", () => {
+    assert.match(source, /openInstagramWebsite/);
+    assert.doesNotMatch(source, /shareNotice|desktopOpened/);
+    assert.doesNotMatch(source, /downloadThenOpenInstagramTab/);
+    assert.doesNotMatch(source, /downloadForManualInstagramUpload/);
+    assert.doesNotMatch(source, /window\.open\(instagramProfileUrl/);
+    assert.match(source, /window\.open\("https:\/\/www\.instagram\.com\/"/);
   });
 
   it("uses the required English and Korean localized labels", () => {

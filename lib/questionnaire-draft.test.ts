@@ -11,7 +11,7 @@ import {
 const flow = readFileSync("components/soul-trace-flow.tsx", "utf8");
 
 const pensionDraft: QuestionnaireDraft = {
-  version: 1,
+  version: 5,
   mode: "living",
   channel: "pension",
   questionIndex: 8,
@@ -30,6 +30,8 @@ const pensionDraft: QuestionnaireDraft = {
   tonePrefs: { mood: "warm", options: [], length: "normal" },
   petPhotoSkipped: true,
   privacyConsent: true,
+  privacySelections: { privacy: true, marketing: false, aiImprovement: false },
+  email: "keeper@example.com",
 };
 
 test("draft keys isolate canonical mode and channel contexts", () => {
@@ -59,7 +61,7 @@ test("malformed and unsupported drafts are ignored", () => {
     null,
   );
   assert.equal(
-    parseQuestionnaireDraft(JSON.stringify({ ...pensionDraft, version: 2 }), "living", "pension"),
+    parseQuestionnaireDraft(JSON.stringify({ ...pensionDraft, version: 4 }), "living", "pension"),
     null,
   );
   assert.equal(
@@ -76,7 +78,7 @@ test("client flow restores before rendering and saves only meaningful unfinished
   assert.match(flow, /window\.sessionStorage\.getItem\(draftStorageKey\)/);
   assert.match(flow, /window\.sessionStorage\.setItem\(draftStorageKey, JSON\.stringify\(draft\)\)/);
   assert.match(flow, /if \(!draftReady\)/);
-  assert.match(flow, /setQuestionIndex\(Math\.min\(restored\.questionIndex/);
+  assert.match(flow, /!restored\.privacyConsent && restored\.questionIndex > restoredEmailIndex/);
   assert.match(flow, /memoryAnswers\.some\(Boolean\)/);
 });
 

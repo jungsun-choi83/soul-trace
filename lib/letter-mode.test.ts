@@ -27,9 +27,9 @@ describe("모드 판별", () => {
 describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () => {
   for (const [name, messages] of LOCALES) {
     for (const mode of LETTER_MODES) {
-      it(`${name}/${mode}: 설문 5문항 + 톤 3문항이 채워져 있다`, () => {
+      it(`${name}/${mode}: 모드별 기억 질문과 톤 질문이 채워져 있다`, () => {
         const copy = modeCopy(messages, mode);
-        assert.equal(copy.memory.length, 4);
+        assert.equal(copy.memory.length, mode === "living" ? 3 : 4);
         assert.equal(copy.tone.length, 2);
         assert.deepEqual(
           copy.tone.map((q) => q.id),
@@ -39,10 +39,13 @@ describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () 
           assert.ok(item.promptText.trim().length > 0);
           assert.ok(item.placeholder.trim().length > 0);
         }
-        // 마지막 기억 질문만 건너뛸 수 있다. 건너뛰기 버튼 문구가 없으면
-        // 사용자는 답할 수도 넘어갈 수도 없는 화면에 갇힌다.
-        assert.equal(copy.memory[3].optional, true);
-        assert.ok((copy.memory[3].skipLabel ?? "").trim().length > 0);
+        if (mode === "memorial") {
+          // 못다 한 말 질문은 추모 갈래에만 남고 선택적으로 건너뛸 수 있다.
+          assert.equal(copy.memory[3].optional, true);
+          assert.ok((copy.memory[3].skipLabel ?? "").trim().length > 0);
+        } else {
+          assert.ok(copy.memory.every((item) => item.optional !== true));
+        }
       });
 
       it(`${name}/${mode}: 화면에 바로 박히는 문구가 비어 있지 않다`, () => {

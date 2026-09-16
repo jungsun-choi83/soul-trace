@@ -68,30 +68,34 @@ describe("dynamic letter composition", () => {
     const route = readFileSync("app/api/generate-letter/route.ts", "utf8");
     const survey = readFileSync("lib/survey.ts", "utf8");
     assert.doesNotMatch(route, /body\.preferredScenery|answers\[0\]/);
-    assert.match(route, /memoryQuestionCount\(channel\) \+ TONE_STEP_COUNT/);
+    assert.match(route, /memoryQuestionCount\(channel, mode\) \+ TONE_STEP_COUNT/);
     assert.doesNotMatch(route, /설문 8문항|Eight answers are required|memoryQuestionCount\(channel\) \+ 3/);
     assert.doesNotMatch(survey, /item\.id === "q11"|tonePrefs\.options\.includes/);
     assert.doesNotMatch(route, /stampPhoto|stampType/);
     assert.doesNotMatch(route, /promptFormattedAnswers[\s\S]{0,120}userEmail/);
   });
 
-  it("uses the authenticated account email without an Email questionnaire step", () => {
+  it("uses questionnaire email for active generation and stamp ownership while preserving future auth", () => {
     const flow = readFileSync("components/soul-trace-flow.tsx", "utf8");
     const generationRoute = readFileSync("app/api/generate-letter/route.ts", "utf8");
     const stampRoute = readFileSync("app/api/stamp-photo/route.ts", "utf8");
     const eligibilityRoute = readFileSync("app/api/check-letter-eligibility/route.ts", "utf8");
     const en = readFileSync("locales/en.json", "utf8");
 
-    assert.doesNotMatch(flow, /questionnaireEmail|isEmailQuestion|userEmail/);
-    assert.match(flow, /totalQuestionCount = introQuestionCount \+ surveyStepCount/);
-    assert.doesNotMatch(flow, /totalQuestionCount = introQuestionCount \+ surveyStepCount \+ 1/);
-    assert.doesNotMatch(en, /questionnaireEmail/);
+    assert.match(flow, /isEmailQuestion/);
+    assert.match(flow, /totalQuestionCount = emailQuestionIndex \+ 1/);
+    assert.match(en, /"emailStep"/);
 
-    for (const route of [generationRoute, stampRoute, eligibilityRoute]) {
-      assert.match(route, /createSupabaseAuthServerClient/);
-      assert.match(route, /auth\.getUser\(\)/);
-      assert.match(route, /authData\.user\?\.email/);
+    for (const route of [generationRoute, stampRoute]) {
+      assert.doesNotMatch(route, /createSupabaseAuthServerClient|auth\.getUser\(\)|status: 401/);
+      assert.match(route, /normalizeQuestionnaireEmail/);
     }
+    assert.match(eligibilityRoute, /createSupabaseAuthServerClient/);
+    assert.match(eligibilityRoute, /auth\.getUser\(\)/);
+    assert.match(generationRoute, /body\.email/);
+    assert.match(stampRoute, /form\?\.get\("email"\)/);
+    assert.match(stampRoute, /\.eq\("letter_id", letterId\)\.eq\("user_email", normalizedEmail\)/);
+    assert.match(flow, /form\.set\("email", normalizeQuestionnaireEmail\(email\)\)/);
     assert.doesNotMatch(generationRoute, /body\.userEmail/);
     assert.doesNotMatch(stampRoute, /form\?\.get\("userEmail"\)/);
   });

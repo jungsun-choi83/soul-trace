@@ -15,10 +15,10 @@ describe("Life Archive Phase 3 connection", () => {
   it("adds the journey action after the two existing result actions", () => {
     const keep = result.indexOf("onClick={handleDownloadImage}");
     const instagram = result.indexOf("onClick={onInstagramButtonClick}");
-    const archive = result.indexOf("onClick={continueToLifeArchive}");
+    const archive = result.indexOf("onClick={handleLifeArchiveJourney}");
     assert.ok(keep >= 0 && keep < instagram && instagram < archive);
-    assert.equal(en.result.lifeArchive.cta, "Continue Your Pet's Journey");
-    assert.equal(ko.result.lifeArchive.cta, "아이의 여정을 계속 이어가기");
+    assert.equal(en.result.lifeArchive.journeyCta, "Continue Your Pet’s Journey ✨");
+    assert.equal(ko.result.lifeArchive.journeyCta, "아이의 여정을 계속 이어가기 ✨");
   });
 
   it("never puts private Soul Trace content in a URL", () => {
