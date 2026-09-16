@@ -8,11 +8,15 @@ import {
   PENDING_LETTER_COOKIE,
 } from "@/lib/life-archive-session";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
+import { requestHasEternalBeamAccess } from "@/lib/eternal-beam-access";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function POST(request: NextRequest) {
+  if (!(await requestHasEternalBeamAccess(request))) {
+    return NextResponse.json({ error: "eternal_beam_access_required" }, { status: 403 });
+  }
   const body = (await request.json().catch(() => null)) as { letterId?: unknown } | null;
   const letterId = typeof body?.letterId === "string" ? body.letterId : "";
   if (!UUID_PATTERN.test(letterId)) {

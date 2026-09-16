@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 import { modeCopy, type LetterMode } from "@/lib/letter-mode";
@@ -20,9 +21,9 @@ type PetIntroFormProps = {
 const PET_TYPES: PetType[] = ["dog", "cat", "rabbit", "hamster", "bird", "other"];
 
 const PET_BREEDS: Record<PetType, string[]> = {
-  dog: ["golden-retriever", "labrador-retriever", "poodle", "maltese", "pomeranian", "shih-tzu", "chihuahua", "jindo", "mixed-not-sure"],
-  cat: ["korean-shorthair", "persian", "russian-blue", "siamese", "british-shorthair", "scottish-fold", "ragdoll", "mixed-not-sure"],
-  rabbit: ["lop", "dutch", "lionhead", "netherland-dwarf", "mixed-not-sure"],
+  dog: ["maltese", "poodle", "pomeranian", "shiba-inu", "shih-tzu", "mixed-not-sure"],
+  cat: ["persian", "russian-blue", "siamese", "scottish-fold", "ragdoll", "mixed-not-sure"],
+  rabbit: ["lop", "dutch", "lionhead", "mixed-not-sure"],
   hamster: ["syrian", "dwarf", "roborovski", "chinese", "mixed-not-sure"],
   bird: ["parakeet", "cockatiel", "lovebird", "finch", "mixed-not-sure"],
   other: ["mixed-not-sure"],
@@ -56,22 +57,9 @@ function chipClass(selected: boolean, lang: Locale) {
 const PET_INTRO_QUESTION_IDS = ["name", "type", "breed", "years", "recipient"] as const;
 export type PetIntroQuestionId = (typeof PET_INTRO_QUESTION_IDS)[number];
 
-const PET_INTRO_DISPLAY_NUMBER: Record<PetIntroQuestionId, string> = {
-  name: "Q1",
-  type: "Q2.a",
-  breed: "Q2.b",
-  years: "Q3",
-  recipient: "Q4",
-};
-
-function numberedLabel(questionId: PetIntroQuestionId, label: string): string {
-  return `${PET_INTRO_DISPLAY_NUMBER[questionId]}. ${label}`;
-}
-
 export function petIntroQuestionIds(petType: PetType | ""): PetIntroQuestionId[] {
-  return petType === "other"
-    ? PET_INTRO_QUESTION_IDS.filter((id) => id !== "breed")
-    : [...PET_INTRO_QUESTION_IDS];
+  if (petType === "other") return ["name", "type", "years", "recipient"];
+  return [...PET_INTRO_QUESTION_IDS];
 }
 
 export function PetIntroForm({
@@ -83,6 +71,7 @@ export function PetIntroForm({
 }: PetIntroFormProps) {
   const { t, lang, messages } = useLocale();
   const copy = modeCopy(messages, mode);
+  const [customBreedSelected, setCustomBreedSelected] = useState(false);
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
   const showRecipientDetail = profile.letterRecipient === "byName";
   const nameError = showErrors && !profile.petName.trim();
@@ -91,6 +80,10 @@ export function PetIntroForm({
   const ageError = showErrors && !/^\d+$/.test(profile.petAge ?? "");
   const recipientError = showErrors && !profile.letterRecipient;
   const recipientDetailError = showErrors && showRecipientDetail && !profile.letterRecipientDetail.trim();
+  const breedOptions = profile.petType ? PET_BREEDS[profile.petType] : ["mixed-not-sure"];
+  const customBreedActive = customBreedSelected || (
+    Boolean(profile.petBreed) && !breedOptions.includes(profile.petBreed ?? "")
+  );
 
   const errorText = (message: string, id: string) => (
     <p id={id} className="text-xs font-extralight leading-relaxed text-red-200" role="alert">
@@ -105,7 +98,7 @@ export function PetIntroForm({
       </p>
 
       {questionId === "name" ? <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#F3EAD8]">{numberedLabel("name", copy.q1Label)}</label>
+        <label className="text-sm font-extralight text-[#F3EAD8]">{copy.q1Label}</label>
         <input
           id="pet-name"
           type="text"
@@ -120,13 +113,14 @@ export function PetIntroForm({
       </div> : null}
 
       {questionId === "type" ? <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#F3EAD8]">{numberedLabel("type", copy.q2Label)}</label>
+        <label className="text-sm font-extralight text-[#F3EAD8]">{copy.q2Label}</label>
         <div className="flex flex-wrap gap-2">
           {PET_TYPES.map((type) => (
             <button
               key={type}
               type="button"
               onClick={() => {
+                setCustomBreedSelected(false);
                 onChange({ petType: type, petBreed: "" });
               }}
               className={chipClass(profile.petType === type, lang)}
@@ -139,24 +133,49 @@ export function PetIntroForm({
       </div> : null}
 
       {questionId === "breed" ? <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#F3EAD8]">{numberedLabel("breed", t("form.step1.q2bLabel"))}</label>
+        <label className="text-sm font-extralight text-[#F3EAD8]">{t("form.step1.q2bLabel")}</label>
         <div className="flex flex-wrap gap-2">
-          {(profile.petType ? PET_BREEDS[profile.petType] : ["mixed-not-sure"]).map((breed) => (
+          {breedOptions.map((breed) => (
             <button
               key={breed}
               type="button"
-              onClick={() => onChange({ petBreed: breed })}
+              onClick={() => {
+                setCustomBreedSelected(false);
+                onChange({ petBreed: breed });
+              }}
               className={chipClass(profile.petBreed === breed, lang)}
             >
               {t(`form.step1.petBreeds.${breed}`)}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              setCustomBreedSelected(true);
+              onChange({ petBreed: "" });
+            }}
+            className={chipClass(customBreedActive, lang)}
+          >
+            {t("form.step1.otherBreed")}
+          </button>
         </div>
+        {customBreedActive ? (
+          <input
+            id="custom-pet-breed"
+            type="text"
+            value={profile.petBreed ?? ""}
+            onChange={(e) => onChange({ petBreed: e.target.value })}
+            placeholder={t("form.step1.otherBreedPlaceholder")}
+            aria-invalid={breedError}
+            aria-describedby={breedError ? "pet-breed-error" : undefined}
+            className={fieldClass(lang, breedError)}
+          />
+        ) : null}
         {breedError ? errorText(t("form.validation.petBreedRequired"), "pet-breed-error") : null}
       </div> : null}
 
       {questionId === "years" ? <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#F3EAD8]">{numberedLabel("years", t("form.step1.q3Label"))}</label>
+        <label className="text-sm font-extralight text-[#F3EAD8]">{t("form.step1.q3Label")}</label>
         <input
           id="pet-age"
           type="number"
@@ -177,7 +196,7 @@ export function PetIntroForm({
       </div> : null}
 
       {questionId === "recipient" ? <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#F3EAD8]">{numberedLabel("recipient", t("form.step1.q4Label"))}</label>
+        <label className="text-sm font-extralight text-[#F3EAD8]">{t("form.step1.q4Label")}</label>
         <div className="flex flex-wrap gap-2">
           {RECIPIENTS.map((recipient) => (
             <button

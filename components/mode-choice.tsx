@@ -40,10 +40,6 @@ export function ModeChoice({
   }
   const destinationQuery = destinationParams.toString();
   const querySuffix = destinationQuery ? `?${destinationQuery}` : "";
-  const archiveParams = new URLSearchParams(destinationParams);
-  archiveParams.set("from", "choose");
-  const archiveHref = `/life-archive?${archiveParams.toString()}`;
-
   const hrefFor = (mode: (typeof LETTER_MODES)[number]) => {
     const path = letterModePath(mode);
     return `${path}${querySuffix}`;
@@ -128,16 +124,6 @@ export function ModeChoice({
               </Link>
             );
           })}
-        </div>
-
-        <div className={`${styles.fadeUp} mt-5 flex justify-end md:mt-6`} style={{ animationDelay: "300ms" }}>
-          <Link
-            href={archiveHref}
-            className={`inline-flex min-h-11 items-center gap-2 border-b border-[#B78A42]/55 px-0.5 text-sm text-[#C9A45E]/85 transition hover:border-[#D5A653]/80 hover:text-[#D5A653] focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] ${bodyFont}`}
-          >
-            <span>{t("lifeArchive.title")}</span>
-            <span aria-hidden="true" className="text-base leading-none">→</span>
-          </Link>
         </div>
       </section>
     </main>

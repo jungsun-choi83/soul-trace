@@ -1,11 +1,9 @@
 import { WelcomeExperience } from "@/components/welcome-experience";
 import { PartnerEntryFallback } from "@/components/partner-entry-fallback";
 import { PartnerEntryRedirect } from "@/components/partner-entry-redirect";
-import { authEntryPath } from "@/lib/auth-redirect";
 import { looksLikePartnerCode, PARTNER_CODE_PARAM, resolvePartnerCode } from "@/lib/partner";
 import { partnerEntryDestination } from "@/lib/partner-entry";
 import { hrefWithSearchParams, type ServerSearchParams } from "@/lib/search-params";
-import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import type { Metadata } from "next";
 
@@ -32,14 +30,9 @@ export default async function WelcomePage({
       : null;
     if (!partner) return <PartnerEntryFallback />;
 
-    const authClient = await createSupabaseAuthServerClient();
-    const { data } = authClient
-      ? await authClient.auth.getUser()
-      : { data: { user: null } };
     return (
       <PartnerEntryRedirect
         destination={partnerEntryDestination(partner.partnerType, partner.partnerCode, params)}
-        authenticated={Boolean(data.user)}
       />
     );
   }
@@ -48,7 +41,7 @@ export default async function WelcomePage({
 
   return (
     <WelcomeExperience
-      choiceHref={authEntryPath(choiceHref)}
+      choiceHref={choiceHref}
     />
   );
 }

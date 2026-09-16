@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { ACTIVE_SUBMISSION_COOKIE } from "@/lib/life-archive-session";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
+import { requestHasEternalBeamAccess } from "@/lib/eternal-beam-access";
 
 const MAX_BYTES = 50 * 1024 * 1024;
 const MAX_SECONDS = 30;
@@ -9,6 +10,7 @@ const TYPES = new Set(["video/mp4", "video/webm", "video/quicktime"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 async function archiveContext(request: NextRequest) {
+  if (!(await requestHasEternalBeamAccess(request))) return null;
   const supabase = await createSupabaseAuthServerClient();
   const user = (await supabase?.auth.getUser())?.data.user;
   const submissionId = request.nextUrl.searchParams.get("submissionId")
