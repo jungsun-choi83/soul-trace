@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import en from "../locales/en.json" with { type: "json" };
@@ -9,82 +9,55 @@ const page = readFileSync("app/page.tsx", "utf8");
 const alias = readFileSync("app/welcome/page.tsx", "utf8");
 const choosePage = readFileSync("app/choose/page.tsx", "utf8");
 const experience = readFileSync("components/welcome-experience.tsx", "utf8");
+const header = readFileSync("components/homepage/homepage-header.tsx", "utf8");
+const hero = readFileSync("components/homepage/hero.tsx", "utf8");
+const hologram = readFileSync("components/homepage/hologram-preview.tsx", "utf8");
+const finalCta = readFileSync("components/homepage/final-cta.tsx", "utf8");
+const homepageSources = [header, hero, hologram, finalCta].join("\n");
 
-test("welcome page keeps the supplied motion assets and accessible video behavior", () => {
-  assert.match(experience, /src="\/videos\/soul-trace-hero-smooth\.mp4"/);
-  assert.match(experience, /poster="\/images\/soul-trace-hero-poster\.jpg"/);
-  assert.match(experience, /autoPlay/);
-  assert.match(experience, /muted/);
-  assert.match(experience, /loop/);
-  assert.match(experience, /playsInline/);
-  assert.match(experience, /preload="metadata"/);
-  assert.match(experience, /object-cover object-\[61%_center\] motion-reduce:hidden sm:object-\[58%_center\] lg:object-\[55%_center\] xl:object-center/);
-  assert.match(experience, /min-h-\[100svh\]/);
+test("welcome experience renders only the approved homepage composition", () => {
+  for (const component of [
+    "HomepageHeader", "Hero", "LittleMoments", "HowItWorks", "LetterPreview",
+    "PetGallery", "EternalBeam", "HologramPreview", "ConnectionJourney",
+    "LivingMemorial", "FinalCta", "HomepageFooter",
+  ]) assert.match(experience, new RegExp(`<${component}`));
+
+  assert.doesNotMatch(experience, /soul-trace-hero-smooth|data-translucent-letter-preview|STEP_KEYS/);
 });
 
-test("welcome page has exact localized explanatory copy", () => {
-  assert.deepEqual(en.welcome, {
-    eyebrow: "A letter from your pet's heart",
-    title: "Your Pet's Story,\nin a Letter",
-    description: "Answer a few simple questions about your pet. Soul Trace turns those moments into a personal letter you can keep and share.",
-    cta: "Start Creating Your Letter →",
-    navHowItWorks: "How It Works",
-    howItWorks: "How It Works",
-    steps: {
-      pet: { title: "Tell us about your pet", body: "Share a few details and memories." },
-      questions: { title: "Answer a few questions", body: "We'll guide you through a short, simple set of questions." },
-      letter: { title: "Receive your personal letter", body: "Get a heartfelt letter you can keep or share." },
-    },
-    letterPreview: "To my favorite human,\n\nThank you for all the little moments we've shared.\nEven ordinary days feel special when I'm with you.\n\nAlways yours.",
-  });
-  assert.deepEqual(ko.welcome, {
-    eyebrow: "반려동물의 마음을 담은 편지",
-    title: "반려동물의 이야기를\n한 편의 편지로",
-    description: "반려동물에 대한 몇 가지 간단한 질문에 답해 주세요. Soul Trace가 그 순간들을 오래 간직하고 나눌 수 있는 특별한 편지로 만들어 드립니다.",
-    cta: "편지 만들기 시작하기 →",
-    navHowItWorks: "이용 방법",
-    howItWorks: "이용 방법",
-    steps: {
-      pet: { title: "반려동물 소개하기", body: "간단한 정보와 추억을 들려주세요." },
-      questions: { title: "간단한 질문에 답하기", body: "짧고 쉬운 질문을 따라 답해 주세요." },
-      letter: { title: "나만의 편지 받기", body: "간직하거나 나눌 수 있는 특별한 편지를 받아보세요." },
-    },
-    letterPreview: "가장 소중한 너에게,\n\n함께한 작은 순간들 모두 고마워.\n너와 함께라면 평범한 하루도 특별해져.\n\n언제나 네 곁에.",
-  });
-  assert.match(experience, /<LanguageToggle \/>/);
-  assert.match(experience, /href="#how-it-works"/);
-  assert.match(experience, /id="how-it-works"/);
-  assert.match(experience, /data-translucent-letter-preview/);
-  assert.match(experience, /backdrop-blur-\[14px\]/);
-  assert.match(experience, /scroll-smooth/);
-  assert.match(experience, /radial-gradient\(ellipse_at_58%_38%/);
-  assert.match(experience, /#0D0A07_100%/);
-  assert.match(experience, /function PawIcon/);
-  assert.match(experience, /pet: <NoteIcon \/>/);
-  assert.match(experience, /questions: <HeartIcon \/>/);
-  assert.match(experience, /letter: <EnvelopeIcon \/>/);
-  assert.match(experience, /bg-\[#F4E6CC\]\/48/);
-  assert.match(experience, /grid grid-cols-3/);
-  for (const key of ["eyebrow", "title", "description", "cta", "letterPreview", "howItWorks"]) {
-    assert.match(experience, new RegExp(`t\\(\"welcome\\.${key}\"\\)`));
+test("homepage uses the existing locale system with complete English and Korean copy", () => {
+  assert.deepEqual(Object.keys(en.homepage), Object.keys(ko.homepage));
+  assert.match(header, /<LanguageToggle \/>/);
+  assert.match(header, /useLocale/);
+  assert.doesNotMatch(homepageSources, /LanguageProvider|LanguageSwitch|useLanguage/);
+  assert.equal(ko.homepage.hero.primary, "우리 아이 편지 만들기");
+  assert.equal(ko.homepage.livingMemorial.memorialTitle, "언제나 기억하며");
+});
+
+test("every creation CTA receives and uses the query-preserving choiceHref", () => {
+  assert.match(page, /hrefWithSearchParams\("\/choose", params\)/);
+  assert.match(page, /choiceHref=\{choiceHref\}/);
+  for (const source of [header, hero, hologram, finalCta]) {
+    assert.match(source, /choiceHref: string/);
+    assert.match(source, /href=\{choiceHref\}/);
+    assert.doesNotMatch(source, /href=["']\/(?:choose|living|memorial)/);
   }
 });
 
-test("welcome action enters the questionnaire journey directly and keeps query parameters", () => {
-  assert.match(page, /hrefWithSearchParams\("\/choose", params\)/);
-  assert.match(page, /choiceHref=\{choiceHref\}/);
-  assert.doesNotMatch(page, /authEntryPath|createSupabaseAuthServerClient|auth\.getUser/);
-  assert.match(experience, /href=\{choiceHref\}/);
-  assert.doesNotMatch(experience, /href=["']\/?(?:auth|choose|living|memorial)/);
+test("approved homepage assets exist and hologram media remains isolated", () => {
+  for (const path of [
+    "public/homepage/pets/hero-dog.png", "public/homepage/moments/moment-sleep.png",
+    "public/homepage/moments/moment-wait.png", "public/homepage/moments/moment-bond.png",
+    "public/homepage/pets/gallery-dog.png", "public/homepage/pets/gallery-cat.png",
+    "public/homepage/pets/gallery-rabbit.png", "public/homepage/pets/gallery-bird.png",
+    "public/homepage/pets/gallery-hamster.png", "public/homepage/eternal-beam/cinematic.png",
+    "public/homepage/eternal-beam/hologram-pet.png",
+  ]) assert.equal(existsSync(path), true, path);
+  assert.match(hologram, /function ProjectedPet/);
+  assert.match(hologram, /homepage\/eternal-beam\/hologram-pet\.png/);
 });
 
-test("welcome CTA remains on an explicit foreground layer after video compositing", () => {
-  assert.match(experience, /href=\{choiceHref\} className=\{`relative z-20/);
-  assert.match(experience, /relative z-20[\s\S]*?opacity-100/);
-  assert.doesNotMatch(experience, /href=\{choiceHref\}[\s\S]{0,300}\bhidden\b/);
-});
-
-test("root routing and the welcome alias remain intact", () => {
+test("root partner routing and the welcome alias remain intact", () => {
   assert.match(page, /WelcomeExperience/);
   assert.match(page, /resolvePartnerCode/);
   assert.match(page, /PartnerEntryRedirect/);

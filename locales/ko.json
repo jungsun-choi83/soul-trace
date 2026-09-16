@@ -800,5 +800,44 @@
         "tail": "꼬리 흔들기"
       }
     }
+  },
+  "homepage": {
+    "nav": { "soulTrace": "소울 트레이스", "howItWorks": "이용 방법", "eternalBeam": "이터널 빔", "about": "이야기", "createLetter": "편지 만들기", "menu": "메뉴", "close": "닫기" },
+    "hero": {
+      "label": "이터널 빔이 선사하는 기억의 경험",
+      "title1": "모든 반려동물은 이야기를 남깁니다.",
+      "title2": "그 이야기를 한 통의 편지로.",
+      "body": "함께한 사소한 순간과 익숙한 습관, 마음에 남은 기억을 들려주세요. 소울 트레이스가 함께 살아온 시간을 세상에 하나뿐인 편지로 전해 드립니다.",
+      "primary": "우리 아이 편지 만들기",
+      "secondary": "이터널 빔 알아보기",
+      "cardName": "나의 소중한 가족에게",
+      "cardLine": "네가 집에 오는 시간은 언제나 알아."
+    },
+    "moments": {
+      "label": "작은 순간들", "title": "이야기는 사소한 순간에서 시작됩니다.", "body": "마음속에 조용히 간직해 온 장면들이 우리 아이의 가장 진솔한 이야기를 들려줍니다.",
+      "sleep": "늘 편안히 잠들던 자리", "wait": "당신을 기다리던 모습", "bond": "둘만 기억하는 고요한 순간",
+      "toy": "언제나 가장 먼저 고르던 장난감", "sound": "신이 날 때 들려주던 목소리", "quiet": "당신만 알아보던 작은 표정"
+    },
+    "howItWorks": {
+      "label": "이용 방법", "title": "세 번의 다정한 과정", "shareTitle": "우리 아이 이야기 들려주기", "shareBody": "성격과 습관, 함께한 기억을 소울 트레이스에 들려주세요.",
+      "receiveTitle": "우리 아이의 편지 받기", "receiveBody": "소중한 기억들이 우리 아이의 마음을 닮은 한 통의 편지가 됩니다.",
+      "discoverTitle": "기억의 다음 장면 만나기", "discoverBody": "이터널 빔이 그 기억을 어떻게 더 깊이 이어 가는지 만나보세요."
+    },
+    "letter": {
+      "label": "한 통의 편지", "title": "진짜 추억이 우리 아이의 말이 됩니다.", "body": "당신이 들려준 순간 하나하나를 바탕으로, 우리 아이의 마음을 닮은 편지를 전해 드립니다.",
+      "memoryLabel": "기억", "memoryText": "“언제나 현관문 옆에서 기다려요.”", "letterLabel": "편지", "letterText": "“네가 집에 오는 시간은 언제나 알아. 그래서 벌써부터 이곳에서 너를 기다리고 있어.”", "paperName": "모모에게", "paperFrom": "언제나 사랑을 담아"
+    },
+    "gallery": { "label": "우리의 친구들", "title": "수많은 순간이 하나의 이야기가 됩니다.", "body": "강아지와 고양이, 토끼와 새, 그리고 작고 소중한 모든 친구의 삶은 기억할 가치가 있습니다.", "dog": "한결같은 마음", "cat": "호기심 가득한 눈빛", "rabbit": "다정한 온기", "bird": "환한 노래", "hamster": "작고 소중한 친구" },
+    "eternalBeam": { "title": "편지는 시작일 뿐입니다.", "body": "소울 트레이스가 기억에 목소리를 더한다면, 이터널 빔은 사진과 영상, 이야기를 더욱 생생한 모습으로 이어 갑니다." },
+    "hologram": { "caption": "새로운 모습으로 다시 만나는 존재감", "title": "이터널 빔 디스플레이", "body": "이터널 빔은 소중한 기억을 곁에 머무는 듯한 아름다운 홀로그램 경험으로 펼쳐 보입니다.", "cta": "우리 아이 편지 만들기", "live": "곁에 있는 순간" },
+    "journey": { "label": "기억의 여정", "title": "하나의 기억이 오래도록 이어집니다.", "pet": "우리 아이", "memories": "함께한 기억", "soulTrace": "소울 트레이스", "letter": "마음의 편지", "eternalBeam": "이터널 빔", "continues": "계속되는 이야기" },
+    "livingMemorial": { "label": "모든 시간을 위하여", "title": "지금 곁에 있는 아이도, 마음속에 머무는 아이도.", "livingTitle": "오늘도 함께", "livingBody": "지금 이 순간에도 새롭게 쌓여 가는 기억을 위해.", "memorialTitle": "언제나 기억하며", "memorialBody": "시간이 흘러도 마음에 오래 머무는 기억을 위해." },
+    "finalCta": { "title": "하나의 기억에서 시작하세요.", "body": "우리 아이의 소울 트레이스 편지를 만들고, 그 이야기가 어디까지 이어질 수 있는지 만나보세요.", "primary": "우리 아이 편지 만들기", "secondary": "이터널 빔 알아보기" },
+    "footer": { "tagline": "이터널 빔이 선사하는 기억의 경험", "rights": "모든 권리를 보유합니다." },
+    "accessibility": {
+      "home": "소울 트레이스 홈", "primaryNav": "주요 메뉴", "mobileNav": "모바일 메뉴",
+      "heroDogAlt": "따뜻한 금빛 조명 속 골든리트리버", "momentSleepAlt": "햇살 아래 편안히 쉬는 반려동물", "momentWaitAlt": "창가에서 가족을 기다리는 강아지", "momentBondAlt": "사람과 반려동물이 함께하는 다정한 순간",
+      "galleryDogAlt": "행복한 강아지의 모습", "galleryCatAlt": "표정이 풍부한 고양이의 모습", "galleryRabbitAlt": "복슬복슬한 토끼의 모습", "galleryBirdAlt": "작고 화사한 새의 모습", "galleryHamsterAlt": "손안에 포근히 안긴 햄스터", "hologramPetAlt": "은은하게 빛나는 홀로그램 반려동물"
+    }
   }
 }

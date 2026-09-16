@@ -1,0 +1,10 @@
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 900ms cubic-bezier(0.16, 1, 0.3, 1), transform 900ms cubic-bezier(0.16, 1, 0.3, 1); will-change: opacity, transform; }
+.visible { opacity: 1; transform: translateY(0); }
+.float { animation: homepage-float 6s ease-in-out infinite; }
+.glow { animation: homepage-glow 4s ease-in-out infinite; }
+.hologram { animation: homepage-hologram 5s ease-in-out infinite; }
+.scanLines { background-image: repeating-linear-gradient(0deg, rgba(236, 215, 166, 0.15) 0, rgba(236, 215, 166, 0.15) 1px, transparent 1px, transparent 4px); }
+@keyframes homepage-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@keyframes homepage-glow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes homepage-hologram { 0%, 100% { transform: translateY(0) scale(1); opacity: 0.92; } 50% { transform: translateY(-6px) scale(1.012); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .reveal, .visible { opacity: 1; transform: none; transition: none; } .float, .glow, .hologram { animation: none; } }
