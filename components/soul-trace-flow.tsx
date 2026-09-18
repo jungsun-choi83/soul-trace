@@ -5,10 +5,16 @@ import { petIntroQuestionIds, PetIntroForm } from "@/components/pet-intro-form";
 import { SurveyFlow } from "@/components/survey-flow";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
 import { InstagramStoryCard } from "@/components/instagram-story-card";
-import { EternalBeamPreview } from "@/components/eternal-beam-preview";
 import { LanguageToggle } from "@/components/language-toggle";
 import { ResultAmbientAudio } from "@/components/result-ambient-audio";
 import { LetterPostageStamp } from "@/components/letter-postage-stamp";
+import { InkWordReveal } from "@/components/ink-word-reveal";
+import { useBufferedInkReveal } from "@/components/use-buffered-ink-reveal";
+import {
+  englishLetterBodyFont,
+  englishLetterOpeningFont,
+  koreanLetterFont,
+} from "@/components/generated-letter-fonts";
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 import { letterModePath, modeCopy, type LetterMode } from "@/lib/letter-mode";
@@ -26,10 +32,6 @@ import { userFacingErrorMessage } from "@/lib/user-facing-error";
 import { pickGenerationLoadingMessage } from "@/lib/generation-loading-messages";
 import { primeResultBgm, resolveResultBgmSrc, stopResultBgm } from "@/lib/result-bgm";
 import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
-import {
-  loadTemporaryLifeArchive,
-  saveTemporaryLifeArchive,
-} from "@/lib/life-archive-temporary";
 import { pickEmotionalLetterSentence, pickRandomBestLetterSentence } from "@/lib/letter-emotional-line";
 import {
   createGeneratedLetterStructure,
@@ -42,21 +44,24 @@ import {
   LETTER_THEMES,
   type LetterThemeId,
 } from "@/lib/letter-themes";
-import {
-  buildHandoffUrl,
-  getEternalBeamInstagramUrl,
-  getEternalBeamMainUrl,
-} from "@/lib/eternalbeam-urls";
+import { getEternalBeamInstagramUrl, getEternalBeamMainUrl, getEternalBeamYoutubeUrl } from "@/lib/eternalbeam-urls";
 import {
   buildLetterRequestFields,
   EMPTY_PET_INTRO,
   isPetIntroComplete,
   letterPetName,
-  petProfilePayloadFromIntro,
   resolveRecipientAddress,
   type PetIntroProfile,
 } from "@/lib/pet-profile";
 import { getQuestionnairePetTheme } from "@/lib/pet-theme";
+import { resolveDefaultStampByPetType, resolveStampType } from "@/lib/stamp";
+import { resolveLetterLanguage } from "@/lib/letter-language";
+import { formatLetterCreationDate, letterSignatureName } from "@/lib/letter-signature";
+import {
+  buildInkRevealPlan,
+  completeStreamedLetterPrefix,
+  shouldStartBufferedReveal,
+} from "@/lib/ink-word-reveal";
 import {
   completedResultKey,
   parseCompletedResult,
@@ -87,36 +92,115 @@ import {
 } from "@/lib/survey";
 import { toJpeg } from "html-to-image";
 import { flushSync } from "react-dom";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { FaFacebookF, FaInstagram, FaLine, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
+import { HiOutlineLink } from "react-icons/hi2";
 
 export type GeneratedResult = SessionGeneratedResult;
 
-/** 첫 그래프클러스터(드롭캡)와 나머지 본문 분리 — 선행 공백은 유지 */
-function splitLetterForDropCap(letter: string): { first: string; rest: string } {
+type ShareOption = {
+  label: string;
+  icon: ReactNode;
+  className: string;
+  action: () => void;
+  disabled?: boolean;
+};
+
+/** 생성된 첫 줄(호칭/인사말)만 본문과 다른 손글씨체로 표현한다. */
+function splitLetterOpening(letter: string): { opening: string; body: string } {
   const trimmed = letter.trimStart();
-  const leading = letter.slice(0, letter.length - trimmed.length);
   if (!trimmed) {
-    return { first: "", rest: letter };
+    return { opening: "", body: "" };
   }
-  const graphemes =
-    typeof Intl !== "undefined" && "Segmenter" in Intl
-      ? [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(trimmed)].map(
-          (s) => s.segment,
-        )
-      : [...trimmed];
-  const first = graphemes[0] ?? "";
-  const restBody = graphemes.slice(1).join("");
-  return { first, rest: leading + restBody };
+  const firstLineEnd = trimmed.indexOf("\n");
+  if (firstLineEnd === -1) {
+    return { opening: trimmed, body: "" };
+  }
+  return {
+    opening: trimmed.slice(0, firstLineEnd).trimEnd(),
+    body: trimmed.slice(firstLineEnd).trimStart(),
+  };
 }
 
 /** JPEG가 PNG보다 용량·인코딩 시간에 유리. pixelRatio 2로 디코드 부담 완화 */
 const CAPTURE_JPEG_QUALITY = 0.88;
 const CAPTURE_PIXEL_RATIO = 2;
 const LETTER_THEME_STORAGE_KEY = "soul-trace-letter-theme";
-const RESULT_ACTION_BUTTON_SIZE_CLASS =
-  "flex min-h-[56px] w-full items-center justify-center rounded-xl px-5 py-4 text-center text-sm font-light sm:text-base";
+const KICKSTARTER_URL = process.env.NEXT_PUBLIC_KICKSTARTER_URL?.trim() || null;
+const ETERNAL_BEAM_YOUTUBE_URL = getEternalBeamYoutubeUrl();
+const TIKTOK_WEBSITE_URL = "https://www.tiktok.com/login";
+const KAKAOTALK_WEBSITE_URL = "https://accounts.kakao.com/login";
 
-function InstagramIcon() {
+function KakaoTalkMark() {
+  return (
+    <span
+      aria-hidden="true"
+      className="relative inline-flex h-6 w-7 items-center justify-center rounded-[42%] bg-[#FEE500] text-[6px] font-black leading-none tracking-[-0.08em] text-[#191919] after:absolute after:bottom-[-2px] after:left-[5px] after:border-r-[4px] after:border-t-[4px] after:border-r-transparent after:border-t-[#FEE500]"
+    >
+      TALK
+    </span>
+  );
+}
+
+function AnnouncementIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4 shrink-0"
+    >
+      <path d="M4 13.5v-3l11-4.5v12L4 13.5Z" />
+      <path d="M15 9.2c2 .7 3 1.6 3 2.8s-1 2.1-3 2.8M6.5 14.5l1.2 4h3.1l-1.8-3" />
+    </svg>
+  );
+}
+
+function KickstarterAnnouncement({ locale }: { locale: Locale }) {
+  const content = (
+    <>
+      <AnnouncementIcon />
+      <span className="truncate whitespace-nowrap">
+        {locale === "ko" ? "곧 Kickstarter에서 만나요" : "Launching soon on Kickstarter"}
+      </span>
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="size-3.5 shrink-0"
+      >
+        <path d="m6 3.5 4.5 4.5L6 12.5" />
+      </svg>
+    </>
+  );
+  const className = `flex h-11 w-full items-center justify-center gap-2 overflow-hidden border-b border-[#143524] bg-[#070A08] px-4 text-center text-xs font-medium text-[#05CE78] sm:text-sm ${
+    locale === "ko" ? "font-ko" : "font-sans"
+  }`;
+
+  return (
+    <a
+      href="#kickstarter-promo"
+      onClick={(event) => {
+        event.preventDefault();
+        document.getElementById("kickstarter-promo")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }}
+      className={`${className} transition hover:bg-[#0A110D] hover:text-[#19E589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#05CE78]`}
+    >
+      {content}
+    </a>
+  );
+}
+
+function DownloadIcon() {
   return (
     <svg
       aria-hidden="true"
@@ -128,9 +212,26 @@ function InstagramIcon() {
       strokeLinejoin="round"
       className="size-[1.15em] shrink-0"
     >
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.4" cy="6.6" r="0.8" fill="currentColor" stroke="none" />
+      <path d="M12 3v11M7.5 10.5 12 15l4.5-4.5" />
+      <path d="M5 19h14" />
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-[1.15em] shrink-0"
+    >
+      <path d="m4 12 16-8-6.5 16-2.8-6.7L4 12Z" />
+      <path d="m10.7 13.3 4.8-4.8" />
     </svg>
   );
 }
@@ -149,12 +250,6 @@ function getSnapshotOptions(skipFonts: boolean) {
 const SKIP_FIRST_HERO_IMAGE =
   typeof process.env.NEXT_PUBLIC_SKIP_RESULT_HERO_IMAGE === "string" &&
   process.env.NEXT_PUBLIC_SKIP_RESULT_HERO_IMAGE.trim() === "1";
-const SECURE_LIFE_ARCHIVE_CONFIGURED = Boolean(
-  process.env.NEXT_PUBLIC_LIFE_ARCHIVE_SECURE_MODE === "1" &&
-  process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim(),
-);
-
 type SoulTraceFlowProps = {
   mode: LetterMode;
   initialResult?: GeneratedResult;
@@ -173,7 +268,6 @@ export function SoulTraceFlow({
   initialResult,
   initialServiceChannel = null,
   initialPetId = null,
-  hasEternalBeamAccess = false,
 }: SoulTraceFlowProps) {
   const { lang, t, messages } = useLocale();
   const copy = modeCopy(messages, mode);
@@ -195,6 +289,15 @@ export function SoulTraceFlow({
   const [privacySelections, setPrivacySelections] = useState<PrivacySelections>(() => ({ ...EMPTY_PRIVACY_SELECTIONS }));
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
   const [result, setResult] = useState<GeneratedResult | null>(initialResult ?? null);
+  const [animateFreshLetter, setAnimateFreshLetter] = useState(false);
+  const generationTimingRef = useRef<{
+    requestStartedAt: number;
+    firstChunkAt?: number;
+    firstCompleteWordAt?: number;
+    bufferReadyAt?: number;
+    generationDoneAt?: number;
+  } | null>(null);
+  const generationCreatedAtRef = useRef<string | null>(null);
   const [draftReady, setDraftReady] = useState(initialResult != null);
   /** 마지막으로 생성된 편지·분석이 맞는 UI 언어 (언어 토글 시 API로 다시 맞춤) */
   const [resultLocale, setResultLocale] = useState<Locale | null>(
@@ -203,6 +306,9 @@ export function SoulTraceFlow({
   const isRestoredResult = initialResult != null || result != null;
   const [isLoading, setIsLoading] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [shareTrayOpen, setShareTrayOpen] = useState(false);
+  const shareTrayRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
   const [isDownloading, setIsDownloading] = useState(false);
   const [shareableFile, setShareableFile] = useState<File | null>(null);
   const [letterThemeId, setLetterThemeId] = useState<LetterThemeId>(() => {
@@ -262,11 +368,6 @@ export function SoulTraceFlow({
   const step = questionIndex - introQuestionCount;
   const isStampPhotoQuestion = PHOTO_STEP_COUNT === 1 && isSurveyQuestion && step === surveyStepCount - 1;
   const questionsLeft = Math.max(totalQuestionCount - questionIndex - 1, 0);
-  const [handoffBusy, setHandoffBusy] = useState(false);
-  const [handoffError, setHandoffError] = useState<string | null>(null);
-  const [lifeArchiveBusy, setLifeArchiveBusy] = useState(false);
-  const [lifeArchiveNotice, setLifeArchiveNotice] = useState<string | null>(null);
-  const [lifeArchiveExplanationOpen, setLifeArchiveExplanationOpen] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
   const instagramStoryRef = useRef<HTMLDivElement>(null);
   const bgmPrimeRef = useRef<HTMLAudioElement>(null);
@@ -340,6 +441,7 @@ export function SoulTraceFlow({
       Boolean(
         petIntro.petName ||
         petIntro.petNickname ||
+        petIntro.petGender ||
         petIntro.petType ||
         petIntro.petBreed ||
         petIntro.petAge ||
@@ -453,127 +555,31 @@ export function SoulTraceFlow({
   }, []);
 
   const displayPetName = letterPetName(petIntro);
-  const petProfilePayload = petProfilePayloadFromIntro(petIntro);
   const letterHeading = copy.letterHeading.replace(
     "%RECIPIENT%",
     resolveRecipientAddress(petIntro, lang),
   );
   const officialSiteUrl = useMemo(() => getEternalBeamMainUrl(), []);
-
-  /**
-   * 편지를 Eternal Beam 으로 넘긴다.
-   *
-   * 브라우저는 **편지를 들고 가지 않는다.** 서버에서 일회용 능력(핸드오프 토큰)을
-   * 받아 traceId 와 함께 URL 에만 싣고, 본문은 Eternal Beam 이 서버 대 서버로
-   * 따로 가져간다. 그래서 이 링크가 새어도 15분 뒤에는, 또는 한 번 쓰이고 나면
-   * 아무것도 열지 못한다.
-   */
-  const continueToEternalBeam = useCallback(async () => {
-    const letterId = result?.letterId;
-    if (!letterId || handoffBusy) return;
-
-    setHandoffBusy(true);
-    setHandoffError(null);
-    try {
-      const response = await fetch("/api/handoff", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ letterId }),
-      });
-      if (!response.ok) throw new Error("handoff request failed");
-
-      const data = (await response.json()) as { traceId?: string; handoff?: string };
-      if (!data.traceId || !data.handoff) throw new Error("handoff response incomplete");
-
-      // 같은 탭으로 이동한다 — 토큰이 남겨진 탭에 방치되지 않는다.
-      // 성공 시 busy 를 되돌리지 않는다: 이 줄 다음은 실행되지 않는다.
-      window.location.assign(buildHandoffUrl(data.traceId, data.handoff));
-    } catch {
-      setHandoffError(t("result.destinationDeck.continueToEternalBeam.error"));
-      setHandoffBusy(false);
-    }
-  }, [result?.letterId, handoffBusy, t]);
   const instagramProfileUrl = useMemo(() => getEternalBeamInstagramUrl(), []);
 
-  const continueToLifeArchive = useCallback(async () => {
-    const letterId = result?.letterId;
-    if (!result || lifeArchiveBusy) return;
-
-    if (!SECURE_LIFE_ARCHIVE_CONFIGURED) {
-      const petName = (result.savedPetName ?? displayPetName).trim() || "My Pet";
-      const existingArchive = loadTemporaryLifeArchive();
-      const reusableArchive = existingArchive?.letter === result.letter &&
-        existingArchive.petName === petName
-        ? existingArchive
-        : null;
-      saveTemporaryLifeArchive({
-        archiveKey: reusableArchive?.archiveKey ?? crypto.randomUUID(),
-        petName,
-        letter: result.letter,
-        generationLocale: result.generationLocale ?? resultLocale ?? lang,
-        createdAt: reusableArchive?.createdAt ?? new Date().toISOString(),
-        soulTraceMemoryCount: memoryAnswers.slice(0, MEMORY_STEP_COUNT).filter((answer) => answer.trim()).length,
-        archiveMemoryCount: reusableArchive?.memories.length ?? 0,
-        memories: reusableArchive?.memories ?? [],
-      });
-      const archiveUrl = new URL("/life-archive", window.location.origin);
-      archiveUrl.searchParams.set("from", "letter");
-      archiveUrl.searchParams.set("returnTo", `${window.location.pathname}${window.location.search}${window.location.hash}`);
-      window.location.assign(`${archiveUrl.pathname}${archiveUrl.search}`);
-      return;
-    }
-
-    if (!letterId) return;
-
-    setLifeArchiveBusy(true);
-    setLifeArchiveNotice(null);
-    try {
-      const response = await fetch("/api/life-archive/access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ letterId }),
-      });
-      const data = (await response.json()) as {
-        status?: "ready" | "verification_required";
-        href?: string;
-      };
-      if (!response.ok) throw new Error("archive access failed");
-
-      if (data.status === "ready" && data.href === "/life-archive") {
-        const archiveUrl = new URL(data.href, window.location.origin);
-        archiveUrl.searchParams.set("from", "letter");
-        archiveUrl.searchParams.set("returnTo", `${window.location.pathname}${window.location.search}${window.location.hash}`);
-        window.location.assign(`${archiveUrl.pathname}${archiveUrl.search}`);
-        return;
-      }
-      if (data.status === "verification_required") {
-        setLifeArchiveNotice(t("result.lifeArchive.checkEmail"));
-        return;
-      }
-      throw new Error("archive response incomplete");
-    } catch {
-      setLifeArchiveNotice(t("result.lifeArchive.error"));
-    } finally {
-      setLifeArchiveBusy(false);
-    }
-  }, [displayPetName, lang, lifeArchiveBusy, memoryAnswers, result, resultLocale, t]);
-
-  const handleLifeArchiveJourney = useCallback(() => {
-    if (hasEternalBeamAccess) {
-      void continueToLifeArchive();
-      return;
-    }
-    setLifeArchiveExplanationOpen(true);
-  }, [continueToLifeArchive, hasEternalBeamAccess]);
-
   useEffect(() => {
-    if (!lifeArchiveExplanationOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setLifeArchiveExplanationOpen(false);
+    if (!shareTrayOpen) return;
+    const closeShareTray = (event: PointerEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent) {
+        if (event.key === "Escape") setShareTrayOpen(false);
+        return;
+      }
+      if (!shareTrayRef.current?.contains(event.target as Node)) {
+        setShareTrayOpen(false);
+      }
     };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [lifeArchiveExplanationOpen]);
+    document.addEventListener("pointerdown", closeShareTray);
+    window.addEventListener("keydown", closeShareTray);
+    return () => {
+      document.removeEventListener("pointerdown", closeShareTray);
+      window.removeEventListener("keydown", closeShareTray);
+    };
+  }, [shareTrayOpen]);
 
   useEffect(() => {
     if (!petPhotoFile) {
@@ -596,11 +602,13 @@ export function SoulTraceFlow({
     setPetPhotoSkipped(true);
     setPrivacyConsent(false);
     setShowValidationErrors(false);
+    privacyTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setPrivacyModalOpen(true);
   }, []);
 
   const persistStampSelection = useCallback(async (letterId: string | null | undefined) => {
     if (!letterId) return;
-    const stampType = petPhotoFile && privacyConsent ? "photo" : "paw";
+    const stampType = resolveStampType(petIntro.petType, Boolean(petPhotoFile && privacyConsent));
     const form = new FormData();
     form.set("letterId", letterId);
     form.set("email", normalizeQuestionnaireEmail(email));
@@ -621,7 +629,7 @@ export function SoulTraceFlow({
         message: error instanceof Error ? error.message : "Unknown network error",
       });
     }
-  }, [email, petPhotoFile, privacyConsent]);
+  }, [email, petIntro.petType, petPhotoFile, privacyConsent]);
 
   const patchPetIntro = useCallback((patch: Partial<PetIntroProfile>) => {
     setPrivacyConsent(false);
@@ -741,6 +749,7 @@ export function SoulTraceFlow({
   const introQuestionId = introQuestions[questionIndex] ?? "name";
   const isIntroAnswerValid =
     introQuestionId === "name" ? Boolean(petIntro.petName.trim()) :
+    introQuestionId === "gender" ? Boolean(petIntro.petGender) :
     introQuestionId === "type" ? Boolean(petIntro.petType) :
     introQuestionId === "breed" ? Boolean(petIntro.petBreed) :
     introQuestionId === "years" ? /^\d+$/.test(petIntro.petAge ?? "") :
@@ -854,6 +863,8 @@ export function SoulTraceFlow({
     setShareableFile(null);
     setStoryShareLine(null);
     setGenerationLoadingMessage(pickGenerationLoadingMessage(lang, displayPetName));
+    setAnimateFreshLetter(true);
+    generationCreatedAtRef.current = new Date().toISOString();
     setResult({
       personalityType: "",
       personalitySummary: "",
@@ -863,6 +874,7 @@ export function SoulTraceFlow({
       heroImageUrl: null,
       heroImageSkipped: false,
       savedPetName: displayPetName,
+      createdAt: generationCreatedAtRef.current,
       generationLocale: lang,
     });
     setResultLocale(lang);
@@ -878,6 +890,7 @@ export function SoulTraceFlow({
         serviceChannel,
       );
 
+      generationTimingRef.current = { requestStartedAt: performance.now() };
       const response = await fetch("/api/generate-letter", {
         method: "POST",
         headers: {
@@ -899,6 +912,11 @@ export function SoulTraceFlow({
             : {}),
         }),
       });
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[letter-timing] SSE response opened", {
+          elapsedMs: Math.round(performance.now() - generationTimingRef.current.requestStartedAt),
+        });
+      }
 
       if (!response.ok) {
         const errorData = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -908,8 +926,44 @@ export function SoulTraceFlow({
       const contentType = response.headers.get("content-type") ?? "";
 
       if (contentType.includes("text/event-stream")) {
+        let timingStreamText = "";
         await consumeLetterSseStream(response, {
           onLetterDelta: (delta) => {
+            if (generationTimingRef.current && generationTimingRef.current.firstChunkAt === undefined) {
+              generationTimingRef.current.firstChunkAt = performance.now();
+              if (process.env.NODE_ENV === "development") {
+                console.debug("[letter-timing] first text chunk", {
+                  elapsedMs: Math.round(
+                    generationTimingRef.current.firstChunkAt - generationTimingRef.current.requestStartedAt,
+                  ),
+                });
+              }
+            }
+            if (process.env.NODE_ENV === "development" && generationTimingRef.current) {
+              timingStreamText += delta;
+              const completeText = completeStreamedLetterPrefix(timingStreamText);
+              if (generationTimingRef.current.firstCompleteWordAt === undefined && completeText.trim()) {
+                generationTimingRef.current.firstCompleteWordAt = performance.now();
+                console.debug("[letter-timing] first complete word buffered", {
+                  elapsedMs: Math.round(
+                    generationTimingRef.current.firstCompleteWordAt -
+                      generationTimingRef.current.requestStartedAt,
+                  ),
+                });
+              }
+              if (
+                generationTimingRef.current.bufferReadyAt === undefined &&
+                shouldStartBufferedReveal(completeText, false)
+              ) {
+                generationTimingRef.current.bufferReadyAt = performance.now();
+                console.debug("[letter-timing] handwriting buffer ready", {
+                  elapsedMs: Math.round(
+                    generationTimingRef.current.bufferReadyAt -
+                      generationTimingRef.current.requestStartedAt,
+                  ),
+                });
+              }
+            }
             setResult((prev) =>
               prev
                 ? {
@@ -931,6 +985,16 @@ export function SoulTraceFlow({
             );
           },
           onDone: (data) => {
+            if (generationTimingRef.current) {
+              generationTimingRef.current.generationDoneAt = performance.now();
+              if (process.env.NODE_ENV === "development") {
+                console.debug("[letter-timing] completed payload received", {
+                  elapsedMs: Math.round(
+                    generationTimingRef.current.generationDoneAt - generationTimingRef.current.requestStartedAt,
+                  ),
+                });
+              }
+            }
             const completedResult: GeneratedResult = {
               personalityType: data.personalityType,
               personalitySummary: data.personalitySummary,
@@ -943,6 +1007,7 @@ export function SoulTraceFlow({
                 typeof data.savedPetName === "string" && data.savedPetName.trim().length > 0
                   ? data.savedPetName.trim()
                   : displayPetName,
+              createdAt: data.createdAt ?? generationCreatedAtRef.current,
               letterId: data.letterId ?? null,
               petId: data.petId ?? initialPetId,
               persistenceFailed: data.persistenceFailed === true,
@@ -965,6 +1030,7 @@ export function SoulTraceFlow({
           heroImageSkipped: data.heroImageSkipped === true,
           savedPetName: typeof data.savedPetName === "string" ? data.savedPetName : displayPetName,
           generationLocale: data.generationLocale ?? lang,
+          createdAt: data.createdAt ?? generationCreatedAtRef.current,
         };
         persistCompletedResult(completedResult);
         clearQuestionnaireDraft();
@@ -976,6 +1042,7 @@ export function SoulTraceFlow({
       stopResultBgm(bgmPrimeRef);
       setResult(null);
       setResultLocale(null);
+      setAnimateFreshLetter(false);
       setError(userFacingErrorMessage(err, t("errors.generateFailed")));
     } finally {
       setIsLoading(false);
@@ -1122,10 +1189,32 @@ export function SoulTraceFlow({
     })();
   };
 
+  const openShareUrl = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const shareCurrentPage = (platform: "facebook" | "line" | "x") => {
+    const url = encodeURIComponent(window.location.href);
+    openShareUrl(
+      platform === "facebook"
+        ? `https://www.facebook.com/sharer/sharer.php?u=${url}`
+        : platform === "line"
+          ? `https://social-plugins.line.me/lineit/share?url=${url}`
+          : `https://x.com/intent/post?url=${url}`,
+    );
+  };
+
+  const copyResultLink = () => {
+    void navigator.clipboard.writeText(window.location.href).catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : t("errors.shareFailed"));
+    });
+  };
+
   const goBackFromResult = () => {
     if (!initialResult) {
       setResult(null);
       setResultLocale(null);
+      setAnimateFreshLetter(false);
       setShareableFile(null);
       setError(null);
       return;
@@ -1152,6 +1241,7 @@ export function SoulTraceFlow({
     setPrivacyModalOpen(false);
     setResult(null);
     setResultLocale(null);
+    setAnimateFreshLetter(false);
     setShareableFile(null);
     setError(null);
     setGenerationLoadingMessage(null);
@@ -1185,10 +1275,42 @@ export function SoulTraceFlow({
       : result.letterStructure ??
         createGeneratedLetterStructure(letterHeading, result.letter, "", lang)
     : createGeneratedLetterStructure(letterHeading, "", "", lang);
-  const letterBody = activeLetterStructure.paragraphs.join("\n\n");
-  const letterSplit = result ? splitLetterForDropCap(letterBody) : null;
-  const dropCap = letterSplit?.first ?? "";
-  const letterRest = letterSplit?.rest ?? "";
+  const completedLetterBody = activeLetterStructure.paragraphs.join("\n\n");
+  const finalRevealText = completedLetterBody;
+  const noteFirstWordVisible = useCallback(() => {
+    if (process.env.NODE_ENV !== "development" || !generationTimingRef.current) return;
+    console.debug("[letter-timing] first handwritten word", {
+      elapsedMs: Math.round(performance.now() - generationTimingRef.current.requestStartedAt),
+      afterFirstChunkMs: generationTimingRef.current.firstChunkAt === undefined
+        ? undefined
+        : Math.round(performance.now() - generationTimingRef.current.firstChunkAt),
+    });
+  }, []);
+  const bufferedReveal = useBufferedInkReveal({
+    streamedText: isLoading ? result?.letter ?? "" : finalRevealText,
+    finalText: finalRevealText,
+    active: animateFreshLetter,
+    generationComplete: !isLoading,
+    onRevealStart: noteFirstWordVisible,
+  });
+  const visibleLetterBody = isLoading
+    ? bufferedReveal.visibleText
+    : bufferedReveal.visibleText.slice(0, Math.min(bufferedReveal.visibleText.length, completedLetterBody.length));
+  const letterLanguage = resolveLetterLanguage(result?.generationLocale, resultLocale);
+  const signatureDate = formatLetterCreationDate(result?.createdAt, letterLanguage);
+  const signatureName = letterSignatureName(result?.savedPetName ?? displayPetName);
+  const letterSplit = result ? splitLetterOpening(visibleLetterBody) : null;
+  const letterOpening = letterSplit?.opening ?? "";
+  const letterBodyAfterOpening = letterSplit?.body ?? "";
+  const inkRevealPlan = useMemo(
+    () => buildInkRevealPlan([
+      letterOpening,
+      letterBodyAfterOpening,
+      "",
+    ]),
+    [letterBodyAfterOpening, letterOpening],
+  );
+  const animateLetterWords = animateFreshLetter;
   const showChannelBackground =
     channelBackground !== null && (!result || generationLoadingMessage !== null);
 
@@ -1225,6 +1347,7 @@ export function SoulTraceFlow({
             showChannelBackground ? "bg-transparent" : "bg-black"
           }`}
         >
+          <KickstarterAnnouncement locale={lang} />
           <WarmRisingSparkles />
           <header className="relative z-[2] flex w-full items-center justify-between px-4 pt-6 sm:px-6">
             <button
@@ -1337,12 +1460,11 @@ export function SoulTraceFlow({
               >
                 <div className="flex min-h-full items-center justify-center">
                   <article
-                    className="relative mx-auto w-full max-w-2xl overflow-hidden rounded-[1.35rem] border px-5 pb-9 pt-[9rem] shadow-[0_24px_70px_rgba(8,10,20,0.34),inset_0_0_70px_rgba(130,91,35,0.06)] sm:px-10 sm:pb-12 sm:pt-[11rem] md:px-14"
+                    className={`${englishLetterBodyFont.variable} ${englishLetterOpeningFont.variable} ${koreanLetterFont.variable} relative mx-auto w-full max-w-2xl overflow-hidden rounded-[1.35rem] border px-5 pb-32 pt-[9rem] shadow-[0_24px_70px_rgba(8,10,20,0.34),inset_0_0_70px_rgba(130,91,35,0.06)] sm:px-10 sm:pb-36 sm:pt-[11rem] md:px-14`}
                     style={{
                       background: letterTheme.cardBackground,
                       borderColor: letterTheme.panelBorderColor,
                       color: letterTheme.textColor,
-                      fontFamily: "var(--font-playfair), var(--font-noto-serif-kr), Georgia, serif",
                     }}
                   >
                     <div
@@ -1351,6 +1473,7 @@ export function SoulTraceFlow({
                     />
                     <LetterPostageStamp
                       photoUrl={petPhotoPreviewUrl && privacyConsent ? petPhotoPreviewUrl : null}
+                      defaultStamp={resolveDefaultStampByPetType(petIntro.petType)}
                       accentColor={letterTheme.stampAccentColor}
                       inkColor={letterTheme.stampInkColor}
                     />
@@ -1374,83 +1497,249 @@ export function SoulTraceFlow({
                         style={{ background: `linear-gradient(to bottom, ${letterTheme.stampAccentColor}, ${letterTheme.dividerColor}, transparent)` }}
                       />
                     </aside>
-                    <h2
-                      className="border-b pb-5 text-center text-lg font-semibold leading-relaxed tracking-[0.07em] sm:mx-6 sm:text-xl md:mx-8"
-                      style={{ color: letterTheme.headingColor, borderColor: letterTheme.dividerColor }}
-                    >
-                      {activeLetterStructure.title || letterHeading}
-                    </h2>
-                    {isLoading && !result.letter.trim() ? (
+                    {isLoading && !bufferedReveal.visibleText.trim() ? (
                       <p className="mt-7 animate-pulse text-center text-base leading-8 opacity-75">
                         {t("result.letterStarting")}
                       </p>
                     ) : null}
                     <div
                       data-letter-body
-                      className={`mt-7 whitespace-pre-line text-left text-[15px] font-normal leading-[1.95] tracking-[0.012em] sm:pl-6 sm:text-[17px] sm:leading-[2] md:pl-8 ${
-                        lang === "ko" ? "break-keep" : ""
+                      className={`whitespace-pre-line text-left text-[17px] font-normal leading-[1.9] tracking-[0.012em] sm:pl-6 sm:leading-[1.95] md:pl-8 ${
+                        letterLanguage === "ko" ? "break-keep sm:text-[19px]" : "sm:text-[20px]"
                       }`}
+                      style={{
+                        fontFamily: letterLanguage === "ko"
+                          ? "var(--font-letter-ko), var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif"
+                          : "var(--font-letter-en-body), 'Segoe Print', 'Bradley Hand', cursive",
+                      }}
                     >
-                      {dropCap ? (
-                        <>
-                          <span
-                            className="float-left mr-[0.12em] mt-[0.06em] text-[3.5rem] font-semibold leading-[0.8] sm:text-[4.25rem]"
+                      {letterOpening ? (
+                        <span
+                          data-letter-salutation
+                          className={`mb-3 block break-words leading-[1.35] sm:mb-4 ${
+                            letterLanguage === "ko" ? "text-[20px] sm:text-[22px]" : "text-[26px] sm:text-[31px]"
+                          }`}
+                          style={{
+                            color: letterTheme.dropCapColor,
+                            fontFamily: letterLanguage === "ko"
+                              ? "var(--font-letter-ko), var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif"
+                              : "var(--font-letter-en-opening), var(--font-letter-en-body), 'Segoe Script', cursive",
+                            textShadow: "0 1px 1px rgba(83,55,24,0.12)",
+                          }}
+                        >
+                          <InkWordReveal tokens={inkRevealPlan[0]} animate={animateLetterWords} live />
+                        </span>
+                      ) : null}
+                      <InkWordReveal tokens={inkRevealPlan[1]} animate={animateLetterWords} live />
+                    </div>
+                    {!isLoading && (signatureDate || signatureName) ? (
+                      <div
+                        data-letter-signature
+                        className="absolute bottom-8 right-5 max-w-[90%] text-right sm:bottom-10 sm:right-10 sm:max-w-[82%] md:right-14"
+                        style={{ borderColor: letterTheme.dividerColor, color: letterTheme.endingColor }}
+                      >
+                        {signatureDate ? (
+                          <p className={`text-xs font-normal tracking-[0.04em] opacity-75 sm:text-sm ${letterLanguage === "ko" ? "font-ko" : "font-display-en"}`}>
+                            {signatureDate}
+                          </p>
+                        ) : null}
+                        {signatureName ? (
+                          <p
+                            className="mt-2 text-[25px] leading-tight sm:text-[30px]"
                             style={{
-                              color: letterTheme.dropCapColor,
-                              textShadow: "0 1px 1px rgba(83,55,24,0.15)",
+                              fontFamily: letterLanguage === "ko"
+                                ? "var(--font-letter-ko), var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif"
+                                : "var(--font-letter-en-opening), var(--font-letter-en-body), 'Segoe Script', cursive",
                             }}
                           >
-                            {dropCap}
-                          </span>
-                          {letterRest}
-                        </>
-                      ) : (
-                        letterBody
-                      )}
-                    </div>
-                    {activeLetterStructure.endingPhrase ? (
-                      <p
-                        data-letter-ending-phrase
-                        className="mt-10 ml-auto max-w-[90%] -rotate-[0.8deg] border-t pt-5 text-right text-[20px] font-semibold italic leading-relaxed tracking-[0.025em] sm:max-w-[82%] sm:text-[24px]"
-                        style={{
-                          color: letterTheme.endingColor,
-                          borderColor: letterTheme.dividerColor,
-                          fontFamily: lang === "ko"
-                            ? "var(--font-nanum-myeongjo), var(--font-noto-serif-kr), serif"
-                            : "var(--font-cormorant), var(--font-playfair), cursive",
-                        }}
-                      >
-                        {activeLetterStructure.endingPhrase}
-                      </p>
+                            {signatureName}
+                          </p>
+                        ) : null}
+                      </div>
                     ) : null}
                   </article>
                 </div>
               </div>
             </div>
 
-            <div
-              className={`mx-auto mt-10 max-w-xl space-y-10 px-1 text-center sm:mt-12 ${
-                lang === "ko" ? "font-ko" : "font-display-en"
-              }`}
-            >
-              <div className="space-y-6 text-[15px] font-extralight leading-[1.95] tracking-[0.02em] text-[#EDE4D3]/95 sm:text-base sm:leading-[2]">
-                <p className="whitespace-pre-line">{t("result.emotionalBridge.block1")}</p>
-                <p className="whitespace-pre-line text-[#F3EAD8]">{t("result.emotionalBridge.block2")}</p>
+            <div className="mx-auto grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={handleDownloadImage}
+                disabled={!canCaptureArtwork || isDownloading || isSharing}
+                className={`flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#C7A43A] px-5 py-3 text-center text-sm font-medium text-[#0B0A08] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] transition hover:bg-[#D4B34A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5C761] active:bg-[#B28F2E] disabled:cursor-not-allowed disabled:opacity-45 sm:text-base ${
+                  lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
+                }`}
+              >
+                <span className="inline-flex items-center justify-center gap-2.5">
+                  <DownloadIcon />
+                  <span>{isDownloading ? t("result.preparingImage") : t("result.keepForever")}</span>
+                </span>
+              </button>
+              <div ref={shareTrayRef} className="relative flex min-w-0 flex-col gap-2 sm:block">
+                <button
+                  type="button"
+                  onClick={() => setShareTrayOpen((open) => !open)}
+                  disabled={!canCaptureArtwork || isSharing || isDownloading}
+                  aria-expanded={shareTrayOpen}
+                  aria-controls="letter-share-tray"
+                  className={`flex min-h-[52px] w-full items-center justify-center rounded-xl border border-[#C7A43A]/75 bg-[#0C0B09] px-5 py-3 text-center text-sm font-medium text-[#D8B84C] transition hover:border-[#E0C15A] hover:bg-[#15120C] hover:text-[#E5C761] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C] disabled:cursor-not-allowed disabled:opacity-45 sm:text-base ${
+                    lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
+                  }`}
+                >
+                  <span className="inline-flex items-center justify-center gap-2.5">
+                    <ShareIcon />
+                    <span>{t("result.instagramShareButton")}</span>
+                  </span>
+                </button>
+
+                <AnimatePresence>
+                  {shareTrayOpen ? (
+                    <motion.div
+                      id="letter-share-tray"
+                      role="group"
+                      aria-label={t("result.shareOptions.label")}
+                      initial={prefersReducedMotion ? false : { opacity: 0, scaleX: 0 }}
+                      animate={{ opacity: 1, scaleX: 1 }}
+                      exit={{ opacity: 0, scaleX: 0 }}
+                      transition={{
+                        duration: prefersReducedMotion ? 0 : 0.32,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
+                      className="z-20 flex origin-left items-center justify-center gap-2 overflow-hidden rounded-xl border border-[#C7A43A]/55 bg-[#0C0B09] p-2 shadow-[0_14px_35px_rgba(0,0,0,0.45)] motion-reduce:transition-none sm:absolute sm:left-full sm:top-0 sm:ml-3 sm:min-h-[52px] sm:justify-start"
+                    >
+                      {([
+                        {
+                          label: t("result.shareOptions.instagram"),
+                          icon: <FaInstagram aria-hidden="true" className="size-5" />,
+                          className: "text-[#F06AA7] hover:bg-[#F06AA7]/15",
+                          action: onInstagramButtonClick,
+                        },
+                        {
+                          label: t("result.shareOptions.tiktok"),
+                          icon: <FaTiktok aria-hidden="true" className="size-5" />,
+                          className: "text-white drop-shadow-[1px_1px_0_#25F4EE] hover:bg-white/15",
+                          action: () => openShareUrl(TIKTOK_WEBSITE_URL),
+                        },
+                        {
+                          label: t("result.shareOptions.facebook"),
+                          icon: <FaFacebookF aria-hidden="true" className="size-5" />,
+                          className: "text-[#1877F2] hover:bg-[#1877F2]/15",
+                          action: () => shareCurrentPage("facebook"),
+                        },
+                        {
+                          label: t("result.shareOptions.x"),
+                          icon: <FaXTwitter aria-hidden="true" className="size-5" />,
+                          className: "text-white hover:bg-white/15",
+                          action: () => shareCurrentPage("x"),
+                        },
+                        {
+                          label: t("result.shareOptions.kakao"),
+                          icon: <KakaoTalkMark />,
+                          className: "!bg-transparent !text-[#191919] hover:bg-white/10",
+                          action: () => openShareUrl(KAKAOTALK_WEBSITE_URL),
+                        },
+                        {
+                          label: t("result.shareOptions.line"),
+                          icon: <FaLine aria-hidden="true" className="size-6" />,
+                          className: "text-[#06C755] hover:bg-[#06C755]/15",
+                          action: () => shareCurrentPage("line"),
+                        },
+                        {
+                          label: t("result.shareOptions.copyLink"),
+                          icon: <HiOutlineLink aria-hidden="true" className="size-5" />,
+                          className: "text-[#D8B84C] hover:bg-[#D8B84C]/15",
+                          action: copyResultLink,
+                        },
+                      ] as ShareOption[]).map((option, index) => (
+                        <motion.button
+                          key={option.label}
+                          type="button"
+                          onClick={option.action}
+                          disabled={option.disabled}
+                          aria-label={option.label}
+                          title={option.label}
+                          initial={prefersReducedMotion ? false : { opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -5 }}
+                          transition={{
+                            duration: prefersReducedMotion ? 0 : 0.18,
+                            delay: prefersReducedMotion ? 0 : 0.1 + index * 0.04,
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                          className={`flex size-10 shrink-0 items-center justify-center rounded-full bg-white/[0.045] transition duration-150 hover:scale-105 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C] disabled:cursor-not-allowed disabled:opacity-65 disabled:hover:scale-100 motion-reduce:transform-none motion-reduce:transition-none ${option.className}`}
+                        >
+                          {option.icon}
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
               </div>
             </div>
 
-            <EternalBeamPreview lang={lang} />
-
-            <p
-              className={`mt-6 text-center text-[11px] font-extralight leading-relaxed text-[#C4B8A8]/85 ${
+            <section
+              aria-label={t("result.productCards.label")}
+              className={`mx-auto mt-6 grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-2 ${
                 lang === "ko" ? "font-ko" : "font-display-en"
               }`}
             >
-              {(result.savedPetName ?? displayPetName).trim()}
-              {petProfilePayload
-                ? ` · ${petProfilePayload.yearMet}–${petProfilePayload.yearParted}`
-                : null}
-            </p>
+              <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#C7A43A]/40 bg-[#0C0B09] shadow-[0_16px_42px_rgba(0,0,0,0.28)]">
+                <div className="relative aspect-[16/7] w-full overflow-hidden bg-black">
+                  <Image
+                    src="/images/letter-keepsake-result.png"
+                    alt={t("result.productCards.keepsake.imageAlt")}
+                    fill
+                    sizes="(max-width: 640px) calc(100vw - 40px), 320px"
+                    className="object-cover object-center"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col p-5">
+                  <h2 className="text-lg font-medium leading-snug text-[#F3E8D2]">
+                    {t("result.productCards.keepsake.title")}
+                  </h2>
+                  <p className="mt-2 flex-1 text-sm font-light leading-relaxed text-[#C4B8A8]">
+                    {t("result.productCards.keepsake.description")}
+                  </p>
+                  <button
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    className="mt-5 flex min-h-11 w-full cursor-not-allowed items-center justify-center rounded-xl bg-[#C7A43A] px-4 py-3 text-center text-sm font-medium text-[#0B0A08]"
+                  >
+                    {t("result.productCards.keepsake.cta")}
+                  </button>
+                </div>
+              </article>
+
+              <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#C7A43A]/40 bg-[#0C0B09] shadow-[0_16px_42px_rgba(0,0,0,0.28)]">
+                <div className="relative aspect-[16/7] w-full overflow-hidden bg-black">
+                  <Image
+                    src="/images/eternal-beam-result.png"
+                    alt={t("result.productCards.eternalBeam.imageAlt")}
+                    fill
+                    sizes="(max-width: 640px) calc(100vw - 40px), 320px"
+                    className="object-cover object-center"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col p-5">
+                  <h2 className="text-lg font-medium leading-snug text-[#F3E8D2]">
+                    {t("result.productCards.eternalBeam.title")}
+                  </h2>
+                  <p className="mt-2 flex-1 text-sm font-light leading-relaxed text-[#C4B8A8]">
+                    {t("result.productCards.eternalBeam.description")}
+                  </p>
+                  <a
+                    href={officialSiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 flex min-h-11 w-full items-center justify-center rounded-xl border border-[#C7A43A]/75 bg-[#0A0908] px-4 py-3 text-center text-sm font-medium text-[#D8B84C] transition hover:border-[#E0C15A] hover:bg-[#17130D] hover:text-[#E5C761] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C]"
+                  >
+                    {t("result.productCards.eternalBeam.cta")}
+                  </a>
+                </div>
+              </article>
+            </section>
 
             {!canCaptureArtwork ? (
               <p className="font-ko mt-4 text-center text-xs text-[#D4AF37]">
@@ -1458,104 +1747,7 @@ export function SoulTraceFlow({
               </p>
             ) : null}
 
-            <div className="mx-auto mt-8 w-full max-w-xl text-center">
-              <p
-                className={`mb-3 text-sm font-extralight leading-relaxed text-[#D4AF37]/88 sm:text-[13px] ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                {t("result.instagramShareLead")}
-              </p>
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={handleDownloadImage}
-                  disabled={!canCaptureArtwork || isDownloading || isSharing}
-                  className={`${RESULT_ACTION_BUTTON_SIZE_CLASS} bg-[#b89a2e] text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-45 ${
-                    lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
-                  }`}
-                >
-                  {isDownloading ? t("result.preparingImage") : t("result.keepForever")}
-                </button>
-                <button
-                  type="button"
-                  onClick={onInstagramButtonClick}
-                  disabled={!canCaptureArtwork || isSharing || isDownloading}
-                  className={`${RESULT_ACTION_BUTTON_SIZE_CLASS} border border-[rgba(255,255,255,0.1)] bg-[rgba(26,26,26,0.78)] text-[#F3EAD8] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-[rgba(212,175,55,0.28)] hover:bg-[rgba(30,28,26,0.88)] disabled:cursor-not-allowed disabled:opacity-45 ${
-                    lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
-                  }`}
-                >
-                  <span className="inline-flex items-center justify-center gap-2.5">
-                    <InstagramIcon />
-                    <span>{isSharing ? t("result.preparingImage") : t("result.instagramShareButton")}</span>
-                  </span>
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={handleLifeArchiveJourney}
-                disabled={lifeArchiveBusy || (hasEternalBeamAccess && SECURE_LIFE_ARCHIVE_CONFIGURED && (!result.letterId || result.persistenceFailed))}
-                className={`${RESULT_ACTION_BUTTON_SIZE_CLASS} mt-3 border border-[#D4AF37]/45 bg-[#D4AF37]/[0.08] text-[#F5E6C8] transition hover:border-[#D4AF37]/75 hover:bg-[#D4AF37]/15 disabled:cursor-not-allowed disabled:opacity-45 ${
-                  lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
-                }`}
-              >
-                {lifeArchiveBusy ? t("result.lifeArchive.preparing") : t("result.lifeArchive.journeyCta")}
-              </button>
-              {lifeArchiveExplanationOpen && !hasEternalBeamAccess ? (
-                <div
-                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-5 py-8 backdrop-blur-sm"
-                  role="presentation"
-                  onMouseDown={(event) => {
-                    if (event.target === event.currentTarget) setLifeArchiveExplanationOpen(false);
-                  }}
-                >
-                  <section
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="life-archive-explanation-title"
-                    className={`relative w-full max-w-xl rounded-2xl border border-[#D4AF37]/35 bg-[rgba(24,20,14,0.98)] px-5 py-7 text-left shadow-[0_0_70px_rgba(212,175,55,0.14)] sm:px-8 sm:py-8 ${
-                      lang === "ko" ? "font-ko" : "font-display-en"
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setLifeArchiveExplanationOpen(false)}
-                      aria-label={t("result.lifeArchive.close")}
-                      className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-xl font-light text-[#C4B8A8] transition hover:bg-white/5 hover:text-[#F5E6C8]"
-                    >
-                      <span aria-hidden>×</span>
-                    </button>
-                    <h3 id="life-archive-explanation-title" className="pr-10 text-xl font-light leading-snug text-[#F5E6C8] sm:text-2xl">
-                      {t("result.lifeArchive.accessTitle")}
-                    </h3>
-                    <p className="mt-4 whitespace-pre-line text-sm font-extralight leading-[1.9] text-[#C4B8A8] sm:text-[15px]">
-                      {t("result.lifeArchive.lockedBody")}
-                    </p>
-                    <button
-                      type="button"
-                      disabled
-                      aria-disabled="true"
-                      className="mt-6 flex min-h-[56px] w-full cursor-not-allowed items-center justify-center rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/[0.05] px-5 py-4 text-center text-sm font-light text-[#D9C6A4]/65 sm:text-base"
-                    >
-                      <span aria-hidden className="mr-2">&#128274;</span>
-                      {t("result.lifeArchive.lockedCta")}
-                    </button>
-                  </section>
-                </div>
-              ) : null}
-              {lifeArchiveNotice ? (
-                <p className={`mt-4 whitespace-pre-line text-sm font-light leading-relaxed text-[#D9C6A4] ${lang === "ko" ? "font-ko" : "font-display-en"}`} role="status">
-                  {lifeArchiveNotice}
-                </p>
-              ) : null}
-            </div>
-
             <div className="mx-auto mt-12 w-full max-w-xl space-y-5">
-              {/*
-                편지 핸드오프. letterId 가 있을 때만 보인다 — 저장이 실패했거나
-                마이그레이션 전이면 넘길 편지가 서버에 없으므로, 실패할 버튼을
-                보여 주지 않는다.
-              */}
               {/*
                 저장 실패를 **말한다.** 이 경고가 없으면 사용자는 완벽한 편지를
                 보고 저장됐다고 믿은 채 창을 닫고, 편지는 영영 사라진다.
@@ -1577,88 +1769,49 @@ export function SoulTraceFlow({
                 </article>
               ) : null}
 
-              {result.letterId ? (
-                <article
-                  className={`rounded-2xl border border-[rgba(212,175,55,0.35)] bg-[rgba(24,20,14,0.82)] px-5 py-7 text-left shadow-[0_0_48px_rgba(212,175,55,0.10)] sm:px-8 sm:py-8 ${
-                    lang === "ko" ? "font-ko" : "font-display-en"
-                  }`}
-                >
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-[#D4AF37]/95 sm:text-xs">
-                    {t("result.destinationDeck.continueToEternalBeam.label")}
-                  </p>
-                  <h3 className="mt-3 text-[15px] font-light leading-snug text-[#EDE4D3] sm:text-base">
-                    {t("result.destinationDeck.continueToEternalBeam.title")}
-                  </h3>
-                  <p className="mt-3 text-sm font-extralight leading-[1.9] text-[#C4B8A8] sm:text-[15px]">
-                    {t("result.destinationDeck.continueToEternalBeam.body")}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={continueToEternalBeam}
-                    disabled={handoffBusy}
-                    className="mt-6 flex w-full items-center justify-center rounded-2xl bg-[#b89a2e] px-5 py-3.5 text-center text-base font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {handoffBusy
-                      ? t("result.destinationDeck.continueToEternalBeam.pending")
-                      : t("result.destinationDeck.continueToEternalBeam.cta")}
-                  </button>
-                  {handoffError ? (
-                    <p className="mt-3 text-center text-sm text-red-300">{handoffError}</p>
-                  ) : null}
-                </article>
-              ) : null}
+            </div>
 
-              <article
-                className={`rounded-2xl border border-[rgba(212,175,55,0.22)] bg-[rgba(18,16,14,0.72)] px-5 py-7 text-left shadow-[0_0_40px_rgba(212,175,55,0.06)] sm:px-8 sm:py-8 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/95 sm:text-xs">
-                  {t("result.destinationDeck.officialSite.label")}
-                </p>
-                <h3 className="mt-3 text-[15px] font-extralight leading-snug text-[#EDE4D3] sm:text-base">
-                  {t("result.destinationDeck.officialSite.title")}
-                </h3>
-                <p className="mt-3 text-sm font-extralight leading-relaxed text-[#C4B8A8] sm:text-[15px]">
-                  {t("result.destinationDeck.officialSite.body")}
-                </p>
-                <a
-                  href={officialSiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`mt-6 flex w-full items-center justify-center rounded-2xl bg-[#b89a2e] px-5 py-3.5 text-center text-base font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] ${
-                    lang === "ko" ? "font-ko" : "font-display-en"
-                  }`}
-                >
-                  {t("result.destinationDeck.officialSite.cta")}
-                </a>
-              </article>
+            <div id="kickstarter-promo" className="mx-auto mt-8 w-full max-w-4xl scroll-mt-4">
+              <div className="relative aspect-[192/103] w-full overflow-hidden bg-black">
+                <Image
+                  src={lang === "ko" ? "/images/kickstarter-ko-v2.png" : "/images/kickstarter-v2.png"}
+                  alt={lang === "ko" ? "Eternal Beam Kickstarter 출시 안내" : "Eternal Beam Kickstarter launch announcement"}
+                  width={1536}
+                  height={1024}
+                  sizes="(max-width: 1024px) calc(100vw - 40px), 896px"
+                  className="absolute inset-x-0 top-0 h-auto w-full"
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 shadow-[inset_0_0_34px_18px_#000] sm:shadow-[inset_0_0_58px_24px_#000]"
+                />
 
-              <article
-                className={`rounded-2xl border border-[rgba(212,175,55,0.15)] bg-[rgba(18,16,14,0.65)] px-5 py-7 text-left sm:px-8 sm:py-8 ${
-                  lang === "ko" ? "font-ko" : "font-display-en"
-                }`}
-              >
-                <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]/95 sm:text-xs">
-                  {t("result.destinationDeck.instagram.label")}
-                </p>
-                <h3 className="mt-3 text-[15px] font-extralight leading-snug text-[#EDE4D3] sm:text-base">
-                  {t("result.destinationDeck.instagram.title")}
-                </h3>
-                <p className="mt-3 text-sm font-extralight leading-relaxed text-[#C4B8A8] sm:text-[15px]">
-                  {t("result.destinationDeck.instagram.body")}
-                </p>
-                <a
-                  href={instagramProfileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`mt-6 flex w-full items-center justify-center rounded-xl border border-[rgba(212,175,55,0.4)] bg-[#1A1A1A]/90 px-5 py-3.5 text-sm font-light text-[#F5E6B8] transition hover:border-[rgba(212,175,55,0.55)] hover:bg-[#222018] sm:text-base ${
-                    lang === "ko" ? "font-ko" : "font-display-en"
-                  }`}
-                >
-                  {t("result.destinationDeck.instagram.cta")}
-                </a>
-              </article>
+                {KICKSTARTER_URL ? (
+                  <>
+                    <a href={KICKSTARTER_URL} target="_blank" rel="noopener noreferrer" aria-label="Notify me on Kickstarter" className="absolute left-[61.8%] top-[60.6%] h-[10%] w-[34.3%] rounded-full transition duration-200 hover:scale-[1.015] hover:bg-white/[0.06] hover:shadow-[0_0_22px_rgba(0,255,178,0.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78] motion-reduce:transform-none motion-reduce:transition-none" />
+                    <a href={KICKSTARTER_URL} target="_blank" rel="noopener noreferrer" aria-label="Visit Eternal Beam on Kickstarter" className="absolute left-[61.8%] top-[72.1%] h-[10%] w-[34.3%] rounded-full transition duration-200 hover:scale-[1.015] hover:bg-white/[0.06] hover:shadow-[0_0_22px_rgba(0,255,178,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78] motion-reduce:transform-none motion-reduce:transition-none" />
+                  </>
+                ) : (
+                  <>
+                    <button type="button" aria-label="Notify me on Kickstarter" className="absolute left-[61.8%] top-[60.6%] h-[10%] w-[34.3%] cursor-pointer rounded-full transition duration-200 hover:scale-[1.015] hover:bg-white/[0.06] hover:shadow-[0_0_22px_rgba(0,255,178,0.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78] motion-reduce:transform-none motion-reduce:transition-none" />
+                    <button type="button" aria-label="Visit Eternal Beam on Kickstarter" className="absolute left-[61.8%] top-[72.1%] h-[10%] w-[34.3%] cursor-pointer rounded-full transition duration-200 hover:scale-[1.015] hover:bg-white/[0.06] hover:shadow-[0_0_22px_rgba(0,255,178,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78] motion-reduce:transform-none motion-reduce:transition-none" />
+                  </>
+                )}
+              </div>
+
+              <div className="mt-5 flex items-center justify-center gap-3 text-[#D8B84C]" aria-hidden="true">
+                <span className="h-px w-12 bg-[#D8B84C]/65 sm:w-20" />
+                <span className="font-display-en text-xs tracking-[0.2em] sm:text-sm">Follow our journey</span>
+                <span className="h-px w-12 bg-[#D8B84C]/65 sm:w-20" />
+              </div>
+              <div className="mt-3 flex items-center justify-center gap-4">
+                <a href={instagramProfileUrl} target="_blank" rel="noopener noreferrer" aria-label="Follow Eternal Beam on Instagram" className="flex size-11 items-center justify-center rounded-xl bg-[radial-gradient(circle_at_32%_100%,#FFD600_0%,#FF7A00_24%,#FF0169_48%,#D300C5_70%,#7638FA_100%)] text-white shadow-[0_5px_16px_rgba(211,0,197,0.24)] transition duration-200 hover:scale-105 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F06AA7] motion-reduce:transform-none"><FaInstagram aria-hidden="true" className="size-7" /></a>
+                <a href="https://www.facebook.com/eternalbeam.official/" target="_blank" rel="noopener noreferrer" aria-label="Follow Eternal Beam on Facebook" className="flex size-11 items-center justify-center rounded-xl bg-[#1877F2] text-white shadow-[0_5px_16px_rgba(24,119,242,0.22)] transition duration-200 hover:scale-105 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#60A5FA] motion-reduce:transform-none"><FaFacebookF aria-hidden="true" className="size-6" /></a>
+                {ETERNAL_BEAM_YOUTUBE_URL ? <a href={ETERNAL_BEAM_YOUTUBE_URL} target="_blank" rel="noopener noreferrer" aria-label="Follow Eternal Beam on YouTube" className="flex size-11 items-center justify-center rounded-xl bg-[#FF0000] text-white shadow-[0_5px_16px_rgba(255,0,0,0.22)] transition duration-200 hover:scale-105 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF3B30] motion-reduce:transform-none"><FaYoutube aria-hidden="true" className="size-7" /></a> : <button type="button" aria-label="Follow Eternal Beam on YouTube" className="flex size-11 cursor-pointer items-center justify-center rounded-xl bg-[#FF0000] text-white shadow-[0_5px_16px_rgba(255,0,0,0.22)] transition duration-200 hover:scale-105 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF3B30] motion-reduce:transform-none"><FaYoutube aria-hidden="true" className="size-7" /></button>}
+              </div>
+              <p className="mt-2 text-center text-[10px] font-light tracking-[0.12em] text-[#B6A88F] sm:text-xs">
+                © 2026 Eternal Beam. All rights reserved.
+              </p>
             </div>
 
             <div className="mt-8 flex items-center justify-center text-[10px] font-extralight text-[#4a4744]/95 sm:text-[11px]">
@@ -1757,7 +1910,9 @@ export function SoulTraceFlow({
                 {t("questionHeader.label")} {questionIndex + 1} {t("questionHeader.of")} {totalQuestionCount}
               </span>
               <span className={lang === "ko" ? "font-ko" : "font-display-en"}>
-                {questionsLeft} {t("questionHeader.left")}
+                {lang === "ko"
+                  ? `질문 ${questionsLeft}개 남음`
+                  : <>{questionsLeft} {t("questionHeader.left")}</>}
               </span>
             </div>
             <div className="mb-8 h-px overflow-hidden rounded-full bg-[rgba(243,234,216,0.12)]">

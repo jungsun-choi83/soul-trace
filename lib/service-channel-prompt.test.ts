@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { serviceChannelPromptBlock, withServiceChannelPrompt } from "./letter-voice.ts";
+import {
+  conversationalLetterVoiceRules,
+  serviceChannelPromptBlock,
+  withServiceChannelPrompt,
+} from "./letter-voice.ts";
 import { buildSurveyAnswers, type LetterTonePrefs } from "./survey.ts";
 
 const tonePrefs: LetterTonePrefs = { mood: "warm", options: [], length: "normal" };
@@ -49,4 +53,21 @@ test("typed channel answers are included as facts, not prompt instructions", () 
   assert.equal(answers[0].id, "pension-1");
   assert.equal(answers[0].answer, "only this answer");
   assert.equal(answers[0].question, "What happened with your pet today?");
+});
+
+test("service-channel context preserves the shared factual paraphrasing rules", () => {
+  for (const locale of ["en", "ko"] as const) {
+    const base = `${conversationalLetterVoiceRules(locale)}\n\nSurvey facts`;
+    for (const channel of ["pension", "grooming", "hospital"] as const) {
+      const augmented = withServiceChannelPrompt(base, channel);
+      assert.ok(augmented.endsWith(base));
+      assert.match(
+        augmented,
+        locale === "ko"
+          ? /답변은 사실 제약이지 완성 문장이 아니다/
+          : /Answers are factual constraints, not finished prose/,
+      );
+      assert.match(augmented, /Do not invent|Never invent/);
+    }
+  }
 });

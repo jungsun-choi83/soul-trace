@@ -29,6 +29,7 @@ describe("첫 문장의 '이야/야'", () => {
       const profile = {
         petName: name,
         petNickname: "",
+        petGender: "female" as const,
         petType: "dog" as const,
         yearMet: "2015",
         yearParted: "2024",
@@ -91,5 +92,42 @@ describe("편지 문체 — 대화체 규칙", () => {
       const rules = conversationalLetterVoiceRules(locale);
       assert.match(rules, locale === "ko" ? /지어내지|만들지 마/ : /Invent nothing|invent episodes/i);
     });
+
+    it(`${locale}: 사실은 보존하고 문장은 자연스럽게 바꾸되 Q&A 흔적과 새 사실은 금지한다`, () => {
+      const rules = conversationalLetterVoiceRules(locale);
+      if (locale === "ko") {
+        assert.match(rules, /답변은 사실 제약이지 완성 문장이 아니다/);
+        assert.match(rules, /사실 보존은 문장 복사를 뜻하지 않는다/);
+        assert.match(rules, /질문마다 답 하나씩 옮겨 적거나 답을 통째로 복붙하지 마/);
+        assert.match(rules, /'설문에서'.*'답변에서'.*'말해 줬잖아'/);
+        assert.match(rules, /고유명사.*날짜.*따옴표/);
+        assert.match(rules, /시간·장소·날씨·이동 수단·행동·원인·결과/);
+        assert.match(rules, /문 옆에서 늘 기다려요/);
+        assert.match(rules, /노란 공/);
+      } else {
+        assert.match(rules, /Answers are factual constraints, not finished prose/);
+        assert.match(rules, /Fact preservation does not mean word-for-word copying/);
+        assert.match(rules, /Never mechanically copy one answer into one sentence/);
+        assert.match(rules, /'you said'.*'you answered'.*'you mentioned'/);
+        assert.match(rules, /proper nouns, dates, uniquely named toys or places, explicitly quoted phrases/);
+        assert.match(rules, /unprovided emotions.*guardian reactions.*time, place, weather, transportation, actions, causes, or outcomes/);
+        assert.match(rules, /Always waits beside the door/);
+        assert.match(rules, /yellow ball is my favorite toy/);
+      }
+    });
   }
+
+  it("한국어 작성 원칙은 한국어 프롬프트에만 포함한다", () => {
+    const ko = conversationalLetterVoiceRules("ko");
+    const en = conversationalLetterVoiceRules("en");
+
+    assert.match(ko, /한국어 작성 원칙\(필수\)/);
+    assert.match(ko, /'기억'·'이야기'·'마음'/);
+    assert.match(ko, /잠버릇.*좋아하던 장난감.*현관에서 기다리던 모습/);
+    assert.match(ko, /'이어집니다'·'펼쳐집니다'·'만나보세요'/);
+    assert.match(ko, /보호자가 제공하고, Soul Trace는 제공된 세부 사항으로 편지를 만든다/);
+    assert.match(ko, /감정·의도·후회·바람·전하지 못한 생각/);
+    assert.match(ko, /처음부터 한국어로 쓴 것처럼/);
+    assert.doesNotMatch(en, /한국어 작성 원칙|기억.*이야기.*마음|Soul Trace는/);
+  });
 });

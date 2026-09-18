@@ -7,6 +7,13 @@ const petIntroForm = readFileSync("components/pet-intro-form.tsx", "utf8");
 test("Other pet type skips breed and continues to years together", () => {
   assert.match(
     petIntroForm,
-    /if \(petType === ["']other["']\) return \[["']name["'], ["']type["'], ["']years["'], ["']recipient["']\]/,
+    /if \(petType === ["']other["']\) return \[["']name["'], ["']gender["'], ["']type["'], ["']years["'], ["']recipient["']\]/,
+  );
+});
+
+test("Pet gender follows name in the shared intro question order", () => {
+  assert.match(
+    petIntroForm,
+    /const PET_INTRO_QUESTION_IDS = \[["']name["'], ["']gender["'], ["']type["'], ["']breed["'], ["']years["'], ["']recipient["']\]/,
   );
 });

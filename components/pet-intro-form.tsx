@@ -6,6 +6,7 @@ import type { Locale } from "@/lib/i18n";
 import { modeCopy, type LetterMode } from "@/lib/letter-mode";
 import type {
   PetIntroProfile,
+  PetGender,
   PetType,
   SelectableLetterRecipient,
 } from "@/lib/pet-profile";
@@ -54,11 +55,11 @@ function chipClass(selected: boolean, lang: Locale) {
   }`;
 }
 
-const PET_INTRO_QUESTION_IDS = ["name", "type", "breed", "years", "recipient"] as const;
+const PET_INTRO_QUESTION_IDS = ["name", "gender", "type", "breed", "years", "recipient"] as const;
 export type PetIntroQuestionId = (typeof PET_INTRO_QUESTION_IDS)[number];
 
 export function petIntroQuestionIds(petType: PetType | ""): PetIntroQuestionId[] {
-  if (petType === "other") return ["name", "type", "years", "recipient"];
+  if (petType === "other") return ["name", "gender", "type", "years", "recipient"];
   return [...PET_INTRO_QUESTION_IDS];
 }
 
@@ -75,6 +76,7 @@ export function PetIntroForm({
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
   const showRecipientDetail = profile.letterRecipient === "byName";
   const nameError = showErrors && !profile.petName.trim();
+  const genderError = showErrors && !profile.petGender;
   const typeError = showErrors && !profile.petType;
   const breedError = showErrors && !profile.petBreed;
   const ageError = showErrors && !/^\d+$/.test(profile.petAge ?? "");
@@ -110,6 +112,23 @@ export function PetIntroForm({
           className={fieldClass(lang, nameError)}
         />
         {nameError ? errorText(t("form.validation.petNameRequired"), "pet-name-error") : null}
+      </div> : null}
+
+      {questionId === "gender" ? <div className="space-y-2">
+        <label className="text-sm font-extralight text-[#F3EAD8]">{t("form.step1.petGenderLabel")}</label>
+        <div className="flex flex-wrap gap-2">
+          {(["male", "female"] as PetGender[]).map((gender) => (
+            <button
+              key={gender}
+              type="button"
+              onClick={() => onChange({ petGender: gender })}
+              className={chipClass(profile.petGender === gender, lang)}
+            >
+              {t(`form.step1.petGenders.${gender}`)}
+            </button>
+          ))}
+        </div>
+        {genderError ? errorText(t("form.validation.petGenderRequired"), "pet-gender-error") : null}
       </div> : null}
 
       {questionId === "type" ? <div className="space-y-2">

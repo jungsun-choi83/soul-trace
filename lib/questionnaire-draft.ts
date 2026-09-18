@@ -4,7 +4,7 @@ import { parseServiceChannel, type ServiceChannel } from "./service-channel.ts";
 import type { LetterTonePrefs } from "./survey.ts";
 import { isPrivacySelections, type PrivacySelections } from "./privacy-consent-selection.ts";
 
-export const QUESTIONNAIRE_DRAFT_VERSION = 5;
+export const QUESTIONNAIRE_DRAFT_VERSION = 6;
 
 export type QuestionnaireDraft = {
   version: typeof QUESTIONNAIRE_DRAFT_VERSION;
@@ -35,10 +35,12 @@ function isPetIntro(value: unknown): value is PetIntroProfile {
   if (!value || typeof value !== "object") return false;
   const profile = value as Record<string, unknown>;
   const petTypes = ["", "dog", "cat", "rabbit", "hamster", "bird", "other"];
+  const petGenders = ["", "male", "female"];
   const recipients = ["", "mom", "dad", "both", "sister", "brother", "byName", "sibling", "custom"];
   return (
     isString(profile.petName) &&
     isString(profile.petNickname) &&
+    petGenders.includes(profile.petGender as string) &&
     petTypes.includes(profile.petType as string) &&
     (profile.petBreed === undefined || isString(profile.petBreed)) &&
     (profile.petAge === undefined || isString(profile.petAge)) &&

@@ -102,16 +102,16 @@
     "subtitleLine1": "그 아이가 말을 할 수 있었다면,\n당신에게 뭐라고 했을까요."
   },
   "landing": {
-    "prompt": "어떤 아이의 이야기를 들려드릴까요",
+    "prompt": "누구의 이야기를 들려주실래요?",
     "back": "처음으로",
     "navBack": "뒤로"
   },
   "modes": {
     "living": {
       "landingCta": "지금 곁에 있는 아이",
-      "landingHint": "오늘도 곁에 있는 아이가, 오늘 하루를 편지로 들려줘요.",
-      "headline": "그 아이가 오늘 하루 뭘 생각했을까요",
-      "subline": "말로 못 할 뿐, 아이는 매일 하고 싶은 말이 있어요.",
+      "landingHint": "우리 아이의 오늘을 편지로 받아보세요.",
+      "headline": "우리 아이는 오늘 무슨 생각을 했을까요?",
+      "subline": "아이의 표정과 행동에는 저마다의 이야기가 담겨 있어요.",
       "letterHeading": "%RECIPIENT%에게 보내는 편지",
       "q1Label": "아이 이름",
       "q2Label": "반려동물 종류",
@@ -155,9 +155,9 @@
     },
     "memorial": {
       "landingCta": "무지개 다리를 건넌 아이",
-      "landingHint": "아직 전하지 못한 말이, 아이의 마음에 남아 있어요.",
-      "headline": "그 아이가 마지막으로 전하지 못한 말",
-      "subline": "아이의 마음속엔, 아직 전하지 못한 말이 있어요.",
+      "landingHint": "함께한 기억을 한 통의 편지로 남겨보세요.",
+      "headline": "함께한 아이에게 쓰는 편지",
+      "subline": "함께한 기억을 떠올리며 아이의 이야기를 들려주세요.",
       "letterHeading": "%RECIPIENT%에게 보내는 편지",
       "q1Label": "아이 이름",
       "q2Label": "반려동물 종류",
@@ -322,6 +322,7 @@
       "emailRequired": "이메일 주소를 입력해 주세요.",
       "emailInvalid": "name@example.com과 같은 올바른 이메일 주소를 입력해 주세요.",
       "petNameRequired": "아이의 이름을 입력해 주세요.",
+      "petGenderRequired": "반려동물 성별을 선택해 주세요.",
       "petTypeRequired": "반려동물 종류를 선택해 주세요.",
       "petBreedRequired": "아이의 품종을 선택해 주세요.",
       "yearsRequired": "아이의 나이를 정수로 입력해 주세요.",
@@ -342,6 +343,7 @@
       "q1Placeholder": "정식 이름",
       "q1bLabel": "Q1-b. 평소엔 뭐라고 부르셨나요?",
       "q1bPlaceholder": "평소엔 뭐라고 부르셨나요?",
+      "petGenderLabel": "반려동물 성별",
       "q2bLabel": "아이의 품종은 무엇인가요",
       "otherBreed": "기타",
       "otherBreedPlaceholder": "품종 또는 종류를 직접 입력해 주세요",
@@ -359,6 +361,7 @@
         "bird": "새",
         "other": "기타"
       },
+      "petGenders": { "male": "수컷", "female": "암컷" },
       "petBreeds": {
         "golden-retriever": "골든 리트리버", "labrador-retriever": "래브라도 리트리버",
         "poodle": "푸들", "maltese": "말티즈", "pomeranian": "포메라니안", "shiba-inu": "시바 이누",
@@ -462,7 +465,32 @@
       }
     },
     "instagramShareLead": "이 순간을 간직하세요",
-    "instagramShareButton": "인스타그램 스토리에 공유하기",
+    "instagramShareButton": "이 편지 공유하기",
+    "shareOptions": {
+      "label": "이 편지 공유하기",
+      "instagram": "Instagram에 공유하기",
+      "tiktok": "TikTok에 공유하기",
+      "facebook": "Facebook에 공유하기",
+      "x": "X에 공유하기",
+      "kakao": "KakaoTalk에 공유하기",
+      "line": "LINE에 공유하기",
+      "copyLink": "링크 복사하기"
+    },
+    "productCards": {
+      "label": "기념품 선택",
+      "keepsake": {
+        "title": "실물 편지로 간직하기",
+        "description": "편지와 봉투, 스탬프를 실물 기념품으로 간직하세요.",
+        "cta": "기념 편지 세트 보기 →",
+        "imageAlt": "Soul Trace 실물 편지와 봉투, 스탬프, 기념품"
+      },
+      "eternalBeam": {
+        "title": "Eternal Beam 만나보기",
+        "description": "소중한 기억을 오래 곁에 둘 수 있는 디지털·실물 기념품을 만나보세요.",
+        "cta": "Eternal Beam 보기 →",
+        "imageAlt": "Eternal Beam 홀로그램 기념 디스플레이"
+      }
+    },
     "lifeArchive": {
       "cta": "아이의 여정을 계속 이어가기",
       "journeyCta": "아이의 여정을 계속 이어가기 ✨",
@@ -493,7 +521,7 @@
       "body": "이 편지가, 빛이 되어 당신 곁에 머물 수 있어요"
     },
     "saveImage": "내 폰에 저장",
-    "keepForever": "이 편지를 간직하기",
+    "keepForever": "이 편지 다운로드하기",
     "instagramPrepare": "인스타용 이미지 준비 (1단계)",
     "instagramShare": "인스타에서 공유하기 (2단계)",
     "preparingImage": "이미지 준비 중...",
@@ -802,38 +830,38 @@
     }
   },
   "homepage": {
-    "nav": { "soulTrace": "소울 트레이스", "howItWorks": "이용 방법", "eternalBeam": "이터널 빔", "about": "이야기", "createLetter": "편지 만들기", "menu": "메뉴", "close": "닫기" },
+    "nav": { "soulTrace": "소울 트레이스", "howItWorks": "이용 방법", "eternalBeam": "이터널 빔", "about": "이야기", "shop": "쇼핑", "createLetter": "편지 만들기", "menu": "메뉴", "close": "닫기" },
     "hero": {
       "label": "이터널 빔이 선사하는 기억의 경험",
-      "title1": "모든 반려동물은 이야기를 남깁니다.",
-      "title2": "그 이야기를 한 통의 편지로.",
-      "body": "함께한 사소한 순간과 익숙한 습관, 마음에 남은 기억을 들려주세요. 소울 트레이스가 함께 살아온 시간을 세상에 하나뿐인 편지로 전해 드립니다.",
+      "title1": "함께한 시간을 한 통의 편지로 남겨보세요.",
+      "title2": "",
+      "body": "좋아하던 것, 자주 하던 행동, 함께했던 순간을 들려주세요. 들려주신 내용을 바탕으로 우리 아이의 편지를 만들어 드립니다.",
       "primary": "우리 아이 편지 만들기",
       "secondary": "이터널 빔 알아보기",
       "cardName": "나의 소중한 가족에게",
       "cardLine": "네가 집에 오는 시간은 언제나 알아."
     },
     "moments": {
-      "label": "작은 순간들", "title": "이야기는 사소한 순간에서 시작됩니다.", "body": "마음속에 조용히 간직해 온 장면들이 우리 아이의 가장 진솔한 이야기를 들려줍니다.",
+      "label": "작은 순간들", "title": "기억나는 모습부터 들려주세요.", "body": "잠버릇, 좋아하던 장난감, 기다리던 모습도 모두 아이의 이야기입니다.",
       "sleep": "늘 편안히 잠들던 자리", "wait": "당신을 기다리던 모습", "bond": "둘만 기억하는 고요한 순간",
       "toy": "언제나 가장 먼저 고르던 장난감", "sound": "신이 날 때 들려주던 목소리", "quiet": "당신만 알아보던 작은 표정"
     },
     "howItWorks": {
-      "label": "이용 방법", "title": "세 번의 다정한 과정", "shareTitle": "우리 아이 이야기 들려주기", "shareBody": "성격과 습관, 함께한 기억을 소울 트레이스에 들려주세요.",
+      "label": "이용 방법", "title": "편지가 만들어지는 과정", "shareTitle": "우리 아이 이야기 들려주기", "shareBody": "성격과 습관, 함께한 기억을 소울 트레이스에 들려주세요.",
       "receiveTitle": "우리 아이의 편지 받기", "receiveBody": "소중한 기억들이 우리 아이의 마음을 닮은 한 통의 편지가 됩니다.",
-      "discoverTitle": "기억의 다음 장면 만나기", "discoverBody": "이터널 빔이 그 기억을 어떻게 더 깊이 이어 가는지 만나보세요."
+      "discoverTitle": "이터널 빔으로 이어보기", "discoverBody": "이터널 빔이 그 기억을 어떻게 더 깊이 이어 가는지 만나보세요."
     },
     "letter": {
-      "label": "한 통의 편지", "title": "진짜 추억이 우리 아이의 말이 됩니다.", "body": "당신이 들려준 순간 하나하나를 바탕으로, 우리 아이의 마음을 닮은 편지를 전해 드립니다.",
+      "label": "한 통의 편지", "title": "들려주신 기억을 아이의 편지로 옮깁니다.", "body": "당신이 들려준 순간 하나하나를 바탕으로, 우리 아이의 마음을 닮은 편지를 전해 드립니다.",
       "memoryLabel": "기억", "memoryText": "“언제나 현관문 옆에서 기다려요.”", "letterLabel": "편지", "letterText": "“네가 집에 오는 시간은 언제나 알아. 그래서 벌써부터 이곳에서 너를 기다리고 있어.”", "paperName": "모모에게", "paperFrom": "언제나 사랑을 담아"
     },
-    "gallery": { "label": "우리의 친구들", "title": "수많은 순간이 하나의 이야기가 됩니다.", "body": "강아지와 고양이, 토끼와 새, 그리고 작고 소중한 모든 친구의 삶은 기억할 가치가 있습니다.", "dog": "한결같은 마음", "cat": "호기심 가득한 눈빛", "rabbit": "다정한 온기", "bird": "환한 노래", "hamster": "작고 소중한 친구" },
+    "gallery": { "label": "우리의 친구들", "title": "어떤 반려동물의 이야기도 만들 수 있어요.", "body": "강아지부터 새와 햄스터까지 함께할 수 있어요.", "dog": "한결같은 마음", "cat": "호기심 가득한 눈빛", "rabbit": "다정한 온기", "bird": "환한 노래", "hamster": "작고 소중한 친구" },
     "eternalBeam": { "title": "편지는 시작일 뿐입니다.", "body": "소울 트레이스가 기억에 목소리를 더한다면, 이터널 빔은 사진과 영상, 이야기를 더욱 생생한 모습으로 이어 갑니다." },
-    "hologram": { "caption": "새로운 모습으로 다시 만나는 존재감", "title": "이터널 빔 디스플레이", "body": "이터널 빔은 소중한 기억을 곁에 머무는 듯한 아름다운 홀로그램 경험으로 펼쳐 보입니다.", "cta": "우리 아이 편지 만들기", "live": "곁에 있는 순간" },
+    "hologram": { "caption": "사진 속 모습을 더 생생하게", "title": "이터널 빔 디스플레이", "body": "이터널 빔은 사진과 영상을 홀로그램 디스플레이로 보여줍니다.", "cta": "VISIT ETERNAL BEAM", "live": "곁에 있는 순간" },
     "journey": { "label": "기억의 여정", "title": "하나의 기억이 오래도록 이어집니다.", "pet": "우리 아이", "memories": "함께한 기억", "soulTrace": "소울 트레이스", "letter": "마음의 편지", "eternalBeam": "이터널 빔", "continues": "계속되는 이야기" },
     "livingMemorial": { "label": "모든 시간을 위하여", "title": "지금 곁에 있는 아이도, 마음속에 머무는 아이도.", "livingTitle": "오늘도 함께", "livingBody": "지금 이 순간에도 새롭게 쌓여 가는 기억을 위해.", "memorialTitle": "언제나 기억하며", "memorialBody": "시간이 흘러도 마음에 오래 머무는 기억을 위해." },
-    "finalCta": { "title": "하나의 기억에서 시작하세요.", "body": "우리 아이의 소울 트레이스 편지를 만들고, 그 이야기가 어디까지 이어질 수 있는지 만나보세요.", "primary": "우리 아이 편지 만들기", "secondary": "이터널 빔 알아보기" },
-    "footer": { "tagline": "이터널 빔이 선사하는 기억의 경험", "rights": "모든 권리를 보유합니다." },
+    "finalCta": { "title": "하나의 기억에서 시작하세요.", "body": "우리 아이의 편지를 만들고, 완성된 이야기를 이터널 빔으로 이어보세요.", "primary": "우리 아이 편지 만들기", "secondary": "이터널 빔 알아보기" },
+    "footer": { "tagline": "이터널 빔이 선사하는 기억의 경험", "rights": "모든 권리를 보유합니다.", "linksLabel": "푸터 링크", "privacyPolicy": "개인정보 처리방침", "termsOfService": "이용약관", "contact": "문의하기" },
     "accessibility": {
       "home": "소울 트레이스 홈", "primaryNav": "주요 메뉴", "mobileNav": "모바일 메뉴",
       "heroDogAlt": "따뜻한 금빛 조명 속 골든리트리버", "momentSleepAlt": "햇살 아래 편안히 쉬는 반려동물", "momentWaitAlt": "창가에서 가족을 기다리는 강아지", "momentBondAlt": "사람과 반려동물이 함께하는 다정한 순간",
