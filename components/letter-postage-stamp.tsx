@@ -1,21 +1,22 @@
 "use client";
 
 import { useId } from "react";
+import type { DefaultStampType } from "@/lib/stamp";
 
 type LetterPostageStampProps = {
   photoUrl: string | null;
+  defaultStamp: DefaultStampType;
   accentColor: string;
   inkColor: string;
 };
 
-export function LetterPostageStamp({ photoUrl, accentColor, inkColor }: LetterPostageStampProps) {
+export function LetterPostageStamp({ photoUrl, defaultStamp, accentColor, inkColor }: LetterPostageStampProps) {
   const maskId = `stamp-mask-${useId().replace(/:/g, "")}`;
   const textureId = `${maskId}-texture`;
-  const pawInkId = `${maskId}-paw-ink`;
 
   return (
     <div
-      data-letter-postage-stamp={photoUrl ? "photo" : "paw"}
+      data-letter-postage-stamp={photoUrl ? "photo" : `paw-${defaultStamp}`}
       className="pointer-events-none absolute right-3 top-3 h-[110px] w-[150px] sm:right-6 sm:top-5 sm:h-[140px] sm:w-[190px]"
       aria-hidden="true"
     >
@@ -46,10 +47,6 @@ export function LetterPostageStamp({ photoUrl, accentColor, inkColor }: LetterPo
             <feColorMatrix in="noise" type="saturate" values="0" result="paperNoise" />
             <feBlend in="SourceGraphic" in2="paperNoise" mode="multiply" />
           </filter>
-          <filter id={pawInkId} x="-20%" y="-20%" width="140%" height="140%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.035 0.08" numOctaves="2" seed="9" result="inkNoise" />
-            <feDisplacementMap in="SourceGraphic" in2="inkNoise" scale="1.35" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
         </defs>
 
         <g mask={`url(#${maskId})`}>
@@ -65,14 +62,15 @@ export function LetterPostageStamp({ photoUrl, accentColor, inkColor }: LetterPo
               preserveAspectRatio="xMidYMid slice"
             />
           ) : (
-            <g transform="translate(70 22) rotate(-7 24 30)" fill={accentColor} filter={`url(#${pawInkId})`}>
-              <path d="M9.5 39.5c1.1-8.2 7.9-15.8 15.8-16.2 8.8-.5 17 7.1 18.1 15.2.8 5.7-3.7 10.2-9.4 9.7-3.7-.3-5.1-2.6-8.7-2.5-3.4.1-5 2.7-8.7 2.7-4.8 0-7.8-3.8-7.1-8.9Z" />
-              <ellipse cx="5.8" cy="21.2" rx="5.8" ry="8.2" transform="rotate(-29 5.8 21.2)" />
-              <ellipse cx="17.3" cy="10.7" rx="5.9" ry="8.6" transform="rotate(-10 17.3 10.7)" />
-              <ellipse cx="31.1" cy="9.7" rx="5.8" ry="8.5" transform="rotate(8 31.1 9.7)" />
-              <ellipse cx="43.1" cy="19.2" rx="5.7" ry="8.1" transform="rotate(29 43.1 19.2)" />
-              <path d="M16 38c3.5-3.4 6.3-4.8 10.3-4.8 4.2 0 7.3 1.3 11 4.5" fill="none" stroke="#fff5df" strokeWidth="0.75" opacity="0.22" />
-            </g>
+            <image
+              href={`/images/stamps/${defaultStamp}.png`}
+              x="62"
+              y="15"
+              width="65"
+              height="65"
+              preserveAspectRatio="xMidYMid meet"
+              opacity="0.9"
+            />
           )}
           <rect x="57" y="11" width="75" height="75" fill="none" stroke={accentColor} strokeWidth="1.15" opacity="0.86" />
           <text x="94.5" y="92" textAnchor="middle" fontSize="5.5" letterSpacing="1.6" fill={inkColor}>

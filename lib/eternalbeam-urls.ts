@@ -35,5 +35,23 @@ export function buildHandoffUrl(traceId: string, handoff: string): string {
 export function getEternalBeamInstagramUrl(): string {
   const fromEnv = process.env.NEXT_PUBLIC_ETERNALBEAM_INSTAGRAM_URL?.trim();
   if (fromEnv) return fromEnv;
-  return "https://www.instagram.com/eternalbeam/";
+  return "https://www.instagram.com/eternalbeam.official/";
+}
+
+export function getEternalBeamFacebookUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_ETERNALBEAM_FACEBOOK_URL?.trim();
+  if (fromEnv) return fromEnv;
+  return "https://www.facebook.com/eternalbeam.official/";
+}
+
+export function getEternalBeamYoutubeUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_ETERNALBEAM_YOUTUBE_URL?.trim();
+  if (fromEnv) return fromEnv;
+  return "https://www.youtube.com/@EternalBeam_official";
+}
+
+export function getEternalBeamTiktokUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_ETERNALBEAM_TIKTOK_URL?.trim();
+  if (fromEnv) return fromEnv;
+  return "https://www.tiktok.com/@eternalbeam.official";
 }

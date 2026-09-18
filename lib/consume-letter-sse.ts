@@ -11,6 +11,7 @@ export type LetterStreamDonePayload = {
   heroImageUrl: string | null;
   heroImageSkipped: boolean;
   savedPetName: string;
+  createdAt?: string | null;
   persistenceFailed?: boolean;
   /**
    * 저장된 편지의 letter_id — Eternal Beam 핸드오프의 source_letter_id.
@@ -95,6 +96,7 @@ export async function consumeLetterSseStream(
           heroImageUrl: typeof rec.heroImageUrl === "string" ? rec.heroImageUrl : null,
           heroImageSkipped: rec.heroImageSkipped === true,
           savedPetName: String(rec.savedPetName ?? ""),
+          createdAt: typeof rec.createdAt === "string" ? rec.createdAt : null,
           persistenceFailed: rec.persistenceFailed === true,
           letterId: typeof rec.letterId === "string" ? rec.letterId : null,
           petId: typeof rec.petId === "string" ? rec.petId : null,

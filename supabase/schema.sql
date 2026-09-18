@@ -31,7 +31,7 @@ create table if not exists public.soul_trace_profiles (
   preferred_scenery text not null,
   hero_image_url text,
   hero_image_ref text,
-  stamp_type text not null default 'paw' check (stamp_type in ('photo', 'paw')),
+  stamp_type text not null default 'paw_other' check (stamp_type in ('photo', 'paw_dog', 'paw_cat', 'paw_rabbit', 'paw_hamster', 'paw_bird', 'paw_other')),
   stamp_photo_ref text,
   letter_id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),

@@ -25,6 +25,7 @@ const messages = (locale === "ko" ? ko : en) as unknown as Messages;
 const profile = {
   petName: "콩",
   petNickname: "콩이",
+  petGender: "female" as const,
   petType: "dog" as const,
   yearMet: "2015",
   yearParted: mode === "living" ? String(new Date().getFullYear()) : "2024",

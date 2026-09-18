@@ -21,6 +21,7 @@ test("Stamp Photo Next opens the consent modal before Email", () => {
   assert.match(flow, /if \(isStampPhotoQuestion\) \{[\s\S]*?setPrivacyModalOpen\(true\);\s*return;/);
   assert.match(flow, /privacyModalOpen \? \([\s\S]*?<QuestionnairePrivacyNotice/);
   assert.doesNotMatch(flow, /onSkipPhoto=\{submitAnswers\}/);
+  assert.match(flow, /const handleSkipPhoto = useCallback\(\(\) => \{[\s\S]*?setPetPhotoSkipped\(true\);[\s\S]*?setPrivacyModalOpen\(true\);/);
 });
 
 test("only privacy consent is required and optional choices do not block", () => {

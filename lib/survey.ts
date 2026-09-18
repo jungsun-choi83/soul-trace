@@ -146,6 +146,52 @@ export function buildSurveyAnswers(
   return [...memory, ...tone];
 }
 
+const TONE_STYLE_GUIDANCE: Record<"ko" | "en", Record<LetterToneMood, string>> = {
+  en: {
+    bright: [
+      "- Use lively, conversational rhythm.",
+      "- Slightly shorter and more energetic sentences are allowed.",
+      "- Occasional exclamation marks are okay when natural.",
+      "- Playfulness must come only from supplied behavior or memories.",
+      "- Do not invent jokes, antics, excitement, motives, or events.",
+    ].join("\n"),
+    calm: [
+      "- Use restrained, quiet phrasing.",
+      "- Prefer steady pacing and fewer exclamation marks.",
+      "- Keep emotional expression understated.",
+      "- Do not make the letter sad simply because the tone is calm.",
+      "- Do not add new facts or feelings.",
+    ].join("\n"),
+    warm: [
+      "- Use gentle, reassuring wording and soft transitions.",
+      "- Let supplied moments of closeness carry the warmth.",
+      "- Do not invent love, longing, comfort, grief, or affection unless supported by the guardian's answers.",
+      "- Avoid exaggerated sentimentality.",
+    ].join("\n"),
+  },
+  ko: {
+    bright: [
+      "- 밝고 자연스러운 말투와 조금 더 경쾌한 리듬을 쓴다.",
+      "- 필요할 때만 자연스럽게 느낌표를 사용할 수 있다.",
+      "- 장난스러움은 설문에 실제로 나온 행동과 장면에서만 가져온다.",
+      "- 새로운 장난, 행동, 신남, 이유를 만들어내지 않는다.",
+    ].join("\n"),
+    calm: [
+      "- 담담하고 차분한 문장과 안정적인 호흡을 쓴다.",
+      "- 느낌표를 줄이고 과장하지 않는다.",
+      "- 감정 표현은 절제한다.",
+      "- 차분한 톤이라고 해서 슬픔을 새로 만들지 않는다.",
+      "- 새로운 사실이나 감정을 추가하지 않는다.",
+    ].join("\n"),
+    warm: [
+      "- 부드럽고 따뜻한 어휘와 자연스러운 연결을 사용한다.",
+      "- 설문에 나온 함께한 장면에서 따뜻함이 느껴지게 한다.",
+      "- 설문에 없는 사랑, 그리움, 위로, 슬픔, 애정을 새로 만들지 않는다.",
+      "- 지나치게 감상적이거나 과장된 표현을 피한다.",
+    ].join("\n"),
+  },
+};
+
 export function buildTonePromptBlock(
   locale: "ko" | "en",
   tonePrefs: LetterTonePrefs,
@@ -155,11 +201,15 @@ export function buildTonePromptBlock(
   const tone = modeCopy(messages, mode).tone;
   const moodLabel = tone.find((item) => item.id === "q10")?.options.find((o) => o.id === tonePrefs.mood)?.label ?? "";
   const lengthLabel = tone.find((item) => item.id === "q12")?.options.find((o) => o.id === tonePrefs.length)?.label ?? "";
+  const moodGuidance = tonePrefs.mood ? TONE_STYLE_GUIDANCE[locale][tonePrefs.mood] : "";
 
   if (locale === "ko") {
     return [
       "[편지 톤 — STEP 3]",
       `분위기: ${moodLabel}`,
+      "표현 지침:",
+      moodGuidance,
+      "톤은 제공된 사실을 표현하는 방식만 바꾼다. 실제로 일어난 내용은 절대 바꾸지 마.",
       `길이: ${lengthLabel}`,
       tonePrefs.length === "short"
         ? "편지는 짧고 자연스럽게 쓴다. 내용에 맞춰 길이를 정하고, 핵심 기억과 감정만 남긴다. 정해진 줄 수를 맞추려고 문장을 늘리거나 반복하지 마."
@@ -172,6 +222,9 @@ export function buildTonePromptBlock(
   return [
     "[Letter tone — STEP 3]",
     `Mood: ${moodLabel}`,
+    "Style guidance:",
+    moodGuidance,
+    "Tone controls HOW supplied facts are expressed. It must never change WHAT happened.",
     `Length: ${lengthLabel}`,
     tonePrefs.length === "short"
       ? "Keep the letter naturally short. Let the available memories determine its length; do not pad, repeat, or target a fixed line count."

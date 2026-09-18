@@ -34,14 +34,39 @@ test("homepage uses the existing locale system with complete English and Korean 
   assert.equal(ko.homepage.livingMemorial.memorialTitle, "언제나 기억하며");
 });
 
+test("homepage navigation starts with How It Works instead of a duplicate Soul Trace link", () => {
+  assert.doesNotMatch(header, /homepage\.nav\.soulTrace/);
+  assert.match(header, /homepage\.nav\.howItWorks/);
+});
+
+test("homepage navigation includes the spaced Kickstarter launch CTA after About", () => {
+  const about = header.indexOf('t("homepage.nav.about")');
+  const kickstarter = header.indexOf("<KickstarterNavLink />");
+  assert.ok(about >= 0 && about < kickstarter);
+  assert.match(header, /🚀/);
+  assert.match(header, /Coming soon on Kickstarter/);
+  assert.match(header, /NEXT_PUBLIC_KICKSTARTER_URL/);
+  assert.match(header, /<KickstarterNavLink mobile \/>/);
+});
+
+test("homepage places the localized Kickstarter banner directly after the final CTA", () => {
+  const finalCta = experience.indexOf("<FinalCta choiceHref={choiceHref} />");
+  const banner = experience.indexOf('src={lang === "ko" ? "/images/kickstarter-ko-v2.png"');
+  assert.ok(finalCta >= 0 && finalCta < banner);
+  assert.match(experience, /kickstarter-v2\.png/);
+  assert.match(experience, /kickstarter-ko-v2\.png/);
+});
+
 test("every creation CTA receives and uses the query-preserving choiceHref", () => {
   assert.match(page, /hrefWithSearchParams\("\/choose", params\)/);
   assert.match(page, /choiceHref=\{choiceHref\}/);
-  for (const source of [header, hero, hologram, finalCta]) {
+  for (const source of [header, hero, finalCta]) {
     assert.match(source, /choiceHref: string/);
     assert.match(source, /href=\{choiceHref\}/);
     assert.doesNotMatch(source, /href=["']\/(?:choose|living|memorial)/);
   }
+  assert.match(hologram, /href=\{getEternalBeamMainUrl\(\)\}/);
+  assert.match(hologram, /homepage\.hologram\.cta/);
 });
 
 test("approved homepage assets exist and hologram media remains isolated", () => {

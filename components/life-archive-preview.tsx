@@ -1,6 +1,10 @@
 "use client";
 
 import { LanguageToggle } from "@/components/language-toggle";
+import {
+  englishLetterBodyFont,
+  koreanLetterFont,
+} from "@/components/generated-letter-fonts";
 import { TemporaryPhotoMoments } from "@/components/temporary-photo-moments";
 import { TemporaryVideoMemories } from "@/components/temporary-video-memories";
 import { useLocale } from "@/components/locale-provider";
@@ -317,11 +321,16 @@ export function LifeArchivePreview({
                   </p>
                 </div>
                 <div>
-                  <div className="mt-6 border-l border-[#D4AF37]/35 pl-5 sm:pl-6">
+                  <div className={`${englishLetterBodyFont.variable} ${koreanLetterFont.variable} mt-6 border-l border-[#D4AF37]/35 pl-5 sm:pl-6`}>
                     {paragraphs.map((paragraph, index) => index === 0 || fullLetterOpen ? (
                       <p
                         key={`${index}-${paragraph.slice(0, 20)}`}
-                        className={`${index > 0 ? "mt-5 border-t border-white/10 pt-5" : ""} text-[15px] font-normal leading-[1.9] text-[#EDE4D3] sm:text-base ${archive.generationLocale === "ko" ? "font-ko break-keep" : "font-display-en"}`}
+                        className={`${index > 0 ? "mt-5 border-t border-white/10 pt-5" : ""} text-[17px] font-normal leading-[1.9] text-[#EDE4D3] sm:text-[19px] ${archive.generationLocale === "ko" ? "break-keep" : ""}`}
+                        style={{
+                          fontFamily: archive.generationLocale === "ko"
+                            ? "var(--font-letter-ko), var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif"
+                            : "var(--font-letter-en-body), 'Segoe Print', 'Bradley Hand', cursive",
+                        }}
                       >
                         {paragraph}
                       </p>

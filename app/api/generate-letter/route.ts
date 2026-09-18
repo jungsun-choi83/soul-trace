@@ -12,6 +12,7 @@ import {
   letterPetName,
   resolveRecipientAddress,
   type LetterRecipient,
+  type PetGender,
   type PetIntroProfile,
   type PetType,
 } from "@/lib/pet-profile";
@@ -70,6 +71,7 @@ type RequestBody = {
   mode?: string;
   petName?: string;
   petNickname?: string;
+  petGender?: string;
   petType?: string;
   petBreed?: string;
   petAge?: string;
@@ -114,6 +116,7 @@ const LETTER_RECIPIENTS: LetterRecipient[] = [
 function parsePetProfileFromBody(body: RequestBody): PetIntroProfile | null {
   const petName = body.petName?.trim() ?? "";
   const petType = body.petType?.trim() ?? "";
+  const petGender = body.petGender?.trim() ?? "";
   const letterRecipient = body.relationship?.trim() || body.letterRecipient?.trim() || "";
   const yearMet =
     typeof body.yearMet === "number" && Number.isFinite(body.yearMet)
@@ -126,6 +129,7 @@ function parsePetProfileFromBody(body: RequestBody): PetIntroProfile | null {
 
   if (
     !petName ||
+    (petGender !== "male" && petGender !== "female") ||
     !PET_TYPES.includes(petType as PetType) ||
     !LETTER_RECIPIENTS.includes(letterRecipient as LetterRecipient) ||
     !yearMet ||
@@ -137,6 +141,7 @@ function parsePetProfileFromBody(body: RequestBody): PetIntroProfile | null {
   return {
     petName,
     petNickname: body.petNickname?.trim() ?? "",
+    petGender: petGender as PetGender,
     petType: petType as PetType,
     petBreed: body.petBreed?.trim() || "mixed-not-sure",
     petAge: body.petAge?.trim() ?? "",
@@ -541,7 +546,7 @@ async function extractPersonalityFields(
 }
 
 type SaveProfileResult =
-  | { ok: true; letterId: string; petId: string | null }
+  | { ok: true; letterId: string; petId: string | null; createdAt: string | null }
   | { ok: false; message: string; retryable: boolean };
 
 /**
@@ -699,7 +704,26 @@ async function saveProfileAndAnswersOnce(
     .select("pet_id")
     .eq("letter_id", letterId)
     .maybeSingle();
-  return { ok: true, letterId, petId: legacyLink?.pet_id ?? options.petId };
+  const { data: savedProfile } = await supabase
+    .from("soul_trace_profiles")
+    .select("created_at")
+    .eq("letter_id", letterId)
+    .maybeSingle();
+  let createdAt = typeof savedProfile?.created_at === "string" ? savedProfile.created_at : null;
+  if (!createdAt) {
+    const { data: savedSubmission } = await supabase
+      .from("soul_trace_submissions")
+      .select("created_at")
+      .eq("letter_id", letterId)
+      .maybeSingle();
+    createdAt = typeof savedSubmission?.created_at === "string" ? savedSubmission.created_at : null;
+  }
+  return {
+    ok: true,
+    letterId,
+    petId: legacyLink?.pet_id ?? options.petId,
+    createdAt,
+  };
 }
 
 async function saveProfileAndAnswers(
@@ -872,6 +896,14 @@ function sseEncode(obj: unknown): Uint8Array {
 }
 
 export async function POST(request: Request) {
+  const requestStartedAt = performance.now();
+  const debugTiming = (stage: string) => {
+    if (process.env.NODE_ENV === "development") {
+      console.debug("[letter-timing:server]", stage, {
+        elapsedMs: Math.round(performance.now() - requestStartedAt),
+      });
+    }
+  };
   try {
     const body = (await request.json()) as RequestBody;
     const locale: Locale = body.locale === "en" ? "en" : "ko";
@@ -1075,7 +1107,7 @@ export async function POST(request: Request) {
           ].join("\n")
         : [
             "MANDATORY: personalityType, personalitySummary, personalityTags, letter, and endingPhrase must be entirely in natural English.",
-            "letter: first-person spoken voice—open with recipient + pet name. Address Mom/Dad/their name, not distant 'you'. Conversation, not an AI essay.",
+            "letter: first-person spoken voice. Begin with one of the controlled, recipient-safe salutations in the addressing rules, then make the pet identity clear. Do not default to 'Hey'. Conversation, not an AI essay.",
             "personalitySummary: third-person gentle analyst for parents—not the pet speaking; no first-person pet voice there.",
             "personalityTags: JSON array of exactly three short tags.",
             "Use the most meaningful answered memories without following questionnaire order or forcing every answer into equal space. Length follows the flexible [Letter tone] guidance. Create a fresh memory-led opening and closing with no reusable phrase.",
@@ -1198,6 +1230,7 @@ export async function POST(request: Request) {
               }
             })();
 
+            debugTiming("OpenAI letter request begins");
             const letterStream = await openai.chat.completions.create({
               model: "gpt-4o",
               temperature: 0.85,
@@ -1223,13 +1256,19 @@ export async function POST(request: Request) {
             });
 
             let fullLetter = "";
+            let sawFirstLetterChunk = false;
             for await (const chunk of letterStream) {
               const delta = chunk.choices[0]?.delta?.content ?? "";
               if (delta) {
+                if (!sawFirstLetterChunk) {
+                  sawFirstLetterChunk = true;
+                  debugTiming("first OpenAI text chunk");
+                }
                 fullLetter += delta;
                 send({ type: "letter", delta });
               }
             }
+            debugTiming("OpenAI letter stream completes");
 
             let letterStructure = parseMarkedLetter(
               generatedLetterTitle(locale, petProfile),
@@ -1272,6 +1311,7 @@ export async function POST(request: Request) {
               return;
             }
 
+            debugTiming("persistence begins");
             const saveResult = await saveProfileAndAnswers(
               locale,
               persistenceLetterId!,
@@ -1289,6 +1329,7 @@ export async function POST(request: Request) {
               requestedPetId,
               channel,
             );
+            debugTiming("persistence completes");
             if (!saveResult.ok) {
               // **성공인 척하지 않는다.** 여기서 조용히 넘어가면 사용자는 완벽한
               // 편지를 보고, 서버에는 아무것도 남지 않는다 — 편지를 되찾을 방법도,
@@ -1325,6 +1366,7 @@ export async function POST(request: Request) {
               heroImageUrl,
               heroImageSkipped,
               savedPetName: letterName,
+              createdAt: saveResult.ok ? saveResult.createdAt : null,
               persistenceFailed: !saveResult.ok,
               // Eternal Beam 핸드오프의 source_letter_id. 저장이 실패했거나
               // 마이그레이션 전이면 null 이다 — 편지 표시는 그대로 동작한다.
@@ -1529,6 +1571,7 @@ export async function POST(request: Request) {
         heroImageUrl,
         heroImageSkipped,
         savedPetName: letterName,
+        createdAt: saveResult.createdAt,
         persistenceFailed: false,
         // Eternal Beam 핸드오프의 source_letter_id. 마이그레이션 전이면 null 이다.
         letterId: saveResult.letterId,

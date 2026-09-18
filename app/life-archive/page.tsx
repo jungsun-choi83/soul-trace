@@ -1,4 +1,5 @@
 import { LifeArchivePreview } from "@/components/life-archive-preview";
+import { resolveLetterLanguage } from "@/lib/letter-language";
 import { TemporaryLifeArchiveLoader } from "@/components/temporary-life-archive-loader";
 import { LifeArchiveAccessRequired } from "@/components/life-archive-access-required";
 import type { Metadata } from "next";
@@ -119,7 +120,7 @@ export default async function LifeArchivePage({ searchParams }: { searchParams: 
         archiveKey: submission.submission_id,
         petName: petResult.data.pet_name,
         letter: submission.generated_letter,
-        generationLocale: submission.generation_locale === "ko" ? "ko" : "en",
+        generationLocale: resolveLetterLanguage(submission.generation_locale),
         createdAt: submission.created_at,
         soulTraceMemoryCount: answerResult.count ?? 0,
         archiveMemoryCount: memoryResult.data?.length ?? 0,
@@ -140,7 +141,7 @@ export default async function LifeArchivePage({ searchParams }: { searchParams: 
           title: item.letter_title,
           mode: item.letter_mode,
           channel: item.service_channel,
-          locale: item.generation_locale === "ko" ? "ko" as const : "en" as const,
+          locale: resolveLetterLanguage(item.generation_locale),
           createdAt: item.created_at,
         })),
       }))}

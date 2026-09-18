@@ -15,6 +15,7 @@ export type SessionGeneratedResult = {
   heroImageUrl: string | null;
   heroImageSkipped?: boolean;
   savedPetName?: string;
+  createdAt?: string | null;
   letterId?: string | null;
   petId?: string | null;
   persistenceFailed?: boolean;
@@ -50,6 +51,7 @@ function isPetIntro(value: unknown): value is PetIntroProfile {
     ["petName", "petNickname", "yearMet", "yearParted", "letterRecipientDetail"].every(
       (key) => typeof profile[key] === "string",
     ) &&
+    ["", "male", "female"].includes(profile.petGender as string) &&
     ["", "dog", "cat", "rabbit", "hamster", "bird", "other"].includes(profile.petType as string) &&
     ["", "mom", "dad", "both", "sister", "brother", "byName", "sibling", "custom"].includes(
       profile.letterRecipient as string,
@@ -84,6 +86,7 @@ function isGeneratedResult(value: unknown): value is SessionGeneratedResult {
     (result.heroImageUrl === null || typeof result.heroImageUrl === "string") &&
     (result.heroImageSkipped === undefined || typeof result.heroImageSkipped === "boolean") &&
     (result.savedPetName === undefined || typeof result.savedPetName === "string") &&
+    (result.createdAt === undefined || result.createdAt === null || typeof result.createdAt === "string") &&
     (result.letterId === undefined || result.letterId === null || typeof result.letterId === "string") &&
     (result.petId === undefined || result.petId === null || typeof result.petId === "string") &&
     (result.persistenceFailed === undefined || typeof result.persistenceFailed === "boolean") &&

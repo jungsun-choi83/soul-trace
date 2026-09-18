@@ -13,7 +13,7 @@ const completed: CompletedResultSession = {
   mode: "living",
   channel: "pension",
   resultLocale: "en",
-  petIntro: { petName: "Coco", petNickname: "", petType: "dog", petBreed: "Poodle", petAge: "5", yearMet: "", yearParted: "2026", letterRecipient: "mom", letterRecipientDetail: "" },
+  petIntro: { petName: "Coco", petNickname: "", petGender: "female", petType: "dog", petBreed: "Poodle", petAge: "5", yearMet: "", yearParted: "2026", letterRecipient: "mom", letterRecipientDetail: "" },
   memoryAnswers: ["waits near the door", "loves walks"],
   result: { personalityType: "Gentle Soul", personalitySummary: "Warm and loyal", personalityTags: ["warm"], letter: "Dear Mom,\nI still remember...", letterStructure: { title: "Dear Mom", paragraphs: ["I still remember..."], endingPhrase: "Always your Coco" }, heroImageUrl: "https://example.com/hero.jpg", letterId: "letter-1", generationLocale: "en" },
 };

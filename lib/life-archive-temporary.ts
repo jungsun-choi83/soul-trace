@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n";
+import { resolveLetterLanguage } from "@/lib/letter-language";
 
 export const TEMPORARY_LIFE_ARCHIVE_KEY = "soul-trace-temporary-life-archive";
 
@@ -33,7 +34,6 @@ export function loadTemporaryLifeArchive(): TemporaryLifeArchive | null {
     if (
       typeof value.petName !== "string" ||
       typeof value.letter !== "string" ||
-      (value.generationLocale !== "ko" && value.generationLocale !== "en") ||
       typeof value.createdAt !== "string" ||
       typeof value.soulTraceMemoryCount !== "number" ||
       !Array.isArray(value.memories)
@@ -45,9 +45,10 @@ export function loadTemporaryLifeArchive(): TemporaryLifeArchive | null {
       archiveKey: typeof value.archiveKey === "string" && value.archiveKey
         ? value.archiveKey
         : crypto.randomUUID(),
+      generationLocale: resolveLetterLanguage(value.generationLocale),
       archiveMemoryCount: value.memories.length,
     } as TemporaryLifeArchive;
-    if (!value.archiveKey) saveTemporaryLifeArchive(archive);
+    if (!value.archiveKey || !value.generationLocale) saveTemporaryLifeArchive(archive);
     return archive;
   } catch {
     return null;

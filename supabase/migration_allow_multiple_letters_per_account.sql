@@ -16,12 +16,14 @@ update public.soul_trace_answers answers
 alter table public.soul_trace_answers
   alter column letter_id set not null,
   drop constraint if exists soul_trace_answers_user_email_fkey,
-  drop constraint if exists soul_trace_answers_user_email_answer_order_key;
+  drop constraint if exists soul_trace_answers_user_email_answer_order_key,
+  drop constraint if exists soul_trace_answers_letter_id_fkey,
+  drop constraint if exists soul_trace_answers_letter_order_key;
 
 alter table public.soul_trace_profiles
   drop constraint if exists soul_trace_profiles_pkey;
 alter table public.soul_trace_profiles
-  add primary key (letter_id);
+  add constraint soul_trace_profiles_pkey primary key (letter_id);
 create index if not exists soul_trace_profiles_user_email_idx
   on public.soul_trace_profiles (user_email, created_at desc);
 

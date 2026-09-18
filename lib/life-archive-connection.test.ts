@@ -12,11 +12,8 @@ const en = JSON.parse(readFileSync("locales/en.json", "utf8"));
 const ko = JSON.parse(readFileSync("locales/ko.json", "utf8"));
 
 describe("Life Archive Phase 3 connection", () => {
-  it("adds the journey action after the two existing result actions", () => {
-    const keep = result.indexOf("onClick={handleDownloadImage}");
-    const instagram = result.indexOf("onClick={onInstagramButtonClick}");
-    const archive = result.indexOf("onClick={handleLifeArchiveJourney}");
-    assert.ok(keep >= 0 && keep < instagram && instagram < archive);
+  it("keeps the Life Archive copy while omitting its retired result-page box", () => {
+    assert.doesNotMatch(result, /handleLifeArchiveJourney/);
     assert.equal(en.result.lifeArchive.journeyCta, "Continue Your Pet’s Journey ✨");
     assert.equal(ko.result.lifeArchive.journeyCta, "아이의 여정을 계속 이어가기 ✨");
   });
