@@ -23,15 +23,15 @@ describe("explicit generated letter structure", () => {
     assert.equal(structure.endingPhrase, "Still sharing every little morning.");
   });
 
-  it("styles only the explicit endingPhrase field", () => {
+  it("renders the saved creation date and pet name signature instead of generated endings", () => {
     const source = readFileSync("components/soul-trace-flow.tsx", "utf8");
     assert.doesNotMatch(source, /splitLetterSignature|findLastIndex|lines\.slice\(0, lastContentIndex\)/);
     assert.match(source, /data-letter-body/);
-    assert.match(source, /data-letter-ending-phrase/);
-    assert.match(
-      source,
-      /data-letter-ending-phrase[\s\S]{0,800}font-semibold italic[\s\S]{0,800}activeLetterStructure\.endingPhrase/,
-    );
+    assert.doesNotMatch(source, /data-letter-ending-phrase/);
+    assert.match(source, /data-letter-signature/);
+    assert.match(source, /formatLetterCreationDate\(result\?\.createdAt, letterLanguage\)/);
+    assert.match(source, /letterSignatureName\(result\?\.savedPetName/);
+    assert.doesNotMatch(source, /finalRevealText = \[completedLetterBody, completedEndingPhrase\]/);
   });
 
   it("accepts only short single-line English and Korean endings", () => {

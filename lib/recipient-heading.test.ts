@@ -7,6 +7,7 @@ import { resolveRecipientAddress, type PetIntroProfile } from "./pet-profile.ts"
 const base: PetIntroProfile = {
   petName: "Coco",
   petNickname: "",
+  petGender: "female",
   petType: "dog",
   yearMet: "2018",
   yearParted: "2024",
@@ -14,7 +15,7 @@ const base: PetIntroProfile = {
   letterRecipientDetail: "",
 };
 
-describe("recipient-aware letter heading", () => {
+describe("recipient-aware compatibility title", () => {
   const en = JSON.parse(readFileSync("locales/en.json", "utf8"));
   const ko = JSON.parse(readFileSync("locales/ko.json", "utf8"));
 
@@ -53,11 +54,13 @@ describe("recipient-aware letter heading", () => {
     }
   });
 
-  it("renders the resolved title inside the captured letter preview", () => {
+  it("keeps the compatibility value internally but does not render a letter title", () => {
     const source = readFileSync("components/soul-trace-flow.tsx", "utf8");
     assert.match(source, /const letterHeading = copy\.letterHeading\.replace/);
     assert.match(source, /resolveRecipientAddress\(petIntro, lang\)/);
-    assert.match(source, /\{activeLetterStructure\.title \|\| letterHeading\}/);
+    assert.doesNotMatch(source, /\{activeLetterStructure\.title \|\| letterHeading\}/);
+    assert.doesNotMatch(source, /letterTheme\.headingColor/);
+    assert.match(source, /data-letter-body[\s\S]*?className=\{`whitespace-pre-line/);
     assert.doesNotMatch(source, /\{copy\.letterHeading\}/);
   });
 });

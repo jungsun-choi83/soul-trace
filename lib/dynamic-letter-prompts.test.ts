@@ -12,6 +12,7 @@ import {
 const profile: PetIntroProfile = {
   petName: "Coco",
   petNickname: "Bean",
+  petGender: "female",
   petType: "dog",
   petBreed: "mixed-not-sure",
   petAge: "5",
@@ -32,6 +33,34 @@ describe("dynamic letter composition", () => {
     }
   });
 
+  it("varies openings only within recipient-safe English and Korean salutations", () => {
+    for (const mode of ["living", "memorial"] as const) {
+      const enPrompt = buildLetterAddressingBlock("en", profile, mode);
+      for (const salutation of [
+        "Dear Mom,",
+        "To my Mom,",
+        "To my beloved Mom,",
+        "My dear Mom,",
+        "For Mom,",
+        '"Mom,"',
+      ]) assert.ok(enPrompt.includes(salutation), salutation);
+      assert.match(enPrompt, /do not default to "Hey Mom"/i);
+      assert.match(enPrompt, /free-text answer/i);
+      assert.match(enPrompt, /"Owner", "Master", or "Human"/);
+
+      const koPrompt = buildLetterAddressingBlock("ko", profile, mode);
+      for (const salutation of [
+        "사랑하는 엄마에게,",
+        "소중한 엄마에게,",
+        "나의 소중한 엄마에게,",
+        "엄마에게,",
+        '"엄마,"',
+      ]) assert.ok(koPrompt.includes(salutation), salutation);
+      assert.match(koPrompt, /자유 서술 답변에 나온 관계를 호칭으로 바꾸지 말고/);
+      assert.match(koPrompt, /'주인', '마스터', '인간'/);
+    }
+  });
+
   it("keeps streaming, non-streaming, and language regeneration free of fixed endings", () => {
     const route = readFileSync("app/api/generate-letter/route.ts", "utf8");
     assert.doesNotMatch(route, /required closing|마무리 필수 문장/i);
@@ -49,6 +78,7 @@ describe("dynamic letter composition", () => {
     for (const locale of ["en", "ko"] as const) {
       for (const mode of ["living", "memorial"] as const) {
         const prompt = buildPetProfilePromptBlock(locale, profile, mode);
+        assert.match(prompt, locale === "en" ? /Gender: Female/ : /성별: 암컷/);
         assert.match(prompt, locale === "en" ? /Years together: 5 years/ : /함께한 시간: 5년/);
         assert.match(prompt, /Mixed \/ Not Sure|믹스 \/ 잘 모르겠음/);
         assert.match(prompt, /do not infer a breed|품종을 추측하지 말 것/);
@@ -60,6 +90,7 @@ describe("dynamic letter composition", () => {
       { mood: "warm", length: "normal", options: ["frequent_name"] },
     );
     assert.ok(fields);
+    assert.equal(fields.petGender, "female");
     assert.equal("preferredScenery" in fields, false);
     assert.deepEqual(fields.tonePrefs.options, []);
   });

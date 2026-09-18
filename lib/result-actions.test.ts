@@ -13,16 +13,18 @@ describe("result download and Instagram actions", () => {
 
   const source = readFileSync("components/soul-trace-flow.tsx", "utf8");
 
-  it("orders heading, download, Instagram, and start-over controls", () => {
-    const heading = source.indexOf('t("result.instagramShareLead")');
+  it("places download and share directly below the letter before lower result sections", () => {
+    const letter = source.indexOf('id="share-card"');
     const download = source.indexOf("onClick={handleDownloadImage}");
-    const instagram = source.indexOf("onClick={onInstagramButtonClick}");
-    const startOver = source.indexOf("onClick={resetTest}");
+    const share = source.indexOf("aria-controls=\"letter-share-tray\"");
+    const productCards = source.indexOf('aria-label={t("result.productCards.label")}');
 
-    assert.ok(heading >= 0 && heading < download);
-    assert.ok(download < instagram);
-    assert.ok(instagram < startOver);
+    assert.ok(letter >= 0 && letter < download);
+    assert.ok(download < share);
+    assert.ok(share < productCards);
     assert.equal(source.match(/onClick=\{handleDownloadImage\}/g)?.length, 1);
+    assert.equal(source.match(/action: onInstagramButtonClick/g)?.length, 1);
+    assert.doesNotMatch(source, /result\.emotionalBridge/);
   });
 
   it("offers an accessible result back arrow with a safe fallback", () => {
@@ -35,36 +37,20 @@ describe("result download and Instagram actions", () => {
     assert.doesNotMatch(source, /window\.location\.assign\("\/choose"\)/);
   });
 
-  it("enforces identical responsive measurements through one shared class", () => {
-    assert.match(
-      source,
-      /RESULT_ACTION_BUTTON_SIZE_CLASS\s*=\s*\n\s*"flex min-h-\[56px\] w-full items-center justify-center rounded-xl px-5 py-4 text-center text-sm font-light sm:text-base"/,
-    );
-    assert.equal(source.split("${RESULT_ACTION_BUTTON_SIZE_CLASS}").length - 1, 3);
-    assert.match(source, /<div className="space-y-3">/);
+  it("uses equal-height responsive letter actions", () => {
+    assert.ok(source.split("min-h-[52px]").length - 1 >= 2);
+    assert.match(source, /grid-cols-1 gap-3 sm:grid-cols-2/);
   });
 
-  it("always shows Life Archive directly below Instagram", () => {
-    const instagram = source.indexOf("onClick={onInstagramButtonClick}");
-    const archive = source.indexOf("onClick={handleLifeArchiveJourney}");
-    assert.ok(instagram >= 0 && instagram < archive);
-    assert.doesNotMatch(
-      source.slice(instagram, archive),
-      /result\.letterId\s*&&\s*!result\.persistenceFailed\s*\?\s*\(/,
-    );
-    assert.match(
-      source,
-      /hasEternalBeamAccess && SECURE_LIFE_ARCHIVE_CONFIGURED && \(!result\.letterId \|\| result\.persistenceFailed\)/,
-    );
+  it("removes the four retired result-page boxes", () => {
+    assert.doesNotMatch(source, /handleLifeArchiveJourney/);
+    assert.doesNotMatch(source, /continueToEternalBeam/);
+    assert.doesNotMatch(source, /result\.destinationDeck\.officialSite/);
+    assert.doesNotMatch(source, /result\.destinationDeck\.instagram/);
   });
 
-  it("uses a session-only archive while Supabase is not configured", () => {
-    assert.match(source, /if \(!SECURE_LIFE_ARCHIVE_CONFIGURED\)/);
-    assert.match(source, /saveTemporaryLifeArchive\(\{/);
-    assert.match(source, /new URL\("\/life-archive", window\.location\.origin\)/);
-    assert.match(source, /searchParams\.set\("from", "letter"\)/);
-    assert.match(source, /searchParams\.set\("returnTo"/);
-    assert.doesNotMatch(source, /sessionStorage\.setItem\([\s\S]*userEmail/);
+  it("does not show the pet year range between product cards and the banner", () => {
+    assert.doesNotMatch(source, /petProfilePayload\.yearMet.*petProfilePayload\.yearParted/);
   });
 
   it("keeps download preparation state separate from Instagram sharing", () => {
@@ -73,11 +59,68 @@ describe("result download and Instagram actions", () => {
     assert.match(source, /isDownloading \? t\("result.preparingImage"\)/);
   });
 
-  it("shows one accessible Instagram icon without changing the share action", () => {
-    assert.equal(source.match(/<InstagramIcon \/>/g)?.length, 1);
-    assert.match(source, /function InstagramIcon\(\)[\s\S]*?aria-hidden="true"/);
-    assert.match(source, /<InstagramIcon \/>[\s\S]*?t\("result\.instagramShareButton"\)/);
-    assert.equal(source.match(/onClick=\{onInstagramButtonClick\}/g)?.length, 1);
+  it("shows accessible download and share icons without changing either action", () => {
+    assert.equal(source.match(/<DownloadIcon \/>/g)?.length, 1);
+    assert.equal(source.match(/<ShareIcon \/>/g)?.length, 1);
+    assert.match(source, /function DownloadIcon\(\)[\s\S]*?aria-hidden="true"/);
+    assert.match(source, /function ShareIcon\(\)[\s\S]*?aria-hidden="true"/);
+    assert.match(source, /<DownloadIcon \/>[\s\S]*?t\("result\.keepForever"\)/);
+    assert.match(source, /<ShareIcon \/>[\s\S]*?t\("result\.instagramShareButton"\)/);
+    assert.equal(source.match(/action: onInstagramButtonClick/g)?.length, 1);
+  });
+
+  it("expands an accessible, reduced-motion-aware share tray", () => {
+    assert.match(source, /aria-expanded=\{shareTrayOpen\}/);
+    assert.match(source, /aria-controls="letter-share-tray"/);
+    assert.match(source, /duration: prefersReducedMotion \? 0 : 0\.32/);
+    assert.match(source, /delay: prefersReducedMotion \? 0 : 0\.1 \+ index \* 0\.04/);
+    assert.match(source, /document\.addEventListener\("pointerdown", closeShareTray\)/);
+  });
+
+  it("uses real supported brand icons and valid share destinations", () => {
+    assert.match(source, /FaInstagram/);
+    assert.match(source, /FaTiktok/);
+    assert.match(source, /FaFacebookF/);
+    assert.match(source, /SiKakaotalk/);
+    assert.match(source, /FaLine/);
+    assert.match(source, /HiOutlineLink/);
+    assert.match(source, /facebook\.com\/sharer\/sharer\.php/);
+    assert.match(source, /social-plugins\.line\.me\/lineit\/share/);
+    assert.match(source, /navigator\.clipboard\.writeText/);
+  });
+
+  it("replaces the old Eternal Beam preview with compact product cards", () => {
+    assert.doesNotMatch(source, /<EternalBeamPreview/);
+    assert.match(source, /src="\/images\/letter-keepsake-result\.png"/);
+    assert.match(source, /src="\/images\/eternal-beam-result\.png"/);
+    assert.match(source, /grid-cols-1 gap-4 sm:grid-cols-2/);
+    assert.match(source, /href=\{officialSiteUrl\}/);
+  });
+
+  it("keeps the responsive Kickstarter artwork near the end of the result flow", () => {
+    const productCards = source.indexOf('aria-label={t("result.productCards.label")}');
+    const banner = source.indexOf('"/images/kickstarter-ko-v2.png"');
+    const retry = source.indexOf("onClick={resetTest}");
+
+    assert.ok(productCards >= 0 && productCards < banner);
+    assert.ok(banner < retry);
+    assert.match(source, /width=\{1536\}[\s\S]*?height=\{1024\}/);
+    assert.match(source, /aria-label="Notify me on Kickstarter"/);
+    assert.match(source, /aria-label="Visit Eternal Beam on Kickstarter"/);
+    assert.match(source, /KICKSTARTER_URL \? \([\s\S]*?href=\{KICKSTARTER_URL\}[\s\S]*?\) : \([\s\S]*?<button/);
+    assert.match(source, /aria-label="Follow Eternal Beam on Instagram"/);
+    assert.match(source, /aria-label="Follow Eternal Beam on TikTok"/);
+    assert.match(source, /aria-label="Follow Eternal Beam on YouTube"/);
+    assert.match(source, /left-\[61\.8%\]/);
+    assert.match(source, /top-\[60\.6%\]/);
+    assert.match(source, /<FaYoutube aria-hidden="true"/);
+    assert.match(source, />Follow our journey<\/span>/);
+    assert.match(source, /radial-gradient\(circle_at_32%_100%/);
+    assert.match(source, /bg-\[#010101\]/);
+    assert.match(source, /bg-\[#FF0000\]/);
+    assert.doesNotMatch(source, /TikTok link not configured|YouTube link not configured/);
+    assert.match(source, /© 2026 Eternal Beam\. All rights reserved\./);
+    assert.doesNotMatch(source, /© 2026 Eternal Beam\. 모든 권리 보유\./);
   });
 
   it("opens generic Instagram without duplicating the letter download", () => {
@@ -93,11 +136,9 @@ describe("result download and Instagram actions", () => {
     const en = JSON.parse(readFileSync("locales/en.json", "utf8"));
     const ko = JSON.parse(readFileSync("locales/ko.json", "utf8"));
 
-    assert.equal(en.result.instagramShareLead, "Keep this moment with you");
-    assert.equal(en.result.keepForever, "Keep This Letter");
-    assert.equal(en.result.instagramShareButton, "Share to Instagram Stories");
-    assert.equal(ko.result.instagramShareLead, "이 순간을 간직하세요");
-    assert.equal(ko.result.keepForever, "이 편지를 간직하기");
-    assert.equal(ko.result.instagramShareButton, "인스타그램 스토리에 공유하기");
+    assert.equal(en.result.keepForever, "Download this letter");
+    assert.equal(en.result.instagramShareButton, "Share this letter");
+    assert.equal(ko.result.keepForever, "이 편지 다운로드하기");
+    assert.equal(ko.result.instagramShareButton, "이 편지 공유하기");
   });
 });

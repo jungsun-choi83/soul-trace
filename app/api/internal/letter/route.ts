@@ -10,6 +10,7 @@ import {
 } from "@/lib/hero-image-store";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
+import { normalizeStampType, type StampType } from "@/lib/stamp";
 
 /**
  * POST /api/internal/letter — **서버 대 서버 전용.** 브라우저가 부를 일이 없다.
@@ -220,7 +221,7 @@ export async function POST(request: Request) {
     heroImageUrl = profile.hero_image_url ? String(profile.hero_image_url) : null;
   }
 
-  let stampType: "photo" | "paw" = "paw";
+  let stampType: StampType = "paw_other";
   let stampPhotoRef: string | null = null;
   let stampPhotoUrl: string | null = null;
   const { data: stampRow, error: stampError } = await supabase
@@ -232,7 +233,7 @@ export async function POST(request: Request) {
     console.error("[internal/letter] stamp selection unavailable:", stampError.message);
   } else {
     const row = stampRow as { stamp_type?: unknown; stamp_photo_ref?: unknown } | null;
-    stampType = row?.stamp_type === "photo" ? "photo" : "paw";
+    stampType = normalizeStampType(row?.stamp_type);
     stampPhotoRef = typeof row?.stamp_photo_ref === "string" && row.stamp_photo_ref.trim()
       ? row.stamp_photo_ref.trim() : null;
     if (stampType === "photo" && stampPhotoRef) {

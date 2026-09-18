@@ -3,6 +3,7 @@ import { validatePetPhotoFile } from "@/lib/pet-photo";
 import { isValidQuestionnaireEmail, normalizeQuestionnaireEmail } from "@/lib/questionnaire-email";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
+import { isStampType } from "@/lib/stamp";
 
 const BUCKET = "soul-trace-stamp-photos";
 
@@ -12,9 +13,10 @@ export async function POST(request: Request) {
   const letterId = form?.get("letterId");
   const stampType = form?.get("stampType");
   const submittedEmail = form?.get("email");
-  if (!looksLikeLetterId(letterId) || (stampType !== "photo" && stampType !== "paw")) {
+  if (!looksLikeLetterId(letterId) || !isStampType(stampType)) {
     return NextResponse.json({ error: "Invalid stamp selection." }, { status: 400 });
   }
+  const persistedStampType = stampType === "paw" ? "paw_other" : stampType;
 
   const normalizedEmail = normalizeQuestionnaireEmail(
     typeof submittedEmail === "string" ? submittedEmail : "",
@@ -31,7 +33,7 @@ export async function POST(request: Request) {
   if (!profile) return NextResponse.json({ error: "Stamp ownership does not match." }, { status: 403 });
 
   let stampPhotoRef: string | null = null;
-  if (stampType === "photo") {
+  if (persistedStampType === "photo") {
     const photo = form.get("stampPhoto");
     if (!(photo instanceof File) || validatePetPhotoFile(photo)) {
       return NextResponse.json({ error: "Invalid stamp photo." }, { status: 400 });
@@ -45,8 +47,8 @@ export async function POST(request: Request) {
   }
 
   const { error } = await supabase.from("soul_trace_profiles")
-    .update({ stamp_type: stampType, stamp_photo_ref: stampPhotoRef })
+    .update({ stamp_type: persistedStampType, stamp_photo_ref: stampPhotoRef })
     .eq("letter_id", letterId).eq("user_email", normalizedEmail);
   if (error) return NextResponse.json({ error: "Could not save stamp selection." }, { status: 503 });
-  return NextResponse.json({ stampType, stampPhotoRef });
+  return NextResponse.json({ stampType: persistedStampType, stampPhotoRef });
 }

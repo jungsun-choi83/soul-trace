@@ -57,6 +57,30 @@ body {
   font-weight: 300;
 }
 
+.homepage-ko-typography .font-ko {
+  letter-spacing: -0.01em;
+  line-height: 1.65;
+}
+
+.homepage-ko-typography h1.font-ko {
+  letter-spacing: -0.02em;
+  line-height: 1.14;
+}
+
+.homepage-ko-typography h2.font-ko,
+.homepage-ko-typography h3.font-ko {
+  letter-spacing: -0.02em;
+  line-height: 1.22;
+}
+
+.homepage-ko-typography p.tracking-normal,
+.homepage-ko-typography p.tracking-\[0\.28em\],
+.homepage-ko-typography p.tracking-\[0\.22em\],
+.homepage-ko-typography span.tracking-\[0\.25em\]:not(.font-display-en) {
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+}
+
 /* 영문 전용: Marcellus + 넓은 자간 */
 .font-display-en {
   font-family: var(--font-marcellus), "Marcellus", serif;

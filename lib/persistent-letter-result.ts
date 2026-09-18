@@ -7,6 +7,7 @@ import {
 } from "@/lib/generated-letter";
 import { HERO_BUCKET } from "@/lib/hero-image-store";
 import { ACTIVE_SUBMISSION_COOKIE } from "@/lib/life-archive-session";
+import { resolveLetterLanguage } from "@/lib/letter-language";
 import type { LetterMode } from "@/lib/letter-mode";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
@@ -31,7 +32,7 @@ export async function loadPersistentLetterResult(): Promise<PersistentLetterResu
   const { data: submission, error } = await supabase
     .from("soul_trace_submissions")
     .select(
-      "submission_id, pet_id, letter_id, generated_letter, letter_title, letter_ending_phrase, letter_mode, personality_type, generation_locale, hero_image_url, hero_image_ref",
+      "submission_id, pet_id, letter_id, generated_letter, letter_title, letter_ending_phrase, letter_mode, personality_type, generation_locale, hero_image_url, hero_image_ref, created_at",
     )
     .eq("submission_id", submissionId)
     .eq("owner_user_id", userData.user.id)
@@ -46,7 +47,7 @@ export async function loadPersistentLetterResult(): Promise<PersistentLetterResu
     .maybeSingle();
   if (!pet) return null;
 
-  const generationLocale = submission.generation_locale === "ko" ? "ko" : "en";
+  const generationLocale = resolveLetterLanguage(submission.generation_locale);
   const mode: LetterMode = submission.letter_mode === "memorial" ? "memorial" : "living";
   const endingPhrase = submission.letter_ending_phrase?.trim() ?? "";
   const paragraphs = splitBodyParagraphs(submission.generated_letter);
@@ -84,6 +85,7 @@ export async function loadPersistentLetterResult(): Promise<PersistentLetterResu
       heroImageUrl,
       heroImageSkipped: !heroImageUrl,
       savedPetName: pet.pet_name,
+      createdAt: typeof submission.created_at === "string" ? submission.created_at : null,
       letterId: submission.letter_id,
       persistenceFailed: false,
       generationLocale,

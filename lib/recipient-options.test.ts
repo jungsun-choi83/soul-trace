@@ -18,6 +18,7 @@ function profile(letterRecipient: LetterRecipient, detail = ""): PetIntroProfile
   return {
     petName: "Coco",
     petNickname: "",
+    petGender: "female",
     petType: "dog",
     yearMet: "2018",
     yearParted: "2024",

@@ -11,13 +11,14 @@ import {
 const flow = readFileSync("components/soul-trace-flow.tsx", "utf8");
 
 const pensionDraft: QuestionnaireDraft = {
-  version: 5,
+  version: 6,
   mode: "living",
   channel: "pension",
   questionIndex: 8,
   petIntro: {
     petName: "Coco",
     petNickname: "Coco bean",
+    petGender: "female",
     petType: "dog",
     petBreed: "Poodle",
     petAge: "5",

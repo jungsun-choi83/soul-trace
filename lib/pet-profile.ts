@@ -2,6 +2,7 @@ import type { LetterMode } from "@/lib/letter-mode";
 import type { LetterTonePrefs } from "@/lib/survey";
 
 export type PetType = "dog" | "cat" | "rabbit" | "hamster" | "bird" | "other";
+export type PetGender = "male" | "female";
 
 export type LetterRecipient =
   | "mom"
@@ -19,6 +20,7 @@ export type SelectableLetterRecipient = Exclude<LetterRecipient, "sibling" | "cu
 export type PetIntroProfile = {
   petName: string;
   petNickname: string;
+  petGender: PetGender | "";
   petType: PetType | "";
   petBreed?: string;
   petAge?: string;
@@ -28,9 +30,30 @@ export type PetIntroProfile = {
   letterRecipientDetail: string;
 };
 
+/**
+ * Resolve the Korean relationship term from the pet's perspective.
+ * Only the explicit Sister/Brother relationship values are gendered here;
+ * all other or incomplete values intentionally produce no derived title.
+ */
+export function resolveKoreanOwnerAddress(
+  petGender: PetGender | string | null | undefined,
+  humanRelationship: LetterRecipient | string | null | undefined,
+): string | null {
+  const relationship = humanRelationship === "sister" || humanRelationship === "Sister"
+    ? "sister"
+    : humanRelationship === "brother" || humanRelationship === "Brother"
+      ? "brother"
+      : null;
+  if (!relationship) return null;
+  if (petGender !== "male" && petGender !== "female") return null;
+  if (petGender === "female") return relationship === "sister" ? "언니" : "오빠";
+  return relationship === "sister" ? "누나" : "형";
+}
+
 export const EMPTY_PET_INTRO: PetIntroProfile = {
   petName: "",
   petNickname: "",
+  petGender: "",
   petType: "",
   petBreed: "",
   petAge: "",
@@ -65,6 +88,7 @@ export function yearsTogether(profile: Pick<PetIntroProfile, "yearMet" | "yearPa
 
 export function isPetIntroComplete(profile: PetIntroProfile): boolean {
   if (!profile.petName.trim()) return false;
+  if (!profile.petGender) return false;
   if (!profile.petType) return false;
   if (yearsTogether(profile) === null) return false;
   if (!profile.letterRecipient) return false;
@@ -86,6 +110,8 @@ export function buildPetProfilePromptBlock(
   const formalName = profile.petName.trim();
   const years = yearsTogether(profile);
   const typeLabels = PET_TYPE_LABELS[locale];
+  const genderLabels = PET_GENDER_LABELS[locale];
+  const koreanOwnerAddress = resolveKoreanOwnerAddress(profile.petGender, profile.letterRecipient);
   const recipientLabels = RECIPIENT_LABELS[locale];
   const breed = profile.petBreed === "mixed-not-sure"
     ? locale === "ko" ? "믹스 / 잘 모르겠음 (품종을 추측하지 말 것)" : "Mixed / Not Sure (do not infer a breed)"
@@ -97,7 +123,9 @@ export function buildPetProfilePromptBlock(
 
   let recipientLine = "";
   if (profile.letterRecipient) {
-    if (profile.letterRecipient === "byName" || profile.letterRecipient === "custom") {
+    if (locale === "ko" && (profile.letterRecipient === "sister" || profile.letterRecipient === "brother")) {
+      recipientLine = koreanOwnerAddress ?? "";
+    } else if (profile.letterRecipient === "byName" || profile.letterRecipient === "custom") {
       recipientLine = `${recipientLabels[profile.letterRecipient]}: ${profile.letterRecipientDetail.trim()}`;
     } else {
       recipientLine = recipientLabels[profile.letterRecipient];
@@ -109,6 +137,7 @@ export function buildPetProfilePromptBlock(
       "[아이 프로필 — STEP 1]",
       `정식 이름: ${formalName}`,
       `편지 속 호칭(애칭 우선): ${name}`,
+      `성별: ${profile.petGender ? genderLabels[profile.petGender] : ""}`,
       `종류: ${petTypeLine}`,
       `품종: ${breed || "알 수 없음 (품종을 추측하지 말 것)"}`,
       profile.petAge !== undefined && profile.petAge !== ""
@@ -119,6 +148,11 @@ export function buildPetProfilePromptBlock(
           : `함께한 시간: ${profile.yearMet}년 ~ ${profile.yearParted}년 (${years}년)`
         : "",
       `편지 받는 사람: ${recipientLine}`,
+      profile.letterRecipient === "sister" || profile.letterRecipient === "brother"
+        ? koreanOwnerAddress
+          ? `한국어 관계 호칭(반드시 유지): ${koreanOwnerAddress}. 설문에서 정해진 이 호칭을 다른 가족 호칭이나 이름으로 바꾸지 마.`
+          : "한국어 관계 호칭을 정할 정보가 부족하다. 언니·오빠·누나·형·엄마·아빠를 추측해 쓰지 말고 이름이나 자연스러운 문장 구조를 사용해."
+        : "",
       profile.petType === "cat"
         ? "종 분기: 고양이 — 산책·목줄 같은 개 전용 표현 쓰지 마."
         : profile.petType === "dog"
@@ -139,7 +173,8 @@ export function buildPetProfilePromptBlock(
     "[Companion profile — STEP 1]",
     `Formal name: ${formalName}`,
     `Name in letter (nickname first): ${name}`,
-      `Species: ${petTypeLine}`,
+    `Gender: ${profile.petGender ? genderLabels[profile.petGender] : ""}`,
+    `Species: ${petTypeLine}`,
     `Breed: ${breed || "Not Sure (do not infer a breed)"}`,
     profile.petAge !== undefined && profile.petAge !== ""
       ? `Years together: ${profile.petAge} years`
@@ -184,6 +219,11 @@ const PET_TYPE_LABELS = {
     bird: "Bird",
     other: "Other",
   },
+} as const;
+
+const PET_GENDER_LABELS = {
+  ko: { male: "수컷", female: "암컷" },
+  en: { male: "Male", female: "Female" },
 } as const;
 
 const RECIPIENT_LABELS = {
@@ -259,7 +299,12 @@ export function buildLetterAddressingBlock(
   mode: LetterMode,
 ): string {
   const name = letterPetName(profile);
-  const recipient = resolveRecipientAddress(profile, locale);
+  const koreanOwnerAddress = resolveKoreanOwnerAddress(profile.petGender, profile.letterRecipient);
+  const isGenderedKoreanRelationship =
+    locale === "ko" && (profile.letterRecipient === "sister" || profile.letterRecipient === "brother");
+  const recipient = isGenderedKoreanRelationship
+    ? koreanOwnerAddress ?? ""
+    : resolveRecipientAddress(profile, locale);
   const nameLit = JSON.stringify(name);
   const recipientLit = JSON.stringify(recipient);
 
@@ -268,10 +313,10 @@ export function buildLetterAddressingBlock(
     const openingRule =
       profile.letterRecipient === "both"
         ? `첫 1~2줄 안에서 엄마와 아빠에게 자연스럽게 말을 걸고 ${name}의 목소리임을 드러낸다. 고정된 인사 문구를 쓰지 말고 설문 장면과 분위기에 맞춰 매번 다르게 시작한다. 자기소개 문법은 '${selfIntro}' 형태가 자연스럽다.`
-        : profile.letterRecipient === "sister"
-          ? `첫 1~2줄 안에서 누나 또는 언니라는 관계를 자연스럽게 드러내며 말을 건다. 고정된 자기소개 문장을 쓰지 말고 설문 장면과 분위기에 맞춰 시작한다.`
-          : profile.letterRecipient === "brother"
-            ? `첫 1~2줄 안에서 형 또는 오빠라는 관계를 자연스럽게 드러내며 말을 건다. 고정된 자기소개 문장을 쓰지 말고 설문 장면과 분위기에 맞춰 시작한다.`
+        : profile.letterRecipient === "sister" || profile.letterRecipient === "brother"
+          ? koreanOwnerAddress
+            ? `첫 1~2줄 안에서 저장된 한국어 관계 호칭 ${koreanOwnerAddress}에게 자연스럽게 말을 건다. 이 호칭을 다른 가족 호칭이나 이름으로 바꾸지 않는다. 고정된 자기소개 문장을 쓰지 말고 설문 장면과 분위기에 맞춰 시작한다.`
+            : "관계와 반려동물 성별만으로 정할 수 없는 상태다. 언니·오빠·누나·형·엄마·아빠를 추측하지 말고 이름이나 자연스러운 문장 구조로 시작한다."
             : profile.letterRecipient === "sibling"
               ? `첫 1~2줄 안에서 누나·언니·형·오빠 중 저장된 관계에 맞는 호칭으로 자연스럽게 말을 건다. 고정된 자기소개 문장을 쓰지 말고 설문 장면과 분위기에 맞춰 시작한다.`
           : `첫 1~2줄 안에서 ${recipient}에게 자연스럽게 말을 걸고 ${name}의 목소리임을 드러낸다. 고정된 인사 문구를 쓰지 말고 설문 장면과 분위기에 맞춰 매번 다르게 시작한다. 이름에 '이'를 더 붙이지 마.`;
@@ -279,7 +324,15 @@ export function buildLetterAddressingBlock(
       "[편지 호칭 — 가장 중요]",
       `편지는 **${name}**(애칭)이 **${recipient}**에게 직접 쓰는 1인칭 손편지다.`,
       openingRule,
-      `상대를 부를 때: ${recipientLit} 만 쓴다. **'너'·'너희'·'당신' 절대 금지.**`,
+      recipient
+        ? `첫 줄은 반드시 다음 형식 중 하나를 분위기와 기억에 맞게 골라 자연스럽게 변주한다: "사랑하는 ${recipient}에게,", "소중한 ${recipient}에게,", "나의 소중한 ${recipient}에게,", "${recipient}에게,", "${recipient},". 매번 같은 형식을 고르지 않는다.`
+        : "첫 줄은 정해지지 않은 관계 호칭을 추측하지 말고, 이름이나 자연스러운 문장 구조로 시작한다.",
+      recipient
+        ? `호칭에는 설문에서 구조적으로 선택된 받는 사람 ${recipientLit}만 사용한다. 자유 서술 답변에 나온 관계를 호칭으로 바꾸지 말고, '주인', '마스터', '인간'처럼 제품이 정하지 않은 관계 호칭을 새로 만들지 않는다.`
+        : "정해지지 않은 관계 호칭을 새로 만들지 않는다. 자유 서술 답변의 관계를 추측해 호칭으로 바꾸지 말고, '주인', '마스터', '인간'도 만들지 않는다.",
+      recipient
+        ? `상대를 부를 때: ${recipientLit} 만 쓴다. **'너'·'너희'·'당신' 절대 금지.**`
+        : "상대에게 말을 걸 때는 이름이나 자연스러운 문장 구조를 사용한다. **'너'·'너희'·'당신' 절대 금지.**",
       `자기 자신: '나' 또는 이름 ${nameLit}. 상대와 나를 헷갈리지 마.`,
       `문장 예: '엄마, 그때 케이지에서…' / '엄마 손길이 기억나.' — '너 기억나?' 같은 표현 금지.`,
       mode === "living"
@@ -292,7 +345,9 @@ export function buildLetterAddressingBlock(
   return [
     "[Letter addressing — critical]",
     `The pet **${name}** writes in first person **to ${recipient}** only.`,
-    `Within the first two lines, address ${recipient} naturally and make ${name}'s identity clear. Do not use a fixed greeting or self-introduction; let the first supplied memory and selected mood shape a different opening each time.`,
+    `Begin with one natural salutation chosen to fit the selected mood and supplied memories: "Dear ${recipient},", "To my ${recipient},", "To my beloved ${recipient},", "My dear ${recipient},", "For ${recipient},", or "${recipient},". Vary the choice naturally; do not default to "Hey ${recipient}" or always reuse one form.`,
+    `The salutation may use only the product-resolved recipient ${recipientLit}. Never turn a relationship mentioned in a free-text answer into the salutation, and never invent labels such as "Owner", "Master", or "Human". A supported relationship label is allowed only when ${recipientLit} itself is that exact label.`,
+    `After the salutation, make ${name}'s identity clear within the first two lines and let the first supplied memory shape the opening rather than using a stock self-introduction.`,
     `Address them as ${recipientLit} throughout—never "you" as a distant pronoun; use Mom/Dad/their name like a real letter.`,
     mode === "living"
       ? `Close in one or two natural lines connected to a specific supplied memory, habit, or place and the present or near future. Vary the wording every time; do not use a stock promise about waiting or staying nearby.`
@@ -304,6 +359,7 @@ export function buildLetterAddressingBlock(
 export type PetProfilePayload = {
   petName: string;
   petNickname: string;
+  petGender: PetGender;
   petType: PetType;
   petBreed?: string;
   petAge?: string;
@@ -332,7 +388,7 @@ export function buildLetterRequestFields(
 
 export function petProfilePayloadFromIntro(profile: PetIntroProfile): PetProfilePayload | null {
   const years = yearsTogether(profile);
-  if (!profile.petName.trim() || !profile.petType || years === null || !profile.letterRecipient) {
+  if (!profile.petName.trim() || !profile.petGender || !profile.petType || years === null || !profile.letterRecipient) {
     return null;
   }
   if (
@@ -351,6 +407,7 @@ export function petProfilePayloadFromIntro(profile: PetIntroProfile): PetProfile
   return {
     petName: profile.petName.trim(),
     petNickname: profile.petNickname.trim(),
+    petGender: profile.petGender,
     petType: profile.petType,
     petBreed: profile.petBreed,
     petAge: profile.petAge,
