@@ -13,13 +13,17 @@ const header = readFileSync("components/homepage/homepage-header.tsx", "utf8");
 const hero = readFileSync("components/homepage/hero.tsx", "utf8");
 const hologram = readFileSync("components/homepage/hologram-preview.tsx", "utf8");
 const finalCta = readFileSync("components/homepage/final-cta.tsx", "utf8");
+const footer = readFileSync("components/homepage/homepage-footer.tsx", "utf8");
+const kickstarterPromo = readFileSync("components/homepage/kickstarter-promo.tsx", "utf8");
+const kickstarterWaitlistRoute = readFileSync("app/api/kickstarter-waitlist/route.ts", "utf8");
+const kickstarterWaitlistMigration = readFileSync("supabase/migration_add_kickstarter_waitlist.sql", "utf8");
 const homepageSources = [header, hero, hologram, finalCta].join("\n");
 
 test("welcome experience renders only the approved homepage composition", () => {
   for (const component of [
     "HomepageHeader", "Hero", "LittleMoments", "HowItWorks", "LetterPreview",
     "PetGallery", "EternalBeam", "HologramPreview", "ConnectionJourney",
-    "LivingMemorial", "FinalCta", "HomepageFooter",
+    "LivingMemorial", "FinalCta", "KickstarterPromo", "HomepageFooter",
   ]) assert.match(experience, new RegExp(`<${component}`));
 
   assert.doesNotMatch(experience, /soul-trace-hero-smooth|data-translucent-letter-preview|STEP_KEYS/);
@@ -44,17 +48,52 @@ test("homepage navigation includes the spaced Kickstarter launch CTA after About
   const kickstarter = header.indexOf("<KickstarterNavLink />");
   assert.ok(about >= 0 && about < kickstarter);
   assert.match(header, /🚀/);
-  assert.match(header, /Coming soon on Kickstarter/);
+  assert.match(header, /Launching soon on Kickstarter/);
   assert.match(header, /NEXT_PUBLIC_KICKSTARTER_URL/);
   assert.match(header, /<KickstarterNavLink mobile \/>/);
 });
 
 test("homepage places the localized Kickstarter banner directly after the final CTA", () => {
   const finalCta = experience.indexOf("<FinalCta choiceHref={choiceHref} />");
-  const banner = experience.indexOf('src={lang === "ko" ? "/images/kickstarter-ko-v2.png"');
+  const banner = experience.indexOf("<KickstarterPromo />");
   assert.ok(finalCta >= 0 && finalCta < banner);
-  assert.match(experience, /kickstarter-v2\.png/);
-  assert.match(experience, /kickstarter-ko-v2\.png/);
+  assert.match(kickstarterPromo, /comingsoon\.png/);
+  assert.match(kickstarterPromo, /comingsoon-ko\.png/);
+  assert.match(kickstarterPromo, /aspect-\[1916\/821\] w-full/);
+  assert.match(kickstarterPromo, /inset-x-0 top-0 h-auto w-full/);
+  assert.doesNotMatch(kickstarterPromo, /max-w-5xl|max-w-7xl/);
+});
+
+test("Kickstarter artwork exposes localized interactive buttons and waitlist feedback", () => {
+  assert.match(kickstarterPromo, /onClick=\{openDialog\}/);
+  assert.match(kickstarterPromo, /NEXT_PUBLIC_KICKSTARTER_URL/);
+  assert.match(kickstarterPromo, /href=\{KICKSTARTER_URL\}/);
+  assert.match(kickstarterPromo, /fetch\("\/api\/kickstarter-waitlist"/);
+  assert.match(kickstarterPromo, /type="email"/);
+  assert.match(kickstarterPromo, /homepage\.kickstarter\.success/);
+  assert.equal(en.homepage.kickstarter.success, "You are on the list");
+});
+
+test("Kickstarter waitlist validates and persists unique email signups server-side", () => {
+  assert.match(kickstarterWaitlistRoute, /EMAIL_PATTERN/);
+  assert.match(kickstarterWaitlistRoute, /createSupabaseServerClient/);
+  assert.match(kickstarterWaitlistRoute, /\.from\("kickstarter_waitlist"\)/);
+  assert.match(kickstarterWaitlistRoute, /onConflict: "email"/);
+  assert.match(kickstarterWaitlistMigration, /email text not null unique/);
+  assert.match(kickstarterWaitlistMigration, /enable row level security/);
+  assert.match(kickstarterWaitlistMigration, /revoke all.*anon, authenticated/);
+});
+
+test("homepage follows the official Eternal Beam Facebook account", () => {
+  assert.match(experience, /getEternalBeamFacebookUrl/);
+  assert.match(experience, /aria-label="Follow Eternal Beam on Facebook"/);
+  assert.match(experience, /<FaFacebookF aria-hidden="true"/);
+  assert.doesNotMatch(experience, /getEternalBeamTiktokUrl|Follow Eternal Beam on TikTok|<FaTiktok/);
+});
+
+test("footer Contact Us opens a blank email to Eternal Beam", () => {
+  assert.match(footer, /href="mailto:hello@eternalbeamapp\.com"/);
+  assert.doesNotMatch(footer, /mailto:[^"']*[?&](?:subject|body)=/i);
 });
 
 test("every creation CTA receives and uses the query-preserving choiceHref", () => {
@@ -77,6 +116,7 @@ test("approved homepage assets exist and hologram media remains isolated", () =>
     "public/homepage/pets/gallery-rabbit.png", "public/homepage/pets/gallery-bird.png",
     "public/homepage/pets/gallery-hamster.png", "public/homepage/eternal-beam/cinematic.png",
     "public/homepage/eternal-beam/hologram-pet.png",
+    "public/images/comingsoon.png", "public/images/comingsoon-ko.png",
   ]) assert.equal(existsSync(path), true, path);
   assert.match(hologram, /function ProjectedPet/);
   assert.match(hologram, /homepage\/eternal-beam\/hologram-pet\.png/);

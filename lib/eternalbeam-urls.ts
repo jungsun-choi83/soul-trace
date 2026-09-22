@@ -31,11 +31,9 @@ export function buildHandoffUrl(traceId: string, handoff: string): string {
   return url.toString();
 }
 
-/** 공식 인스타그램. Vercel: `NEXT_PUBLIC_ETERNALBEAM_INSTAGRAM_URL` 로 덮어쓸 수 있음 */
+/** 공식 Eternal Beam Instagram 프로필. */
 export function getEternalBeamInstagramUrl(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_ETERNALBEAM_INSTAGRAM_URL?.trim();
-  if (fromEnv) return fromEnv;
-  return "https://www.instagram.com/eternalbeam.official/";
+  return "https://www.instagram.com/eternalbeam_official/";
 }
 
 export function getEternalBeamFacebookUrl(): string {

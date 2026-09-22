@@ -7,7 +7,7 @@ export function LittleMoments() {
   const { lang, t } = useLocale();
   const display = lang === "ko" ? "font-ko break-keep" : "font-display-en !tracking-normal";
   const cards = [
-    ["sleep", "/homepage/moments/moment-sleep.png", "sm:row-span-2"],
+    ["sleep", "/homepage/moments/moment-sleep.png", ""],
     ["wait", "/homepage/moments/moment-wait.png", ""],
     ["bond", "/homepage/moments/moment-bond.png", ""],
   ];
