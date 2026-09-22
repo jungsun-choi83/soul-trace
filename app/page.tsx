@@ -5,11 +5,13 @@ import { looksLikePartnerCode, PARTNER_CODE_PARAM, resolvePartnerCode } from "@/
 import { partnerEntryDestination } from "@/lib/partner-entry";
 import { hrefWithSearchParams, type ServerSearchParams } from "@/lib/search-params";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site-url";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Welcome | Soul Trace",
-  description: "Begin your Soul Trace journey.",
+  title: { absolute: SITE_TITLE },
+  description: SITE_DESCRIPTION,
+  alternates: { canonical: "/" },
 };
 
 export default async function WelcomePage({

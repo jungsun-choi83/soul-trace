@@ -7,7 +7,14 @@ import {
 import type { ServerSearchParams } from "@/lib/search-params";
 import { partnerEntryDestination } from "@/lib/partner-entry";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "어떤 이야기를 남길까요",
+  description: "지금 곁에 있는 아이와 무지개 다리를 건넌 아이, 두 가지 이야기 중 하나를 선택해 편지를 만듭니다.",
+  alternates: { canonical: "/choose" },
+};
 
 export default async function ModeChoicePage({
   searchParams,
