@@ -480,13 +480,13 @@
       "label": "기념품 선택",
       "keepsake": {
         "title": "실물 편지로 간직하기",
-        "description": "편지와 봉투, 스탬프를 실물 기념품으로 간직하세요.",
+        "description": "편지와 봉투, 카드와 키링까지 손에 잡히는 하나의 세트로 간직하세요.",
         "cta": "기념 편지 세트 보기 →",
         "imageAlt": "Soul Trace 실물 편지와 봉투, 스탬프, 기념품"
       },
       "eternalBeam": {
         "title": "Eternal Beam 만나보기",
-        "description": "소중한 기억을 오래 곁에 둘 수 있는 디지털·실물 기념품을 만나보세요.",
+        "description": "소중한 기억을 곁에 오래 둘 수 있는 디지털 아카이브를 경험해보세요.",
         "cta": "Eternal Beam 보기 →",
         "imageAlt": "Eternal Beam 홀로그램 기념 디스플레이"
       }
@@ -766,7 +766,6 @@
     },
     "memoryKicker": "STEP 2 — 기억",
     "photoStepKicker": "STEP 2 — 영상용 사진",
-    "memoryHint": "한두 문장이면 충분해요",
     "toneKicker": "STEP 3 — 편지 스타일",
     "letterToneTitle": "편지 톤",
     "examplePrefix": "예:",
@@ -833,7 +832,7 @@
     "nav": { "soulTrace": "소울 트레이스", "howItWorks": "이용 방법", "eternalBeam": "이터널 빔", "about": "이야기", "shop": "쇼핑", "createLetter": "편지 만들기", "menu": "메뉴", "close": "닫기" },
     "hero": {
       "label": "이터널 빔이 선사하는 기억의 경험",
-      "title1": "함께한 시간을 한 통의 편지로 남겨보세요.",
+      "title1": "함께한 시간을\n한 통의 편지로\n남겨보세요.",
       "title2": "",
       "body": "좋아하던 것, 자주 하던 행동, 함께했던 순간을 들려주세요. 들려주신 내용을 바탕으로 우리 아이의 편지를 만들어 드립니다.",
       "primary": "우리 아이 편지 만들기",
@@ -861,10 +860,11 @@
     "journey": { "label": "기억의 여정", "title": "하나의 기억이 오래도록 이어집니다.", "pet": "우리 아이", "memories": "함께한 기억", "soulTrace": "소울 트레이스", "letter": "마음의 편지", "eternalBeam": "이터널 빔", "continues": "계속되는 이야기" },
     "livingMemorial": { "label": "모든 시간을 위하여", "title": "지금 곁에 있는 아이도, 마음속에 머무는 아이도.", "livingTitle": "오늘도 함께", "livingBody": "지금 이 순간에도 새롭게 쌓여 가는 기억을 위해.", "memorialTitle": "언제나 기억하며", "memorialBody": "시간이 흘러도 마음에 오래 머무는 기억을 위해." },
     "finalCta": { "title": "하나의 기억에서 시작하세요.", "body": "우리 아이의 편지를 만들고, 완성된 이야기를 이터널 빔으로 이어보세요.", "primary": "우리 아이 편지 만들기", "secondary": "이터널 빔 알아보기" },
+    "kickstarter": { "notify": "킥스타터 출시 알림 받기", "visit": "킥스타터 페이지로 이동", "pageComingSoon": "킥스타터 페이지를 곧 공개합니다.", "dialogTitle": "가장 먼저 소식을 받아보세요", "dialogBody": "이메일을 남겨주시면 이터널 빔의 킥스타터 출시 소식을 알려드릴게요.", "emailLabel": "이메일 주소", "emailPlaceholder": "you@example.com", "submit": "알림 신청", "sending": "신청 중…", "success": "알림 신청이 완료되었습니다", "error": "지금은 신청할 수 없습니다. 잠시 후 다시 시도해 주세요.", "done": "확인", "close": "닫기" },
     "footer": { "tagline": "이터널 빔이 선사하는 기억의 경험", "rights": "모든 권리를 보유합니다.", "linksLabel": "푸터 링크", "privacyPolicy": "개인정보 처리방침", "termsOfService": "이용약관", "contact": "문의하기" },
     "accessibility": {
       "home": "소울 트레이스 홈", "primaryNav": "주요 메뉴", "mobileNav": "모바일 메뉴",
-      "heroDogAlt": "따뜻한 금빛 조명 속 골든리트리버", "momentSleepAlt": "햇살 아래 편안히 쉬는 반려동물", "momentWaitAlt": "창가에서 가족을 기다리는 강아지", "momentBondAlt": "사람과 반려동물이 함께하는 다정한 순간",
+      "heroDogAlt": "따뜻한 풍경 속에서 함께 시간을 보내는 골든리트리버와 고양이", "momentSleepAlt": "햇살 아래 편안히 쉬는 반려동물", "momentWaitAlt": "창가에서 가족을 기다리는 강아지", "momentBondAlt": "사람과 반려동물이 함께하는 다정한 순간",
       "galleryDogAlt": "행복한 강아지의 모습", "galleryCatAlt": "표정이 풍부한 고양이의 모습", "galleryRabbitAlt": "복슬복슬한 토끼의 모습", "galleryBirdAlt": "작고 화사한 새의 모습", "galleryHamsterAlt": "손안에 포근히 안긴 햄스터", "hologramPetAlt": "은은하게 빛나는 홀로그램 반려동물"
     }
   }

@@ -113,9 +113,7 @@ export function SurveyFlow({
             <p className="survey-hint font-extralight text-[#C4B8A8]/90">
               {memoryItem.optionalNote}
             </p>
-          ) : (
-            <p className="survey-hint font-extralight text-[#D4AF37]/85">{t("survey.memoryHint")}</p>
-          )}
+          ) : null}
           {memoryItem.example ? (
             <p className="survey-hint font-extralight leading-relaxed text-[#A8A29E]">
               {t("survey.examplePrefix")} {memoryItem.example}

@@ -12,6 +12,7 @@ describe("result download and Instagram actions", () => {
   });
 
   const source = readFileSync("components/soul-trace-flow.tsx", "utf8");
+  const kickstarterPromo = readFileSync("components/homepage/kickstarter-promo.tsx", "utf8");
 
   it("places download and share directly below the letter before lower result sections", () => {
     const letter = source.indexOf('id="share-card"');
@@ -99,37 +100,40 @@ describe("result download and Instagram actions", () => {
 
   it("keeps the responsive Kickstarter artwork near the end of the result flow", () => {
     const productCards = source.indexOf('aria-label={t("result.productCards.label")}');
-    const banner = source.indexOf('"/images/kickstarter-ko-v2.png"');
+    const banner = source.indexOf("<KickstarterPromo fullBleed compact />");
     const retry = source.indexOf("onClick={resetTest}");
 
     assert.ok(productCards >= 0 && productCards < banner);
     assert.ok(banner < retry);
-    assert.match(source, /width=\{1536\}[\s\S]*?height=\{1024\}/);
-    assert.match(source, /aria-label="Notify me on Kickstarter"/);
-    assert.match(source, /aria-label="Visit Eternal Beam on Kickstarter"/);
-    assert.match(source, /KICKSTARTER_URL \? \([\s\S]*?href=\{KICKSTARTER_URL\}[\s\S]*?\) : \([\s\S]*?<button/);
+    assert.match(kickstarterPromo, /comingsoon-ko\.png/);
+    assert.match(kickstarterPromo, /comingsoon\.png/);
+    assert.match(kickstarterPromo, /fetch\("\/api\/kickstarter-waitlist"/);
+    assert.match(kickstarterPromo, /homepage\.kickstarter\.success/);
+    assert.match(kickstarterPromo, /KICKSTARTER_URL \? \([\s\S]*?href=\{KICKSTARTER_URL\}[\s\S]*?\) : \([\s\S]*?<button/);
+    assert.match(kickstarterPromo, /w-screen \[margin-inline:calc\(50%_-_50vw\)\]/);
     assert.match(source, /aria-label="Follow Eternal Beam on Instagram"/);
-    assert.match(source, /aria-label="Follow Eternal Beam on TikTok"/);
+    assert.match(source, /aria-label="Follow Eternal Beam on Facebook"/);
     assert.match(source, /aria-label="Follow Eternal Beam on YouTube"/);
-    assert.match(source, /left-\[61\.8%\]/);
-    assert.match(source, /top-\[60\.6%\]/);
     assert.match(source, /<FaYoutube aria-hidden="true"/);
     assert.match(source, />Follow our journey<\/span>/);
     assert.match(source, /radial-gradient\(circle_at_32%_100%/);
-    assert.match(source, /bg-\[#010101\]/);
+    assert.match(source, /bg-\[#1877F2\]/);
     assert.match(source, /bg-\[#FF0000\]/);
     assert.doesNotMatch(source, /TikTok link not configured|YouTube link not configured/);
     assert.match(source, /© 2026 Eternal Beam\. All rights reserved\./);
     assert.doesNotMatch(source, /© 2026 Eternal Beam\. 모든 권리 보유\./);
   });
 
-  it("opens generic Instagram without duplicating the letter download", () => {
+  it("opens the official Eternal Beam Instagram without duplicating the letter download", () => {
     assert.match(source, /openInstagramWebsite/);
     assert.doesNotMatch(source, /shareNotice|desktopOpened/);
     assert.doesNotMatch(source, /downloadThenOpenInstagramTab/);
     assert.doesNotMatch(source, /downloadForManualInstagramUpload/);
-    assert.doesNotMatch(source, /window\.open\(instagramProfileUrl/);
-    assert.match(source, /window\.open\("https:\/\/www\.instagram\.com\/"/);
+    assert.match(source, /window\.open\(instagramProfileUrl/);
+    assert.doesNotMatch(source, /window\.open\("https:\/\/www\.instagram\.com\/"/);
+    const urls = readFileSync("lib/eternalbeam-urls.ts", "utf8");
+    assert.match(urls, /return "https:\/\/www\.instagram\.com\/eternalbeam_official\/"/);
+    assert.doesNotMatch(urls, /NEXT_PUBLIC_ETERNALBEAM_INSTAGRAM_URL/);
   });
 
   it("uses the required English and Korean localized labels", () => {
