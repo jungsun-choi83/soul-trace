@@ -6,6 +6,7 @@ import { SurveyFlow } from "@/components/survey-flow";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
 import { InstagramStoryCard } from "@/components/instagram-story-card";
 import { LanguageToggle } from "@/components/language-toggle";
+import { KickstarterPromo } from "@/components/homepage/kickstarter-promo";
 import { ResultAmbientAudio } from "@/components/result-ambient-audio";
 import { LetterPostageStamp } from "@/components/letter-postage-stamp";
 import { InkWordReveal } from "@/components/ink-word-reveal";
@@ -127,7 +128,6 @@ function splitLetterOpening(letter: string): { opening: string; body: string } {
 const CAPTURE_JPEG_QUALITY = 0.88;
 const CAPTURE_PIXEL_RATIO = 2;
 const LETTER_THEME_STORAGE_KEY = "soul-trace-letter-theme";
-const KICKSTARTER_URL = process.env.NEXT_PUBLIC_KICKSTARTER_URL?.trim() || null;
 const ETERNAL_BEAM_YOUTUBE_URL = getEternalBeamYoutubeUrl();
 const TIKTOK_WEBSITE_URL = "https://www.tiktok.com/login";
 const KAKAOTALK_WEBSITE_URL = "https://accounts.kakao.com/login";
@@ -1148,7 +1148,7 @@ export function SoulTraceFlow({
       /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
 
     const openInstagramWebsite = () => {
-      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+      window.open(instagramProfileUrl, "_blank", "noopener,noreferrer");
     };
 
     try {
@@ -1771,34 +1771,8 @@ export function SoulTraceFlow({
 
             </div>
 
-            <div id="kickstarter-promo" className="mx-auto mt-8 w-full max-w-4xl scroll-mt-4">
-              <div className="relative aspect-[192/103] w-full overflow-hidden bg-black">
-                <Image
-                  src={lang === "ko" ? "/images/kickstarter-ko-v2.png" : "/images/kickstarter-v2.png"}
-                  alt={lang === "ko" ? "Eternal Beam Kickstarter 출시 안내" : "Eternal Beam Kickstarter launch announcement"}
-                  width={1536}
-                  height={1024}
-                  sizes="(max-width: 1024px) calc(100vw - 40px), 896px"
-                  className="absolute inset-x-0 top-0 h-auto w-full"
-                />
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 shadow-[inset_0_0_34px_18px_#000] sm:shadow-[inset_0_0_58px_24px_#000]"
-                />
-
-                {KICKSTARTER_URL ? (
-                  <>
-                    <a href={KICKSTARTER_URL} target="_blank" rel="noopener noreferrer" aria-label="Notify me on Kickstarter" className="absolute left-[61.8%] top-[60.6%] h-[10%] w-[34.3%] rounded-full transition duration-200 hover:scale-[1.015] hover:bg-white/[0.06] hover:shadow-[0_0_22px_rgba(0,255,178,0.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78] motion-reduce:transform-none motion-reduce:transition-none" />
-                    <a href={KICKSTARTER_URL} target="_blank" rel="noopener noreferrer" aria-label="Visit Eternal Beam on Kickstarter" className="absolute left-[61.8%] top-[72.1%] h-[10%] w-[34.3%] rounded-full transition duration-200 hover:scale-[1.015] hover:bg-white/[0.06] hover:shadow-[0_0_22px_rgba(0,255,178,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78] motion-reduce:transform-none motion-reduce:transition-none" />
-                  </>
-                ) : (
-                  <>
-                    <button type="button" aria-label="Notify me on Kickstarter" className="absolute left-[61.8%] top-[60.6%] h-[10%] w-[34.3%] cursor-pointer rounded-full transition duration-200 hover:scale-[1.015] hover:bg-white/[0.06] hover:shadow-[0_0_22px_rgba(0,255,178,0.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78] motion-reduce:transform-none motion-reduce:transition-none" />
-                    <button type="button" aria-label="Visit Eternal Beam on Kickstarter" className="absolute left-[61.8%] top-[72.1%] h-[10%] w-[34.3%] cursor-pointer rounded-full transition duration-200 hover:scale-[1.015] hover:bg-white/[0.06] hover:shadow-[0_0_22px_rgba(0,255,178,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78] motion-reduce:transform-none motion-reduce:transition-none" />
-                  </>
-                )}
-              </div>
-
+            <div id="kickstarter-promo" className="mt-8 scroll-mt-4">
+              <KickstarterPromo fullBleed compact />
               <div className="mt-5 flex items-center justify-center gap-3 text-[#D8B84C]" aria-hidden="true">
                 <span className="h-px w-12 bg-[#D8B84C]/65 sm:w-20" />
                 <span className="font-display-en text-xs tracking-[0.2em] sm:text-sm">Follow our journey</span>

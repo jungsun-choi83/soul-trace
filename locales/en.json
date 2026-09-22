@@ -765,7 +765,6 @@
     },
     "memoryKicker": "STEP 2 — Memories",
     "photoStepKicker": "STEP 2 — Upload a photo",
-    "memoryHint": "A sentence or two is plenty",
     "toneKicker": "STEP 3 — Letter style",
     "letterToneTitle": "Letter Tone",
     "examplePrefix": "e.g.",
@@ -861,11 +860,12 @@
     "hologram": { "caption": "See their presence reimagined.", "title": "The Eternal Beam display.", "body": "Eternal Beam transforms memories into a beautiful, hologram-like presence you can keep close.", "cta": "VISIT ETERNAL BEAM", "live": "Live Presence" },
     "journey": { "label": "The Journey", "title": "One memory, carried forward.", "pet": "Your Pet", "memories": "Your Memories", "soulTrace": "Soul Trace", "letter": "Your Letter", "eternalBeam": "Eternal Beam", "continues": "Their Story Continues" },
     "livingMemorial": { "label": "For Every Season", "title": "For the ones here, and the ones held close.", "livingTitle": "Together Today", "livingBody": "For the memories you're still making.", "memorialTitle": "Always Remembered", "memorialBody": "For the memories that will always stay." },
-    "finalCta": { "title": "Start with one memory.", "body": "Create your pet's Soul Trace letter and discover where their story can go next.", "primary": "Create My Pet's Letter", "secondary": "Discover Eternal Beam" },
-    "footer": { "tagline": "A memory experience by Eternal Beam.", "rights": "All rights reserved.", "linksLabel": "Footer links", "privacyPolicy": "Privacy Policy", "termsOfService": "Terms of Service", "contact": "Contact" },
+    "finalCta": { "title": "Start with one memory.", "body": "Create your pet's Soul Trace letter and discover where their story can go next.", "primary": "Create My Pet's Letter", "secondary": "Visit Eternal Beam" },
+    "kickstarter": { "notify": "Notify me on Kickstarter", "visit": "Take me to the Kickstarter page", "pageComingSoon": "Our Kickstarter page is coming soon.", "dialogTitle": "Be the first to know", "dialogBody": "Enter your email and we'll let you know when Eternal Beam launches on Kickstarter.", "emailLabel": "Email address", "emailPlaceholder": "you@example.com", "submit": "Notify me", "sending": "Joining…", "success": "You are on the list", "error": "We couldn't add you right now. Please try again.", "done": "Done", "close": "Close" },
+    "footer": { "tagline": "A memory experience by Eternal Beam.", "rights": "All rights reserved.", "linksLabel": "Footer links", "privacyPolicy": "Privacy Policy", "termsOfService": "Terms of Service", "contact": "Contact Us" },
     "accessibility": {
       "home": "Soul Trace home", "primaryNav": "Primary navigation", "mobileNav": "Mobile navigation",
-      "heroDogAlt": "A golden retriever in warm golden light", "momentSleepAlt": "A pet resting peacefully in a sunlit spot", "momentWaitAlt": "A dog waiting by a window", "momentBondAlt": "A quiet moment between a person and their pet",
+      "heroDogAlt": "A golden retriever and cat sharing warm moments together", "momentSleepAlt": "A pet resting peacefully in a sunlit spot", "momentWaitAlt": "A dog waiting by a window", "momentBondAlt": "A quiet moment between a person and their pet",
       "galleryDogAlt": "Portrait of a happy dog", "galleryCatAlt": "Portrait of a cat with expressive eyes", "galleryRabbitAlt": "Portrait of a fluffy rabbit", "galleryBirdAlt": "Portrait of a small colorful bird", "galleryHamsterAlt": "Portrait of a hamster held gently", "hologramPetAlt": "A softly glowing holographic pet"
     }
   }
