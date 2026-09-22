@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { ETERNAL_BEAM_ACCESS_COOKIE, verifyEternalBeamAccessSession } from "@/lib/eternal-beam-access";
 
 export const metadata: Metadata = {
-  title: "무지개 다리를 건넌 아이",
+  title: "무지개 다리 너머로 전하는 편지",
   description: "아이가 마지막으로 전하지 못한 말을, 아이의 목소리로 전해 드려요.",
   alternates: { canonical: "/memorial" },
 };

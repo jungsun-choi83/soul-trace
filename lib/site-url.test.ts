@@ -8,7 +8,7 @@ test("canonical site URL has no trailing slash", () => {
 });
 
 test("public SEO copy is present and does not claim checkout", () => {
-  assert.match(SITE_TITLE, /Soul Trace/);
+  assert.match(SITE_TITLE, /소울트레이스/);
   assert.match(SITE_DESCRIPTION, /편지/);
   assert.doesNotMatch(SITE_DESCRIPTION, /결제|구매|장바구니/);
 });

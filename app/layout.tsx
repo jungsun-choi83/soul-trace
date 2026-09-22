@@ -85,7 +85,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: SITE_TITLE,
-    template: "%s | Soul Trace",
+    template: "%s | 소울트레이스",
   },
   description: SITE_DESCRIPTION,
   applicationName: "Soul Trace",
