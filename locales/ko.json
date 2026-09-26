@@ -841,7 +841,7 @@
       "cardLine": "네가 집에 오는 시간은 언제나 알아."
     },
     "moments": {
-      "label": "작은 순간들", "title": "기억나는 모습부터 들려주세요.", "body": "잠버릇, 좋아하던 장난감, 기다리던 모습도 모두 아이의 이야기입니다.",
+      "label": "작은 순간들", "title": "기억나는 모습부터\n들려주세요.", "body": "잠버릇, 장난감, 기다리던 모습,\n작은 순간들이 아이의 이야기가 됩니다.",
       "sleep": "늘 편안히 잠들던 자리", "wait": "당신을 기다리던 모습", "bond": "둘만 기억하는 고요한 순간",
       "toy": "언제나 가장 먼저 고르던 장난감", "sound": "신이 날 때 들려주던 목소리", "quiet": "당신만 알아보던 작은 표정"
     },
@@ -855,13 +855,11 @@
       "memoryLabel": "기억", "memoryText": "“언제나 현관문 옆에서 기다려요.”", "letterLabel": "편지", "letterText": "“네가 집에 오는 시간은 언제나 알아. 그래서 벌써부터 이곳에서 너를 기다리고 있어.”", "paperName": "모모에게", "paperFrom": "언제나 사랑을 담아"
     },
     "gallery": { "label": "우리의 친구들", "title": "어떤 반려동물의 이야기도 만들 수 있어요.", "body": "강아지부터 새와 햄스터까지 함께할 수 있어요.", "dog": "한결같은 마음", "cat": "호기심 가득한 눈빛", "rabbit": "다정한 온기", "bird": "환한 노래", "hamster": "작고 소중한 친구" },
-    "eternalBeam": { "title": "편지는 시작일 뿐입니다.", "body": "소울 트레이스가 기억에 목소리를 더한다면, 이터널 빔은 사진과 영상, 이야기를 더욱 생생한 모습으로 이어 갑니다." },
-    "hologram": { "caption": "사진 속 모습을 더 생생하게", "title": "이터널 빔 디스플레이", "body": "이터널 빔은 사진과 영상을 홀로그램 디스플레이로 보여줍니다.", "cta": "VISIT ETERNAL BEAM", "live": "곁에 있는 순간" },
-    "journey": { "label": "기억의 여정", "title": "하나의 기억이 오래도록 이어집니다.", "pet": "우리 아이", "memories": "함께한 기억", "soulTrace": "소울 트레이스", "letter": "마음의 편지", "eternalBeam": "이터널 빔", "continues": "계속되는 이야기" },
+    "eternalBeam": { "title": "편지는 시작일 뿐입니다.", "body": "Soul Trace의 기억을\nEternal Beam으로 더 오래 간직하세요.", "cta": "Eternal Beam 알아보기 →", "benefits": { "photos": "사진·영상 재생", "easy": "손쉬운 사용", "design": "공간에 어울리는 디자인", "lasting": "기억을 더 오래" } },
     "livingMemorial": { "label": "모든 시간을 위하여", "title": "지금 곁에 있는 아이도, 마음속에 머무는 아이도.", "livingTitle": "오늘도 함께", "livingBody": "지금 이 순간에도 새롭게 쌓여 가는 기억을 위해.", "memorialTitle": "언제나 기억하며", "memorialBody": "시간이 흘러도 마음에 오래 머무는 기억을 위해." },
     "finalCta": { "title": "하나의 기억에서 시작하세요.", "body": "우리 아이의 편지를 만들고, 완성된 이야기를 이터널 빔으로 이어보세요.", "primary": "우리 아이 편지 만들기", "secondary": "이터널 빔 알아보기" },
     "kickstarter": { "notify": "킥스타터 출시 알림 받기", "visit": "킥스타터 페이지로 이동", "pageComingSoon": "킥스타터 페이지를 곧 공개합니다.", "dialogTitle": "가장 먼저 소식을 받아보세요", "dialogBody": "이메일을 남겨주시면 이터널 빔의 킥스타터 출시 소식을 알려드릴게요.", "emailLabel": "이메일 주소", "emailPlaceholder": "you@example.com", "submit": "알림 신청", "sending": "신청 중…", "success": "알림 신청이 완료되었습니다", "error": "지금은 신청할 수 없습니다. 잠시 후 다시 시도해 주세요.", "done": "확인", "close": "닫기" },
-    "footer": { "tagline": "이터널 빔이 선사하는 기억의 경험", "rights": "모든 권리를 보유합니다.", "linksLabel": "푸터 링크", "privacyPolicy": "개인정보 처리방침", "termsOfService": "이용약관", "contact": "문의하기" },
+    "footer": { "tagline": "이터널 빔이 선사하는 기억의 경험", "rights": "All rights reserved.", "linksLabel": "푸터 링크", "privacyPolicy": "개인정보 처리방침", "termsOfService": "이용약관", "contact": "문의하기" },
     "accessibility": {
       "home": "소울 트레이스 홈", "primaryNav": "주요 메뉴", "mobileNav": "모바일 메뉴",
       "heroDogAlt": "따뜻한 풍경 속에서 함께 시간을 보내는 골든리트리버와 고양이", "momentSleepAlt": "햇살 아래 편안히 쉬는 반려동물", "momentWaitAlt": "창가에서 가족을 기다리는 강아지", "momentBondAlt": "사람과 반려동물이 함께하는 다정한 순간",
