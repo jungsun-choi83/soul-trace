@@ -46,10 +46,10 @@ export function KickstarterPromo({ fullBleed = false, compact = false }: { fullB
   return (
     <section
       aria-label="Eternal Beam Kickstarter"
-      className={`${fullBleed ? "w-screen [margin-inline:calc(50%_-_50vw)]" : ""} bg-[#0b0a09] ${compact ? "pb-0" : "pb-6 md:pb-8"}`}
+      className={`${fullBleed ? "w-screen [margin-inline:calc(50%_-_50vw)]" : ""} bg-[#0b0a09] ${compact ? "pb-0" : "pb-2 md:pb-4"}`}
     >
       <div className="w-full">
-        <div className="bg-black py-6 md:hidden">
+        <div className="bg-black py-2 md:hidden">
           <div className="relative aspect-[5/6] w-full overflow-hidden bg-black">
             <Image
               src={lang === "ko" ? "/images/kickstarter-mobile-ko.png" : "/images/kickstarter mobile.png"}

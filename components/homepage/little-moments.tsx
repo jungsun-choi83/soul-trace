@@ -1,15 +1,76 @@
 "use client";
+
 import { useLocale } from "@/components/locale-provider";
 import Image from "next/image";
 import { Reveal } from "./reveal";
 
 export function LittleMoments() {
   const { lang, t } = useLocale();
-  const display = lang === "ko" ? "font-ko break-keep" : "font-display-en !tracking-normal";
+  const display =
+    lang === "ko"
+      ? "font-ko break-keep"
+      : "font-display-en !tracking-normal";
   const cards = [
-    ["sleep", "/homepage/moments/moment-sleep.png", ""],
-    ["wait", "/homepage/moments/moment-wait.png", ""],
-    ["bond", "/homepage/moments/moment-bond.png", ""],
-  ];
-  return <section className="bg-[#f3ebda] py-14 text-[#1a1512] md:py-20"><div className="mx-auto max-w-7xl px-5 sm:px-8"><div className="mx-auto max-w-2xl text-center"><Reveal><p className="mb-4 text-xs font-medium uppercase tracking-[0.28em] text-[#c8a24a]">{t("homepage.moments.label")}</p></Reveal><Reveal delay={80}><h2 className={`${display} text-3xl font-light leading-tight sm:text-5xl`}>{t("homepage.moments.title")}</h2></Reveal><Reveal delay={120}><p className={`mx-auto mt-5 max-w-lg text-base leading-relaxed text-[#1a1512]/65 ${display}`}>{t("homepage.moments.body")}</p></Reveal></div><div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{cards.map(([key, src, span], i) => <Reveal key={key} delay={i * 60} className={`group relative min-w-0 overflow-hidden rounded-2xl ${span}`}><div className="relative h-56 w-full sm:h-full sm:min-h-64"><Image src={src} alt={t(`homepage.accessibility.moment${key[0].toUpperCase()}${key.slice(1)}Alt`)} fill sizes="(max-width: 640px) calc(100vw - 40px), (max-width: 1024px) 50vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-[#0b0a09]/75 via-[#0b0a09]/10 to-transparent" /><p className={`${display} absolute inset-x-0 bottom-0 p-6 text-xl text-[#f8f2e7] md:text-2xl`}>{t(`homepage.moments.${key}`)}</p></div></Reveal>)}</div><div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">{["toy", "sound", "quiet"].map((key, i) => <Reveal key={key} delay={i * 60} className="rounded-2xl border border-[#1a1512]/10 bg-[#f8f2e7]/60 p-6"><span className="font-display-en text-3xl text-[#c8a24a]">“</span><p className={`${display} -mt-3 text-lg italic text-[#1a1512]/80`}>{t(`homepage.moments.${key}`)}</p></Reveal>)}</div></div></section>;
+    ["sleep", "/homepage/moments/moment-sleep.png", "w-[33%]", "-rotate-4", "left-0 top-[12%]", "z-10"],
+    ["wait", "/homepage/moments/moment-wait.png", "w-[34%]", "rotate-1", "left-[30%] top-[20%]", "z-20"],
+    ["bond", "/homepage/moments/moment-bond.png", "w-[33%]", "rotate-4", "right-[4%] top-[10%]", "z-10"],
+  ] as const;
+
+  return (
+    <section className="bg-[#f3ebda] py-14 text-[#1a1512] md:py-20">
+      <div className="mx-auto grid max-w-7xl grid-cols-[45%_55%] items-center gap-3 px-3 sm:grid-cols-[42%_58%] sm:gap-8 sm:px-8 lg:gap-12">
+        <div className="min-w-0">
+          <Reveal>
+            <p className="mb-3 text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#c8a24a] sm:mb-4 sm:text-xs sm:tracking-[0.28em]">
+              {t("homepage.moments.label")}
+            </p>
+          </Reveal>
+          <Reveal delay={80}>
+            <h2
+              className={`${display} whitespace-pre-line text-[clamp(1.25rem,6vw,2rem)] font-light leading-tight sm:text-4xl lg:text-5xl`}
+            >
+              {t("homepage.moments.title")}
+            </h2>
+          </Reveal>
+          <Reveal delay={120}>
+            <p
+              className={`${display} mt-4 max-w-sm whitespace-pre-line text-xs leading-relaxed text-[#1a1512]/65 sm:mt-5 sm:text-sm lg:text-base`}
+            >
+              {t("homepage.moments.body")}
+            </p>
+          </Reveal>
+        </div>
+
+        <div className="relative h-[220px] min-w-0 sm:h-[300px] lg:h-[360px]">
+          {cards.map(([key, src, width, rotation, position, layer], index) => (
+            <Reveal
+              key={key}
+              delay={index * 70}
+              className={`group absolute ${width} ${position} ${layer} ${rotation}`}
+            >
+              <div className="relative rounded-sm bg-[#f8f2e7] p-1.5 pb-6 shadow-[0_10px_24px_rgba(67,48,29,0.18)] sm:p-3 sm:pb-10">
+                <div className="relative aspect-square overflow-hidden">
+                  <Image
+                    src={src}
+                    alt={t(
+                      `homepage.accessibility.moment${key[0].toUpperCase()}${key.slice(1)}Alt`,
+                    )}
+                    fill
+                    sizes="(max-width: 639px) 25vw, (max-width: 1023px) 26vw, 22vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                </div>
+                {(key === "sleep" || key === "bond") && (
+                  <span className="absolute -top-1 left-1/2 h-3 w-10 -translate-x-1/2 rotate-2 bg-[#d6c7a5]/75 shadow-sm sm:-top-2 sm:h-5 sm:w-14" />
+                )}
+              </div>
+            </Reveal>
+          ))}
+          <span className="absolute bottom-[8%] right-[24%] z-30 rotate-12 font-serif text-xl text-[#c8a24a]/70 sm:text-3xl">
+            ♡
+          </span>
+        </div>
+      </div>
+    </section>
+  );
 }
