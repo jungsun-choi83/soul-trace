@@ -62,6 +62,10 @@ body {
   line-height: 1.65;
 }
 
+.homepage-ko-typography p.font-ko.leading-relaxed {
+  font-weight: 300;
+}
+
 .homepage-ko-typography h1.font-ko {
   letter-spacing: -0.02em;
   line-height: 1.14;
