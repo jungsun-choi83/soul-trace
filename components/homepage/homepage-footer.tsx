@@ -10,7 +10,7 @@ export function HomepageFooter() {
   const display = lang === "ko" ? "font-ko break-keep" : "font-display-en !tracking-normal";
 
   return (
-    <footer className="border-t border-white/10 bg-[#0b0a09] py-12 text-[#f8f2e7]">
+    <footer className="border-t border-white/10 bg-[#0b0a09] py-10 text-[#f8f2e7]">
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-6 px-5 text-center sm:px-8 md:grid-cols-3 md:text-left">
         <div className="flex flex-col items-center gap-2 md:items-start">
           <div className="flex items-center gap-2.5">

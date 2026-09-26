@@ -1,7 +1,6 @@
-.reveal { opacity: 0; transform: translateY(28px); transition: opacity 900ms cubic-bezier(0.16, 1, 0.3, 1), transform 900ms cubic-bezier(0.16, 1, 0.3, 1); will-change: opacity, transform; }
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity 550ms cubic-bezier(0.16, 1, 0.3, 1), transform 550ms cubic-bezier(0.16, 1, 0.3, 1); will-change: opacity, transform; }
 .visible { opacity: 1; transform: translateY(0); }
 .glow { animation: homepage-glow 4s ease-in-out infinite; }
-.hologram { animation: homepage-hologram 5s ease-in-out infinite; }
 .scanLines { background-image: repeating-linear-gradient(0deg, rgba(236, 215, 166, 0.15) 0, rgba(236, 215, 166, 0.15) 1px, transparent 1px, transparent 4px); }
 .heroScene { position: absolute; z-index: 0; inset-inline: 0; top: 7rem; height: 75vw; overflow: hidden; pointer-events: none; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 4%, #000 92%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0%, #000 4%, #000 92%, transparent 100%); }
 .heroTopWave { position: absolute; z-index: 1; inset: 0 0 auto; height: 7.5rem; pointer-events: none; background: radial-gradient(ellipse 42% 46% at 12% 0%, rgba(11, 10, 9, 0.94) 0%, rgba(11, 10, 9, 0.58) 54%, transparent 100%), radial-gradient(ellipse 48% 54% at 51% 0%, rgba(11, 10, 9, 0.92) 0%, rgba(11, 10, 9, 0.48) 56%, transparent 100%), radial-gradient(ellipse 40% 44% at 91% 0%, rgba(11, 10, 9, 0.94) 0%, rgba(11, 10, 9, 0.56) 54%, transparent 100%), linear-gradient(to bottom, #0b0a09 0%, rgba(11, 10, 9, 0.84) 48%, transparent 100%); }
@@ -12,6 +11,5 @@
   .heroScene { inset: 0; width: 100%; height: 100%; -webkit-mask-image: radial-gradient(ellipse 118% 132% at 100% 50%, #000 0%, #000 58%, rgba(0, 0, 0, 0.92) 70%, rgba(0, 0, 0, 0.48) 86%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 7%, #000 93%, transparent 100%); mask-image: radial-gradient(ellipse 118% 132% at 100% 50%, #000 0%, #000 58%, rgba(0, 0, 0, 0.92) 70%, rgba(0, 0, 0, 0.48) 86%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 7%, #000 93%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect; }
   .heroTopWave { height: clamp(8rem, 12vw, 11rem); }
 }
-@keyframes homepage-glow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
-@keyframes homepage-hologram { 0%, 100% { transform: translateY(0) scale(1); opacity: 0.92; } 50% { transform: translateY(-6px) scale(1.012); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .reveal, .visible { opacity: 1; transform: none; transition: none; } .glow, .hologram { animation: none; } }
+@keyframes homepage-glow { 0%, 100% { opacity: 0.7; } 50% { opacity: 0.9; } }
+@media (prefers-reduced-motion: reduce) { .reveal, .visible { opacity: 1; transform: none; transition: none; } .glow { animation: none; } }

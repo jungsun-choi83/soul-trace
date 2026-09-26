@@ -37,9 +37,9 @@ export function WelcomeExperience({ choiceHref }: { choiceHref: string }) {
         <LivingMemorial />
         <FinalCta choiceHref={choiceHref} />
         <KickstarterPromo />
-        <section aria-label="Eternal Beam social links" className="bg-[#0b0a09] pb-20 md:pb-28">
+        <section aria-label="Eternal Beam social links" className="bg-[#0b0a09] pb-4 md:pb-6">
           <div className="w-full">
-            <div className="mt-5 flex items-center justify-center gap-3 px-5 text-[#D8B84C] sm:px-8" aria-hidden="true">
+            <div className="mt-3 flex items-center justify-center gap-3 px-5 text-[#D8B84C] sm:px-8" aria-hidden="true">
               <span className="h-px w-12 bg-[#D8B84C]/65 sm:w-20" />
               <span className="font-display-en text-xs tracking-[0.2em] sm:text-sm">Follow our journey</span>
               <span className="h-px w-12 bg-[#D8B84C]/65 sm:w-20" />

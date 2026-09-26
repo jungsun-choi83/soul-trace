@@ -41,12 +41,12 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
         <div className="pointer-events-none absolute inset-y-0 left-0 w-[28%] bg-gradient-to-r from-[#0b0a09] via-[#1b1208]/45 to-transparent lg:w-[58%]" aria-hidden="true" />
       </div>
       <div className={styles.heroTopWave} aria-hidden="true" />
-      <div className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 px-5 pb-20 pt-28 sm:px-8 md:pb-24 md:pt-36 lg:grid-cols-2 lg:gap-10 lg:pb-28 lg:pt-44">
+      <div className="relative z-10 mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-5 pb-20 pt-28 sm:px-8 md:pb-24 md:pt-36 lg:grid-cols-2 lg:gap-10 lg:pb-28 lg:pt-44">
         <div className="order-2 min-w-0 lg:order-1">
           <Reveal><p className={`mb-6 flex items-center gap-3 text-xs font-medium uppercase text-[#c8a24a] ${lang === "ko" ? "tracking-normal" : "tracking-[0.28em]"}`}><span className="h-px w-8 bg-[#c8a24a]/60" />{t("homepage.hero.label")}</p></Reveal>
           <Reveal delay={80}><h1 className={`${display} text-[2.6rem] font-light leading-[1.08] sm:text-6xl lg:text-7xl`}><span className="block whitespace-pre-line">{t("homepage.hero.title1")}</span><span className="mt-2 block text-[#ecd7a6]">{t("homepage.hero.title2")}</span></h1></Reveal>
-          <Reveal delay={160}><p className={`mt-7 max-w-md text-base leading-relaxed text-[#f8f2e7]/70 sm:text-lg ${body}`}>{t("homepage.hero.body")}</p></Reveal>
-          <Reveal delay={240}><div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"><Link href={choiceHref} className={`group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-7 py-4 text-sm font-medium text-[#0b0a09] transition hover:bg-[#d8b463] ${body}`}>{t("homepage.hero.primary")}<ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-1" /></Link><a href="#eternal-beam" className={`inline-flex min-h-12 items-center justify-center rounded-full border border-[#f8f2e7]/25 px-7 py-4 text-sm text-[#f8f2e7]/90 hover:border-[#f8f2e7]/60 ${body}`}>{t("homepage.hero.secondary")}</a></div></Reveal>
+          <Reveal delay={100}><p className={`mt-7 max-w-md text-base leading-relaxed text-[#f8f2e7]/70 sm:text-lg ${body}`}>{t("homepage.hero.body")}</p></Reveal>
+          <Reveal delay={160}><div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center"><Link href={choiceHref} className={`group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-7 py-4 text-sm font-medium text-[#0b0a09] transition hover:bg-[#d8b463] ${body}`}>{t("homepage.hero.primary")}<ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-1" /></Link><a href="#eternal-beam" className={`inline-flex min-h-12 items-center justify-center rounded-full border border-[#f8f2e7]/25 px-7 py-4 text-sm text-[#f8f2e7]/90 hover:border-[#f8f2e7]/60 ${body}`}>{t("homepage.hero.secondary")}</a></div></Reveal>
         </div>
         <div className="order-1 h-[75vw] min-w-0 lg:order-2 lg:h-[34rem]" aria-hidden="true" />
       </div>
