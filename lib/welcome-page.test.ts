@@ -92,7 +92,7 @@ test("homepage follows the official Eternal Beam Facebook account", () => {
 });
 
 test("footer Contact Us opens a blank email to Eternal Beam", () => {
-  assert.match(footer, /href="mailto:hello@eternalbeamapp\.com"/);
+  assert.match(footer, /href="mailto:jadechoi@eternalbeamapp\.com"/);
   assert.doesNotMatch(footer, /mailto:[^"']*[?&](?:subject|body)=/i);
 });
 

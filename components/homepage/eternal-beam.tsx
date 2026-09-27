@@ -40,26 +40,20 @@ export function EternalBeam({
 
       <div className="relative mx-auto grid max-w-7xl grid-cols-[44%_56%] items-center gap-3 px-2 sm:px-8 md:grid-cols-[36%_38%_26%] md:gap-6 lg:gap-10">
         <div className="min-w-0">
-          <Reveal>
+          <Reveal className={styles.eternalTextEntrance}>
             <p className="mb-3 bg-gradient-to-r from-[#a77d27] via-[#f2d987] to-[#a77d27] bg-clip-text font-[family-name:var(--font-cormorant)] text-sm font-medium uppercase tracking-[0.14em] text-transparent drop-shadow-[0_0_18px_rgba(200,162,74,0.24)] sm:text-2xl sm:tracking-[0.24em] lg:mb-5 lg:text-4xl lg:tracking-[0.3em]">
               ETERNAL BEAM
             </p>
-          </Reveal>
-          <Reveal delay={100}>
             <h2
               className={`${display} text-[clamp(1.25rem,5.8vw,2rem)] font-light leading-tight sm:text-4xl lg:text-5xl`}
             >
               {t("homepage.eternalBeam.title")}
             </h2>
-          </Reveal>
-          <Reveal delay={140}>
             <p
               className={`${display} mt-3 max-w-xl text-[0.68rem] leading-relaxed text-[#f8f2e7]/75 sm:mt-4 sm:text-sm lg:mt-5 lg:text-base`}
             >
               {t("homepage.eternalBeam.body")}
             </p>
-          </Reveal>
-          <Reveal delay={180}>
             <a
               href={getEternalBeamMainUrl()}
               target="_blank"
