@@ -30,7 +30,7 @@ function ProjectedPet() {
 
 export function HologramPreview() {
   return (
-    <Reveal className="flex justify-center">
+    <Reveal delay={150} className={`flex justify-center ${styles.eternalProductEntrance}`}>
       <div className="relative w-full max-w-sm">
         <div
           className={`absolute bottom-6 left-1/2 h-16 w-40 max-w-[75%] -translate-x-1/2 rounded-full bg-[#c8a24a]/25 blur-3xl sm:bottom-8 sm:h-24 sm:w-64 ${styles.glow}`}
