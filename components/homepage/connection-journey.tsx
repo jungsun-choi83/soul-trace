@@ -8,6 +8,7 @@ import {
   SparklesIcon,
 } from "./icons";
 import { Reveal } from "./reveal";
+import styles from "./homepage.module.css";
 
 export function ConnectionJourney() {
   const { lang, t } = useLocale();
@@ -28,8 +29,8 @@ export function ConnectionJourney() {
         {steps.map(([Icon, key, highlight], index) => (
           <Reveal
             key={key}
-            delay={index * 30}
-            className="relative flex min-w-0 items-center gap-1.5"
+            delay={550 + index * 100}
+            className={`relative flex min-w-0 items-center gap-1.5 ${styles.eternalBenefitEntrance}`}
           >
             <div
               className={`grid size-6 shrink-0 place-items-center rounded-full border sm:size-8 ${

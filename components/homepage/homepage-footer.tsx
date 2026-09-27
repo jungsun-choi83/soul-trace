@@ -53,7 +53,7 @@ export function HomepageFooter() {
             <a href="/terms-of-service" className={linkClassName}>
               {t("homepage.footer.termsOfService")}
             </a>
-            <a href="mailto:hello@eternalbeamapp.com" className={linkClassName}>
+            <a href="mailto:jadechoi@eternalbeamapp.com" className={linkClassName}>
               {t("homepage.footer.contact")}
             </a>
           </nav>
