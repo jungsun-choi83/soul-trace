@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale } from "@/components/locale-provider";
-import { StarIcon, SunIcon } from "./icons";
+import { LuHeart, LuPawPrint } from "react-icons/lu";
 import { Reveal } from "./reveal";
 
 export function LivingMemorial() {
@@ -11,8 +11,8 @@ export function LivingMemorial() {
       ? "font-ko break-keep"
       : "font-display-en !tracking-normal";
   const cards = [
-    [SunIcon, "living", false],
-    [StarIcon, "memorial", true],
+    [LuPawPrint, "living", false],
+    [LuHeart, "memorial", true],
   ] as const;
 
   return (
@@ -45,7 +45,7 @@ export function LivingMemorial() {
               }`}
             >
               <div className="grid size-9 place-items-center rounded-full bg-[#c8a24a]/10 text-[#c8a24a] sm:size-12">
-                <Icon className="size-4 sm:size-5" />
+                <Icon aria-hidden="true" strokeWidth={1.8} className="size-5 sm:size-[1.375rem]" />
               </div>
               <h3
                 className={`${display} mt-3 text-[clamp(0.9rem,4.5vw,1.5rem)] leading-snug sm:mt-6 sm:text-2xl`}
