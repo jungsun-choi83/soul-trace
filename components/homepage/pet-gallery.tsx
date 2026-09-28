@@ -15,12 +15,19 @@ export function PetGallery() {
       ? "font-ko break-keep"
       : "font-display-en !tracking-normal";
   const pets = ["dog", "cat", "rabbit", "bird", "hamster"];
+  const primaryImages = [
+    ["/homepage/pets/gallery-dog.png", "dog"],
+    ["/homepage/pets/im1.png", "firstHome"],
+    ["/homepage/pets/im2.png", "quietRest"],
+    ["/homepage/pets/im3.png", "littleJourney"],
+    ["/homepage/pets/im4.png", "sunsetMemory"],
+  ] as const;
   const alternatePets = [
     ["/homepage/pets/h5.png", "calm"],
-    ["/homepage/pets/h1.png", "loved"],
-    ["/homepage/pets/h2.png", "cozy"],
-    ["/homepage/pets/h3.png", "joyful"],
-    ["/homepage/pets/h4.png", "playful"],
+    ["/homepage/pets/im5.png", "beachMemory"],
+    ["/homepage/pets/im6.png", "gentleTouch"],
+    ["/homepage/pets/im7.png", "alwaysTogether"],
+    ["/homepage/pets/im8.png", "todaysMoment"],
   ] as const;
 
   useEffect(() => {
@@ -74,7 +81,7 @@ export function PetGallery() {
                 style={{ animationDelay: `${index * 200}ms` }}
               >
                 <Image
-                  src={`/homepage/pets/gallery-${pet}.png`}
+                  src={primaryImages[index][0]}
                   alt={t(
                     `homepage.accessibility.gallery${pet[0].toUpperCase()}${pet.slice(1)}Alt`,
                   )}
@@ -86,7 +93,7 @@ export function PetGallery() {
                 <span
                   className={`${display} absolute bottom-1 left-1 max-w-[calc(100%-0.5rem)] text-[clamp(0.55rem,2.2vw,1.125rem)] leading-tight text-[#f8f2e7] sm:bottom-2 sm:left-2 md:bottom-4 md:left-4`}
                 >
-                  {t(`homepage.gallery.${pet}`)}
+                  {t(`homepage.gallery.${primaryImages[index][1]}`)}
                 </span>
               </div>
               <div

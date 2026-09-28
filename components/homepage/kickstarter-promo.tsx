@@ -62,7 +62,7 @@ export function KickstarterPromo({ fullBleed = false, compact = false }: { fullB
               type="button"
               onClick={openDialog}
               aria-label={t("homepage.kickstarter.notify")}
-              className="absolute left-[15%] top-[78.4%] min-h-12 w-[70%] rounded-full transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78]"
+              className="absolute left-[15%] top-[78.4%] min-h-12 w-[70%] rounded-full transition duration-200 hover:bg-white/20 hover:shadow-[0_0_24px_rgba(255,255,255,0.5)] active:bg-white/30 active:shadow-[0_0_16px_rgba(255,255,255,0.4)] focus-visible:bg-white/20 focus-visible:shadow-[0_0_24px_rgba(255,255,255,0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
             />
             {KICKSTARTER_URL ? (
               <a
@@ -70,14 +70,14 @@ export function KickstarterPromo({ fullBleed = false, compact = false }: { fullB
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={t("homepage.kickstarter.visit")}
-                className="absolute left-[15%] top-[88.9%] min-h-12 w-[70%] rounded-full transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78]"
+                className="absolute left-[15%] top-[88.9%] min-h-12 w-[70%] rounded-full transition-colors duration-200 hover:bg-[#D8B84C]/20 active:bg-[#D8B84C]/30 focus-visible:bg-[#D8B84C]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78]"
               />
             ) : (
               <button
                 type="button"
                 onClick={() => setPageNotice(true)}
                 aria-label={t("homepage.kickstarter.visit")}
-                className="absolute left-[15%] top-[88.9%] min-h-12 w-[70%] rounded-full transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78]"
+                className="absolute left-[15%] top-[88.9%] min-h-12 w-[70%] rounded-full transition-colors duration-200 hover:bg-[#D8B84C]/20 active:bg-[#D8B84C]/30 focus-visible:bg-[#D8B84C]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78]"
               />
             )}
           </div>
@@ -96,7 +96,7 @@ export function KickstarterPromo({ fullBleed = false, compact = false }: { fullB
             type="button"
             onClick={openDialog}
             aria-label={t("homepage.kickstarter.notify")}
-            className="absolute left-[3.65%] top-[63.45%] h-[10.3%] w-[23.3%] rounded-full transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78]"
+            className="absolute left-[3.65%] top-[63.45%] h-[10.3%] w-[23.3%] rounded-full transition duration-200 hover:bg-white/20 hover:shadow-[0_0_24px_rgba(255,255,255,0.5)] active:bg-white/30 active:shadow-[0_0_16px_rgba(255,255,255,0.4)] focus-visible:bg-white/20 focus-visible:shadow-[0_0_24px_rgba(255,255,255,0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
           />
           {KICKSTARTER_URL ? (
             <a
@@ -104,14 +104,14 @@ export function KickstarterPromo({ fullBleed = false, compact = false }: { fullB
               target="_blank"
               rel="noopener noreferrer"
               aria-label={t("homepage.kickstarter.visit")}
-              className="absolute left-[27.97%] top-[63.45%] h-[10.3%] w-[22.9%] rounded-full transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78]"
+              className="absolute left-[27.97%] top-[63.45%] h-[10.3%] w-[22.9%] rounded-full transition-colors duration-200 hover:bg-[#D8B84C]/20 active:bg-[#D8B84C]/30 focus-visible:bg-[#D8B84C]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78]"
             />
           ) : (
             <button
               type="button"
               onClick={() => setPageNotice(true)}
               aria-label={t("homepage.kickstarter.visit")}
-              className="absolute left-[27.97%] top-[63.45%] h-[10.3%] w-[22.9%] rounded-full transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78]"
+              className="absolute left-[27.97%] top-[63.45%] h-[10.3%] w-[22.9%] rounded-full transition-colors duration-200 hover:bg-[#D8B84C]/20 active:bg-[#D8B84C]/30 focus-visible:bg-[#D8B84C]/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#05CE78]"
             />
           )}
         </div>

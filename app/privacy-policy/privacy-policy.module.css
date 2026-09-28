@@ -1,0 +1,237 @@
+.page {
+  width: 100%;
+  min-height: 100svh;
+  overflow-x: clip;
+  padding: clamp(1rem, 4vw, 4rem) clamp(0.75rem, 3vw, 2rem);
+  background: #ebe8e1;
+  color: #181818;
+}
+
+.document {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 56.25rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 7vw, 4.75rem) clamp(1.25rem, 7vw, 4.75rem) clamp(3rem, 9vw, 6rem);
+  background: #ffffff;
+  box-shadow: 0 18px 55px rgba(35, 31, 25, 0.1);
+  color: #181818;
+}
+
+.documentEnglish {
+  font-family: var(--font-inter), Arial, sans-serif;
+}
+
+.documentKorean {
+  font-family: var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif;
+  font-weight: 300;
+  letter-spacing: -0.012em;
+}
+
+.documentHeader {
+  margin-bottom: 1.5rem;
+}
+
+.kicker {
+  margin: 0 0 2.5rem;
+  color: #8b6a2f;
+  font-family: var(--font-inter), Arial, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.19em;
+  line-height: 1.5;
+}
+
+.title {
+  margin: 0;
+  color: #181818;
+  font-size: clamp(2rem, 6vw, 2.45rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+}
+
+.subtitle {
+  margin: 0.55rem 0 0;
+  color: #8b6a2f;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.goldDivider {
+  height: 2px;
+  margin-top: 1.25rem;
+  background: #b59a62;
+}
+
+.policyBody {
+  min-width: 0;
+  font-size: 0.91rem;
+  line-height: 1.72;
+}
+
+.paragraph {
+  margin: 0 0 0.8rem;
+  color: #242424;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.paragraph strong,
+.list strong,
+.table strong {
+  font-weight: 700;
+}
+
+.headingOne {
+  margin: 2.15rem 0 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(181, 154, 98, 0.62);
+  color: #8b6a2f;
+  font-size: 1.28rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.headingTwo {
+  margin: 1.35rem 0 0.55rem;
+  color: #5b4a2a;
+  font-size: 1.04rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.list {
+  margin: 0.35rem 0 1rem;
+  padding-left: 1.55rem;
+  color: #242424;
+  list-style: disc outside;
+  overflow-wrap: anywhere;
+}
+
+.list li {
+  margin: 0.22rem 0;
+  padding-left: 0.2rem;
+}
+
+.spacer {
+  height: 0.55rem;
+}
+
+.tableScroller {
+  width: 100%;
+  margin: 1rem 0 1.25rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #b59a62 #f4efe5;
+}
+
+.tableScroller:focus-visible {
+  outline: 2px solid rgba(139, 106, 47, 0.65);
+  outline-offset: 3px;
+}
+
+.table {
+  width: 100%;
+  min-width: 38rem;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: #242424;
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
+.tableWide {
+  min-width: 49rem;
+}
+
+.table th,
+.table td {
+  padding: 0.62rem 0.7rem;
+  border: 1px solid #d8d3c9;
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.table th {
+  border-color: #ffffff;
+  background: #2a2927;
+  color: #ffffff;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.table td {
+  background: #ffffff;
+}
+
+.table td.tableLabel {
+  background: #f4efe5;
+  color: #5b4a2a;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.table td.tableAlternate {
+  background: #f8f6f1;
+}
+
+.table p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.table p + p {
+  margin-top: 0.42rem;
+}
+
+.tableBullet {
+  position: relative;
+  padding-left: 0.9rem;
+}
+
+.tableBullet::before {
+  position: absolute;
+  left: 0;
+  content: "•";
+}
+
+@media (max-width: 40rem) {
+  .page {
+    padding: 0;
+    background: #ffffff;
+  }
+
+  .document {
+    padding: 2rem 1.15rem 3.5rem;
+    box-shadow: none;
+  }
+
+  .kicker {
+    margin-bottom: 2rem;
+    font-size: 0.61rem;
+    letter-spacing: 0.14em;
+  }
+
+  .policyBody {
+    font-size: 0.875rem;
+    line-height: 1.7;
+  }
+
+  .headingOne {
+    margin-top: 1.85rem;
+    font-size: 1.16rem;
+  }
+
+  .headingTwo {
+    font-size: 0.98rem;
+  }
+
+  .table {
+    font-size: 0.76rem;
+  }
+}
