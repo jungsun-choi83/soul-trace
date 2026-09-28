@@ -23,8 +23,10 @@
 .momentPhotoEntrance.visible { transform: translateY(0) scale(1); }
 .howTextEntrance { transform: translateY(12px); transition-duration: 580ms; }
 .howTextEntrance.visible { transform: translateY(0); }
-.howStepCircle { opacity: 1; }
+.howStepCircle { opacity: 1; transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 260ms ease, border-color 260ms ease; }
 .howStepIcon { opacity: 0.6; }
+.howResultIcon { filter: drop-shadow(0 0 4px rgba(200, 162, 74, 0.28)); }
+.howStep:hover .howStepCircle { transform: scale(1.035); border-color: rgba(200, 162, 74, 0.55); box-shadow: 0 5px 18px rgba(167, 125, 40, 0.14); }
 .howStepTitle { opacity: 0.7; }
 .howStepDescription { opacity: 0.55; }
 .howStepOne .howStepCircle { opacity: 1; border-color: #c8a24a; background-color: #efe4cc; }
@@ -141,6 +143,7 @@
   .heroOpeningVeil { opacity: 0; will-change: auto; }
   .howConnectorFill { transform: scaleX(1); animation: none !important; }
   .howStepCircle { opacity: 1; transform: none; border-color: #c8a24a; background-color: #efe4cc; animation: none !important; }
+  .howStep:hover .howStepCircle { transform: none; box-shadow: none; }
   .howStepIcon, .howStepTitle, .howStepDescription { opacity: 1; animation: none !important; }
   .letterPaperContent { opacity: 1; transition: none; }
   .galleryOriginalFace { opacity: 1; transform: none; animation: none; }

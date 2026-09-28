@@ -2,7 +2,7 @@
 
 import { useLocale } from "@/components/locale-provider";
 import { useEffect, useRef, useState } from "react";
-import { MailIcon, PenIcon, SparklesIcon } from "./icons";
+import { LuMail, LuPencil, LuSparkles } from "react-icons/lu";
 import { Reveal } from "./reveal";
 import styles from "./homepage.module.css";
 
@@ -15,9 +15,9 @@ export function HowItWorks() {
       ? "font-ko break-keep"
       : "font-display-en !tracking-normal";
   const steps = [
-    [PenIcon, "share"],
-    [MailIcon, "receive"],
-    [SparklesIcon, "discover"],
+    [LuPencil, "share"],
+    [LuMail, "receive"],
+    [LuSparkles, "discover"],
   ] as const;
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export function HowItWorks() {
               className={`relative min-w-0 text-center ${styles.howStep} ${index === 0 ? styles.howStepOne : index === 1 ? styles.howStepTwo : styles.howStepThree}`}
             >
               <div className={`relative z-10 mx-auto grid size-10 place-items-center rounded-full border border-[#c8a24a]/30 bg-[#f3ebda] sm:size-14 md:size-16 ${styles.howStepCircle}`}>
-                <Icon className={`size-4 text-[#c8a24a] sm:size-5 md:size-6 ${styles.howStepIcon}`} />
+                <Icon aria-hidden="true" strokeWidth={1.9} className={`size-5 text-[#a77d28] sm:size-7 md:size-8 ${styles.howStepIcon} ${index === 2 ? styles.howResultIcon : ""}`} />
                 <span className="absolute -right-0.5 -top-0.5 grid size-4 place-items-center rounded-full bg-[#1a1512] text-[0.55rem] text-[#f8f2e7] sm:-right-1 sm:-top-1 sm:size-5 sm:text-[0.625rem] md:size-6 md:text-xs">
                   {index + 1}
                 </span>
