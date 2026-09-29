@@ -1504,7 +1504,7 @@ export function SoulTraceFlow({
                     ) : null}
                     <div
                       data-letter-body
-                      className={`whitespace-pre-line text-left text-[17px] font-normal leading-[1.9] tracking-[0.012em] sm:pl-6 sm:leading-[1.95] md:pl-8 ${
+                      className={`whitespace-pre-line text-left text-[17px] font-normal leading-[1.9] tracking-[0.012em] [text-wrap:pretty] sm:pl-6 sm:leading-[1.95] md:pl-8 ${
                         letterLanguage === "ko" ? "break-keep sm:text-[19px]" : "sm:text-[20px]"
                       }`}
                       style={{
@@ -1516,7 +1516,7 @@ export function SoulTraceFlow({
                       {letterOpening ? (
                         <span
                           data-letter-salutation
-                          className={`mb-3 block break-words leading-[1.35] sm:mb-4 ${
+                          className={`mb-3 block break-words leading-[1.35] [text-wrap:balance] sm:mb-4 ${
                             letterLanguage === "ko" ? "text-[20px] sm:text-[22px]" : "text-[26px] sm:text-[31px]"
                           }`}
                           style={{
@@ -1911,6 +1911,7 @@ export function SoulTraceFlow({
                 mode={mode}
                 serviceChannel={serviceChannel}
                 step={step}
+                petType={petIntro.petType}
                 petDisplayName={displayPetName}
                 memoryAnswers={memoryAnswers}
                 tonePrefs={tonePrefs}

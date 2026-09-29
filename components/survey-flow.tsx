@@ -3,6 +3,7 @@
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 import { modeCopy, type LetterMode } from "@/lib/letter-mode";
+import type { PetType } from "@/lib/pet-profile";
 import type { ServiceChannel } from "@/lib/service-channel";
 import { PetPhotoUpload } from "@/components/pet-photo-upload";
 import {
@@ -17,6 +18,7 @@ type SurveyFlowProps = {
   mode: LetterMode;
   serviceChannel?: ServiceChannel | null;
   step: number;
+  petType: PetType | "";
   petDisplayName: string;
   memoryAnswers: string[];
   tonePrefs: LetterTonePrefs;
@@ -44,6 +46,7 @@ export function SurveyFlow({
   mode,
   serviceChannel = null,
   step,
+  petType,
   petDisplayName,
   memoryAnswers,
   tonePrefs,
@@ -64,6 +67,12 @@ export function SurveyFlow({
   const isPhoto = PET_PHOTO_UPLOAD_ENABLED && step === memoryCount + copy.tone.length;
   const isMemory = step < memoryCount;
   const memoryItem = isMemory ? (channelMemory?.[step] ?? copy.memory[step]) : null;
+  const speciesExample =
+    !channelMemory &&
+    (petType === "rabbit" || petType === "hamster" || petType === "bird") &&
+    step < 3
+      ? t(`survey.petExamples.${petType}.${mode}.q${step + 1}`)
+      : memoryItem?.example;
   const toneIndex = step - memoryCount;
   const toneItem = !isMemory && !isPhoto ? copy.tone[toneIndex] : null;
   const validationMessage = !showValidationError
@@ -114,9 +123,9 @@ export function SurveyFlow({
               {memoryItem.optionalNote}
             </p>
           ) : null}
-          {memoryItem.example ? (
+          {speciesExample ? (
             <p className="survey-hint font-extralight leading-relaxed text-[#A8A29E]">
-              {t("survey.examplePrefix")} {memoryItem.example}
+              {t("survey.examplePrefix")} {speciesExample}
             </p>
           ) : null}
           <textarea

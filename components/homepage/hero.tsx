@@ -51,7 +51,7 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
         />
         <div className={styles.heroOpeningVeil} aria-hidden="true" />
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-[3] w-[72%] bg-gradient-to-r from-[#0b0a09] via-[#1b1208]/70 to-transparent lg:w-[58%] lg:via-[#1b1208]/45"
+          className={styles.heroReadabilityGradient}
           aria-hidden="true"
         />
       </div>
@@ -80,7 +80,7 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
           </Reveal>
           <Reveal className={styles.heroDescriptionEntrance} delay={750}>
             <p
-              className={`mt-[clamp(1rem,4vw,1.75rem)] max-w-md text-sm leading-relaxed text-[#f8f2e7]/75 sm:text-base lg:text-lg ${body}`}
+              className={`mt-[clamp(1rem,4vw,1.75rem)] max-w-md text-sm leading-relaxed text-[#f8f2e7]/90 sm:text-base lg:text-lg ${styles.heroDescription} ${body}`}
             >
               {t("homepage.hero.body")}
             </p>
@@ -96,7 +96,7 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
               </Link>
               <a
                 href="#eternal-beam"
-                className={`inline-flex min-h-11 items-center justify-center rounded-full border border-[#f8f2e7]/25 px-4 py-3 text-center text-xs leading-tight text-[#f8f2e7]/90 hover:border-[#f8f2e7]/60 sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${body}`}
+                className={`inline-flex min-h-11 items-center justify-center rounded-full px-4 py-3 text-center text-xs leading-tight sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${styles.heroSecondaryCta} ${body}`}
               >
                 {t("homepage.hero.secondary")}
               </a>

@@ -15,6 +15,7 @@ export function LanguageToggle() {
       <button
         type="button"
         onClick={() => setLang(value)}
+        aria-pressed={active}
         className={`px-2 py-1 text-[13px] font-medium tracking-wide transition sm:text-[14px] ${
           active ? "text-[#D4AF37]" : "text-[#6b6b6b] hover:text-[#a3a3a3]"
         } `}
