@@ -14,16 +14,14 @@ export function PetGallery() {
     lang === "ko"
       ? "font-ko break-keep"
       : "font-display-en !tracking-normal";
-  const pets = ["dog", "cat", "rabbit", "bird", "hamster"];
+  const pets = ["cat", "rabbit", "bird", "hamster"];
   const primaryImages = [
-    ["/homepage/pets/gallery-dog.png", "dog"],
     ["/homepage/pets/im1.png", "firstHome"],
     ["/homepage/pets/im2.png", "quietRest"],
     ["/homepage/pets/im3.png", "littleJourney"],
     ["/homepage/pets/im4.png", "sunsetMemory"],
   ] as const;
   const alternatePets = [
-    ["/homepage/pets/h5.png", "calm"],
     ["/homepage/pets/im5.png", "beachMemory"],
     ["/homepage/pets/im6.png", "gentleTouch"],
     ["/homepage/pets/im7.png", "alwaysTogether"],
@@ -69,7 +67,7 @@ export function PetGallery() {
           </Reveal>
         </div>
 
-        <div className={`mt-10 grid grid-cols-5 gap-1.5 sm:gap-3 md:gap-4 ${isVisible ? styles.galleryPlaying : ""}`}>
+        <div className={`mx-auto mt-10 grid w-4/5 grid-cols-4 gap-1.5 sm:gap-3 md:gap-4 ${isVisible ? styles.galleryPlaying : ""}`}>
           {pets.map((pet, index) => (
             <Reveal
               key={pet}

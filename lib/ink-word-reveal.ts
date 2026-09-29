@@ -8,6 +8,38 @@ export type InkRevealToken = {
   durationMs: number;
 };
 
+const ENGLISH_GLUE_WORDS = new Set([
+  "a", "i", "an", "as", "at", "by", "if", "in", "my", "no", "of", "on", "or", "to", "up", "we",
+  "and", "but", "for", "the",
+]);
+
+/**
+ * Keeps short English connector words with the word that follows and prevents
+ * a paragraph's final word from becoming an orphan. Only display whitespace
+ * changes; the letter's wording remains untouched.
+ */
+export function typographicWhitespace(
+  tokens: readonly InkRevealToken[],
+  index: number,
+): string {
+  const token = tokens[index];
+  if (!token || token.isWord || /[\r\n]/u.test(token.text)) return token?.text ?? "";
+
+  const previous = tokens[index - 1];
+  const next = tokens[index + 1];
+  if (!previous?.isWord || !next?.isWord) return token.text;
+
+  const previousWord = previous.text
+    .replace(/^[^A-Za-z]+|[^A-Za-z]+$/gu, "")
+    .toLowerCase();
+  const afterNext = tokens[index + 2];
+  const nextEndsParagraph =
+    !afterNext || (!afterNext.isWord && /[\r\n]/u.test(afterNext.text));
+
+  if (!ENGLISH_GLUE_WORDS.has(previousWord) && !nextEndsParagraph) return token.text;
+  return token.text.replace(/ /gu, "\u00a0");
+}
+
 const TIMING_VARIATION_MS = [-12, 8, 0, 18, -6, 12] as const;
 
 function baseWordDelay(wordCount: number): number {

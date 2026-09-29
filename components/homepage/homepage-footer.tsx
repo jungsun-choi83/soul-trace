@@ -38,7 +38,7 @@ export function HomepageFooter() {
           </div>
         </div>
 
-        <div className="justify-self-end md:order-3">
+        <div className="hidden md:order-3 md:block">
           <LanguageToggle />
         </div>
 
@@ -58,8 +58,9 @@ export function HomepageFooter() {
             </a>
           </nav>
 
-          <div className="col-span-2 flex items-center gap-2 md:col-auto md:gap-1">
-            <a
+          <div className="col-span-2 flex w-full items-center justify-between md:col-auto md:w-auto md:gap-1">
+            <div className="flex items-center gap-2 md:gap-1">
+              <a
               href={getEternalBeamInstagramUrl()}
               target="_blank"
               rel="noopener noreferrer"
@@ -67,8 +68,8 @@ export function HomepageFooter() {
               className={socialLinkClass}
             >
               <FaInstagram aria-hidden="true" className="size-[18px]" />
-            </a>
-            <a
+              </a>
+              <a
               href={getEternalBeamFacebookUrl()}
               target="_blank"
               rel="noopener noreferrer"
@@ -76,8 +77,8 @@ export function HomepageFooter() {
               className={socialLinkClass}
             >
               <FaFacebookF aria-hidden="true" className="size-4" />
-            </a>
-            <a
+              </a>
+              <a
               href={getEternalBeamYoutubeUrl()}
               target="_blank"
               rel="noopener noreferrer"
@@ -85,7 +86,11 @@ export function HomepageFooter() {
               className={socialLinkClass}
             >
               <FaYoutube aria-hidden="true" className="size-[18px]" />
-            </a>
+              </a>
+            </div>
+            <div className="md:hidden">
+              <LanguageToggle />
+            </div>
           </div>
         </div>
 
