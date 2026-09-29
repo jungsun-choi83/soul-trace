@@ -878,7 +878,7 @@
       "cardLine": "I always know when you're coming home."
     },
     "moments": {
-      "label": "Little Moments", "title": "Tell us about the little things.", "body": "The way they slept, their favorite toys, the way they waited—\nsmall moments become their story.",
+      "label": "Little Moments", "title": "A memory begins with a small moment.", "body": "An expression, a familiar place, a moment that comes back to you. Your story does not need to be neatly told.",
       "sleep": "The place they always sleep.", "wait": "The way they wait for you.", "bond": "The quiet moments only you remember.",
       "toy": "The toy they always choose.", "sound": "The sound they make when they're excited.", "quiet": "The little look only you understand."
     },
@@ -889,14 +889,14 @@
       "discoverTitle": "Discover What Comes Next", "discoverBody": "See how Eternal Beam can carry those memories even further."
     },
     "letter": {
-      "label": "The Letter", "title": "Real memories become their words.", "body": "Every letter is shaped by the moments you share, in a voice that feels like them.",
-      "memoryLabel": "Memory", "memoryText": "“Always waits beside the door.”", "letterLabel": "Letter",
-      "letterText": "“I always know when you're coming home. That's why I'm already waiting for you.”", "paperName": "For Momo", "paperFrom": "With love, always"
+      "label": "The Letter", "title": "Your memories give the letter its words.", "body": "Every letter is shaped by the moments you share, in a voice that feels like them.",
+      "memoryLabel": "Memory", "memoryText": "I have shared eight years with Goya. Looking back at puppy photos, I realized how quickly our time together was passing. I want to keep a few more of the ordinary moments.", "letterLabel": "Letter",
+      "letterText": "To you,\nOur time together has found its way into these photos.\nLet’s keep a few ordinary moments from the days ahead, too.\nThey do not have to be special. They are part of our time together.", "paperName": "To Goya", "paperFrom": "Written from Goya’s point of view"
     },
     "gallery": { "label": "Gallery", "title": "Thousands of moments. One story.", "body": "The day they first came home, the moment we held hands, a night we traveled together, and the everyday moments we share today.", "dog": "Loyal", "cat": "Curious", "rabbit": "Gentle", "bird": "Bright", "hamster": "Tiny", "calm": "Calm", "loved": "Loved", "cozy": "Cozy", "joyful": "Joyful", "playful": "Playful", "firstHome": "First Home", "quietRest": "Quiet Rest", "littleJourney": "Little Journey", "sunsetMemory": "Sunset Memory", "beachMemory": "Beach Memory", "gentleTouch": "Gentle Touch", "alwaysTogether": "Always Together", "todaysMoment": "Today’s Moment" },
     "eternalBeam": { "title": "A letter is only the beginning.", "body": "Keep your Soul Trace memories\nclose with Eternal Beam.", "cta": "Visit Eternal Beam →", "benefits": { "photos": "Photos & videos", "easy": "Easy to use", "design": "Fits your space", "lasting": "Keep memories close" } },
     "livingMemorial": { "label": "For Every Season", "title": "For the ones here, and the ones held close.", "livingTitle": "Together Today", "livingBody": "For the memories you're still making.", "memorialTitle": "Always Remembered", "memorialBody": "For the memories that will always stay." },
-    "finalCta": { "title": "Start with one memory.", "body": "Create your pet's Soul Trace letter and discover where their story can go next.", "primary": "Create My Pet's Letter", "secondary": "Visit Eternal Beam" },
+    "finalCta": { "title": "Start with one moment.", "body": "An expression, a memory, a moment you shared.\nTell us what you would like to keep today.", "primary": "Create My Pet's Letter", "secondary": "Visit Eternal Beam" },
     "kickstarter": { "notify": "Notify me on Kickstarter", "visit": "Take me to the Kickstarter page", "pageComingSoon": "Our Kickstarter page is coming soon.", "dialogTitle": "Be the first to know", "dialogBody": "Enter your email and we'll let you know when Eternal Beam launches on Kickstarter.", "emailLabel": "Email address", "emailPlaceholder": "you@example.com", "submit": "Notify me", "sending": "Joining…", "success": "You are on the list", "error": "We couldn't add you right now. Please try again.", "done": "Done", "close": "Close" },
     "footer": { "tagline": "A memory experience by Eternal Beam.", "rights": "All rights reserved.", "linksLabel": "Footer links", "privacyPolicy": "Privacy Policy", "termsOfService": "Terms of Service", "contact": "Contact Us" },
     "accessibility": {
