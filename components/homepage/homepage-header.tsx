@@ -50,7 +50,7 @@ export function HomepageHeader({ choiceHref }: { choiceHref: string }) {
   }, [open]);
 
   return (
-    <header className={`fixed inset-x-0 top-0 z-50 border-b transition-colors duration-500 ${scrolled ? "border-[#f8f2e7]/10 bg-[#0b0a09]/85 backdrop-blur-md" : "border-transparent bg-transparent"}`}>
+    <header className={`fixed inset-x-0 top-0 z-50 border-b transition-colors duration-500 ${scrolled ? "border-[#f8f2e7]/10 bg-[#0b0a09]/85 backdrop-blur-md" : "border-[#f8f2e7]/15 bg-[#0b0a09]/55 backdrop-blur-sm"}`}>
       <div className="relative flex h-16 w-full items-center justify-between px-4 sm:px-8 xl:h-20 xl:px-10">
         <a href="#top" className="flex min-w-0 items-center gap-2.5" aria-label={t("homepage.accessibility.home")}>
           <span className="size-2 shrink-0 rounded-full bg-[#c8a24a] shadow-[0_0_12px_rgba(200,162,74,0.7)]" aria-hidden="true" />

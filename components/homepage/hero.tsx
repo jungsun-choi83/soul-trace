@@ -33,22 +33,16 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
         aria-hidden="true"
       />
       <div className={styles.heroScene} aria-hidden="true">
-        <Image
-          src="/images/new hero.png"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className={`pointer-events-none select-none ${styles.heroImage}`}
-        />
-        <Image
-          src="/images/flowers.png"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className={`pointer-events-none select-none ${styles.heroFlowers}`}
-        />
+        <div className={styles.heroBeachFrame}>
+          <Image
+            src="/images/goya homepage.png"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className={`pointer-events-none select-none ${styles.heroBeachImage}`}
+          />
+        </div>
         <div className={styles.heroOpeningVeil} aria-hidden="true" />
         <div
           className={styles.heroReadabilityGradient}
@@ -57,7 +51,7 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
       </div>
       <div className={styles.heroTopWave} aria-hidden="true" />
       <div className="relative z-10 mx-auto flex min-h-[clamp(34rem,140vw,40rem)] max-w-7xl items-center px-[clamp(1.25rem,5vw,2rem)] pb-[clamp(2.5rem,8vw,5rem)] pt-[clamp(6rem,22vw,8rem)] lg:grid lg:min-h-[52rem] lg:grid-cols-2 lg:gap-10 lg:px-8 lg:pb-28 lg:pt-44">
-        <div className="min-w-0 max-w-[68%] sm:max-w-[55%] lg:max-w-none">
+        <div className="min-w-0 max-w-none">
           <Reveal className={styles.heroEyebrowEntrance} delay={200}>
             <p
               className={`mb-[clamp(0.875rem,3vw,1.5rem)] flex min-w-0 items-center gap-[clamp(0.5rem,2vw,0.75rem)] text-xs font-medium uppercase text-[#c8a24a] ${lang === "ko" ? "tracking-normal" : "tracking-[0.12em] lg:tracking-[0.28em]"}`}
