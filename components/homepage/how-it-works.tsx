@@ -2,7 +2,7 @@
 
 import { useLocale } from "@/components/locale-provider";
 import { useEffect, useRef, useState } from "react";
-import { LuMail, LuPencil, LuSparkles } from "react-icons/lu";
+import { LuGem, LuMail, LuPencil } from "react-icons/lu";
 import { Reveal } from "./reveal";
 import styles from "./homepage.module.css";
 
@@ -17,7 +17,7 @@ export function HowItWorks() {
   const steps = [
     [LuPencil, "share"],
     [LuMail, "receive"],
-    [LuSparkles, "discover"],
+    [LuGem, "discover"],
   ] as const;
 
   useEffect(() => {

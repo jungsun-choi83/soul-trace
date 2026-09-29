@@ -768,6 +768,44 @@
     "toneKicker": "STEP 3 — Letter style",
     "letterToneTitle": "Letter Tone",
     "examplePrefix": "e.g.",
+    "petExamples": {
+      "rabbit": {
+        "living": {
+          "q1": "Does little happy jumps when excited / Rearranges the blanket before resting",
+          "q2": "Nudges my hand for attention / Loafs beside me when they feel safe",
+          "q3": "Does little binkies / Zooms around the room / Stands up when treats come out"
+        },
+        "memorial": {
+          "q1": "Did little happy jumps when excited / Rearranged the blanket before resting",
+          "q2": "Nudged my hand for attention / Loafed beside me when they felt safe",
+          "q3": "Did little binkies / Zoomed around the room / Stood up when treats came out"
+        }
+      },
+      "hamster": {
+        "living": {
+          "q1": "Fills their cheeks before running home / Rearranges the bedding every night",
+          "q2": "Climbs onto my hand / Comes out when they hear my voice",
+          "q3": "Runs to the front of the enclosure / Stands up on their back legs / Scurries around when treats appear"
+        },
+        "memorial": {
+          "q1": "Filled their cheeks before running home / Rearranged the bedding every night",
+          "q2": "Climbed onto my hand / Came out when they heard my voice",
+          "q3": "Ran to the front of the enclosure / Stood up on their back legs / Scurried around when treats appeared"
+        }
+      },
+      "bird": {
+        "living": {
+          "q1": "Sings every morning / Tilts their head when I speak",
+          "q2": "Perches on my shoulder / Gently touches their beak to my hand",
+          "q3": "Bobs their head happily / Whistles their favorite sound / Comes closer when they see me"
+        },
+        "memorial": {
+          "q1": "Sang every morning / Tilted their head when I spoke",
+          "q2": "Perched on my shoulder / Gently touched their beak to my hand",
+          "q3": "Bobbed their head happily / Whistled their favorite sound / Came closer when they saw me"
+        }
+      }
+    },
     "channelIntroductions": {
       "pension": {
         "headline": "What would they tell you from their stay?",
@@ -855,7 +893,7 @@
       "memoryLabel": "Memory", "memoryText": "“Always waits beside the door.”", "letterLabel": "Letter",
       "letterText": "“I always know when you're coming home. That's why I'm already waiting for you.”", "paperName": "For Momo", "paperFrom": "With love, always"
     },
-    "gallery": { "label": "Gallery", "title": "Thousands of moments. One story.", "body": "Dogs, cats, rabbits, birds, and every small companion, each one worth remembering.", "dog": "Loyal", "cat": "Curious", "rabbit": "Gentle", "bird": "Bright", "hamster": "Tiny", "calm": "Calm", "loved": "Loved", "cozy": "Cozy", "joyful": "Joyful", "playful": "Playful", "firstHome": "First Home", "quietRest": "Quiet Rest", "littleJourney": "Little Journey", "sunsetMemory": "Sunset Memory", "beachMemory": "Beach Memory", "gentleTouch": "Gentle Touch", "alwaysTogether": "Always Together", "todaysMoment": "Today’s Moment" },
+    "gallery": { "label": "Gallery", "title": "Thousands of moments. One story.", "body": "The day they first came home, the moment we held hands, a night we traveled together, and the everyday moments we share today.", "dog": "Loyal", "cat": "Curious", "rabbit": "Gentle", "bird": "Bright", "hamster": "Tiny", "calm": "Calm", "loved": "Loved", "cozy": "Cozy", "joyful": "Joyful", "playful": "Playful", "firstHome": "First Home", "quietRest": "Quiet Rest", "littleJourney": "Little Journey", "sunsetMemory": "Sunset Memory", "beachMemory": "Beach Memory", "gentleTouch": "Gentle Touch", "alwaysTogether": "Always Together", "todaysMoment": "Today’s Moment" },
     "eternalBeam": { "title": "A letter is only the beginning.", "body": "Keep your Soul Trace memories\nclose with Eternal Beam.", "cta": "Visit Eternal Beam →", "benefits": { "photos": "Photos & videos", "easy": "Easy to use", "design": "Fits your space", "lasting": "Keep memories close" } },
     "livingMemorial": { "label": "For Every Season", "title": "For the ones here, and the ones held close.", "livingTitle": "Together Today", "livingBody": "For the memories you're still making.", "memorialTitle": "Always Remembered", "memorialBody": "For the memories that will always stay." },
     "finalCta": { "title": "Start with one memory.", "body": "Create your pet's Soul Trace letter and discover where their story can go next.", "primary": "Create My Pet's Letter", "secondary": "Visit Eternal Beam" },

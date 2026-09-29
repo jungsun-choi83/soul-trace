@@ -9,6 +9,7 @@ import {
   MAX_INK_REVEAL_DURATION_MS,
   revealUnits,
   shouldStartBufferedReveal,
+  typographicWhitespace,
 } from "./ink-word-reveal.ts";
 
 const flow = readFileSync("components/soul-trace-flow.tsx", "utf8");
@@ -42,10 +43,12 @@ test("timing is deterministic, punctuation-aware, and capped for long letters", 
   assert.ok(last.delayMs + last.durationMs <= MAX_INK_REVEAL_DURATION_MS + 100);
 });
 
-test("the finished layout is present before opacity and clip reveal", () => {
+test("the finished layout is present and handwritten glyphs are not clipped", () => {
   assert.match(css, /display: inline-block/);
   assert.match(css, /opacity: 0/);
-  assert.match(css, /clip-path: inset\(0 100% 0 0\)/);
+  assert.match(css, /clip-path: inset\(-0\.35em 100% -0\.35em -0\.22em\)/);
+  assert.match(css, /clip-path: inset\(-0\.35em -0\.35em -0\.35em -0\.22em\)/);
+  assert.match(css, /clip-path: none/);
   assert.match(css, /prefers-reduced-motion: reduce/);
   assert.doesNotMatch(css, /translate|cursor|blink|bounce/i);
   assert.match(component, /token\.text/);
@@ -61,6 +64,17 @@ test("buffered streaming exposes only complete ordered words", () => {
   assert.equal(shouldStartBufferedReveal("Dear Mina. ", false), false);
   assert.equal(shouldStartBufferedReveal("Dear Mina, I remember. ", false), true);
   assert.equal(bufferedWordDelayMs("Mina,", 1, 20), bufferedWordDelayMs("Mina,", 1, 20));
+});
+
+test("short connector words and paragraph endings stay together", () => {
+  const connector = buildInkRevealPlan(["I remember that day"])[0];
+  assert.equal(typographicWhitespace(connector, 1), "\u00a0");
+
+  const ending = buildInkRevealPlan(["Always beside you"])[0];
+  assert.equal(typographicWhitespace(ending, 3), "\u00a0");
+
+  const ordinary = buildInkRevealPlan(["Running through flowers today"])[0];
+  assert.equal(typographicWhitespace(ordinary, 1), " ");
 });
 
 test("SSE stays internal while buffered words animate before completion", () => {
