@@ -17,6 +17,7 @@
 .heroDescription { text-shadow: 0 1px 8px rgba(0, 0, 0, 0.34); }
 .heroSecondaryCta { border: 1px solid rgba(255, 250, 240, 0.82); background: rgba(24, 17, 11, 0.68); color: #fff8eb; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px); transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
 .heroSecondaryCta:hover { border-color: rgba(255, 250, 240, 0.76); background: rgba(255, 250, 240, 0.16); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24); }
+.heroPrimaryCta { transition: background-color 180ms ease, color 180ms ease; }
 .heroTopWave { position: absolute; z-index: 1; inset: 0 0 auto; height: 7.5rem; pointer-events: none; background: linear-gradient(to bottom, rgba(255, 250, 240, 0.62) 0%, rgba(255, 250, 240, 0.2) 54%, transparent 100%); }
 .heroEyebrowEntrance { transform: translateY(8px); transition-duration: 540ms; }
 .heroEyebrowEntrance p { color: #3f3b35 !important; text-shadow: 0 1px 5px rgba(255, 250, 240, 0.45); }
@@ -133,6 +134,18 @@
   .heroHeadingEntrance.visible,
   .heroDescriptionEntrance.visible,
   .heroButtonsEntrance.visible { transform: translateY(0); }
+}
+@media (min-width: 26.876rem) and (max-width: 39.999rem) {
+  .heroReadabilityGradient { background: linear-gradient(90deg, rgba(15, 11, 8, 0.5) 0%, rgba(15, 11, 8, 0.38) 42%, rgba(15, 11, 8, 0.12) 66%, transparent 84%); }
+}
+@media (max-width: 39.999rem) {
+  .heroReadabilityGradient { background: linear-gradient(90deg, rgba(15, 11, 8, 0.46) 0%, rgba(15, 11, 8, 0.34) 44%, rgba(15, 11, 8, 0.1) 68%, transparent 86%); }
+  .heroDescription { text-shadow: 0 1px 9px rgba(0, 0, 0, 0.62); }
+  .heroPrimaryCta { background: rgba(107, 78, 31, 0.88); color: #fff8eb; }
+  .heroPrimaryCta:hover { background: rgba(124, 91, 38, 0.92); }
+  .heroBeachImage { object-position: 35% top; }
+  .heroHeadingEntrance h1 { text-shadow: 0 2px 12px rgba(10, 7, 4, 0.72); }
+  .heroDescription { text-shadow: 0 1px 10px rgba(10, 7, 4, 0.78); }
 }
 @keyframes homepage-glow { 0%, 100% { opacity: 0.7; } 50% { opacity: 0.9; } }
 @keyframes hero-flowers-reveal {
