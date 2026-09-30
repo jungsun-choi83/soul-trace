@@ -2,18 +2,25 @@
 .visible { opacity: 1; transform: translateY(0); }
 .glow { animation: homepage-glow 4s ease-in-out infinite; }
 .scanLines { background-image: repeating-linear-gradient(0deg, rgba(236, 215, 166, 0.15) 0, rgba(236, 215, 166, 0.15) 1px, transparent 1px, transparent 4px); }
-.heroScene { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 4%, #000 94%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0%, #000 4%, #000 94%, transparent 100%); }
-.heroImage,
-.heroFlowers { object-fit: cover; object-position: 72% center; }
-.heroImage { z-index: 0; }
-.heroFlowers { z-index: 1; --hero-flower-start-y: 9px; animation: hero-flowers-reveal 2200ms cubic-bezier(0.22, 1, 0.36, 1) 1100ms both; will-change: opacity, transform; }
+.heroScene { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; background: #f7f0e3; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 4%, #000 94%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0%, #000 4%, #000 94%, transparent 100%); }
+.heroScene::before { position: absolute; z-index: 1; inset: 0; pointer-events: none; content: ""; background: linear-gradient(90deg, rgba(255, 250, 240, 0.08), transparent 55%); }
+.heroBeachFrame { position: absolute; z-index: 0; inset: 0; overflow: hidden; }
+.heroBeachImage { object-fit: cover; object-position: center center; opacity: 0.94; transform: none; transform-origin: right center; }
+.heroCornerFlowers { position: absolute; z-index: 4; top: -50px; left: -55px; width: clamp(260px, 25vw, 360px); aspect-ratio: 1; opacity: 0.78; transform: rotate(-5deg); }
+.heroMemoryPhoto { position: absolute; z-index: 7; left: clamp(23%, 25vw, 28%); bottom: clamp(-15px, 1.5vw, 20px); width: clamp(280px, 24vw, 340px); aspect-ratio: 4 / 3; border: clamp(0.35rem, 0.7vw, 0.65rem) solid #f7efdf; background: #f7efdf; box-shadow: 0 16px 34px rgba(12, 8, 4, 0.42), 0 3px 10px rgba(12, 8, 4, 0.26); transform: rotate(-5deg); }
+.heroMemoryPhoto img { object-fit: cover; }
+.heroFlowers { z-index: 6; --hero-flower-start-y: 9px; animation: hero-flowers-reveal 2200ms cubic-bezier(0.22, 1, 0.36, 1) 1100ms both; will-change: opacity, transform; }
+.heroBottomFlowers { position: absolute; z-index: 6; bottom: -6%; left: 50%; width: 110vw; height: 28%; opacity: 0.9; transform: translateX(-50%); }
+.heroBottomFlowers img { object-fit: cover; object-position: center bottom; }
 .heroOpeningVeil { position: absolute; z-index: 2; inset: 0; pointer-events: none; background: radial-gradient(ellipse 58% 52% at 72% 42%, rgba(255, 250, 240, 0.72), rgba(255, 246, 225, 0.84) 58%, rgba(255, 250, 240, 0.9) 100%), linear-gradient(to bottom, rgba(255, 250, 240, 0.7), rgba(255, 246, 225, 0.92)); -webkit-mask-image: radial-gradient(ellipse 25% 30% at 79% 45%, rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0.28) 42%, rgba(0, 0, 0, 0.72) 72%, #000 100%); mask-image: radial-gradient(ellipse 25% 30% at 79% 45%, rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0.28) 42%, rgba(0, 0, 0, 0.72) 72%, #000 100%); animation: hero-opening-veil-clear 3100ms cubic-bezier(0.22, 1, 0.36, 1) 600ms both; will-change: opacity; }
-.heroReadabilityGradient { position: absolute; z-index: 3; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(8, 7, 5, 0.78) 0%, rgba(8, 7, 5, 0.58) 28%, rgba(8, 7, 5, 0.2) 52%, rgba(8, 7, 5, 0) 72%); }
+.heroReadabilityGradient { position: absolute; z-index: 3; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(24, 17, 11, 0.48) 0%, rgba(24, 17, 11, 0.34) 28%, rgba(24, 17, 11, 0.12) 52%, transparent 70%); }
 .heroDescription { text-shadow: 0 1px 8px rgba(0, 0, 0, 0.34); }
-.heroSecondaryCta { border: 1px solid rgba(255, 250, 240, 0.52); background: rgba(8, 7, 5, 0.38); color: #fff8eb; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px); transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
+.heroSecondaryCta { border: 1px solid rgba(255, 250, 240, 0.82); background: rgba(24, 17, 11, 0.68); color: #fff8eb; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px); transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
 .heroSecondaryCta:hover { border-color: rgba(255, 250, 240, 0.76); background: rgba(255, 250, 240, 0.16); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24); }
-.heroTopWave { position: absolute; z-index: 1; inset: 0 0 auto; height: 7.5rem; pointer-events: none; background: radial-gradient(ellipse 42% 46% at 12% 0%, rgba(11, 10, 9, 0.94) 0%, rgba(11, 10, 9, 0.58) 54%, transparent 100%), radial-gradient(ellipse 48% 54% at 51% 0%, rgba(11, 10, 9, 0.92) 0%, rgba(11, 10, 9, 0.48) 56%, transparent 100%), radial-gradient(ellipse 40% 44% at 91% 0%, rgba(11, 10, 9, 0.94) 0%, rgba(11, 10, 9, 0.56) 54%, transparent 100%), linear-gradient(to bottom, #0b0a09 0%, rgba(11, 10, 9, 0.84) 48%, transparent 100%); }
+.heroTopWave { position: absolute; z-index: 1; inset: 0 0 auto; height: 7.5rem; pointer-events: none; background: linear-gradient(to bottom, rgba(255, 250, 240, 0.62) 0%, rgba(255, 250, 240, 0.2) 54%, transparent 100%); }
 .heroEyebrowEntrance { transform: translateY(8px); transition-duration: 540ms; }
+.heroEyebrowEntrance p { color: #3f3b35 !important; text-shadow: 0 1px 5px rgba(255, 250, 240, 0.45); }
+.heroEyebrowEntrance p > span { background-color: #c8a24a !important; }
 .heroHeadingEntrance { transform: translateY(14px); transition-duration: 560ms; }
 .heroDescriptionEntrance { transform: translateY(10px); transition-duration: 540ms; }
 .heroButtonsEntrance { transform: translateY(8px); transition-duration: 520ms; }
@@ -22,7 +29,7 @@
 .heroDescriptionEntrance.visible,
 .heroButtonsEntrance.visible { transform: translateY(0); }
 .finalCtaCreamLight { position: absolute; z-index: 0; inset: 0; pointer-events: none; opacity: 1; background: radial-gradient(ellipse 72% 90% at 50% 100%, rgba(255, 246, 224, 0.48) 0%, rgba(255, 246, 224, 0.26) 38%, rgba(255, 246, 224, 0.08) 64%, transparent 82%); will-change: opacity; }
-.finalCtaFlowers { position: absolute; z-index: 1; right: 0; bottom: 0; left: 0; width: 100%; height: auto; pointer-events: none; opacity: 0.08; filter: blur(6px); transform: translate3d(0, 30px, 0) scale(0.98); transform-origin: center bottom; will-change: opacity, filter, transform; }
+.finalCtaFlowers { position: absolute; z-index: 1; right: 0; bottom: -24%; left: 0; width: 100%; height: auto; pointer-events: none; opacity: 0.08; filter: blur(6px); transform: translate3d(0, 30px, 0) scale(0.98); transform-origin: center bottom; will-change: opacity, filter, transform; }
 .finalCtaEnvironmentVisible .finalCtaCreamLight { animation: final-cta-cream-recede 2000ms cubic-bezier(0.22, 1, 0.36, 1) 500ms both; }
 .finalCtaEnvironmentVisible .finalCtaFlowers { animation: final-cta-flowers-emerge 2000ms cubic-bezier(0.22, 1, 0.36, 1) 500ms both; }
 .finalCtaSecondaryButton { border: 1px solid rgba(255, 248, 235, 0.62); background: rgba(8, 7, 5, 0.56); color: #fff8eb; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.26); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
@@ -81,11 +88,18 @@
 .eternalBenefitEntrance.visible { transform: translateY(0); }
 @media (min-width: 64rem) {
   .heroScene { -webkit-mask-image: radial-gradient(ellipse 118% 132% at 100% 50%, #000 0%, #000 58%, rgba(0, 0, 0, 0.92) 70%, rgba(0, 0, 0, 0.48) 86%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 7%, #000 93%, transparent 100%); mask-image: radial-gradient(ellipse 118% 132% at 100% 50%, #000 0%, #000 58%, rgba(0, 0, 0, 0.92) 70%, rgba(0, 0, 0, 0.48) 86%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 7%, #000 93%, transparent 100%); -webkit-mask-composite: source-in; mask-composite: intersect; }
-  .heroImage,
-  .heroFlowers { object-position: center; }
+  .heroBeachFrame { left: 0; }
+  .heroBeachImage { object-fit: cover; object-position: center top; transform: none; }
   .heroTopWave { height: clamp(8rem, 12vw, 11rem); }
 }
 @media (max-width: 26.875rem) {
+  .heroScene::before { background: linear-gradient(90deg, rgba(255, 250, 240, 0.96) 0%, rgba(255, 250, 240, 0.86) 45%, rgba(255, 250, 240, 0.42) 68%, transparent 88%); }
+  .heroReadabilityGradient { background: linear-gradient(90deg, rgba(255, 250, 240, 0.12) 0%, transparent 72%); }
+  .heroBeachFrame { inset: 0; height: auto; }
+  .heroBeachImage { object-fit: cover; object-position: center top; transform: none; }
+  .heroCornerFlowers { top: -28px; left: -34px; width: 34vw; opacity: 0.7; }
+  .heroMemoryPhoto { left: 20%; bottom: -8px; width: 34vw; border-width: 0.3rem; transform: rotate(-5deg); }
+  .heroBottomFlowers { bottom: -4%; width: 116vw; height: 24%; opacity: 0.74; }
   .heroFlowers { --hero-flower-start-y: 6px; }
   .heroOpeningVeil { -webkit-mask-image: radial-gradient(ellipse 31% 27% at 82% 43%, rgba(0, 0, 0, 0.14) 0%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0.7) 72%, #000 100%); mask-image: radial-gradient(ellipse 31% 27% at 82% 43%, rgba(0, 0, 0, 0.14) 0%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0.7) 72%, #000 100%); }
   .momentsTextEntrance { transform: translateY(8px); transition-duration: 500ms; }

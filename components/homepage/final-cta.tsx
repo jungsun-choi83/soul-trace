@@ -46,10 +46,10 @@ export function FinalCta({ choiceHref }: { choiceHref: string }) {
       />
       <div className={styles.finalCtaCreamLight} aria-hidden="true" />
       <Image
-        src="/images/flowers2.png"
+        src="/images/pink.png"
         alt=""
-        width={2172}
-        height={724}
+        width={1672}
+        height={941}
         sizes="100vw"
         className={styles.finalCtaFlowers}
         aria-hidden="true"
@@ -69,7 +69,7 @@ export function FinalCta({ choiceHref }: { choiceHref: string }) {
         </div>
         <div>
           <p
-            className={`${display} mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/70 sm:mt-6 sm:text-lg`}
+            className={`${display} mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.78)] sm:mt-6 sm:text-lg`}
           >
             {t("homepage.finalCta.body")}
           </p>

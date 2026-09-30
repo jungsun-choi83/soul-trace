@@ -12,9 +12,10 @@ export function LittleMoments() {
       ? "font-ko break-keep"
       : "font-display-en !tracking-normal";
   const cards = [
-    ["sleep", "/homepage/moments/moment-sleep.png", "w-[33%]", "-rotate-4", "left-0 top-[12%]", "z-10"],
-    ["wait", "/homepage/moments/moment-wait.png", "w-[34%]", "rotate-1", "left-[30%] top-[20%]", "z-20"],
-    ["bond", "/homepage/moments/moment-bond.png", "w-[33%]", "rotate-4", "right-[4%] top-[10%]", "z-10"],
+    ["box", "/images/box.jpg", "w-[33%]", "rotate-[-5deg]", "left-0 top-[12%]", "z-10"],
+    ["car", "/images/car.jpg", "w-[33%]", "rotate-[2deg]", "left-[23%] top-[20%]", "z-20"],
+    ["beach", "/images/beach.jpg", "w-[33%]", "rotate-[-2deg]", "left-[46%] top-[12%]", "z-30"],
+    ["old", "/images/old.jpg", "w-[33%]", "rotate-[4deg]", "left-[67%] top-[20%]", "z-40"],
   ] as const;
 
   return (
@@ -50,15 +51,13 @@ export function LittleMoments() {
                   <div className="relative aspect-square overflow-hidden">
                     <Image
                       src={src}
-                      alt={t(
-                        `homepage.accessibility.moment${key[0].toUpperCase()}${key.slice(1)}Alt`,
-                      )}
+                      alt=""
                       fill
                       sizes="(max-width: 639px) 25vw, (max-width: 1023px) 26vw, 22vw"
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                   </div>
-                  {(key === "sleep" || key === "bond") && (
+                  {(key === "box" || key === "old") && (
                     <span className="absolute -top-1 left-1/2 h-3 w-10 -translate-x-1/2 rotate-2 bg-[#d6c7a5]/75 shadow-sm sm:-top-2 sm:h-5 sm:w-14" />
                   )}
                 </div>
