@@ -144,7 +144,7 @@
   .heroDescription { text-shadow: 0 1px 9px rgba(0, 0, 0, 0.62); }
   .heroPrimaryCta { background: rgba(107, 78, 31, 0.88); color: #fff8eb; }
   .heroPrimaryCta:hover { background: rgba(124, 91, 38, 0.92); }
-  .heroBeachImage { object-position: 35% top; }
+  .heroBeachImage { object-position: 42% top; }
   .heroHeadingEntrance h1 { text-shadow: 0 2px 12px rgba(10, 7, 4, 0.72); }
   .heroDescription { text-shadow: 0 1px 10px rgba(10, 7, 4, 0.78); }
 }
