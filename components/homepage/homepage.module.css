@@ -139,6 +139,7 @@
   .heroReadabilityGradient { background: linear-gradient(90deg, rgba(15, 11, 8, 0.5) 0%, rgba(15, 11, 8, 0.38) 42%, rgba(15, 11, 8, 0.12) 66%, transparent 84%); }
 }
 @media (max-width: 39.999rem) {
+  .heroScene::before { background: linear-gradient(90deg, rgba(20, 15, 10, 0.16) 0%, rgba(20, 15, 10, 0.08) 42%, transparent 78%); }
   .heroReadabilityGradient { background: linear-gradient(90deg, rgba(15, 11, 8, 0.46) 0%, rgba(15, 11, 8, 0.34) 44%, rgba(15, 11, 8, 0.1) 68%, transparent 86%); }
   .heroDescription { text-shadow: 0 1px 9px rgba(0, 0, 0, 0.62); }
   .heroPrimaryCta { background: rgba(107, 78, 31, 0.88); color: #fff8eb; }
