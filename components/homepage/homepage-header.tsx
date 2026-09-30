@@ -4,12 +4,11 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useLocale } from "@/components/locale-provider";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { getEternalBeamMainUrl } from "@/lib/eternalbeam-urls";
 import { CloseIcon, MenuIcon } from "./icons";
 import { createPortal } from "react-dom";
 
 const KICKSTARTER_URL = process.env.NEXT_PUBLIC_KICKSTARTER_URL?.trim() || null;
-const SHOP_URL = getEternalBeamMainUrl();
+const SHOP_URL = "#shop";
 
 function KickstarterNavLink({ mobile = false }: { mobile?: boolean }) {
   const className = mobile
