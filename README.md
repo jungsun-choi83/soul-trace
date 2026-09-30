@@ -8,6 +8,10 @@ Next.js 앱입니다. 만들어진 편지는 인스타그램 스토리로 공유
 - AI: OpenAI `gpt-4o`(편지) + `dall-e-3`(배경 이미지)
 - 저장소: Supabase (Google 시트 백업은 선택)
 - 언어: 한국어 / 영어 (`locales/ko.json`, `locales/en.json`)
+- 공개 URL: https://soultrace.eternalbeam.com (`NEXT_PUBLIC_SITE_URL`)
+- SEO: `app/robots.ts`, `app/sitemap.ts`, OG(`public/og-cover.png`). 계정·편지 결과·아카이브·API는 noindex입니다.
+
+Search Console에는 URL 접두어 `https://soultrace.eternalbeam.com` 을 등록하고 사이트맵 `https://soultrace.eternalbeam.com/sitemap.xml` 을 제출하면 됩니다.
 
 ## 1) 사용자 흐름
 

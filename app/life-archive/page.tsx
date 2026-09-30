@@ -2,6 +2,7 @@ import { LifeArchivePreview } from "@/components/life-archive-preview";
 import { resolveLetterLanguage } from "@/lib/letter-language";
 import { TemporaryLifeArchiveLoader } from "@/components/temporary-life-archive-loader";
 import { LifeArchiveAccessRequired } from "@/components/life-archive-access-required";
+import { noIndexRobots } from "@/lib/site-url";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
@@ -12,8 +13,9 @@ import { resolveLifeArchiveNavigation } from "@/lib/life-archive-navigation";
 import { ETERNAL_BEAM_ACCESS_COOKIE, verifyEternalBeamAccessSession } from "@/lib/eternal-beam-access";
 
 export const metadata: Metadata = {
-  title: "Life Archive | Soul Trace",
-  description: "A visual preview of the future Soul Trace Life Archive.",
+  title: "Life Archive",
+  description: "Soul Trace Life Archive 미리보기입니다.",
+  robots: noIndexRobots,
 };
 
 export default async function LifeArchivePage({ searchParams }: { searchParams: Promise<ServerSearchParams> }) {

@@ -2,7 +2,14 @@ import { PasswordUpdateForm } from "@/components/password-update-form";
 import { safeAuthReturnPath } from "@/lib/auth-redirect";
 import type { ServerSearchParams } from "@/lib/search-params";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
+import { noIndexRobots } from "@/lib/site-url";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  title: "비밀번호 설정",
+  robots: noIndexRobots,
+};
 
 export default async function UpdatePasswordPage({ searchParams }: {
   searchParams: Promise<ServerSearchParams>;

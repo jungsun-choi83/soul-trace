@@ -5,12 +5,15 @@ import {
 } from "@/lib/auth-redirect";
 import type { ServerSearchParams } from "@/lib/search-params";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
+import { noIndexRobots } from "@/lib/site-url";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Account | Soul Trace",
-  description: "Continue to Soul Trace with your email.",
+  title: "계정",
+  description: "이메일로 Soul Trace를 이어갑니다.",
+  robots: noIndexRobots,
+  alternates: { canonical: "/auth" },
 };
 
 export default async function AuthPage({
