@@ -66,7 +66,7 @@ export function PetGallery() {
           </Reveal>
           <Reveal delay={80}>
             <h2
-              className={`${display} text-3xl font-light leading-tight sm:text-5xl`}
+              className={`${display} ${styles.mobileHeadingOnLight} text-3xl font-light leading-tight sm:text-5xl`}
             >
               {t("homepage.gallery.title")}
             </h2>

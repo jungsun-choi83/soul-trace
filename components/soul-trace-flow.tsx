@@ -1,6 +1,7 @@
 "use client";
 
 import { QuestionnairePrivacyNotice } from "@/components/questionnaire-privacy-notice";
+import { VisualMemoryPromo } from "@/components/visual-memory-promo";
 import { petIntroQuestionIds, PetIntroForm } from "@/components/pet-intro-form";
 import { SurveyFlow } from "@/components/survey-flow";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
@@ -555,6 +556,24 @@ export function SoulTraceFlow({
   }, []);
 
   const displayPetName = letterPetName(petIntro);
+  const visualMemoryPetName = displayPetName || result?.savedPetName?.trim() || "";
+  const visualMemoryQuestions = channelMemoryQuestions(messages, serviceChannel) ?? copy.memory;
+  const visualMemoryAnswerItems = visualMemoryQuestions.map((question, index) => ({
+    question: question.promptText.replace(/○○|%NAME%/g, visualMemoryPetName),
+    answer: memoryAnswers[index]?.trim() ?? "",
+  }));
+  const visualMemoryTone = copy.tone
+    .find((item) => item.id === "q10")
+    ?.options.find((option) => option.id === tonePrefs.mood)?.label ?? null;
+  const visualMemoryPetType = petIntro.petType
+    ? t(`form.step1.petTypes.${petIntro.petType}`)
+    : "";
+  const visualMemoryBreedKey = petIntro.petBreed?.trim() ?? "";
+  const visualMemoryBreedPath = `form.step1.petBreeds.${visualMemoryBreedKey}`;
+  const visualMemoryBreedLabel = visualMemoryBreedKey ? t(visualMemoryBreedPath) : "";
+  const visualMemoryBreed = visualMemoryBreedLabel === visualMemoryBreedPath
+    ? visualMemoryBreedKey.split("-").filter(Boolean).join(" ")
+    : visualMemoryBreedLabel;
   const letterHeading = copy.letterHeading.replace(
     "%RECIPIENT%",
     resolveRecipientAddress(petIntro, lang),
@@ -1363,7 +1382,7 @@ export function SoulTraceFlow({
             </button>
             <LanguageToggle />
           </header>
-          <section className="relative z-[2] mx-auto w-full max-w-3xl space-y-8 px-4 sm:px-6">
+          <section className="relative z-[2] mx-auto w-full max-w-3xl space-y-8 px-3 sm:px-6">
             {isLoading ? (
               <p
                 className={`text-center text-sm font-extralight text-[#D4AF37] ${
@@ -1456,11 +1475,11 @@ export function SoulTraceFlow({
 
               <div
                 data-letter-scroll
-                className="relative z-10 px-5 py-8 sm:px-8 sm:py-10 md:px-12"
+                className="relative z-10 px-2 py-4 min-[400px]:px-3 min-[400px]:py-6 sm:px-8 sm:py-10 md:px-12"
               >
                 <div className="flex min-h-full items-center justify-center">
                   <article
-                    className={`${englishLetterBodyFont.variable} ${englishLetterOpeningFont.variable} ${koreanLetterFont.variable} relative mx-auto w-full max-w-2xl overflow-hidden rounded-[1.35rem] border px-5 pb-32 pt-[9rem] shadow-[0_24px_70px_rgba(8,10,20,0.34),inset_0_0_70px_rgba(130,91,35,0.06)] sm:px-10 sm:pb-36 sm:pt-[11rem] md:px-14`}
+                    className={`${englishLetterBodyFont.variable} ${englishLetterOpeningFont.variable} ${koreanLetterFont.variable} relative mx-auto w-full max-w-2xl overflow-hidden rounded-[1.1rem] border px-4 pb-28 pt-[7.5rem] shadow-[0_24px_70px_rgba(8,10,20,0.34),inset_0_0_70px_rgba(130,91,35,0.06)] min-[400px]:px-5 min-[400px]:pb-32 min-[400px]:pt-[8.5rem] sm:rounded-[1.35rem] sm:px-10 sm:pb-36 sm:pt-[11rem] md:px-14`}
                     style={{
                       background: letterTheme.cardBackground,
                       borderColor: letterTheme.panelBorderColor,
@@ -1677,6 +1696,126 @@ export function SoulTraceFlow({
                 </AnimatePresence>
               </div>
             </div>
+
+            <VisualMemoryPromo
+              language={lang}
+              eyebrow={t("result.visualMemory.eyebrow")}
+              title={t("result.visualMemory.title")}
+              description={t("result.visualMemory.description")}
+              cta={t("result.visualMemory.cta")}
+              captions={{
+                byTheSea: t("result.visualMemory.captions.byTheSea"),
+                rightBesideMe: t("result.visualMemory.captions.rightBesideMe"),
+                walk: t("result.visualMemory.captions.walk"),
+              }}
+              previewData={{
+                petName: visualMemoryPetName,
+                petType: visualMemoryPetType,
+                breed: visualMemoryBreed,
+                favoriteMemory: null,
+                uniqueHabit: serviceChannel ? null : memoryAnswers[0]?.trim() || null,
+                loveAnswer: serviceChannel ? null : memoryAnswers[1]?.trim() || null,
+                excitementSigns: serviceChannel ? null : memoryAnswers[2]?.trim() || null,
+                letterTone: visualMemoryTone,
+                mode: t(`result.visualMemory.preview.modes.${mode}`),
+                photoAvailable: Boolean(petPhotoFile && petPhotoPreviewUrl),
+                photoReference: petPhotoFile?.name ?? null,
+                photoPreviewUrl: petPhotoPreviewUrl,
+              }}
+              photoFile={petPhotoFile}
+              generationContext={{
+                petName: visualMemoryPetName,
+                petType: visualMemoryPetType,
+                breed: visualMemoryBreed,
+                mode,
+                letterTone: visualMemoryTone ?? "",
+                memories: visualMemoryAnswerItems,
+              }}
+              previewCopy={{
+                title: t("result.visualMemory.preview.title"),
+                intro: t("result.visualMemory.preview.intro"),
+                close: t("result.visualMemory.preview.close"),
+                petName: t("result.visualMemory.preview.petName"),
+                petType: t("result.visualMemory.preview.petType"),
+                breed: t("result.visualMemory.preview.breed"),
+                favoriteMemory: t("result.visualMemory.preview.favoriteMemory"),
+                uniqueHabit: t("result.visualMemory.preview.uniqueHabit"),
+                loveAnswer: t("result.visualMemory.preview.loveAnswer"),
+                excitementSigns: t("result.visualMemory.preview.excitementSigns"),
+                letterTone: t("result.visualMemory.preview.letterTone"),
+                mode: t("result.visualMemory.preview.mode"),
+                petPhoto: t("result.visualMemory.preview.petPhoto"),
+                available: t("result.visualMemory.preview.available"),
+                unavailable: t("result.visualMemory.preview.unavailable"),
+                generate: t("result.visualMemory.preview.generate"),
+                generating: t("result.visualMemory.preview.generating"),
+                retry: t("result.visualMemory.preview.retry"),
+                photoStep: t("result.visualMemory.preview.photoStep"),
+                sceneStep: t("result.visualMemory.preview.sceneStep"),
+                memoryStep: t("result.visualMemory.preview.memoryStep"),
+                resultStep: t("result.visualMemory.preview.resultStep"),
+                uploadPhoto: t("result.visualMemory.preview.uploadPhoto"),
+                changePhoto: t("result.visualMemory.preview.changePhoto"),
+                identityReference: t("result.visualMemory.preview.identityReference"),
+                continue: t("result.visualMemory.preview.continue"),
+                invalidPhoto: t("result.visualMemory.preview.invalidPhoto"),
+                sceneTitle: t("result.visualMemory.preview.sceneTitle"),
+                sceneIntro: t("result.visualMemory.preview.sceneIntro"),
+                back: t("result.visualMemory.preview.back"),
+                creatingTitle: t("result.visualMemory.preview.creatingTitle"),
+                creatingIntro: t("result.visualMemory.preview.creatingIntro"),
+                generationError: t("result.visualMemory.preview.generationError"),
+                resultTitle: t("result.visualMemory.preview.resultTitle"),
+                resultIntro: t("result.visualMemory.preview.resultIntro"),
+                download: t("result.visualMemory.preview.download"),
+                generateAgain: t("result.visualMemory.preview.generateAgain"),
+                regenerating: t("result.visualMemory.preview.regenerating"),
+                chooseDifferentScene: t("result.visualMemory.preview.chooseDifferentScene"),
+                soulTraceMark: t("result.visualMemory.preview.soulTraceMark"),
+                preparingDownload: t("result.visualMemory.preview.preparingDownload"),
+                downloadError: t("result.visualMemory.preview.downloadError"),
+                customScene: {
+                  livingLabel: t("result.visualMemory.preview.customScene.livingLabel"),
+                  livingPlaceholder: t("result.visualMemory.preview.customScene.livingPlaceholder"),
+                  memorialLabel: t("result.visualMemory.preview.customScene.memorialLabel"),
+                  memorialPlaceholder: t("result.visualMemory.preview.customScene.memorialPlaceholder"),
+                },
+                scenes: {
+                  "by-the-sea": t("result.visualMemory.preview.scenes.by-the-sea"),
+                  "at-home": t("result.visualMemory.preview.scenes.at-home"),
+                  "on-a-walk": t("result.visualMemory.preview.scenes.on-a-walk"),
+                  "flower-field": t("result.visualMemory.preview.scenes.flower-field"),
+                  playtime: t("result.visualMemory.preview.scenes.playtime"),
+                  "cozy-bedtime": t("result.visualMemory.preview.scenes.cozy-bedtime"),
+                  "golden-sunset": t("result.visualMemory.preview.scenes.golden-sunset"),
+                  "custom-scene": t("result.visualMemory.preview.scenes.custom-scene"),
+                  "favorite-place": t("result.visualMemory.preview.scenes.favorite-place"),
+                  "our-walk": t("result.visualMemory.preview.scenes.our-walk"),
+                  "peaceful-garden": t("result.visualMemory.preview.scenes.peaceful-garden"),
+                  "golden-evening": t("result.visualMemory.preview.scenes.golden-evening"),
+                  "together-again": t("result.visualMemory.preview.scenes.together-again"),
+                  "custom-memory": t("result.visualMemory.preview.scenes.custom-memory"),
+                },
+                memory: {
+                  living: {
+                    title: t("result.visualMemory.preview.memory.living.title"),
+                    intro: t("result.visualMemory.preview.memory.living.intro"),
+                    placeholder: t("result.visualMemory.preview.memory.living.placeholder"),
+                    suggestions: [0, 1].map((index) =>
+                      t(`result.visualMemory.preview.memory.living.suggestions.${index}`),
+                    ),
+                  },
+                  memorial: {
+                    title: t("result.visualMemory.preview.memory.memorial.title"),
+                    intro: t("result.visualMemory.preview.memory.memorial.intro"),
+                    placeholder: t("result.visualMemory.preview.memory.memorial.placeholder"),
+                    suggestions: [0, 1].map((index) =>
+                      t(`result.visualMemory.preview.memory.memorial.suggestions.${index}`),
+                    ),
+                  },
+                },
+              }}
+            />
 
             <section
               aria-label={t("result.productCards.label")}

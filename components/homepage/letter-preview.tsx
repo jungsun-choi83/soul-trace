@@ -23,7 +23,7 @@ export function LetterPreview() {
               {t("homepage.letter.label")}
             </p>
             <h2
-              className={`${display} text-[clamp(1.2rem,5.8vw,1.75rem)] font-light leading-tight sm:text-4xl lg:text-5xl`}
+              className={`${display} ${styles.mobileHeadingOnDark} text-[clamp(1.2rem,5.8vw,1.75rem)] font-light leading-tight sm:text-4xl lg:text-5xl`}
             >
               {t("homepage.letter.title")}
             </h2>
