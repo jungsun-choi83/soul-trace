@@ -56,13 +56,13 @@ export function FinalCta({ choiceHref }: { choiceHref: string }) {
       />
       <div className="relative z-10 mx-auto max-w-3xl px-3 text-center sm:px-8">
         <div>
-          <p className="mb-4 text-[0.65rem] uppercase tracking-[0.24em] text-[#c8a24a] sm:mb-6 sm:text-xs sm:tracking-[0.32em]">
+          <p className={`${styles.mobileGoldHeading} mb-4 text-[0.65rem] uppercase tracking-[0.24em] text-[#c8a24a] sm:mb-6 sm:text-xs sm:tracking-[0.32em]`}>
             Soul Trace × Eternal Beam
           </p>
         </div>
         <div>
           <h2
-            className={`${display} text-[clamp(1.8rem,9vw,2.25rem)] font-light leading-[1.08] sm:text-6xl lg:text-7xl`}
+            className={`${display} ${styles.mobileHeadingOnDark} text-[clamp(1.8rem,9vw,2.25rem)] font-light leading-[1.08] sm:text-6xl lg:text-7xl`}
           >
             {t("homepage.finalCta.title")}
           </h2>

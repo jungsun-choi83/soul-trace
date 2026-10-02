@@ -17,7 +17,7 @@ export function LetterPostageStamp({ photoUrl, defaultStamp, accentColor, inkCol
   return (
     <div
       data-letter-postage-stamp={photoUrl ? "photo" : `paw-${defaultStamp}`}
-      className="pointer-events-none absolute right-3 top-3 h-[110px] w-[150px] sm:right-6 sm:top-5 sm:h-[140px] sm:w-[190px]"
+      className="pointer-events-none absolute right-1 top-2 h-[88px] w-[118px] min-[400px]:right-2 min-[400px]:top-3 min-[400px]:h-[102px] min-[400px]:w-[138px] sm:right-6 sm:top-5 sm:h-[140px] sm:w-[190px]"
       aria-hidden="true"
     >
       <svg viewBox="0 0 148 112" className="h-full w-full overflow-visible">

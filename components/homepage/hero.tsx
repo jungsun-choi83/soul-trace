@@ -50,8 +50,8 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
         />
       </div>
       <div className={styles.heroTopWave} aria-hidden="true" />
-      <div className="relative z-10 mx-auto flex min-h-[clamp(34rem,140vw,40rem)] max-w-7xl items-center px-[clamp(1.25rem,5vw,2rem)] pb-[clamp(2.5rem,8vw,5rem)] pt-[clamp(6rem,22vw,8rem)] lg:grid lg:min-h-[52rem] lg:grid-cols-2 lg:gap-10 lg:px-8 lg:pb-28 lg:pt-44">
-        <div className="min-w-0 max-w-[62%] -translate-y-[8%] sm:max-w-none sm:translate-y-0">
+      <div className="relative z-10 mx-auto flex min-h-[clamp(34rem,140vw,40rem)] max-w-7xl items-center px-[clamp(1.25rem,5vw,2rem)] pb-[clamp(2.5rem,8vw,5rem)] pt-[calc(4rem+1.25rem)] sm:pt-[clamp(6rem,22vw,8rem)] lg:grid lg:min-h-[52rem] lg:grid-cols-2 lg:gap-10 lg:px-8 lg:pb-28 lg:pt-44">
+        <div className="min-w-0 max-w-[62%] sm:max-w-none">
           <Reveal className={styles.heroEyebrowEntrance} delay={200}>
             <p
               className={`mb-[clamp(0.875rem,3vw,1.5rem)] flex min-w-0 items-center gap-[clamp(0.5rem,2vw,0.75rem)] text-xs font-medium uppercase text-[#c8a24a] ${lang === "ko" ? "tracking-normal" : "tracking-[0.12em] lg:tracking-[0.28em]"}`}

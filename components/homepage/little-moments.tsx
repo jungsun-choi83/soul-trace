@@ -27,7 +27,7 @@ export function LittleMoments() {
               {t("homepage.moments.label")}
             </p>
             <h2
-              className={`${display} whitespace-pre-line text-[clamp(1.25rem,6vw,2rem)] font-light leading-tight sm:text-4xl lg:text-5xl`}
+              className={`${display} ${styles.mobileHeadingOnLight} whitespace-pre-line text-[clamp(1.25rem,6vw,2rem)] font-light leading-tight sm:text-4xl lg:text-5xl`}
             >
               {t("homepage.moments.title")}
             </h2>
