@@ -1,10 +1,10 @@
-const FALLBACK = "/shop";
+const FALLBACK = "https://soultrace.pet/shop";
 
 export function getMemoryShopUrl(): string {
   const raw = (process.env.NEXT_PUBLIC_MEMORY_SHOP_URL ?? "").trim();
   if (!raw) return FALLBACK;
   if (raw.startsWith("/")) {
-    return raw.split("?")[0].replace(/\/+$/, "") || FALLBACK;
+    return raw.split("?")[0].replace(/\/+$/, "") || "/shop";
   }
   try {
     const parsed = new URL(raw);
@@ -17,8 +17,5 @@ export function getMemoryShopUrl(): string {
 }
 
 export function getMemoryShopLetterSetUrl(): string {
-  const base = getMemoryShopUrl();
-  const url = base.startsWith("/") ? new URL(base, "https://soultrace.pet") : new URL(base);
-  url.searchParams.set("product", "letter");
-  return base.startsWith("/") ? `${url.pathname}${url.search}` : url.toString();
+  return getMemoryShopUrl();
 }

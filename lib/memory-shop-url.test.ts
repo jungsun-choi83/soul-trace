@@ -3,28 +3,19 @@ import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { getMemoryShopLetterSetUrl, getMemoryShopUrl } from "./memory-shop-url.ts";
 
-test("memory shop URL is the same-origin Memory Shop, not GitHub Pages", () => {
-  assert.equal(getMemoryShopUrl(), "/shop");
+test("memory shop URL is soultrace.pet/shop, not GitHub Pages", () => {
+  assert.equal(getMemoryShopUrl(), "https://soultrace.pet/shop");
+  assert.equal(getMemoryShopLetterSetUrl(), "https://soultrace.pet/shop");
   assert.doesNotMatch(getMemoryShopUrl(), /github\.io/);
-  assert.doesNotMatch(getMemoryShopLetterSetUrl(), /github\.io/);
+  assert.doesNotMatch(getMemoryShopLetterSetUrl(), /[?&]product=/);
 });
 
-test("letter-set CTA lands on the letter product in the memory shop", () => {
-  assert.equal(getMemoryShopLetterSetUrl(), "/shop?product=letter");
-});
-
-test("living result card opens the hosted Memory Shop letter set without a slash redirect loop", () => {
+test("living result card opens https://soultrace.pet/shop", () => {
   const flow = readFileSync("components/soul-trace-flow.tsx", "utf8");
-  const config = readFileSync("next.config.ts", "utf8");
+  const header = readFileSync("components/homepage/homepage-header.tsx", "utf8");
   assert.match(flow, /href=\{memoryShopLetterSetUrl\}/);
   assert.doesNotMatch(flow, /memoryShopLetterSetUrl[\s\S]{0,500}disabled/);
-  assert.match(config, /source: "\/shop"/);
-  assert.match(config, /destination: "\/shop\/index\.html"/);
-  assert.match(config, /beforeFiles/);
-  assert.doesNotMatch(config, /destination: "\/shop\/"/);
-  assert.doesNotMatch(config, /github\.io/);
+  assert.match(header, /SHOP_URL = getMemoryShopUrl\(\)/);
   assert.equal(existsSync("public/shop/index.html"), true);
   assert.equal(existsSync("public/shop/src/app.mjs"), true);
-  assert.match(readFileSync("public/shop/index.html", "utf8"), /src="\/shop\/src\/app\.mjs"/);
-  assert.match(readFileSync("public/shop/src/app.mjs", "utf8"), /catalogProductIdFromQuery/);
 });
