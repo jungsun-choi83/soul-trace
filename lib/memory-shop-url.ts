@@ -1,17 +1,16 @@
-const FALLBACK = "/shop/";
+const FALLBACK = "/shop";
 
 export function getMemoryShopUrl(): string {
   const raw = (process.env.NEXT_PUBLIC_MEMORY_SHOP_URL ?? "").trim();
   if (!raw) return FALLBACK;
   if (raw.startsWith("/")) {
-    const path = raw.split("?")[0].replace(/\/+$/, "") || "/shop";
-    return `${path}/`;
+    return raw.split("?")[0].replace(/\/+$/, "") || FALLBACK;
   }
   try {
     const parsed = new URL(raw);
     if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return FALLBACK;
     const path = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/+$/, "");
-    return path ? `${parsed.origin}${path}/` : `${parsed.origin}/`;
+    return `${parsed.origin}${path}`;
   } catch {
     return FALLBACK;
   }

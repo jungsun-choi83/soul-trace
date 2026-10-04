@@ -9,14 +9,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: turbopackRoot,
   },
-  async redirects() {
-    return [
-      {
-        source: "/shop",
-        destination: "/shop/",
-        permanent: false,
-      },
-    ];
+  async rewrites() {
+    return {
+      beforeFiles: [
+        { source: "/shop", destination: "/shop/index.html" },
+        { source: "/shop/", destination: "/shop/index.html" },
+      ],
+    };
   },
   async headers() {
     return [
