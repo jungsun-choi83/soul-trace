@@ -67,16 +67,22 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
               <span className="block whitespace-pre-line">
                 {t("homepage.hero.title1")}
               </span>
-              <span className="mt-[clamp(0.375rem,1.5vw,0.5rem)] block text-[#ecd7a6]">
-                {t("homepage.hero.title2")}
-              </span>
+              {t("homepage.hero.title2") ? (
+                <span className="mt-[clamp(0.375rem,1.5vw,0.5rem)] block text-[#ecd7a6]">
+                  {t("homepage.hero.title2")}
+                </span>
+              ) : null}
             </h1>
           </Reveal>
           <Reveal className={styles.heroDescriptionEntrance} delay={750}>
             <p
-              className={`mt-[clamp(1rem,4vw,1.75rem)] max-w-md text-[clamp(0.78rem,3.5vw,0.9rem)] leading-relaxed text-[#f8f2e7]/90 sm:text-base lg:text-lg ${styles.heroDescription} ${body}`}
+              className={`mt-[clamp(1rem,4vw,1.75rem)] max-w-md whitespace-pre-line text-[clamp(0.78rem,3.5vw,0.9rem)] leading-relaxed text-[#f8f2e7]/90 sm:text-base lg:text-lg ${styles.heroDescription} ${body}`}
             >
-              {t("homepage.hero.body")}
+              {t("homepage.hero.body").split("\n").map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
             </p>
           </Reveal>
           <Reveal className={styles.heroButtonsEntrance} delay={1000}>
