@@ -26,13 +26,21 @@ function productArt(product, thumbnail = false) {
 function shownProduct(id) {
   return localizedProduct(getProduct(id));
 }
+function keepKey(productId) {
+  return productId === 'minibook' ? 'book' : productId;
+}
 function renderProducts() {
   const visible = PRODUCTS.filter(product => state.filter === 'all' || product.category === state.filter).map(product => localizedProduct(product));
-  $('#product-grid').innerHTML = visible.map(product => `<article class="product-card" data-product-card="${product.id}">
-    <button type="button" class="product-visual-button" data-action="product" data-product="${product.id}" aria-label="${h(t('product.detailAria', { name: product.name }))}"><span class="product-badge">${h(product.tag)}</span>${productArt(product)}<span class="product-quick">${h(t('product.quick'))} ${icon('plus')}</span></button>
-    <div class="product-info"><div class="product-overline"><span>${h(product.english.toUpperCase())}</span><div class="color-dots" aria-label="${h(product.variants.map(v => v.name).join(', '))}">${product.variants.map(v => `<span class="color-dot" style="--swatch:${v.color}"></span>`).join('')}</div></div><h3 class="product-title"><button type="button" data-action="product" data-product="${product.id}">${h(product.name)}</button></h3><p class="product-short">${h(product.short)}</p><p class="product-price">${money(product.price)}<span>${h(t('product.made'))}</span></p></div>
-  </article>`).join('');
-const count = $('#collection-count');
+  $('#product-grid').innerHTML = visible.map(product => {
+    const keep = keepKey(product.id);
+    return `<article class="keep-card" data-product-card="${product.id}">
+      <button type="button" class="keep-card-button" data-action="product" data-product="${product.id}" aria-label="${h(t('product.detailAria', { name: product.name }))}">
+        <span class="keep-copy"><span class="keep-mark" aria-hidden="true"></span><strong>${h(t(`keep.${keep}.q`))}</strong><span class="keep-rec">${h(t(`keep.${keep}.rec`))}</span><span class="keep-line">${h(t(`keep.${keep}.line`))}</span></span>
+        <span class="keep-visual"><span class="product-badge">${h(product.tag)}</span>${productArt(product)}<span class="product-quick">${h(t('product.quick'))} ${icon('plus')}</span></span>
+      </button>
+    </article>`;
+  }).join('');
+  const count = $('#collection-count');
   if (count) count.textContent = t('collection.count', { n: visible.length });
   document.querySelectorAll('[data-filter]').forEach(button => { const active = button.dataset.filter === state.filter; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
 }

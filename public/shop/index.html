@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <title>Soul Trace — 손에 닿는 기억</title>
   <link rel="icon" href="/shop/assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/shop/src/styles.css?v=keep1" />
+  <link rel="stylesheet" href="/shop/src/styles.css?v=keep2" />
 </head>
 <body>
   <a class="skip-link" href="#main" data-i18n="skip">본문 바로가기</a>
@@ -67,28 +67,8 @@
         <p class="eyebrow">HOW WILL YOU KEEP THIS LETTER?</p>
         <h2 id="collection-title" data-i18n="collection.title">당신은 이 편지를 어떻게 간직하고 싶으신가요?</h2>
       </div>
-      <div class="keep-choices" role="list">
-        <button type="button" class="keep-choice" role="listitem" data-action="product" data-product="nfc">
-          <span class="keep-mark" aria-hidden="true"></span>
-          <strong data-i18n="keep.nfc.q">자주 꺼내 읽고 싶어요</strong>
-          <span class="keep-rec" data-i18n="keep.nfc.rec">NFC 메모리카드 추천 · 9,900원</span>
-          <span class="keep-line" data-i18n="keep.nfc.line">스마트폰 터치하면 편지가 떠요</span>
-        </button>
-        <button type="button" class="keep-choice" role="listitem" data-action="product" data-product="letter">
-          <span class="keep-mark" aria-hidden="true"></span>
-          <strong data-i18n="keep.letter.q">특별한 날에만 꺼낼 거예요</strong>
-          <span class="keep-rec" data-i18n="keep.letter.rec">마음을 담은 편지 세트 추천 · 24,900원</span>
-          <span class="keep-line" data-i18n="keep.letter.line">편지 · 엽서 · NFC 인식표 세트</span>
-        </button>
-        <button type="button" class="keep-choice" role="listitem" data-action="product" data-product="minibook">
-          <span class="keep-mark" aria-hidden="true"></span>
-          <strong data-i18n="keep.book.q">항상 가지고 다니고 싶어요</strong>
-          <span class="keep-rec" data-i18n="keep.book.rec">미니 메모리북 키링 추천 · 49,900원</span>
-          <span class="keep-line" data-i18n="keep.book.line">가방에 달아두는 작은 책</span>
-        </button>
-      </div>
       <span class="collection-count" id="collection-count" hidden>3개의 컬렉션</span>
-      <div id="product-grid" class="product-grid"></div>
+      <div id="product-grid" class="product-grid keep-grid"></div>
       <p class="concept-note" data-i18n="collection.note">상품 이미지는 제공된 디자인 시안입니다. 최종 구성·소재·제작 일정은 실판매 전 확정됩니다.</p>
     </section>
 
@@ -111,6 +91,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   <noscript><div class="noscript">상품과 장바구니를 이용하려면 자바스크립트를 활성화해주세요. 이 버전에서는 실제 결제가 발생하지 않습니다.</div></noscript>
   <script>globalThis.SOULTRACE_OFFLINE_PREVIEW = true;</script>
-  <script type="module" src="/shop/src/app.mjs?v=keep1"></script>
+  <script type="module" src="/shop/src/app.mjs?v=keep2"></script>
 </body>
 </html>
