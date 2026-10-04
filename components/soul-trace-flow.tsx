@@ -47,6 +47,7 @@ import {
   type LetterThemeId,
 } from "@/lib/letter-themes";
 import { getEternalBeamInstagramUrl, getEternalBeamMainUrl, getEternalBeamYoutubeUrl } from "@/lib/eternalbeam-urls";
+import { getMemoryShopLetterSetUrl } from "@/lib/memory-shop-url";
 import {
   buildLetterRequestFields,
   EMPTY_PET_INTRO,
@@ -579,6 +580,7 @@ export function SoulTraceFlow({
     resolveRecipientAddress(petIntro, lang),
   );
   const officialSiteUrl = useMemo(() => getEternalBeamMainUrl(), []);
+  const memoryShopLetterSetUrl = useMemo(() => getMemoryShopLetterSetUrl(), []);
   const instagramProfileUrl = useMemo(() => getEternalBeamInstagramUrl(), []);
 
   useEffect(() => {
@@ -1840,14 +1842,14 @@ export function SoulTraceFlow({
                   <p className="mt-2 flex-1 text-sm font-light leading-relaxed text-[#C4B8A8]">
                     {t("result.productCards.keepsake.description")}
                   </p>
-                  <button
-                    type="button"
-                    disabled
-                    aria-disabled="true"
-                    className="mt-5 flex min-h-11 w-full cursor-not-allowed items-center justify-center rounded-xl bg-[#C7A43A] px-4 py-3 text-center text-sm font-medium text-[#0B0A08]"
+                  <a
+                    href={memoryShopLetterSetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 flex min-h-11 w-full items-center justify-center rounded-xl bg-[#C7A43A] px-4 py-3 text-center text-sm font-medium text-[#0B0A08] transition hover:bg-[#D4B34A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5C761]"
                   >
                     {t("result.productCards.keepsake.cta")}
-                  </button>
+                  </a>
                 </div>
               </article>
 

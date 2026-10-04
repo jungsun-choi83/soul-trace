@@ -96,6 +96,9 @@ describe("result download and Instagram actions", () => {
     assert.match(source, /src="\/images\/eternal-beam-result\.png"/);
     assert.match(source, /grid-cols-1 gap-4 sm:grid-cols-2/);
     assert.match(source, /href=\{officialSiteUrl\}/);
+    assert.match(source, /href=\{memoryShopLetterSetUrl\}/);
+    assert.match(source, /getMemoryShopLetterSetUrl/);
+    assert.doesNotMatch(source, /result\.productCards\.keepsake[\s\S]{0,400}disabled/);
   });
 
   it("keeps the responsive Kickstarter artwork near the end of the result flow", () => {
