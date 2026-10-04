@@ -361,8 +361,10 @@ export function VisualMemoryPromo({
                   className="object-cover"
                 />
               </div>
-              <figcaption className="flex min-h-9 items-center justify-center px-1 pt-2 text-center font-serif text-xs italic leading-tight text-[#292219]">
-                {captions[card.caption]}
+              <figcaption className="flex min-h-9 flex-col items-center justify-center px-1 pt-2 text-center font-serif text-xs italic leading-tight text-[#292219]">
+                {captions[card.caption].split("\n").map((line) => (
+                  <span key={`${card.caption}-${line}`}>{line}</span>
+                ))}
               </figcaption>
             </figure>
           ))}
