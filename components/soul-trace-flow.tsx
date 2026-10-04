@@ -1822,7 +1822,7 @@ export function SoulTraceFlow({
             <section
               aria-label={t("result.productCards.label")}
               className={`mx-auto mt-6 grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-2 ${
-                lang === "ko" ? "font-ko" : "font-display-en"
+                lang === "ko" ? "font-ko break-keep" : "font-display-en"
               }`}
             >
               <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#C7A43A]/40 bg-[#0C0B09] shadow-[0_16px_42px_rgba(0,0,0,0.28)]">
@@ -1839,7 +1839,7 @@ export function SoulTraceFlow({
                   <h2 className="text-lg font-medium leading-snug text-[#F3E8D2]">
                     {t("result.productCards.keepsake.title")}
                   </h2>
-                  <p className="mt-2 flex-1 text-sm font-light leading-relaxed text-[#C4B8A8]">
+                  <p className="mt-2 flex-1 whitespace-pre-line text-sm font-light leading-relaxed text-[#C4B8A8]">
                     {t("result.productCards.keepsake.description")}
                   </p>
                   <a
@@ -1867,7 +1867,7 @@ export function SoulTraceFlow({
                   <h2 className="text-lg font-medium leading-snug text-[#F3E8D2]">
                     {t("result.productCards.eternalBeam.title")}
                   </h2>
-                  <p className="mt-2 flex-1 text-sm font-light leading-relaxed text-[#C4B8A8]">
+                  <p className="mt-2 flex-1 whitespace-pre-line text-sm font-light leading-relaxed text-[#C4B8A8]">
                     {t("result.productCards.eternalBeam.description")}
                   </p>
                   <a

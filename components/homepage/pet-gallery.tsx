@@ -68,7 +68,12 @@ export function PetGallery() {
             <h2
               className={`${display} ${styles.mobileHeadingOnLight} text-3xl font-light leading-tight sm:text-5xl`}
             >
-              {t("homepage.gallery.title")}
+              {t("homepage.gallery.title").split("\n").map((line, index) => (
+                <span key={line}>
+                  {index > 0 ? <br /> : null}
+                  {line}
+                </span>
+              ))}
             </h2>
           </Reveal>
           <Reveal delay={120}>

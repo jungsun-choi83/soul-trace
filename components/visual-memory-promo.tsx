@@ -317,7 +317,7 @@ export function VisualMemoryPromo({
       <section
         aria-labelledby="visual-memory-title"
         className={`relative mx-auto mt-6 w-full max-w-2xl overflow-hidden rounded-2xl border border-[#C7A43A]/40 bg-[#0C0B09] shadow-[0_16px_42px_rgba(0,0,0,0.28)] ${
-          language === "ko" ? "font-ko" : "font-display-en"
+          language === "ko" ? "font-ko break-keep" : "font-display-en"
         }`}
       >
       <Image
@@ -336,7 +336,7 @@ export function VisualMemoryPromo({
           </p>
           <h2
             id="visual-memory-title"
-            className="mt-3 text-2xl font-medium leading-[1.18] text-[#F3E8D2] sm:text-[1.75rem]"
+            className="mt-3 whitespace-pre-line text-2xl font-medium leading-[1.18] text-[#F3E8D2] sm:text-[1.75rem]"
           >
             {title}
           </h2>
