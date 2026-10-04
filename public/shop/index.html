@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <title>Soul Trace — 손에 닿는 기억</title>
   <link rel="icon" href="/shop/assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/shop/src/styles.css?v=lang3" />
+  <link rel="stylesheet" href="/shop/src/styles.css?v=keep1" />
 </head>
 <body>
   <a class="skip-link" href="#main" data-i18n="skip">본문 바로가기</a>
@@ -63,8 +63,31 @@
     <section class="journey-strip" aria-label="맞춤 제작 안내" data-i18n="journey.label" data-i18n-attr="aria-label"><div class="section-width journey-inner"><span><svg class="icon"><use href="#i-book"/></svg><span data-i18n="journey.1">남겨둔 이야기에서 시작해요</span></span><span><svg class="icon"><use href="#i-photo"/></svg><span data-i18n="journey.2">우리 아이만의 이름과 사진</span></span><span><svg class="icon"><use href="#i-heart"/></svg><span data-i18n="journey.3">오래 곁에 두는 작은 선물</span></span></div></section>
 
     <section id="collection" class="collection section-width" aria-labelledby="collection-title">
-      <div class="section-heading"><div><p class="eyebrow">THREE WAYS TO KEEP THEM CLOSE</p><h2 id="collection-title" data-i18n="collection.title">기억을 간직하는 세 가지 방법</h2></div><p data-i18n-html="collection.lead">다시 열어보고, 읽고, 함께 다니는.<br>당신에게 가장 가까운 방식을 골라보세요.</p></div>
-      <div class="collection-toolbar"><div class="filter-tabs" role="group" aria-label="상품 분류" data-i18n="filter.group" data-i18n-attr="aria-label"><button type="button" class="filter-button active" data-filter="all" aria-pressed="true"><span data-i18n="filter.all">모든 기억</span> <span>03</span></button><button type="button" class="filter-button" data-filter="nfc" aria-pressed="false" data-i18n="filter.nfc">NFC 카드</button><button type="button" class="filter-button" data-filter="paper" aria-pressed="false" data-i18n="filter.paper">편지 세트</button><button type="button" class="filter-button" data-filter="carry" aria-pressed="false" data-i18n="filter.carry">키링</button></div><span class="collection-count" id="collection-count">3개의 컬렉션</span></div>
+      <div class="keep-heading">
+        <p class="eyebrow">HOW WILL YOU KEEP THIS LETTER?</p>
+        <h2 id="collection-title" data-i18n="collection.title">당신은 이 편지를 어떻게 간직하고 싶으신가요?</h2>
+      </div>
+      <div class="keep-choices" role="list">
+        <button type="button" class="keep-choice" role="listitem" data-action="product" data-product="nfc">
+          <span class="keep-mark" aria-hidden="true"></span>
+          <strong data-i18n="keep.nfc.q">자주 꺼내 읽고 싶어요</strong>
+          <span class="keep-rec" data-i18n="keep.nfc.rec">NFC 메모리카드 추천 · 9,900원</span>
+          <span class="keep-line" data-i18n="keep.nfc.line">스마트폰 터치하면 편지가 떠요</span>
+        </button>
+        <button type="button" class="keep-choice" role="listitem" data-action="product" data-product="letter">
+          <span class="keep-mark" aria-hidden="true"></span>
+          <strong data-i18n="keep.letter.q">특별한 날에만 꺼낼 거예요</strong>
+          <span class="keep-rec" data-i18n="keep.letter.rec">마음을 담은 편지 세트 추천 · 24,900원</span>
+          <span class="keep-line" data-i18n="keep.letter.line">편지 · 엽서 · NFC 인식표 세트</span>
+        </button>
+        <button type="button" class="keep-choice" role="listitem" data-action="product" data-product="minibook">
+          <span class="keep-mark" aria-hidden="true"></span>
+          <strong data-i18n="keep.book.q">항상 가지고 다니고 싶어요</strong>
+          <span class="keep-rec" data-i18n="keep.book.rec">미니 메모리북 키링 추천 · 49,900원</span>
+          <span class="keep-line" data-i18n="keep.book.line">가방에 달아두는 작은 책</span>
+        </button>
+      </div>
+      <span class="collection-count" id="collection-count" hidden>3개의 컬렉션</span>
       <div id="product-grid" class="product-grid"></div>
       <p class="concept-note" data-i18n="collection.note">상품 이미지는 제공된 디자인 시안입니다. 최종 구성·소재·제작 일정은 실판매 전 확정됩니다.</p>
     </section>
@@ -88,6 +111,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   <noscript><div class="noscript">상품과 장바구니를 이용하려면 자바스크립트를 활성화해주세요. 이 버전에서는 실제 결제가 발생하지 않습니다.</div></noscript>
   <script>globalThis.SOULTRACE_OFFLINE_PREVIEW = true;</script>
-  <script type="module" src="/shop/src/app.mjs?v=lang3"></script>
+  <script type="module" src="/shop/src/app.mjs?v=keep1"></script>
 </body>
 </html>

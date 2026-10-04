@@ -32,7 +32,8 @@ function renderProducts() {
     <button type="button" class="product-visual-button" data-action="product" data-product="${product.id}" aria-label="${h(t('product.detailAria', { name: product.name }))}"><span class="product-badge">${h(product.tag)}</span>${productArt(product)}<span class="product-quick">${h(t('product.quick'))} ${icon('plus')}</span></button>
     <div class="product-info"><div class="product-overline"><span>${h(product.english.toUpperCase())}</span><div class="color-dots" aria-label="${h(product.variants.map(v => v.name).join(', '))}">${product.variants.map(v => `<span class="color-dot" style="--swatch:${v.color}"></span>`).join('')}</div></div><h3 class="product-title"><button type="button" data-action="product" data-product="${product.id}">${h(product.name)}</button></h3><p class="product-short">${h(product.short)}</p><p class="product-price">${money(product.price)}<span>${h(t('product.made'))}</span></p></div>
   </article>`).join('');
-  $('#collection-count').textContent = t('collection.count', { n: visible.length });
+const count = $('#collection-count');
+  if (count) count.textContent = t('collection.count', { n: visible.length });
   document.querySelectorAll('[data-filter]').forEach(button => { const active = button.dataset.filter === state.filter; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
 }
 function updateHeader() {
