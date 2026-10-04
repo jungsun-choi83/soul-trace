@@ -8,7 +8,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <title>Soul Trace — 손에 닿는 기억</title>
   <link rel="icon" href="/shop/assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/shop/src/styles.css" />
+  <link rel="stylesheet" href="/shop/src/styles.css?v=lang3" />
 </head>
 <body>
   <a class="skip-link" href="#main" data-i18n="skip">본문 바로가기</a>
@@ -30,7 +30,7 @@
     <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 2 2.7 7.3L22 12l-7.3 2.7L12 22l-2.7-7.3L2 12l7.3-2.7L12 2Z"/></symbol>
   </svg>
 
-  <div class="announcement"><span data-i18n="announce.main">우리 아이의 이야기를, 손에 닿는 기억으로.</span><div class="lang-toggle announcement-lang" role="group" aria-label="언어"><button type="button" data-action="lang" data-lang="ko" aria-pressed="true">KO</button><span aria-hidden="true">·</span><button type="button" data-action="lang" data-lang="en" aria-pressed="false">EN</button></div></div>
+  <div class="announcement"><span data-i18n="announce.main">우리 아이의 이야기를, 손에 닿는 기억으로.</span><div class="lang-toggle announcement-lang" role="group" aria-label="언어"><button type="button" data-action="lang" data-lang="ko" aria-pressed="true">한국어</button><span aria-hidden="true">·</span><button type="button" data-action="lang" data-lang="en" aria-pressed="false">EN</button></div></div>
   <header class="site-header">
     <a class="brand" href="#" aria-label="Soul Trace 홈" data-i18n="brand.home" data-i18n-attr="aria-label">
       <svg class="brand-mark" viewBox="0 0 44 42" fill="none" aria-hidden="true"><path d="M22 36C5 30 2 18 5 7c13 0 23 10 17 29Z"/><path d="M22 36C39 30 42 18 39 7c-13 0-23 10-17 29Z"/><path d="M8 10c7 7 12 15 14 26M36 10c-7 7-12 15-14 26"/></svg>
@@ -38,6 +38,7 @@
     </a>
     <nav class="main-nav" aria-label="주 메뉴" data-i18n="nav.main" data-i18n-attr="aria-label"><a href="#collection" data-i18n="nav.collection">기억 컬렉션</a><a href="#how-it-works" data-i18n="nav.how">제작 방법</a><a href="#our-story" data-i18n="nav.story">우리의 이야기</a></nav>
     <div class="header-actions">
+      <div class="lang-toggle header-lang" role="group" aria-label="언어"><button type="button" data-action="lang" data-lang="ko" aria-pressed="true">한</button><button type="button" data-action="lang" data-lang="en" aria-pressed="false">EN</button></div>
       <button class="archive-link" type="button" data-action="archive"><svg class="icon"><use href="#i-book"/></svg><span id="archive-header-label">내 편지</span></button>
       <button type="button" class="cart-trigger icon-button" data-action="cart" aria-label="장바구니 0개"><svg class="icon"><use href="#i-bag"/></svg><span id="cart-count" class="cart-count" hidden>0</span></button>
     </div>
@@ -87,6 +88,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   <noscript><div class="noscript">상품과 장바구니를 이용하려면 자바스크립트를 활성화해주세요. 이 버전에서는 실제 결제가 발생하지 않습니다.</div></noscript>
   <script>globalThis.SOULTRACE_OFFLINE_PREVIEW = true;</script>
-  <script type="module" src="/shop/src/app.mjs"></script>
+  <script type="module" src="/shop/src/app.mjs?v=lang3"></script>
 </body>
 </html>

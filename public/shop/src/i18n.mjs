@@ -701,7 +701,7 @@ export function localizedFaqs() {
 }
 
 export function langToggleHtml() {
-  return `<div class="lang-toggle" role="group" aria-label="${escapeHtml(t('lang.label'))}"><button type="button" data-action="lang" data-lang="ko" aria-pressed="${lang === 'ko'}">KO</button><button type="button" data-action="lang" data-lang="en" aria-pressed="${lang === 'en'}">EN</button></div>`;
+  return `<div class="lang-toggle" role="group" aria-label="${escapeHtml(t('lang.label'))}"><button type="button" data-action="lang" data-lang="ko" aria-pressed="${lang === 'ko'}">한</button><button type="button" data-action="lang" data-lang="en" aria-pressed="${lang === 'en'}">EN</button></div>`;
 }
 
 export function applyStaticCopy() {

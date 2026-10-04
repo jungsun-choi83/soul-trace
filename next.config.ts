@@ -28,6 +28,24 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/shop",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate, s-maxage=0",
+          },
+        ],
+      },
+      {
+        source: "/shop/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate, s-maxage=0",
+          },
+        ],
+      },
     ];
   },
 };
