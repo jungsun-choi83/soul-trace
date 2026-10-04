@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
   Cormorant_Garamond,
   Courier_Prime,
@@ -81,6 +81,12 @@ const jsonLd = {
   ],
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -141,7 +147,7 @@ export default function RootLayout({
       lang="ko"
       translate="no"
       suppressHydrationWarning
-      className={`${marcellus.variable} ${playfair.variable} ${cormorant.variable} ${inter.variable} ${courierPrime.variable} ${notoSerifKr.variable} ${nanumMyeongjo.variable} notranslate h-full antialiased`}
+      className={`${marcellus.variable} ${playfair.variable} ${cormorant.variable} ${inter.variable} ${courierPrime.variable} ${notoSerifKr.variable} ${nanumMyeongjo.variable} notranslate h-full antialiased [text-size-adjust:100%]`}
     >
       <body className="font-ko min-h-full flex flex-col bg-black text-[#FFFFFF]">
         <script

@@ -27,7 +27,7 @@ export function LanguageToggle() {
 
   return (
     <div
-      className="font-display-en inline-flex items-center rounded-md border border-[#D4AF37]/55 bg-black/90 px-1.5 py-0.5 shadow-[inset_0_1px_0_rgba(212,175,55,0.12)]"
+      className="font-display-en inline-flex shrink-0 items-center rounded-md border border-[#D4AF37]/55 bg-black/90 px-1 py-0.5 shadow-[inset_0_1px_0_rgba(212,175,55,0.12)] sm:px-1.5"
       role="group"
       aria-label="Language"
     >

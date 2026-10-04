@@ -1986,7 +1986,7 @@ export function SoulTraceFlow({
           </div>
         ) : null}
         <WarmRisingSparkles />
-        <header className="relative z-[2] flex w-full shrink-0 items-center justify-between px-5 pt-6 md:px-8 md:pt-8">
+        <header className="relative z-[2] flex w-full shrink-0 items-center justify-between px-5 pt-[calc(1.5rem+env(safe-area-inset-top))] md:px-8 md:pt-8">
           {/* 갈래를 잘못 골랐을 때 되돌아갈 길 — 없으면 새로고침밖에 방법이 없다. */}
           <Link
             href="/choose"
@@ -2010,8 +2010,8 @@ export function SoulTraceFlow({
             <div
               className={`mx-auto mt-7 max-w-xl space-y-6 text-[#F3EAD8]/[0.94] ${
                 lang === "ko"
-                  ? "font-ko break-keep text-[15px] font-extralight leading-[2.05] tracking-[0.055em] sm:text-base sm:leading-[2.1] sm:tracking-[0.05em]"
-                  : "font-display-en text-sm font-extralight leading-[2.05] tracking-[0.2em] sm:text-base sm:leading-[2.15] sm:tracking-[0.18em]"
+                  ? "font-ko break-keep text-[15px] font-extralight leading-[1.85] tracking-[0.02em] sm:text-base sm:leading-[2.1] sm:tracking-[0.05em]"
+                  : "font-display-en text-sm font-extralight leading-[1.85] tracking-[0.08em] sm:text-base sm:leading-[2.15] sm:tracking-[0.18em]"
               }`}
             >
               <p className="whitespace-pre-line">{introduction.headline}</p>
@@ -2020,11 +2020,11 @@ export function SoulTraceFlow({
           </div>
 
           <article className="rounded-3xl border-[0.5px] border-[rgba(212,175,55,0.3)] bg-transparent p-6 md:p-10">
-            <div className="mb-6 flex items-center justify-between gap-4 text-xs text-[#D4AF37]">
-              <span className="font-display-en uppercase">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[#D4AF37]">
+              <span className="shrink-0 font-display-en uppercase">
                 {t("questionHeader.label")} {questionIndex + 1} {t("questionHeader.of")} {totalQuestionCount}
               </span>
-              <span className={lang === "ko" ? "font-ko" : "font-display-en"}>
+              <span className={`min-w-0 text-right ${lang === "ko" ? "font-ko" : "font-display-en"}`}>
                 {lang === "ko"
                   ? `질문 ${questionsLeft}개 남음`
                   : <>{questionsLeft} {t("questionHeader.left")}</>}

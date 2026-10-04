@@ -72,7 +72,7 @@ export function HomepageHeader({ choiceHref }: { choiceHref: string }) {
   }, [open]);
 
   const mobileMenu = (
-    <div className={`fixed inset-0 z-[60] h-[100dvh] w-full overflow-y-auto bg-[#0b0a09]/98 backdrop-blur-lg transition-opacity duration-300 xl:hidden ${open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`} aria-hidden={!open}>
+    <div className={`fixed inset-0 z-[60] h-[100dvh] w-full overflow-y-auto bg-[#0b0a09]/98 pt-[env(safe-area-inset-top)] backdrop-blur-lg transition-opacity duration-300 xl:hidden ${open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`} aria-hidden={!open}>
       <div className="flex h-16 items-center justify-between px-5">
         <span className="font-display-en text-lg uppercase !tracking-[0.2em]">Soul Trace</span>
         <button type="button" onClick={() => setOpen(false)} aria-label={t("homepage.nav.close")} className="grid size-11 place-items-center rounded-full hover:bg-white/10"><CloseIcon className="size-5" /></button>
@@ -88,11 +88,11 @@ export function HomepageHeader({ choiceHref }: { choiceHref: string }) {
 
   return (
     <>
-    <header className={`fixed inset-x-0 top-0 z-50 border-b transition-colors duration-500 ${scrolled ? "border-[#f8f2e7]/10 bg-[#0b0a09]/85 backdrop-blur-md" : "border-[#f8f2e7]/15 bg-[#0b0a09]/55 backdrop-blur-sm"}`}>
+    <header className={`fixed inset-x-0 top-0 z-50 border-b pt-[env(safe-area-inset-top)] transition-colors duration-500 ${scrolled ? "border-[#f8f2e7]/10 bg-[#0b0a09]/85 backdrop-blur-md" : "border-[#f8f2e7]/15 bg-[#0b0a09]/55 backdrop-blur-sm"}`}>
       <div className="relative flex h-16 w-full items-center justify-between px-4 sm:px-8 xl:h-20 xl:px-10">
         <a href="#top" className="flex min-w-0 items-center gap-2.5" aria-label={t("homepage.accessibility.home")}>
           <span className="size-2 shrink-0 rounded-full bg-[#c8a24a] shadow-[0_0_12px_rgba(200,162,74,0.7)]" aria-hidden="true" />
-          <span className="font-display-en truncate text-base uppercase !tracking-[0.2em] text-[#f8f2e7] sm:text-lg xl:text-xl">Soul Trace</span>
+          <span className="font-display-en truncate text-[0.95rem] uppercase !tracking-[0.14em] text-[#f8f2e7] sm:text-lg sm:!tracking-[0.2em] xl:text-xl">Soul Trace</span>
         </a>
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 xl:flex" aria-label={t("homepage.accessibility.primaryNav")}>
           {links.map(([label, href]) => <a key={href} href={href} className={`whitespace-nowrap text-sm text-[#f8f2e7]/70 transition-colors hover:text-[#f8f2e7] ${displayFont}`}>{label}</a>)}
@@ -102,7 +102,7 @@ export function HomepageHeader({ choiceHref }: { choiceHref: string }) {
           <KickstarterNavLink />
           <LanguageToggle />
         </div>
-        <div className="flex items-center gap-1 sm:gap-2 xl:hidden">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2 xl:hidden">
           <LanguageToggle />
           <button type="button" onClick={() => setOpen(true)} aria-label={t("homepage.nav.menu")} aria-expanded={open} className="grid size-11 place-items-center rounded-full text-[#f8f2e7] hover:bg-white/10"><MenuIcon className="size-5" /></button>
         </div>
