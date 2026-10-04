@@ -1964,7 +1964,7 @@ export function SoulTraceFlow({
       ) : (
       <main
         data-questionnaire-pet-theme={questionnairePetTheme.key}
-        className={`relative isolate z-[1] flex min-h-screen flex-col ${
+        className={`relative isolate z-[1] flex min-h-dvh flex-col overflow-x-hidden ${
           showChannelBackground ? "bg-transparent" : "bg-black"
         }`}
       >
@@ -2001,10 +2001,10 @@ export function SoulTraceFlow({
         <div className="relative z-[2] flex flex-1 items-center justify-center px-5 pb-14 pt-2 md:px-8 md:pb-16">
         <section className="w-full max-w-2xl">
           <div className="animate-fade-in mb-10 text-center">
-            <p className="font-display-en text-xs uppercase tracking-[0.35em] text-[#D4AF37]">
+            <p className="font-display-en px-1 text-xs uppercase !tracking-[0.18em] text-[#D4AF37] sm:!tracking-[0.35em]">
               {t("hero.eyebrow")}
             </p>
-            <h1 className="font-display-en mt-6 text-4xl text-[#FFFFFF] md:text-5xl">
+            <h1 className="font-display-en mt-6 max-w-full px-1 text-[clamp(1.75rem,8.5vw,3rem)] !tracking-[0.08em] text-[#FFFFFF] sm:!tracking-[0.22em] md:text-5xl">
               {t("hero.title")}
             </h1>
             <div

@@ -12,9 +12,14 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--text-primary);
+  overflow-x: hidden;
 }
 
 /* 한글 제목·본문: 본명조 계열(Noto Serif KR), 아주 얇게 */
