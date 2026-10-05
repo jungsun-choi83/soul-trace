@@ -16,14 +16,15 @@ describe("result download and Instagram actions", () => {
 
   it("places download and share directly below the letter before lower result sections", () => {
     const letter = source.indexOf('id="share-card"');
-    const download = source.indexOf("onClick={handleDownloadImage}");
+    const download = source.indexOf("setDownloadGateOpen(true)");
     const share = source.indexOf("aria-controls=\"letter-share-tray\"");
     const productCards = source.indexOf('aria-label={t("result.productCards.label")}');
 
     assert.ok(letter >= 0 && letter < download);
     assert.ok(download < share);
     assert.ok(share < productCards);
-    assert.equal(source.match(/onClick=\{handleDownloadImage\}/g)?.length, 1);
+    assert.equal(source.match(/setDownloadGateOpen\(true\)/g)?.length, 1);
+    assert.match(source, /<LetterDownloadGate[\s\S]*onVerified=\{\(\) => \{[\s\S]*handleDownloadImage\(\)/);
     assert.equal(source.match(/action: onInstagramButtonClick/g)?.length, 1);
     assert.doesNotMatch(source, /result\.emotionalBridge/);
   });
@@ -147,5 +148,16 @@ describe("result download and Instagram actions", () => {
     assert.equal(en.result.instagramShareButton, "Share this letter");
     assert.equal(ko.result.keepForever, "이 편지 다운로드하기");
     assert.equal(ko.result.instagramShareButton, "이 편지 공유하기");
+    assert.equal(ko.result.downloadGate.title, "이 편지부터, 우리 아이의 기록으로.");
+    assert.match(ko.result.downloadGate.body, /지금 만든 편지를 저장하고 다운로드하세요/);
+    assert.match(ko.result.downloadGate.body, /비주얼 메모리도 한곳에서 다시 볼 수 있어요/);
+    assert.equal(ko.result.downloadGate.emailLabel, "이메일 주소");
+    assert.equal(ko.result.downloadGate.emailPlaceholder, "이메일을 입력해주세요");
+    assert.equal(ko.result.downloadGate.sendCode, "인증번호 받기");
+    assert.match(ko.result.downloadGate.notice, /이메일 인증 후 계정이 만들어집니다/);
+    assert.match(ko.result.downloadGate.notice, /구독은 필요하지 않습니다/);
+    assert.equal(ko.result.downloadGate.dismiss, "지금은 편지만 읽을게요.");
+    assert.equal(en.result.downloadGate.sendCode, "Get a verification code");
+    assert.equal(en.result.downloadGate.dismiss, "I'll just read the letter for now.");
   });
 });

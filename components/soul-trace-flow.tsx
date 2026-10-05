@@ -1,5 +1,6 @@
 "use client";
 
+import { LetterDownloadGate } from "@/components/letter-download-gate";
 import { QuestionnairePrivacyNotice } from "@/components/questionnaire-privacy-notice";
 import { VisualMemoryPromo } from "@/components/visual-memory-promo";
 import { petIntroQuestionIds, PetIntroForm } from "@/components/pet-intro-form";
@@ -312,6 +313,7 @@ export function SoulTraceFlow({
   const shareTrayRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadGateOpen, setDownloadGateOpen] = useState(false);
   const [shareableFile, setShareableFile] = useState<File | null>(null);
   const [letterThemeId, setLetterThemeId] = useState<LetterThemeId>(() => {
     if (typeof window === "undefined") return DEFAULT_LETTER_THEME_ID;
@@ -1232,6 +1234,7 @@ export function SoulTraceFlow({
   };
 
   const goBackFromResult = () => {
+    setDownloadGateOpen(false);
     if (!initialResult) {
       setResult(null);
       setResultLocale(null);
@@ -1268,6 +1271,7 @@ export function SoulTraceFlow({
     setGenerationLoadingMessage(null);
     setStoryShareLine(null);
     setShowValidationErrors(false);
+    setDownloadGateOpen(false);
     stopResultBgm(bgmPrimeRef);
   };
 
@@ -1586,7 +1590,10 @@ export function SoulTraceFlow({
             <div className="mx-auto grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={handleDownloadImage}
+                onClick={() => {
+                  setShareTrayOpen(false);
+                  setDownloadGateOpen(true);
+                }}
                 disabled={!canCaptureArtwork || isDownloading || isSharing}
                 className={`flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#C7A43A] px-5 py-3 text-center text-sm font-medium text-[#0B0A08] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] transition hover:bg-[#D4B34A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5C761] active:bg-[#B28F2E] disabled:cursor-not-allowed disabled:opacity-45 sm:text-base ${
                   lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
@@ -1698,6 +1705,16 @@ export function SoulTraceFlow({
                 </AnimatePresence>
               </div>
             </div>
+
+            <LetterDownloadGate
+              open={downloadGateOpen}
+              initialEmail={email}
+              onClose={() => setDownloadGateOpen(false)}
+              onVerified={() => {
+                setDownloadGateOpen(false);
+                void handleDownloadImage();
+              }}
+            />
 
             <VisualMemoryPromo
               language={lang}

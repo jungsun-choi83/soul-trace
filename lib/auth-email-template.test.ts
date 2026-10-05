@@ -36,6 +36,9 @@ test("returning-user template is bilingual and does not welcome a new member", (
   assert.match(magicLink, /ETERNAL BEAM/);
   assert.equal((magicLink.match(/href="\{\{ \.ConfirmationURL \}\}"/g) ?? []).length, 2);
   assert.doesNotMatch(magicLink, /Your Story Begins Here|소중한 이야기가 시작됩니다/);
+  assert.equal((magicLink.match(/\{\{ \.Token \}\}/g) ?? []).length, 2);
+  assert.match(magicLink, /인증번호/);
+  assert.match(magicLink, /Verification code/);
 });
 
 test("repository instructions identify the manual dashboard step", () => {
