@@ -223,7 +223,7 @@
     "emailStep": {
       "kicker": "EMAIL ADDRESS",
       "label": "Email address",
-      "placeholder": "Enter email to reveal the letter",
+      "placeholder": "Share the email for the finished letter and memories",
       "validation": "Please enter a valid email address."
     },
     "privacyNotices": {
@@ -891,6 +891,7 @@
     "toneKicker": "STEP 3 — Letter style",
     "letterToneTitle": "Letter Tone",
     "examplePrefix": "e.g.",
+    "focusHint": "Think only of %NAME% and write with your full attention.",
     "petExamples": {
       "rabbit": {
         "living": {

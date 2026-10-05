@@ -107,7 +107,7 @@ test("English Email screen keeps only the field copy", () => {
   assert.deepEqual(en.form.emailStep, {
     kicker: "EMAIL ADDRESS",
     label: "Email address",
-    placeholder: "Enter email to reveal the letter",
+    placeholder: "Share the email for the finished letter and memories",
     validation: "Please enter a valid email address.",
   });
 });
@@ -116,7 +116,7 @@ test("Korean Email screen keeps only the natural field copy", () => {
   assert.deepEqual(ko.form.emailStep, {
     kicker: "이메일 주소",
     label: "이메일 주소",
-    placeholder: "편지를 확인하려면 이메일을 입력해 주세요",
+    placeholder: "완성된 편지와 기억을 받을 이메일을 알려주세요",
     validation: "올바른 이메일 주소를 입력해주세요.",
   });
   assert.equal(ko.buttons.prev, "이전");
