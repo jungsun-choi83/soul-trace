@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
     code,
     tokenHash,
     type,
+    skipLegacyClaim: ["/living", "/memorial", "/letter-result"].includes(destination.pathname),
   });
 
   if (result === "verification_failed") {

@@ -1,4 +1,7 @@
 import { validatePetPhotoFile } from "@/lib/pet-photo";
+import { createResultSaveProof, resultSaveSecret } from "@/lib/result-save-proof";
+import { visualMemoryGenerationCookie, visualMemoryGenerationUsed } from "@/lib/visual-memory-generation-allowance";
+import { randomUUID } from "node:crypto";
 import OpenAI, { toFile } from "openai";
 
 export const runtime = "nodejs";
@@ -305,6 +308,9 @@ export async function POST(request: Request) {
     if (!mode || !selectedSceneId || !memoryDetail) {
       return Response.json({ error: "The Visual Memory request is incomplete." }, { status: 400 });
     }
+    if (visualMemoryGenerationUsed(request.headers.get("cookie"))) {
+      return Response.json({ error: "additional_generation_unavailable" }, { status: 403 });
+    }
 
     const customSceneId = mode === "living" ? "custom-scene" : "custom-memory";
     const isCustomScene = selectedSceneId === customSceneId;
@@ -421,6 +427,7 @@ export async function POST(request: Request) {
       requestDurationMs: Date.now() - requestStartedAt,
     });
 
+    const resultId = randomUUID();
     return Response.json({
       imageDataUrl: `data:image/jpeg;base64,${imageBase64}`,
       modelUsed,
@@ -428,6 +435,12 @@ export async function POST(request: Request) {
       caption: polaroidCopy.caption,
       captionModelUsed: captionResult?.modelUsed ?? null,
       captionFallback,
+      resultId,
+      saveProof: createResultSaveProof("visual-memory", resultId, resultSaveSecret()),
+    }, {
+      headers: {
+        "Set-Cookie": visualMemoryGenerationCookie(process.env.NODE_ENV === "production"),
+      },
     });
   } catch (error) {
     console.error("[visual-memory] Image generation failed.", error);

@@ -13,10 +13,15 @@ export type LetterDownloadCodeClient = PasswordlessAuthClient & {
       type: "email";
     }) => Promise<{ data?: { session?: unknown | null }; error: unknown | null }>;
   };
-  rpc: (name: "claim_soul_trace_legacy_records") => PromiseLike<{ error: unknown | null }>;
 };
 
 const VERIFICATION_CODE_PATTERN = /^\d{6,8}$/;
+
+function errorText(error: unknown): string {
+  if (!error || typeof error !== "object") return "";
+  const record = error as { code?: unknown; message?: unknown };
+  return `${typeof record.code === "string" ? record.code : ""} ${typeof record.message === "string" ? record.message : ""}`.toLowerCase();
+}
 
 export async function requestLetterDownloadCode(
   client: LetterDownloadCodeClient,
@@ -33,7 +38,7 @@ export async function requestLetterDownloadCode(
 export async function verifyLetterDownloadCode(
   client: LetterDownloadCodeClient,
   input: { email: string; code: string },
-): Promise<"authenticated" | "invalid_email" | "invalid_code" | "request_failed"> {
+): Promise<"authenticated" | "invalid_email" | "invalid_code" | "expired" | "request_failed"> {
   const email = normalizeAuthEmail(input.email);
   const token = input.code.trim();
   if (!email) return "invalid_email";
@@ -45,17 +50,12 @@ export async function verifyLetterDownloadCode(
       token,
       type: "email",
     });
-    if (error || !data?.session) return "invalid_code";
+    if (error || !data?.session) {
+      return /expired/.test(errorText(error)) ? "expired" : "invalid_code";
+    }
   } catch (error) {
     logAuthFailure("callback-otp-verification", error);
     return "request_failed";
-  }
-
-  try {
-    const claim = await client.rpc("claim_soul_trace_legacy_records");
-    if (claim.error) logAuthFailure("callback-legacy-claim", claim.error);
-  } catch (error) {
-    logAuthFailure("callback-legacy-claim", error);
   }
 
   return "authenticated";

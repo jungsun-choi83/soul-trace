@@ -36,6 +36,17 @@ function createMockClient(options: {
   return { client, calls, writtenCookies };
 }
 
+test("result-page return skips the bulk legacy claim", async () => {
+  const mock = createMockClient();
+  assert.equal(await authenticateAuthCallback(mock.client, {
+    code: "safe-test-code",
+    tokenHash: null,
+    type: null,
+    skipLegacyClaim: true,
+  }), "authenticated");
+  assert.deepEqual(mock.calls, ["exchange"]);
+});
+
 test("successful PKCE exchange writes the mocked session cookie before claiming", async () => {
   const mock = createMockClient();
   assert.equal(await authenticateAuthCallback(mock.client, {

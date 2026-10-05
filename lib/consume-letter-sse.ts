@@ -18,6 +18,7 @@ export type LetterStreamDonePayload = {
    * 저장 실패·마이그레이션 전 환경에서는 null 이다.
    */
   letterId?: string | null;
+  saveProof?: string | null;
   petId?: string | null;
   generationLocale?: "en" | "ko";
   generationCacheKey?: string;
@@ -99,6 +100,7 @@ export async function consumeLetterSseStream(
           createdAt: typeof rec.createdAt === "string" ? rec.createdAt : null,
           persistenceFailed: rec.persistenceFailed === true,
           letterId: typeof rec.letterId === "string" ? rec.letterId : null,
+          saveProof: typeof rec.saveProof === "string" ? rec.saveProof : null,
           petId: typeof rec.petId === "string" ? rec.petId : null,
           generationLocale:
             rec.generationLocale === "en" || rec.generationLocale === "ko"

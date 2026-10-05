@@ -7,6 +7,7 @@ import {
   requestLetterDownloadCode,
   verifyLetterDownloadCode,
 } from "@/lib/letter-download-auth";
+import { maskEmail } from "@/lib/pending-contact-email";
 import { normalizeAuthEmail } from "@/lib/passwordless-auth";
 import { createSupabaseBrowserAuthClient } from "@/lib/supabase-auth-browser";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -14,17 +15,19 @@ import { useEffect, useId, useRef, useState } from "react";
 
 type LetterDownloadGateProps = {
   open: boolean;
-  initialEmail: string;
+  purpose: "letter" | "visual-memory";
+  pendingEmail?: string | null;
   onClose: () => void;
-  onVerified: () => void;
+  onVerified: () => Promise<"saved" | "save_failed">;
 };
 
-type GateStep = "email" | "code";
+type GateStep = "pending" | "edit" | "code";
 type GateStatus = "idle" | "sending" | "verifying";
 
 export function LetterDownloadGate({
   open,
-  initialEmail,
+  purpose,
+  pendingEmail = "",
   onClose,
   onVerified,
 }: LetterDownloadGateProps) {
@@ -32,27 +35,38 @@ export function LetterDownloadGate({
   const titleId = useId();
   const prefersReducedMotion = useReducedMotion();
   const emailRef = useRef<HTMLInputElement>(null);
-  const codeRef = useRef<HTMLInputElement>(null);
   const requestPending = useRef(false);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
-  const [email, setEmail] = useState(initialEmail);
+  const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [step, setStep] = useState<GateStep>("email");
+  const [step, setStep] = useState<GateStep>("pending");
   const [status, setStatus] = useState<GateStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [resendAvailableAt, setResendAvailableAt] = useState(0);
+  const [, setResendTick] = useState(0);
+  const [choseOtherEmail, setChoseOtherEmail] = useState(false);
   const [wasOpen, setWasOpen] = useState(open);
+  const codeRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const knownEmail = normalizeAuthEmail(pendingEmail ?? "");
 
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setEmail(initialEmail);
+      setEmail(knownEmail ?? "");
       setCode("");
-      setStep("email");
+      setStep(knownEmail ? "pending" : "edit");
       setStatus("idle");
       setError(null);
+      setResendAvailableAt(0);
+      setChoseOtherEmail(false);
       requestPending.current = false;
     }
+  }
+
+  if (open && !choseOtherEmail && knownEmail && email !== knownEmail && step !== "code") {
+    setEmail(knownEmail);
+    setStep("pending");
   }
 
   useEffect(() => {
@@ -71,16 +85,44 @@ export function LetterDownloadGate({
 
   useEffect(() => {
     if (!open) return;
-    const field = step === "code" ? codeRef.current : emailRef.current;
+    const field = step === "code" ? codeRefs.current[0] : step === "edit" ? emailRef.current : null;
     field?.focus();
+    field?.scrollIntoView({ block: "center" });
   }, [open, step]);
+
+  useEffect(() => {
+    if (Date.now() >= resendAvailableAt) return;
+    const timer = window.setInterval(() => {
+      setResendTick((value) => value + 1);
+      if (Date.now() >= resendAvailableAt) window.clearInterval(timer);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendAvailableAt]);
 
   const bodyFont = lang === "ko" ? "font-ko break-keep" : "font-display-en";
   const emailValid = normalizeAuthEmail(email) !== null;
   const busy = status !== "idle";
+  const maskedEmail = maskEmail(email);
+  const resendSeconds = Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000));
+  const resendLabel = resendSeconds > 0
+    ? t("result.downloadGate.resendCountdown").replace("%TIME%", `${String(Math.floor(resendSeconds / 60)).padStart(2, "0")}:${String(resendSeconds % 60).padStart(2, "0")}`)
+    : t("result.downloadGate.resendCode");
+
+  const chooseOtherEmail = () => {
+    setChoseOtherEmail(true);
+    setStep("edit");
+    setEmail("");
+    setCode("");
+    setError(null);
+    setStatus("idle");
+  };
 
   const requestCode = async () => {
     if (requestPending.current) return;
+    if (Date.now() < resendAvailableAt) {
+      setError(t("result.downloadGate.resendWait"));
+      return;
+    }
     if (!emailValid) {
       setError(t("result.downloadGate.invalid"));
       return;
@@ -102,6 +144,7 @@ export function LetterDownloadGate({
       if (result === "sent") {
         setStep("code");
         setStatus("idle");
+        setResendAvailableAt(Date.now() + 30_000);
         return;
       }
       setStatus("idle");
@@ -126,14 +169,17 @@ export function LetterDownloadGate({
       const client = createSupabaseBrowserAuthClient();
       const result = await verifyLetterDownloadCode(client, { email, code });
       if (result === "authenticated") {
+        const saved = await onVerified();
         setStatus("idle");
-        onVerified();
+        if (saved === "save_failed") setError(t("result.downloadGate.saveFailed"));
         return;
       }
       setStatus("idle");
       setError(result === "request_failed"
         ? t("result.downloadGate.sendFailed")
-        : t("result.downloadGate.codeInvalid"));
+        : result === "expired"
+          ? t("result.downloadGate.codeExpired")
+          : t("result.downloadGate.codeInvalid"));
     } catch (caught) {
       logAuthFailure("browser-client", caught);
       setStatus("idle");
@@ -147,7 +193,7 @@ export function LetterDownloadGate({
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-[600] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm sm:p-6"
+          className="fixed inset-0 z-[600] flex items-end justify-center bg-black/80 p-3 pb-[max(4.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center sm:p-6"
           style={{ zIndex: 600 }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -184,12 +230,23 @@ export function LetterDownloadGate({
               {t("result.downloadGate.title")}
             </h2>
             <p className="mt-4 whitespace-pre-line text-[15px] font-extralight leading-[1.75] text-[#E7DCC8]">
-              {step === "email" ? t("result.downloadGate.body") : t("result.downloadGate.codeSent")}
+              {step === "code"
+                ? t("result.downloadGate.codeSentMasked").replace("%EMAIL%", maskedEmail)
+                : t(purpose === "letter" ? "result.downloadGate.bodyLetter" : "result.downloadGate.bodyVisualMemory")}
             </p>
+            {step === "pending" ? (
+              <p className="mt-4 text-sm leading-relaxed text-[#D8B84C]">{maskedEmail}</p>
+            ) : null}
+            {step === "pending" ? (
+              <p className="mt-3 text-sm font-extralight leading-relaxed text-[#E7DCC8]">
+                {t(purpose === "letter" ? "result.downloadGate.pendingSaveLetter" : "result.downloadGate.pendingSaveVisualMemory")}
+              </p>
+            ) : null}
 
-            {step === "email" ? (
+            {step === "edit" ? (
               <form
                 className="mt-6"
+                noValidate
                 onSubmit={(event) => {
                   event.preventDefault();
                   void requestCode();
@@ -230,69 +287,128 @@ export function LetterDownloadGate({
                 >
                   {status === "sending" ? t("result.downloadGate.sending") : t("result.downloadGate.sendCode")}
                 </button>
+                <p className="mt-4 whitespace-pre-line text-xs font-extralight leading-relaxed text-[#A39888]">
+                  {t("result.downloadGate.notice")}
+                </p>
               </form>
-            ) : (
+            ) : null}
+
+            {step === "pending" ? (
               <form
                 className="mt-6"
+                noValidate
                 onSubmit={(event) => {
                   event.preventDefault();
-                  void verifyCode();
+                  void requestCode();
                 }}
               >
-                <p className="text-sm text-[#D8B84C]">{normalizeAuthEmail(email)}</p>
-                <label htmlFor="letter-download-code" className="mt-4 block text-sm text-[#F3EAD8]">
-                  {t("result.downloadGate.codeLabel")}
-                </label>
-                <input
-                  ref={codeRef}
-                  id="letter-download-code"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={8}
-                  value={code}
-                  onChange={(event) => {
-                    setCode(event.target.value.replace(/\D/g, "").slice(0, 8));
-                    setError(null);
-                  }}
-                  placeholder={t("result.downloadGate.codePlaceholder")}
-                  aria-invalid={error ? true : undefined}
-                  className={`mt-2 w-full rounded-xl border bg-black/40 px-4 py-3.5 text-base tracking-[0.28em] text-[#F3EAD8] outline-none transition placeholder:tracking-normal placeholder:text-[#8C8174] focus:border-[#D8B84C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C] ${
-                    error ? "border-amber-400/80" : "border-[#C7A43A]/40"
-                  }`}
-                />
                 {error ? (
-                  <p role="alert" className="mt-2 text-xs leading-relaxed text-amber-200">
+                  <p role="alert" className="mb-3 text-xs leading-relaxed text-amber-200">
                     {error}
                   </p>
                 ) : null}
                 <button
                   type="submit"
                   disabled={busy}
+                  className="flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#C7A43A] px-5 py-3 text-base font-medium text-[#0B0A08] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] transition hover:bg-[#D4B34A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5C761] active:bg-[#B28F2E] disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  {status === "sending" ? t("result.downloadGate.sending") : t("result.downloadGate.sendCode")}
+                </button>
+                <button
+                  type="button"
+                  onClick={chooseOtherEmail}
+                  className="mt-3 min-h-11 w-full text-sm text-[#D8B84C] underline-offset-4 transition hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C]"
+                >
+                  {t("result.downloadGate.useOtherEmail")}
+                </button>
+              </form>
+            ) : null}
+
+            {step === "code" ? (
+              <form
+                className="mt-6"
+                noValidate
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void verifyCode();
+                }}
+              >
+                <div className="flex justify-between gap-2">
+                  {Array.from({ length: 6 }, (_, index) => (
+                    <input
+                      key={index}
+                      ref={(node) => { codeRefs.current[index] = node; }}
+                      inputMode="numeric"
+                      autoComplete={index === 0 ? "one-time-code" : "off"}
+                      aria-label={t("result.downloadGate.codeLabel")}
+                      maxLength={1}
+                      value={code[index] ?? ""}
+                      disabled={busy}
+                      onChange={(event) => {
+                        const digits = event.target.value.replace(/\D/g, "");
+                        const next = (code.slice(0, index) + digits + code.slice(index + Math.max(digits.length, 1))).replace(/\D/g, "").slice(0, 6);
+                        setCode(next);
+                        setError(null);
+                        const focusAt = Math.min(index + Math.max(digits.length, 1), 5);
+                        if (digits) codeRefs.current[focusAt]?.focus();
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Backspace" && !code[index] && index > 0) {
+                          const next = code.slice(0, index - 1) + code.slice(index);
+                          setCode(next);
+                          codeRefs.current[index - 1]?.focus();
+                        }
+                      }}
+                      onPaste={(event) => {
+                        const digits = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                        if (!digits) return;
+                        event.preventDefault();
+                        setCode(digits);
+                        setError(null);
+                        codeRefs.current[Math.min(digits.length, 5)]?.focus();
+                      }}
+                      className={`h-12 w-11 rounded-xl border bg-black/40 text-center text-lg text-[#F3EAD8] outline-none focus:border-[#D8B84C] ${
+                        error ? "border-amber-400/80" : "border-[#C7A43A]/40"
+                      }`}
+                    />
+                  ))}
+                </div>
+                {error ? (
+                  <p role="alert" className="mt-3 text-xs leading-relaxed text-amber-200">
+                    {error}
+                  </p>
+                ) : null}
+                <button
+                  type="submit"
+                  disabled={busy || code.length < 6}
                   className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#C7A43A] px-5 py-3 text-base font-medium text-[#0B0A08] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] transition hover:bg-[#D4B34A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5C761] active:bg-[#B28F2E] disabled:cursor-not-allowed disabled:opacity-55"
                 >
                   {status === "verifying" ? t("result.downloadGate.verifying") : t("result.downloadGate.confirmCode")}
                 </button>
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || resendSeconds > 0}
                   onClick={() => void requestCode()}
                   className="mt-3 min-h-11 w-full text-sm text-[#D8B84C] underline-offset-4 transition hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C] disabled:opacity-55"
                 >
-                  {t("result.downloadGate.resendCode")}
+                  {resendLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={chooseOtherEmail}
+                  className="mt-1 min-h-11 w-full text-sm text-[#A39888] underline-offset-4 transition hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C]"
+                >
+                  {t("result.downloadGate.useOtherEmail")}
                 </button>
               </form>
-            )}
+            ) : null}
 
-            <p className="mt-4 whitespace-pre-line text-xs font-extralight leading-relaxed text-[#A39888]">
-              {t("result.downloadGate.notice")}
-            </p>
             <button
               type="button"
               onClick={onClose}
               className="mt-5 min-h-11 w-full text-sm text-[#E7DCC8] underline-offset-4 transition hover:text-[#F6E7C1] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C]"
             >
-              {t("result.downloadGate.dismiss")}
+              {t(purpose === "letter" ? "result.downloadGate.dismissLetter" : "result.downloadGate.dismiss")}
             </button>
           </motion.section>
         </motion.div>

@@ -16,7 +16,7 @@ describe("result download and Instagram actions", () => {
 
   it("places download and share directly below the letter before lower result sections", () => {
     const letter = source.indexOf('id="share-card"');
-    const download = source.indexOf("setDownloadGateOpen(true)");
+    const download = source.indexOf("onClick={startLetterSave}");
     const share = source.indexOf("aria-controls=\"letter-share-tray\"");
     const productCards = source.indexOf('aria-label={t("result.productCards.label")}');
 
@@ -24,7 +24,11 @@ describe("result download and Instagram actions", () => {
     assert.ok(download < share);
     assert.ok(share < productCards);
     assert.equal(source.match(/setDownloadGateOpen\(true\)/g)?.length, 1);
-    assert.match(source, /<LetterDownloadGate[\s\S]*onVerified=\{\(\) => \{[\s\S]*handleDownloadImage\(\)/);
+    assert.match(source, /purpose="letter"/);
+    assert.match(source, /pendingEmail=\{pendingEmail\}/);
+    assert.doesNotMatch(source, /initialEmail=\{email\}/);
+    assert.match(source, /saveAndDownloadLetter/);
+    assert.doesNotMatch(source, /onVerified=\{\(\) => \{\s*setDownloadGateOpen\(false\);\s*void handleDownloadImage\(\)/);
     assert.equal(source.match(/action: onInstagramButtonClick/g)?.length, 1);
     assert.doesNotMatch(source, /result\.emotionalBridge/);
   });
@@ -144,20 +148,30 @@ describe("result download and Instagram actions", () => {
     const en = JSON.parse(readFileSync("locales/en.json", "utf8"));
     const ko = JSON.parse(readFileSync("locales/ko.json", "utf8"));
 
-    assert.equal(en.result.keepForever, "Download this letter");
+    assert.equal(en.result.keepForever, "Save and download this letter");
+    assert.equal(en.result.saveHint, "Verify your email to keep it in My Memories.");
+    assert.equal(en.result.viewMemories, "View my memories");
     assert.equal(en.result.instagramShareButton, "Share this letter");
-    assert.equal(ko.result.keepForever, "이 편지 다운로드하기");
+    assert.equal(ko.result.keepForever, "이 편지 저장하고 다운로드");
+    assert.equal(ko.result.saveHint, "이메일 인증 후 내 기록에 보관할 수 있어요.");
+    assert.equal(ko.result.viewMemories, "내 기록 보기");
     assert.equal(ko.result.instagramShareButton, "이 편지 공유하기");
-    assert.equal(ko.result.downloadGate.title, "이 편지부터, 우리 아이의 기록으로.");
-    assert.match(ko.result.downloadGate.body, /지금 만든 편지를 저장하고 다운로드하세요/);
-    assert.match(ko.result.downloadGate.body, /비주얼 메모리도 한곳에서 다시 볼 수 있어요/);
+    assert.equal(ko.result.downloadGate.title, "우리 아이의 기록을 한곳에.");
+    assert.equal(en.result.downloadGate.title, "Keep your pet’s memories in one place.");
+    assert.equal(ko.result.downloadGate.bodyLetter, "지금 만든 편지를 저장하고 다시 찾아보세요.");
+    assert.equal(ko.result.downloadGate.bodyVisualMemory, "지금 만든 비주얼 메모리를 저장하고 다시 찾아보세요.");
+    assert.equal(ko.result.visualMemory.preview.saveWithEmail, "이메일로 저장하고 다운로드");
+    assert.equal(en.result.visualMemory.preview.saveWithEmail, "Continue with email to save and download");
     assert.equal(ko.result.downloadGate.emailLabel, "이메일 주소");
     assert.equal(ko.result.downloadGate.emailPlaceholder, "이메일을 입력해주세요");
-    assert.equal(ko.result.downloadGate.sendCode, "인증번호 받기");
-    assert.match(ko.result.downloadGate.notice, /이메일 인증 후 계정이 만들어집니다/);
-    assert.match(ko.result.downloadGate.notice, /구독은 필요하지 않습니다/);
-    assert.equal(ko.result.downloadGate.dismiss, "지금은 편지만 읽을게요.");
-    assert.equal(en.result.downloadGate.sendCode, "Get a verification code");
-    assert.equal(en.result.downloadGate.dismiss, "I'll just read the letter for now.");
+    assert.equal(ko.result.downloadGate.sendCode, "인증번호 보내기");
+    assert.equal(ko.result.downloadGate.useOtherEmail, "다른 이메일 사용");
+    assert.equal(ko.result.downloadGate.dismissLetter, "지금은 편지만 읽을게요.");
+    assert.match(ko.result.downloadGate.notice, /처음 이용하시면 인증 후 계정이 만들어집니다/);
+    assert.match(ko.result.downloadGate.notice, /기존 이용자는 같은 계정으로 로그인됩니다/);
+    assert.doesNotMatch(ko.result.downloadGate.notice, /구독은 필요하지 않습니다/);
+    assert.equal(ko.result.downloadGate.dismiss, "지금은 결과만 볼게요.");
+    assert.equal(en.result.downloadGate.sendCode, "Send a verification code");
+    assert.equal(en.result.downloadGate.dismiss, "I'll just look at the result for now.");
   });
 });

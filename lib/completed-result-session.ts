@@ -17,6 +17,7 @@ export type SessionGeneratedResult = {
   savedPetName?: string;
   createdAt?: string | null;
   letterId?: string | null;
+  saveProof?: string | null;
   petId?: string | null;
   persistenceFailed?: boolean;
   generationLocale?: Locale;
@@ -88,6 +89,7 @@ function isGeneratedResult(value: unknown): value is SessionGeneratedResult {
     (result.savedPetName === undefined || typeof result.savedPetName === "string") &&
     (result.createdAt === undefined || result.createdAt === null || typeof result.createdAt === "string") &&
     (result.letterId === undefined || result.letterId === null || typeof result.letterId === "string") &&
+    (result.saveProof === undefined || result.saveProof === null || typeof result.saveProof === "string") &&
     (result.petId === undefined || result.petId === null || typeof result.petId === "string") &&
     (result.persistenceFailed === undefined || typeof result.persistenceFailed === "boolean") &&
     (result.generationLocale === undefined || isLocale(result.generationLocale)) &&

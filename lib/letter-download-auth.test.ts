@@ -7,10 +7,8 @@ function mockClient(options: {
   signInError?: unknown;
   verifyError?: unknown;
   session?: unknown | null;
-  claimError?: unknown;
-} = {}): { client: LetterDownloadCodeClient; otp: unknown[]; claims: number } {
+} = {}): { client: LetterDownloadCodeClient; otp: unknown[] } {
   const otp: unknown[] = [];
-  let claims = 0;
   const client: LetterDownloadCodeClient = {
     auth: {
       async signInWithOtp(input) {
@@ -24,18 +22,11 @@ function mockClient(options: {
         };
       },
     },
-    async rpc() {
-      claims += 1;
-      return { error: options.claimError ?? null };
-    },
   };
   return {
     client,
     get otp() {
       return otp;
-    },
-    get claims() {
-      return claims;
     },
   };
 }
@@ -69,23 +60,25 @@ test("an invalid letter download email never requests a code", async () => {
   assert.deepEqual(mock.otp, []);
 });
 
-test("a valid letter download code claims existing records and can save the letter", async () => {
+test("a valid letter download code authenticates without claiming older records", async () => {
   const mock = mockClient();
   assert.equal(await verifyLetterDownloadCode(mock.client, {
     email: "guardian@example.com",
     code: " 123456 ",
   }), "authenticated");
-  assert.equal(mock.claims, 1);
+  assert.equal("rpc" in mock.client, false);
 });
 
-test("a wrong letter download code does not claim records", async () => {
-  const mock = mockClient({ verifyError: new Error("invalid") });
-  assert.equal(await verifyLetterDownloadCode(mock.client, {
+test("a wrong or expired letter download code does not authenticate", async () => {
+  assert.equal(await verifyLetterDownloadCode(mockClient({ verifyError: new Error("invalid") }).client, {
     email: "guardian@example.com",
     code: "123456",
   }), "invalid_code");
-  assert.equal(mock.claims, 0);
-  assert.equal(await verifyLetterDownloadCode(mock.client, {
+  assert.equal(await verifyLetterDownloadCode(mockClient({ verifyError: { code: "otp_expired", message: "Token has expired" } }).client, {
+    email: "guardian@example.com",
+    code: "123456",
+  }), "expired");
+  assert.equal(await verifyLetterDownloadCode(mockClient().client, {
     email: "guardian@example.com",
     code: "12",
   }), "invalid_code");
