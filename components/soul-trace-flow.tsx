@@ -139,6 +139,30 @@ const ETERNAL_BEAM_YOUTUBE_URL = getEternalBeamYoutubeUrl();
 const TIKTOK_WEBSITE_URL = "https://www.tiktok.com/login";
 const KAKAOTALK_WEBSITE_URL = "https://accounts.kakao.com/login";
 
+async function waitForAiGenerationResult(
+  kind: "letter" | "visual_memory",
+  jobId: string,
+  email: string | null,
+  onStatus: (status: "queued" | "processing") => void,
+): Promise<Record<string, unknown>> {
+  for (let attempt = 0; attempt < 240; attempt += 1) {
+    const params = new URLSearchParams({ kind, jobId });
+    if (email) params.set("email", email);
+    const response = await fetch(`/api/ai-generation/status?${params.toString()}`, { cache: "no-store" });
+    const payload = await response.json().catch(() => null) as {
+      status?: string;
+      result?: Record<string, unknown>;
+      error?: string;
+    } | null;
+    if (!response.ok) throw new Error(payload?.error ?? "Generation status could not be checked.");
+    if (payload?.status === "succeeded" && payload.result) return payload.result;
+    if (payload?.status === "failed") throw new Error(payload.error ?? "Generation could not be completed.");
+    if (payload?.status === "queued" || payload?.status === "processing") onStatus(payload.status);
+    await new Promise((resolve) => window.setTimeout(resolve, 3_000));
+  }
+  throw new Error("Generation is taking longer than expected. Please check again shortly.");
+}
+
 function KakaoTalkMark() {
   return (
     <span
@@ -323,6 +347,7 @@ export function SoulTraceFlow({
   const [manualDownloadNotice, setManualDownloadNotice] = useState(false);
   const authSession = useAuthSession();
   const letterSaveLock = useRef(false);
+  const letterSubmissionPendingRef = useRef(false);
   const [shareableFile, setShareableFile] = useState<File | null>(null);
   const [letterThemeId, setLetterThemeId] = useState<LetterThemeId>(() => {
     if (typeof window === "undefined") return DEFAULT_LETTER_THEME_ID;
@@ -358,6 +383,10 @@ export function SoulTraceFlow({
   );
   const resultStorageKey = useMemo(
     () => completedResultKey(mode, serviceChannel),
+    [mode, serviceChannel],
+  );
+  const pendingGenerationStorageKey = useMemo(
+    () => `soul-trace-pending-generation:${mode}:${serviceChannel ?? "default"}`,
     [mode, serviceChannel],
   );
   const channelBackground = serviceChannelBackground(serviceChannel);
@@ -870,7 +899,60 @@ export function SoulTraceFlow({
     window.requestAnimationFrame(() => privacyTriggerRef.current?.focus());
   }, []);
 
+  useEffect(() => {
+    if (result || isLoading || typeof window === "undefined") return;
+    let pending: { jobId?: string; email?: string } | null = null;
+    try {
+      const raw = window.sessionStorage.getItem(pendingGenerationStorageKey);
+      pending = raw ? JSON.parse(raw) as { jobId?: string; email?: string } : null;
+    } catch {
+      pending = null;
+    }
+    if (!pending?.jobId || !pending.email) return;
+    let cancelled = false;
+    setIsLoading(true);
+    setGenerationLoadingMessage(
+      lang === "ko"
+        ? "편지가 생성될 때까지 기다려 주세요. 다시 제출하지 않아도 됩니다."
+        : "Your letter is waiting to be created. You do not need to submit again.",
+    );
+    void waitForAiGenerationResult("letter", pending.jobId, pending.email, (status) => {
+      if (cancelled) return;
+      setGenerationLoadingMessage(
+        status === "queued"
+          ? (lang === "ko" ? "편지가 생성될 때까지 기다려 주세요. 다시 제출하지 않아도 됩니다." : "Your letter is waiting to be created. You do not need to submit again.")
+          : (lang === "ko" ? "편지를 만들고 있어요…" : "Creating your letter…"),
+      );
+    }).then((rawData) => {
+      if (cancelled) return;
+      const data = rawData as unknown as GeneratedResult;
+      const completedResult: GeneratedResult = {
+        ...data,
+        personalityTags: normalizePersonalityTags(data.personalityTags, lang),
+        heroImageUrl: data.heroImageUrl ?? null,
+        heroImageSkipped: data.heroImageSkipped === true,
+        savedPetName: typeof data.savedPetName === "string" ? data.savedPetName : displayPetName,
+        generationLocale: data.generationLocale ?? lang,
+        createdAt: data.createdAt ?? new Date().toISOString(),
+      };
+      persistCompletedResult(completedResult);
+      clearQuestionnaireDraft();
+      setResult(completedResult);
+      setResultLocale(completedResult.generationLocale ?? lang);
+      window.sessionStorage.removeItem(pendingGenerationStorageKey);
+    }).catch((err) => {
+      if (!cancelled) setError(userFacingErrorMessage(err, t("errors.generateFailed")));
+    }).finally(() => {
+      if (!cancelled) {
+        setIsLoading(false);
+        setGenerationLoadingMessage(null);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [clearQuestionnaireDraft, displayPetName, isLoading, lang, pendingGenerationStorageKey, persistCompletedResult, result, t]);
+
   const submitAnswers = async () => {
+    if (letterSubmissionPendingRef.current) return;
     setShowValidationErrors(true);
     if (!privacyConsent) {
       privacyTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -887,6 +969,10 @@ export function SoulTraceFlow({
       setError(t("errors.profileIncomplete"));
       return;
     }
+
+    // React state updates are not synchronous, so close the same-tick click gap.
+    // The durable server job remains the authoritative duplicate protection.
+    letterSubmissionPendingRef.current = true;
 
     setError(null);
     await primeResultBgm(bgmPrimeRef);
@@ -923,7 +1009,7 @@ export function SoulTraceFlow({
       );
 
       generationTimingRef.current = { requestStartedAt: performance.now() };
-      const response = await fetch("/api/generate-letter", {
+      let response = await fetch("/api/generate-letter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -947,6 +1033,37 @@ export function SoulTraceFlow({
       if (process.env.NODE_ENV === "development") {
         console.debug("[letter-timing] SSE response opened", {
           elapsedMs: Math.round(performance.now() - generationTimingRef.current.requestStartedAt),
+        });
+      }
+
+      if (response.status === 202) {
+        const queued = await response.json() as { jobId?: string; status?: string };
+        if (!queued.jobId) throw new Error(t("errors.generateFailed"));
+        try {
+          window.sessionStorage.setItem(
+            pendingGenerationStorageKey,
+            JSON.stringify({ jobId: queued.jobId, email: normalizedEmail }),
+          );
+        } catch {
+          // Polling remains active even when session storage is unavailable.
+        }
+        setGenerationLoadingMessage(
+          lang === "ko"
+            ? "편지가 생성될 때까지 기다려 주세요. 다시 제출하지 않아도 됩니다."
+            : "Your letter is waiting to be created. You do not need to submit again.",
+        );
+        const completed = await waitForAiGenerationResult(
+          "letter",
+          queued.jobId,
+          normalizedEmail,
+          (status) => setGenerationLoadingMessage(
+            status === "queued"
+              ? (lang === "ko" ? "편지가 생성될 때까지 기다려 주세요. 다시 제출하지 않아도 됩니다." : "Your letter is waiting to be created. You do not need to submit again.")
+              : (lang === "ko" ? "편지를 만들고 있어요…" : "Creating your letter…"),
+          ),
+        );
+        response = new Response(JSON.stringify(completed), {
+          headers: { "Content-Type": "application/json" },
         });
       }
 
@@ -1049,6 +1166,7 @@ export function SoulTraceFlow({
             };
             persistCompletedResult(completedResult);
             clearQuestionnaireDraft();
+            window.sessionStorage.removeItem(pendingGenerationStorageKey);
             setResult(completedResult);
             setResultLocale(data.generationLocale ?? lang);
             void persistStampSelection(data.letterId);
@@ -1067,6 +1185,7 @@ export function SoulTraceFlow({
         };
         persistCompletedResult(completedResult);
         clearQuestionnaireDraft();
+        window.sessionStorage.removeItem(pendingGenerationStorageKey);
         setResult(completedResult);
         setResultLocale(data.generationLocale ?? lang);
         void persistStampSelection(data.letterId);
@@ -1078,6 +1197,7 @@ export function SoulTraceFlow({
       setAnimateFreshLetter(false);
       setError(userFacingErrorMessage(err, t("errors.generateFailed")));
     } finally {
+      letterSubmissionPendingRef.current = false;
       setIsLoading(false);
       setGenerationLoadingMessage(null);
     }

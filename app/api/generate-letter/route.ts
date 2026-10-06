@@ -54,6 +54,19 @@ import {
   sleep,
 } from "@/lib/supabase-server";
 import { resolvePartnerCode } from "@/lib/partner";
+import {
+  acquireAiGeneration,
+  attachAiGenerationInput,
+  completeAiGeneration,
+  failAiGeneration,
+  guardHttpResponse,
+  OPENAI_CHAT_OPTIONS,
+  OPENAI_IMAGE_OPTIONS,
+  readAiGenerationJob,
+  sha256Hex,
+} from "@/lib/ai-generation-guard";
+import { aiUpstreamHttpResponse } from "@/lib/ai-generation-errors";
+import { scheduleAiGenerationWorker } from "@/lib/ai-generation-worker-trigger";
 import { after } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -101,6 +114,10 @@ type RequestBody = {
   partnerCode?: string;
   channel?: string;
 };
+
+// Deployment assumption: the Vercel project permits >=240s functions. OpenAI
+// calls are capped at 45s (chat) / 90s (image), with no SDK retries.
+export const maxDuration = 240;
 
 const PET_TYPES: PetType[] = ["dog", "cat", "rabbit", "hamster", "bird", "other"];
 const LETTER_RECIPIENTS: LetterRecipient[] = [
@@ -300,7 +317,7 @@ async function correctLetterLanguageOnce(
         }),
       },
     ],
-  });
+  }, OPENAI_CHAT_OPTIONS);
 
   const content = completion.choices[0]?.message?.content;
   if (!content) return null;
@@ -507,7 +524,7 @@ async function extractPersonalityFields(
         ].join("\n"),
       },
     ],
-  });
+  }, OPENAI_CHAT_OPTIONS);
   const content = completion.choices[0]?.message?.content;
   if (!content) {
     return {
@@ -902,6 +919,7 @@ function sseEncode(obj: unknown): Uint8Array {
 }
 
 export async function POST(request: Request) {
+  let activeRequestHash: string | null = null;
   const requestStartedAt = performance.now();
   const debugTiming = (stage: string) => {
     if (process.env.NODE_ENV === "development") {
@@ -1100,6 +1118,62 @@ export async function POST(request: Request) {
       }
     }
 
+    // The hash is derived from the complete logical payload, not a browser flag,
+    // so duplicate requests from retries or other tabs converge on one durable job.
+    const aiRequestHash = await sha256Hex(JSON.stringify(body));
+    const workerJobId = request.headers.get("x-soul-trace-ai-job-id")?.trim() ?? "";
+    const workerToken = request.headers.get("x-soul-trace-ai-worker-token") ?? "";
+    const workerAuthorized = Boolean(
+      process.env.AI_GENERATION_WORKER_SECRET &&
+      workerToken &&
+      workerToken === process.env.AI_GENERATION_WORKER_SECRET &&
+      /^[a-f0-9]{64}$/i.test(workerJobId),
+    );
+    const workerJob = workerAuthorized ? await readAiGenerationJob(workerJobId) : null;
+    const isAuthorizedWorkerJob = Boolean(
+      workerJob &&
+      workerJob.request_hash === aiRequestHash &&
+      workerJob.generation_kind === "letter" &&
+      workerJob.status === "processing",
+    );
+
+    if (isAuthorizedWorkerJob) {
+      activeRequestHash = aiRequestHash;
+    } else {
+      const admission = await acquireAiGeneration({
+        request,
+        kind: "letter",
+        requestHash: aiRequestHash,
+        identity: userEmail,
+      });
+      if (admission.decision === "succeeded") {
+        return NextResponse.json(admission.result, {
+          headers: { "X-Idempotent-Replay": "true" },
+        });
+      }
+      if (admission.decision === "acquired" || admission.decision === "queued") {
+        const attached = await attachAiGenerationInput({
+          kind: "letter",
+          requestHash: aiRequestHash,
+          payload: body as unknown as Record<string, unknown>,
+          ownerIdentity: userEmail,
+        });
+        if (!attached) {
+          await failAiGeneration("letter", aiRequestHash, "queue_input_failed");
+          scheduleAiGenerationWorker(request);
+          return Response.json(
+            { error: "Your letter could not be placed in the generation queue. Please try again shortly." },
+            { status: 503, headers: { "Retry-After": "15" } },
+          );
+        }
+      }
+      if (admission.decision === "queued") {
+        scheduleAiGenerationWorker(request, { queuedKnown: true });
+      }
+      if (admission.decision !== "acquired") return guardHttpResponse(admission);
+      activeRequestHash = aiRequestHash;
+    }
+
     const languageInstruction =
       locale === "ko"
         ? [
@@ -1224,7 +1298,7 @@ export async function POST(request: Request) {
                   n: 1,
                   size: "1024x1024",
                   quality: "standard",
-                });
+                }, OPENAI_IMAGE_OPTIONS);
                 const url = img.data?.[0]?.url ?? null;
                 heroImageUrl = url;
                 heroImageSkipped = !url;
@@ -1259,7 +1333,7 @@ export async function POST(request: Request) {
                 },
                 { role: "user", content: channelAwareUserLetterPayload },
               ],
-            });
+            }, OPENAI_CHAT_OPTIONS);
 
             let fullLetter = "";
             let sawFirstLetterChunk = false;
@@ -1362,7 +1436,7 @@ export async function POST(request: Request) {
               });
             }
 
-            send({
+            const completedPayload = {
               type: "done",
               personalityType: personality.personalityType,
               personalitySummary: personality.personalitySummary,
@@ -1381,10 +1455,15 @@ export async function POST(request: Request) {
               petId: saveResult.ok ? saveResult.petId : requestedPetId,
               generationLocale: locale,
               generationCacheKey: generationKey,
-            });
+            };
+            await completeAiGeneration("letter", aiRequestHash, completedPayload);
+            scheduleAiGenerationWorker(request);
+            send(completedPayload);
             controller.close();
           } catch (error) {
             logOpenAIStageFailure(openAIStage, error);
+            await failAiGeneration("letter", aiRequestHash, "generation_failed");
+            scheduleAiGenerationWorker(request);
             send({ type: "error", message: friendlyGenerateError(locale) });
             controller.close();
           }
@@ -1421,7 +1500,7 @@ export async function POST(request: Request) {
           content: channelAwareUserPayload,
         },
       ],
-    });
+    }, OPENAI_CHAT_OPTIONS);
 
     let parsed: ParsedResponse;
     let heroImageUrl: string | null = null;
@@ -1435,7 +1514,11 @@ export async function POST(request: Request) {
         throw reason;
       }
       const maybeParsed = parseLetterCompletion(completion, locale);
-      if (maybeParsed instanceof NextResponse) return maybeParsed;
+      if (maybeParsed instanceof NextResponse) {
+        await failAiGeneration("letter", aiRequestHash, "invalid_ai_response");
+        scheduleAiGenerationWorker(request);
+        return maybeParsed;
+      }
       parsed = maybeParsed;
       heroImageUrl = existingHeroImageUrl;
       heroImageSkipped = !heroImageUrl;
@@ -1447,7 +1530,11 @@ export async function POST(request: Request) {
         throw reason;
       }
       const maybeParsed = parseLetterCompletion(completion, locale);
-      if (maybeParsed instanceof NextResponse) return maybeParsed;
+      if (maybeParsed instanceof NextResponse) {
+        await failAiGeneration("letter", aiRequestHash, "invalid_ai_response");
+        scheduleAiGenerationWorker(request);
+        return maybeParsed;
+      }
       parsed = maybeParsed;
       heroImageUrl = null;
       heroImageSkipped = true;
@@ -1464,7 +1551,7 @@ export async function POST(request: Request) {
         n: 1,
         size: "1024x1024",
         quality: "standard",
-      });
+      }, OPENAI_IMAGE_OPTIONS);
 
       const [letterSettled, imageSettled] = await Promise.allSettled([letterPromise, imagePromise]);
 
@@ -1474,7 +1561,11 @@ export async function POST(request: Request) {
 
       const completion = letterSettled.value;
       const maybeParsed = parseLetterCompletion(completion, locale);
-      if (maybeParsed instanceof NextResponse) return maybeParsed;
+      if (maybeParsed instanceof NextResponse) {
+        await failAiGeneration("letter", aiRequestHash, "invalid_ai_response");
+        scheduleAiGenerationWorker(request);
+        return maybeParsed;
+      }
       parsed = maybeParsed;
 
       if (imageSettled.status === "fulfilled") {
@@ -1503,6 +1594,8 @@ export async function POST(request: Request) {
         allowedCrossLanguageText,
       )) ?? letterStructure;
     if (!letterMatchesLocale(letterStructure, locale, allowedCrossLanguageText)) {
+      await failAiGeneration("letter", aiRequestHash, "language_validation_failed");
+      scheduleAiGenerationWorker(request);
       return NextResponse.json({ error: friendlyGenerateError(locale) }, { status: 502 });
     }
     const serializedLetter = serializeGeneratedLetter(letterStructure);
@@ -1521,7 +1614,7 @@ export async function POST(request: Request) {
         mode,
         locale,
       );
-      return NextResponse.json({
+      const completedPayload = {
         ...parsed,
         letter: serializedLetter,
         letterStructure,
@@ -1531,7 +1624,10 @@ export async function POST(request: Request) {
         generationLocale: locale,
         generationCacheKey: generationKey,
         persistenceFailed: !regenerationStored,
-      });
+      };
+      await completeAiGeneration("letter", aiRequestHash, completedPayload);
+      scheduleAiGenerationWorker(request);
+      return NextResponse.json(completedPayload);
     }
 
     const saveResult = await saveProfileAndAnswers(
@@ -1552,6 +1648,8 @@ export async function POST(request: Request) {
       channel,
     );
     if (!saveResult.ok) {
+      await failAiGeneration("letter", aiRequestHash, "persistence_failed");
+      scheduleAiGenerationWorker(request);
       return saveFailureResponse(locale, saveResult.message);
     }
 
@@ -1570,8 +1668,7 @@ export async function POST(request: Request) {
       answers,
     });
 
-    return new NextResponse(
-      JSON.stringify({
+    const completedPayload = {
         ...parsed,
         letter: serializedLetter,
         letterStructure,
@@ -1586,13 +1683,21 @@ export async function POST(request: Request) {
         petId: saveResult.petId,
         generationLocale: locale,
         generationCacheKey: generationKey,
-      }),
+    };
+    await completeAiGeneration("letter", aiRequestHash, completedPayload);
+    scheduleAiGenerationWorker(request);
+    return new NextResponse(
+      JSON.stringify(completedPayload),
       {
         status: 200,
         headers: { "Content-Type": "application/json; charset=utf-8" },
       },
     );
-  } catch {
-    return NextResponse.json({ error: friendlyGenerateError("ko") }, { status: 500 });
+  } catch (error) {
+    if (activeRequestHash) {
+      await failAiGeneration("letter", activeRequestHash, "generation_failed");
+      scheduleAiGenerationWorker(request);
+    }
+    return aiUpstreamHttpResponse(error, friendlyGenerateError("ko"));
   }
 }
