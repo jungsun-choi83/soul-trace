@@ -186,6 +186,7 @@ export function VisualMemoryPromo({
   const [generatedTitle, setGeneratedTitle] = useState("");
   const [generatedCaption, setGeneratedCaption] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStatusMessage, setGenerationStatusMessage] = useState<string | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -199,6 +200,8 @@ export function VisualMemoryPromo({
   const saveLock = useRef(false);
   const persistAttempted = useRef<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const generationPendingRef = useRef(false);
+  const pendingGenerationStorageKey = `soul-trace-pending-visual-memory:${generationContext.mode}`;
   const polaroidRef = useRef<HTMLElement>(null);
   const ownedPhotoUrlRef = useRef<string | null>(null);
   const activePhotoUrl = selectedPhotoUrl ?? (
@@ -208,6 +211,10 @@ export function VisualMemoryPromo({
   const sceneIcons = generationContext.mode === "living" ? LIVING_SCENE_ICONS : MEMORIAL_SCENE_ICONS;
   const memoryCopy = previewCopy.memory[generationContext.mode];
   const isCustomScene = selectedSceneId === "custom-scene" || selectedSceneId === "custom-memory";
+  const queueWaitingMessage = language === "ko"
+    ? "추억 장면이 생성될 때까지 기다려 주세요. 다시 제출하지 않아도 됩니다."
+    : "Your Visual Memory is waiting to be created. You do not need to submit again.";
+  const creatingMessage = language === "ko" ? "추억 장면을 만들고 있어요…" : "Creating your Visual Memory…";
 
   useEffect(() => {
     if (!previewOpen) return;
@@ -224,6 +231,60 @@ export function VisualMemoryPromo({
     };
   }, []);
 
+  useEffect(() => {
+    if (!previewOpen || generatedImageUrl) return;
+    let jobId: string | null = null;
+    try {
+      const raw = window.sessionStorage.getItem(pendingGenerationStorageKey);
+      jobId = raw ? (JSON.parse(raw) as { jobId?: string }).jobId ?? null : null;
+    } catch {
+      jobId = null;
+    }
+    if (!jobId) return;
+    let cancelled = false;
+    setIsGenerating(true);
+    setGenerationStatusMessage(queueWaitingMessage);
+    void (async () => {
+      for (let attempt = 0; attempt < 240; attempt += 1) {
+        const response = await fetch(
+          `/api/ai-generation/status?kind=visual_memory&jobId=${encodeURIComponent(jobId!)}`,
+          { cache: "no-store" },
+        );
+        const payload = await response.json() as {
+          status?: string;
+          result?: { imageDataUrl?: string; title?: string; caption?: string };
+          error?: string;
+        };
+        if (!response.ok) throw new Error(payload.error || previewCopy.generationError);
+        if (payload.status === "succeeded" && payload.result?.imageDataUrl) {
+          if (cancelled) return;
+          setGeneratedImageUrl(payload.result.imageDataUrl);
+          setGeneratedTitle(payload.result.title?.trim() || previewCopy.resultTitle);
+          setGeneratedCaption(payload.result.caption?.trim() || "");
+          setStep(4);
+          window.sessionStorage.removeItem(pendingGenerationStorageKey);
+          return;
+        }
+        if (payload.status === "failed") throw new Error(payload.error || previewCopy.generationError);
+        if (!cancelled) {
+          setGenerationStatusMessage(payload.status === "processing"
+            ? creatingMessage
+            : queueWaitingMessage);
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 3_000));
+      }
+      throw new Error(previewCopy.generationError);
+    })().catch((error) => {
+      if (!cancelled) setGenerationError(error instanceof Error ? error.message : previewCopy.generationError);
+    }).finally(() => {
+      if (!cancelled) {
+        setIsGenerating(false);
+        setGenerationStatusMessage(null);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [creatingMessage, generatedImageUrl, pendingGenerationStorageKey, previewCopy, previewOpen, queueWaitingMessage]);
+
   const selectPhoto = (file: File | null) => {
     if (!file) return;
     const supportedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -239,17 +300,19 @@ export function VisualMemoryPromo({
     setPhotoError(null);
   };
 
-  const generateVisualMemory = async () => {
+  const generateVisualMemory = async (forceNew = false) => {
     if (
       !selectedPhoto ||
       !selectedSceneId ||
       !memoryDetail.trim() ||
       (isCustomScene && !customSceneDescription.trim()) ||
-      isGenerating
+      isGenerating || generationPendingRef.current
     ) return;
 
+    generationPendingRef.current = true;
     setIsGenerating(true);
     setGenerationError(null);
+    setGenerationStatusMessage(null);
     try {
       const formData = new FormData();
       formData.append("photo", selectedPhoto);
@@ -260,15 +323,23 @@ export function VisualMemoryPromo({
       if (generationContext.petName.trim()) formData.append("petName", generationContext.petName.trim());
       if (generationContext.petType.trim()) formData.append("petType", generationContext.petType.trim());
       if (generationContext.breed.trim()) formData.append("breed", generationContext.breed.trim());
+      if (forceNew) formData.append("generationNonce", crypto.randomUUID());
 
       const response = await fetch("/api/visual-memory", {
         method: "POST",
         body: formData,
       });
-      const payload = await response.json() as {
+      let payload = await response.json() as {
         imageDataUrl?: string;
         title?: string;
         caption?: string;
+        status?: string;
+        jobId?: string;
+        result?: {
+          imageDataUrl?: string;
+          title?: string;
+          caption?: string;
+        };
         error?: string;
         resultId?: string;
         saveProof?: string | null;
@@ -276,7 +347,36 @@ export function VisualMemoryPromo({
       if (payload.error === "additional_generation_unavailable") {
         throw new Error(t("result.visualMemory.preview.additionalGenerationUnavailable"));
       }
-      if (!response.ok || !payload.imageDataUrl) {
+      if (response.status === 202) {
+        if (!payload.jobId) throw new Error(previewCopy.generationError);
+        try {
+          window.sessionStorage.setItem(pendingGenerationStorageKey, JSON.stringify({ jobId: payload.jobId }));
+        } catch {
+          // Active polling still works when session storage is unavailable.
+        }
+        setGenerationStatusMessage(queueWaitingMessage);
+        for (let attempt = 0; attempt < 240; attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 3_000));
+          const statusResponse = await fetch(
+            `/api/ai-generation/status?kind=visual_memory&jobId=${encodeURIComponent(payload.jobId)}`,
+            { cache: "no-store" },
+          );
+          const statusPayload = await statusResponse.json() as typeof payload;
+          if (!statusResponse.ok) throw new Error(statusPayload.error || previewCopy.generationError);
+          if (statusPayload.status === "succeeded" && statusPayload.result?.imageDataUrl) {
+            payload = { ...statusPayload, ...statusPayload.result };
+            break;
+          }
+          if (statusPayload.status === "failed") throw new Error(statusPayload.error || previewCopy.generationError);
+          setGenerationStatusMessage(
+            statusPayload.status === "processing"
+              ? creatingMessage
+              : queueWaitingMessage,
+          );
+          if (attempt === 239) throw new Error(previewCopy.generationError);
+        }
+      }
+      if ((response.status !== 202 && !response.ok) || !payload.imageDataUrl) {
         throw new Error(payload.error || previewCopy.generationError);
       }
 
@@ -288,10 +388,17 @@ export function VisualMemoryPromo({
       setGeneratedTitle(payload.title?.trim() || previewCopy.scenes[selectedSceneId]);
       setGeneratedCaption(payload.caption?.trim() || memoryDetail.trim());
       setStep(4);
+      try {
+        window.sessionStorage.removeItem(pendingGenerationStorageKey);
+      } catch {
+        // Result remains available in component state.
+      }
     } catch (error) {
       setGenerationError(error instanceof Error ? error.message : previewCopy.generationError);
     } finally {
+      generationPendingRef.current = false;
       setIsGenerating(false);
+      setGenerationStatusMessage(null);
     }
   };
 
@@ -739,6 +846,11 @@ export function VisualMemoryPromo({
                     {generationError}
                   </p>
                 ) : null}
+                {generationStatusMessage ? (
+                  <p role="status" className="mt-4 rounded-xl border border-[#D8B84C]/25 bg-[#D8B84C]/[0.06] px-4 py-3 text-sm leading-relaxed text-[#D8C68D]">
+                    {generationStatusMessage}
+                  </p>
+                ) : null}
 
                 <div className="mt-5 grid grid-cols-2 gap-3">
                   <button
@@ -752,7 +864,7 @@ export function VisualMemoryPromo({
                   <button
                     type="button"
                     disabled={!memoryDetail.trim() || (isCustomScene && !customSceneDescription.trim()) || isGenerating}
-                    onClick={generateVisualMemory}
+                    onClick={() => void generateVisualMemory()}
                     className="inline-flex items-center justify-center rounded-full border border-[#D8B84C]/80 bg-[#D8B84C] px-4 py-3 text-center text-sm font-medium text-[#17130B] shadow-[0_8px_22px_rgba(216,184,76,0.16)] disabled:cursor-not-allowed disabled:opacity-55"
                   >
                     {isGenerating
@@ -884,7 +996,7 @@ export function VisualMemoryPromo({
                     <button
                       type="button"
                       disabled={isGenerating}
-                      onClick={generateVisualMemory}
+                      onClick={() => void generateVisualMemory(true)}
                       className="mt-3 inline-flex min-h-12 w-full items-center justify-center rounded-full border border-[#C7A43A]/60 bg-black/20 px-5 py-3 text-sm font-medium text-[#E7D8BC] transition hover:border-[#D8B84C] hover:bg-[#D8B84C]/10 disabled:cursor-not-allowed disabled:opacity-55"
                     >
                       {isGenerating
