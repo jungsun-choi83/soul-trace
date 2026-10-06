@@ -49,6 +49,9 @@ test("deployment guide records the exact manual migration order and secure-mode 
     "migration_enable_life_archive_memory_writes.sql",
     "migration_add_life_archive_photos.sql",
     "migration_add_persistent_letter_result.sql",
+    "migration_ai_generation_safety.sql",
+    "migration_ai_generation_queue.sql",
+    "migration_ai_generation_supabase_cron.sql",
   ];
   let prior = -1;
   for (const name of names) {
@@ -62,6 +65,9 @@ test("deployment guide records the exact manual migration order and secure-mode 
   assert.match(guide, /Temporary Life Archive mode remains available/);
   assert.match(guide, /claim_soul_trace_legacy_records/);
   assert.match(guide, /preview and production as separate Supabase environments/i);
+  assert.match(guide, /pg_cron/);
+  assert.match(guide, /pg_net/);
+  assert.match(guide, /vault/i);
 });
 
 test("partner migrations preserve rows and produce the canonical four-type model", () => {

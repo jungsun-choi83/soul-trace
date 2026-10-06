@@ -1,7 +1,25 @@
 import { validatePetPhotoFile } from "@/lib/pet-photo";
+import {
+  acquireAiGeneration,
+  aiGenerationIdempotencyKey,
+  attachAiGenerationInput,
+  completeAiGeneration,
+  failAiGeneration,
+  guardHttpResponse,
+  OPENAI_CHAT_OPTIONS,
+  OPENAI_IMAGE_OPTIONS,
+  readAiGenerationJob,
+  sha256Hex,
+} from "@/lib/ai-generation-guard";
+import { aiUpstreamHttpResponse } from "@/lib/ai-generation-errors";
+import { scheduleAiGenerationWorker } from "@/lib/ai-generation-worker-trigger";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import OpenAI, { toFile } from "openai";
 
 export const runtime = "nodejs";
+// Deployment assumption: the Vercel project permits >=240s functions. OpenAI
+// calls are capped at 45s (chat) / 90s (image), with no SDK retries.
+export const maxDuration = 240;
 
 type VisualMemoryMode = "living" | "memorial";
 
@@ -155,7 +173,7 @@ async function generatePolaroidCopy({
         }),
       },
     ],
-  });
+  }, OPENAI_CHAT_OPTIONS);
 
   const content = completion.choices[0]?.message.content;
   if (!content) throw new Error("No Polaroid copy was returned.");
@@ -279,6 +297,7 @@ function isModelAccessError(error: unknown): boolean {
 }
 
 export async function POST(request: Request) {
+  let activeRequestHash: string | null = null;
   const requestStartedAt = Date.now();
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -298,6 +317,7 @@ export async function POST(request: Request) {
     const petName = readOptionalText(formData, "petName", 200);
     const petType = readOptionalText(formData, "petType", 200);
     const breed = readOptionalText(formData, "breed", 200);
+    const generationNonce = readOptionalText(formData, "generationNonce", 100);
 
     if (!(photo instanceof File) || validatePetPhotoFile(photo)) {
       return Response.json({ error: "A valid pet photo is required." }, { status: 400 });
@@ -362,8 +382,99 @@ export async function POST(request: Request) {
       "Show one pet only unless the supplied memory explicitly requires otherwise.",
     ].join("\n\n");
 
-    const openai = new OpenAI({ apiKey });
     const referenceBytes = await photo.arrayBuffer();
+    const photoHash = await sha256Hex(new Uint8Array(referenceBytes));
+    const requestHash = await sha256Hex(JSON.stringify({
+      photoHash,
+      selectedSceneId,
+      memoryDetail,
+      customSceneDescription,
+      mode,
+      petName,
+      petType,
+      breed,
+      generationNonce,
+    }));
+    const workerJobId = request.headers.get("x-soul-trace-ai-job-id")?.trim() ?? "";
+    const workerToken = request.headers.get("x-soul-trace-ai-worker-token") ?? "";
+    const workerAuthorized = Boolean(
+      process.env.AI_GENERATION_WORKER_SECRET &&
+      workerToken &&
+      workerToken === process.env.AI_GENERATION_WORKER_SECRET &&
+      /^[a-f0-9]{64}$/i.test(workerJobId),
+    );
+    const workerJob = workerAuthorized ? await readAiGenerationJob(workerJobId) : null;
+    const isAuthorizedWorkerJob = Boolean(
+      workerJob &&
+      workerJob.request_hash === requestHash &&
+      workerJob.generation_kind === "visual_memory" &&
+      workerJob.status === "processing",
+    );
+
+    if (isAuthorizedWorkerJob) {
+      activeRequestHash = requestHash;
+    } else {
+      const admission = await acquireAiGeneration({
+        request,
+        kind: "visual_memory",
+        requestHash,
+      });
+      if (admission.decision === "succeeded") {
+        return Response.json(admission.result, { headers: { "X-Idempotent-Replay": "true" } });
+      }
+      if (admission.decision === "acquired" || admission.decision === "queued") {
+        const jobId = admission.jobId ?? await aiGenerationIdempotencyKey("visual_memory", requestHash);
+        const storagePath = `visual-memory/${jobId}.input`;
+        const storage = createSupabaseServerClient();
+        const upload = storage
+          ? await storage.storage.from("ai-generation-inputs").upload(storagePath, referenceBytes, {
+              contentType: photo.type || "image/jpeg",
+              upsert: true,
+            })
+          : { error: new Error("Supabase is not configured") };
+        if (upload.error) {
+          await failAiGeneration("visual_memory", requestHash, "queue_input_upload_failed");
+          scheduleAiGenerationWorker(request);
+          console.error("[visual-memory] queued input upload failed", { code: upload.error.message });
+          return Response.json(
+            { error: "Your Visual Memory request could not be queued. Please try again shortly." },
+            { status: 503, headers: { "Retry-After": "15" } },
+          );
+        }
+        const attached = await attachAiGenerationInput({
+          kind: "visual_memory",
+          requestHash,
+          storagePath,
+          payload: {
+            selectedSceneId,
+            memoryDetail,
+            customSceneDescription,
+            mode,
+            petName,
+            petType,
+            breed,
+            photoName: photo.name || "pet-reference.jpg",
+            photoType: photo.type || "image/jpeg",
+            generationNonce,
+          },
+        });
+        if (!attached) {
+          await failAiGeneration("visual_memory", requestHash, "queue_input_failed");
+          scheduleAiGenerationWorker(request);
+          return Response.json(
+            { error: "Your Visual Memory request could not be queued. Please try again shortly." },
+            { status: 503, headers: { "Retry-After": "15" } },
+          );
+        }
+      }
+      if (admission.decision === "queued") {
+        scheduleAiGenerationWorker(request, { queuedKnown: true });
+      }
+      if (admission.decision !== "acquired") return guardHttpResponse(admission);
+      activeRequestHash = requestHash;
+    }
+
+    const openai = new OpenAI({ apiKey });
     const generateWithModel = async (model: "gpt-image-2.5-sunburst" | "gpt-image-2") =>
       openai.images.edit({
         model,
@@ -376,7 +487,7 @@ export async function POST(request: Request) {
         quality: "medium",
         output_format: "jpeg",
         output_compression: 85,
-      });
+      }, OPENAI_IMAGE_OPTIONS);
 
     let modelUsed: "gpt-image-2.5-sunburst" | "gpt-image-2" = "gpt-image-2.5-sunburst";
     let result;
@@ -391,6 +502,8 @@ export async function POST(request: Request) {
 
     const imageBase64 = result.data?.[0]?.b64_json;
     if (!imageBase64) {
+      await failAiGeneration("visual_memory", requestHash, "empty_image_result");
+      scheduleAiGenerationWorker(request);
       return Response.json({ error: "No Visual Memory image was returned." }, { status: 502 });
     }
 
@@ -421,19 +534,26 @@ export async function POST(request: Request) {
       requestDurationMs: Date.now() - requestStartedAt,
     });
 
-    return Response.json({
+    const completedPayload = {
       imageDataUrl: `data:image/jpeg;base64,${imageBase64}`,
       modelUsed,
       title: polaroidCopy.title,
       caption: polaroidCopy.caption,
       captionModelUsed: captionResult?.modelUsed ?? null,
       captionFallback,
-    });
+    };
+    await completeAiGeneration("visual_memory", requestHash, completedPayload);
+    scheduleAiGenerationWorker(request);
+    return Response.json(completedPayload);
   } catch (error) {
+    if (activeRequestHash) {
+      await failAiGeneration("visual_memory", activeRequestHash, "generation_failed");
+      scheduleAiGenerationWorker(request);
+    }
     console.error("[visual-memory] Image generation failed.", error);
-    return Response.json(
-      { error: "Visual Memory could not be generated. Please try again." },
-      { status: 502 },
+    return aiUpstreamHttpResponse(
+      error,
+      "Visual Memory could not be generated. Please try again.",
     );
   }
 }
