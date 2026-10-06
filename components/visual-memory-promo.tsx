@@ -2,6 +2,10 @@ import Image from "next/image";
 import { toPng } from "html-to-image";
 import { HiOutlineCloudArrowUp } from "react-icons/hi2";
 import { useEffect, useRef, useState } from "react";
+import { LetterDownloadGate } from "./letter-download-gate";
+import { useLocale } from "./locale-provider";
+import { useAuthSession } from "./use-auth-session";
+import { clearPendingResultSave, readPendingResultSave, writePendingResultSave } from "@/lib/pending-result-save";
 import { koreanLetterFont } from "./generated-letter-fonts";
 import { LIVING_SCENE_ICONS, MEMORIAL_SCENE_ICONS } from "./visual-memory-scene-icons";
 
@@ -43,6 +47,7 @@ type VisualMemoryPromoProps = {
   previewData: VisualMemoryPreviewData;
   photoFile: File | null;
   generationContext: VisualMemoryGenerationContext;
+  pendingEmail?: string | null;
   previewCopy: {
     title: string;
     intro: string;
@@ -166,6 +171,7 @@ export function VisualMemoryPromo({
   previewData,
   photoFile,
   generationContext,
+  pendingEmail = "",
   previewCopy,
 }: VisualMemoryPromoProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -184,6 +190,15 @@ export function VisualMemoryPromo({
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [resultId, setResultId] = useState<string | null>(null);
+  const [saveProof, setSaveProof] = useState<string | null>(null);
+  const [saveGateOpen, setSaveGateOpen] = useState(false);
+  const [savedNotice, setSavedNotice] = useState(false);
+  const [manualDownloadNotice, setManualDownloadNotice] = useState(false);
+  const authSession = useAuthSession();
+  const { t } = useLocale();
+  const saveLock = useRef(false);
+  const persistAttempted = useRef<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const generationPendingRef = useRef(false);
   const pendingGenerationStorageKey = `soul-trace-pending-visual-memory:${generationContext.mode}`;
@@ -326,7 +341,12 @@ export function VisualMemoryPromo({
           caption?: string;
         };
         error?: string;
+        resultId?: string;
+        saveProof?: string | null;
       };
+      if (payload.error === "additional_generation_unavailable") {
+        throw new Error(t("result.visualMemory.preview.additionalGenerationUnavailable"));
+      }
       if (response.status === 202) {
         if (!payload.jobId) throw new Error(previewCopy.generationError);
         try {
@@ -360,6 +380,10 @@ export function VisualMemoryPromo({
         throw new Error(payload.error || previewCopy.generationError);
       }
 
+      setResultId(payload.resultId ?? null);
+      setSaveProof(payload.saveProof ?? null);
+      setSavedNotice(false);
+      setManualDownloadNotice(false);
       setGeneratedImageUrl(payload.imageDataUrl);
       setGeneratedTitle(payload.title?.trim() || previewCopy.scenes[selectedSceneId]);
       setGeneratedCaption(payload.caption?.trim() || memoryDetail.trim());
@@ -378,9 +402,75 @@ export function VisualMemoryPromo({
     }
   };
 
+  const saveCurrentVisualMemory = async () => {
+    if (!resultId || !saveProof || !generatedImageUrl) return "missing" as const;
+    const response = await fetch("/api/account-result/visual-memory", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        resultId,
+        proof: saveProof,
+        title: generatedTitle,
+        caption: generatedCaption,
+        petName: generationContext.petName,
+        imageDataUrl: generatedImageUrl,
+      }),
+    });
+    if (!response.ok) return "failed" as const;
+    const payload = await response.json() as { status?: string };
+    return payload.status === "saved" || payload.status === "already_saved" ? "saved" as const : "failed" as const;
+  };
+
+  const persistVisualMemory = async (alsoDownload: boolean): Promise<"saved" | "save_failed"> => {
+    if (saveLock.current) return "saved";
+    saveLock.current = true;
+    persistAttempted.current = resultId;
+    const pending = readPendingResultSave();
+    if (pending?.kind === "visual-memory" && pending.resultId === resultId) clearPendingResultSave();
+    try {
+      const saved = await saveCurrentVisualMemory();
+      if (saved !== "saved") {
+        setDownloadError(t("result.downloadGate.saveFailed"));
+        return "save_failed";
+      }
+      setDownloadError(null);
+      setSavedNotice(true);
+      if (alsoDownload) {
+        const downloaded = await downloadVisualMemory();
+        setManualDownloadNotice(!downloaded);
+      }
+      await authSession.refresh();
+      return "saved";
+    } finally {
+      saveLock.current = false;
+    }
+  };
+
+  const startVisualMemorySave = () => {
+    if (authSession.status === "loading") return;
+    if (!resultId || !saveProof) {
+      setDownloadError(t("result.downloadGate.saveFailed"));
+      return;
+    }
+    if (authSession.status === "authenticated") {
+      void persistVisualMemory(false);
+      return;
+    }
+    writePendingResultSave({ kind: "visual-memory", resultId, proof: saveProof });
+    setSaveGateOpen(true);
+  };
+
+  useEffect(() => {
+    if (authSession.status !== "authenticated" || !resultId || !saveProof || !generatedImageUrl) return;
+    if (persistAttempted.current === resultId) return;
+    const pending = readPendingResultSave();
+    const alsoDownload = pending?.kind === "visual-memory" && pending.resultId === resultId;
+    void persistVisualMemory(alsoDownload);
+  }, [authSession.status, resultId, saveProof, generatedImageUrl]);
+
   const downloadVisualMemory = async () => {
     const polaroid = polaroidRef.current;
-    if (!polaroid || !generatedImageUrl || isDownloading) return;
+    if (!polaroid || !generatedImageUrl || isDownloading) return false;
 
     setIsDownloading(true);
     setDownloadError(null);
@@ -412,8 +502,10 @@ export function VisualMemoryPromo({
       anchor.download = visualMemoryFilename(generationContext.petName);
       anchor.href = dataUrl;
       anchor.click();
+      return true;
     } catch {
       setDownloadError(previewCopy.downloadError);
+      return false;
     } finally {
       setIsDownloading(false);
     }
@@ -424,7 +516,7 @@ export function VisualMemoryPromo({
       <section
         aria-labelledby="visual-memory-title"
         className={`relative mx-auto mt-6 w-full max-w-2xl overflow-hidden rounded-2xl border border-[#C7A43A]/40 bg-[#0C0B09] shadow-[0_16px_42px_rgba(0,0,0,0.28)] ${
-          language === "ko" ? "font-ko" : "font-display-en"
+          language === "ko" ? "font-ko break-keep" : "font-display-en"
         }`}
       >
       <Image
@@ -443,7 +535,7 @@ export function VisualMemoryPromo({
           </p>
           <h2
             id="visual-memory-title"
-            className="mt-3 text-2xl font-medium leading-[1.18] text-[#F3E8D2] sm:text-[1.75rem]"
+            className="mt-3 whitespace-pre-line text-2xl font-medium leading-[1.18] text-[#F3E8D2] sm:text-[1.75rem]"
           >
             {title}
           </h2>
@@ -468,8 +560,10 @@ export function VisualMemoryPromo({
                   className="object-cover"
                 />
               </div>
-              <figcaption className="flex min-h-9 items-center justify-center px-1 pt-2 text-center font-serif text-xs italic leading-tight text-[#292219]">
-                {captions[card.caption]}
+              <figcaption className="flex min-h-9 flex-col items-center justify-center px-1 pt-2 text-center font-serif text-xs italic leading-tight text-[#292219]">
+                {captions[card.caption].split("\n").map((line) => (
+                  <span key={`${card.caption}-${line}`}>{line}</span>
+                ))}
               </figcaption>
             </figure>
           ))}
@@ -862,13 +956,42 @@ export function VisualMemoryPromo({
                         {downloadError}
                       </p>
                     ) : null}
+                    {authSession.status === "anonymous" ? (
+                      <p className="mb-3 whitespace-pre-line text-sm leading-relaxed text-[#C7B89A]">
+                        {t("result.visualMemory.preview.saveWithEmailBody")}
+                      </p>
+                    ) : null}
+                    {savedNotice ? (
+                      <p className="mb-3 text-sm leading-relaxed text-[#E7D8BC]">
+                        {t("result.visualMemory.preview.savedNotice")}
+                      </p>
+                    ) : null}
+                    {manualDownloadNotice ? (
+                      <p className="mb-3 text-sm leading-relaxed text-[#E7D8BC]">
+                        {t("result.savedDownloadManually")}
+                      </p>
+                    ) : null}
                     <button
                       type="button"
-                      disabled={!generatedImageUrl || isDownloading}
-                      onClick={downloadVisualMemory}
+                      disabled={!generatedImageUrl || isDownloading || authSession.status === "loading" || (authSession.status === "authenticated" && !savedNotice && !downloadError)}
+                      onClick={() => {
+                        if (savedNotice) {
+                          void downloadVisualMemory();
+                          return;
+                        }
+                        startVisualMemorySave();
+                      }}
                       className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-[#D8B84C] bg-[#D8B84C] px-5 py-3 text-sm font-medium text-[#17130B] shadow-[0_10px_28px_rgba(216,184,76,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {isDownloading ? previewCopy.preparingDownload : previewCopy.download}
+                      {authSession.status === "loading" || (authSession.status === "authenticated" && !savedNotice && !downloadError)
+                        ? t("result.checkingAccount")
+                        : isDownloading
+                          ? previewCopy.preparingDownload
+                          : savedNotice
+                            ? previewCopy.download
+                            : authSession.status === "authenticated"
+                              ? previewCopy.retry
+                              : t("result.visualMemory.preview.saveWithEmail")}
                     </button>
                     <button
                       type="button"
@@ -897,6 +1020,17 @@ export function VisualMemoryPromo({
           </section>
         </div>
       ) : null}
+      <LetterDownloadGate
+        open={saveGateOpen}
+        purpose="visual-memory"
+        pendingEmail={pendingEmail}
+        onClose={() => setSaveGateOpen(false)}
+        onVerified={async () => {
+          const saved = await persistVisualMemory(true);
+          if (saved === "saved") setSaveGateOpen(false);
+          return saved;
+        }}
+      />
     </>
   );
 }

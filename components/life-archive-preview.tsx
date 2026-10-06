@@ -47,6 +47,7 @@ type LifeArchivePreviewProps = {
   }>;
   selectedPetId?: string;
   selectedSubmissionId?: string;
+  visualMemories?: Array<{ resultId: string; petName: string; title: string; createdAt: string }>;
   navigationOrigin?: "letter" | "choose";
   backHref?: string;
   archiveQuery?: string;
@@ -68,6 +69,7 @@ export function LifeArchivePreview({
   accountPets = [],
   selectedPetId,
   selectedSubmissionId,
+  visualMemories = [],
   navigationOrigin = "choose",
   backHref = "/choose",
   archiveQuery = "",
@@ -275,7 +277,8 @@ export function LifeArchivePreview({
                     {accountPets.map((pet) => <a key={pet.petId} href={archiveHref(pet.petId)} aria-current={pet.petId === selectedPetId ? "page" : undefined} className={`min-h-11 shrink-0 rounded-full border px-4 py-2.5 text-sm ${pet.petId === selectedPetId ? "border-[#D4AF37] bg-[#D4AF37]/15 text-[#F5E6C8]" : "border-white/15 text-[#AFA598]"}`}>{pet.petName}</a>)}
                   </div>
                   <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                    {(accountPets.find((pet) => pet.petId === selectedPetId)?.letters ?? []).map((letter) => <a key={letter.submissionId} href={archiveHref(selectedPetId ?? "", letter.submissionId)} aria-current={letter.submissionId === selectedSubmissionId ? "page" : undefined} className={`rounded-xl border p-4 ${letter.submissionId === selectedSubmissionId ? "border-[#D4AF37]/70 bg-[#D4AF37]/10" : "border-white/10 bg-black/25"}`}><span className="block text-sm text-[#F3EAD8]">{letter.title || (isKorean ? "마음이 담긴 편지" : "A letter from the heart")}</span><span className="mt-1 block text-xs text-[#A99B87]">{new Intl.DateTimeFormat(isKorean ? "ko-KR" : "en-US", { dateStyle: "medium" }).format(new Date(letter.createdAt))}{letter.channel ? ` · ${letter.channel}` : letter.mode ? ` · ${letter.mode}` : ""}</span></a>)}
+                    {(accountPets.find((pet) => pet.petId === selectedPetId)?.letters ?? []).map((letter) => <a key={letter.submissionId} href={archiveHref(selectedPetId ?? "", letter.submissionId)} aria-current={letter.submissionId === selectedSubmissionId ? "page" : undefined} className={`rounded-xl border p-4 ${letter.submissionId === selectedSubmissionId ? "border-[#D4AF37]/70 bg-[#D4AF37]/10" : "border-white/10 bg-black/25"}`}><span className="block text-sm text-[#F3EAD8]">{letter.title || (isKorean ? "마음이 담긴 편지" : "A letter from the heart")}</span><span className="mt-1 block text-xs text-[#A99B87]">{t("lifeArchive.visualMemories.original")} · {new Intl.DateTimeFormat(isKorean ? "ko-KR" : "en-US", { dateStyle: "medium" }).format(new Date(letter.createdAt))}{letter.channel ? ` · ${letter.channel}` : letter.mode ? ` · ${letter.mode}` : ""}</span></a>)}
+                    {visualMemories.filter((memory) => memory.petName === (accountPets.find((pet) => pet.petId === selectedPetId)?.petName ?? archive.petName)).map((memory) => <a key={memory.resultId} href={`/api/account-result/visual-memory?resultId=${encodeURIComponent(memory.resultId)}`} className="rounded-xl border border-white/10 bg-black/25 p-4"><span className="block text-sm text-[#F3EAD8]">{memory.title || t("lifeArchive.visualMemories.title")}</span><span className="mt-1 block text-xs text-[#A99B87]">{t("lifeArchive.visualMemories.generated")} · {new Intl.DateTimeFormat(isKorean ? "ko-KR" : "en-US", { dateStyle: "medium" }).format(new Date(memory.createdAt))} · {t("lifeArchive.visualMemories.download")}</span></a>)}
                   </div>
                 </nav>
               ) : null}

@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: turbopackRoot,
   },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        { source: "/shop", destination: "/shop/index.html" },
+        { source: "/shop/", destination: "/shop/index.html" },
+      ],
+    };
+  },
   async headers() {
     return [
       {
@@ -17,6 +25,24 @@ const nextConfig: NextConfig = {
           {
             key: "Cache-Control",
             value: "private, no-store, no-cache, must-revalidate, max-age=0",
+          },
+        ],
+      },
+      {
+        source: "/shop",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate, s-maxage=0",
+          },
+        ],
+      },
+      {
+        source: "/shop/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate, s-maxage=0",
           },
         ],
       },

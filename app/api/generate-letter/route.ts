@@ -38,6 +38,7 @@ import {
   type LetterTonePrefs,
 } from "@/lib/survey";
 import { DEFAULT_LETTER_MODE, isLetterMode, type LetterMode } from "@/lib/letter-mode";
+import { createResultSaveProof, resultSaveSecret } from "@/lib/result-save-proof";
 import {
   isServiceChannelCompatible,
   parseServiceChannel,
@@ -871,6 +872,11 @@ async function persistHeroForLetter(
   }
 }
 
+function letterSaveProof(letterId: string | null): string | null {
+  if (!letterId) return null;
+  return createResultSaveProof("letter", letterId, resultSaveSecret());
+}
+
 function saveFailureResponse(locale: Locale, message: string): NextResponse {
   return NextResponse.json({ error: message }, { status: 500 });
 }
@@ -1445,6 +1451,7 @@ export async function POST(request: Request) {
               // Eternal Beam 핸드오프의 source_letter_id. 저장이 실패했거나
               // 마이그레이션 전이면 null 이다 — 편지 표시는 그대로 동작한다.
               letterId: saveResult.ok ? saveResult.letterId : null,
+              saveProof: saveResult.ok ? letterSaveProof(saveResult.letterId) : null,
               petId: saveResult.ok ? saveResult.petId : requestedPetId,
               generationLocale: locale,
               generationCacheKey: generationKey,
@@ -1672,6 +1679,7 @@ export async function POST(request: Request) {
         persistenceFailed: false,
         // Eternal Beam 핸드오프의 source_letter_id. 마이그레이션 전이면 null 이다.
         letterId: saveResult.letterId,
+        saveProof: letterSaveProof(saveResult.letterId),
         petId: saveResult.petId,
         generationLocale: locale,
         generationCacheKey: generationKey,

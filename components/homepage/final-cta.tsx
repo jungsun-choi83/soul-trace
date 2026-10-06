@@ -71,7 +71,12 @@ export function FinalCta({ choiceHref }: { choiceHref: string }) {
           <p
             className={`${display} mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.78)] sm:mt-6 sm:text-lg`}
           >
-            {t("homepage.finalCta.body")}
+            {t("homepage.finalCta.body").split("\n").map((line, index) => (
+              <span key={line}>
+                {index > 0 ? <br /> : null}
+                {line}
+              </span>
+            ))}
           </p>
         </div>
         <div>

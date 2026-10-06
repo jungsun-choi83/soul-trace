@@ -1,5 +1,7 @@
 "use client";
 
+import { LetterDownloadGate } from "@/components/letter-download-gate";
+import { useAuthSession } from "@/components/use-auth-session";
 import { QuestionnairePrivacyNotice } from "@/components/questionnaire-privacy-notice";
 import { VisualMemoryPromo } from "@/components/visual-memory-promo";
 import { petIntroQuestionIds, PetIntroForm } from "@/components/pet-intro-form";
@@ -31,6 +33,9 @@ import {
 } from "@/lib/service-channel";
 import { serviceChannelBackground } from "@/lib/service-channel-background";
 import { userFacingErrorMessage } from "@/lib/user-facing-error";
+import { clearPendingResultSave, readPendingResultSave, writePendingResultSave } from "@/lib/pending-result-save";
+import { resolvePendingContactEmail } from "@/lib/pending-contact-email";
+import { normalizeAuthEmail } from "@/lib/passwordless-auth";
 import { pickGenerationLoadingMessage } from "@/lib/generation-loading-messages";
 import { primeResultBgm, resolveResultBgmSrc, stopResultBgm } from "@/lib/result-bgm";
 import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
@@ -47,6 +52,7 @@ import {
   type LetterThemeId,
 } from "@/lib/letter-themes";
 import { getEternalBeamInstagramUrl, getEternalBeamMainUrl, getEternalBeamYoutubeUrl } from "@/lib/eternalbeam-urls";
+import { getMemoryShopLetterSetUrl } from "@/lib/memory-shop-url";
 import {
   buildLetterRequestFields,
   EMPTY_PET_INTRO,
@@ -335,6 +341,12 @@ export function SoulTraceFlow({
   const shareTrayRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadGateOpen, setDownloadGateOpen] = useState(false);
+  const [letterSaved, setLetterSaved] = useState(false);
+  const [serverContactEmail, setServerContactEmail] = useState<string | null>(null);
+  const [manualDownloadNotice, setManualDownloadNotice] = useState(false);
+  const authSession = useAuthSession();
+  const letterSaveLock = useRef(false);
   const letterSubmissionPendingRef = useRef(false);
   const [shareableFile, setShareableFile] = useState<File | null>(null);
   const [letterThemeId, setLetterThemeId] = useState<LetterThemeId>(() => {
@@ -608,6 +620,7 @@ export function SoulTraceFlow({
     resolveRecipientAddress(petIntro, lang),
   );
   const officialSiteUrl = useMemo(() => getEternalBeamMainUrl(), []);
+  const memoryShopLetterSetUrl = useMemo(() => getMemoryShopLetterSetUrl(), []);
   const instagramProfileUrl = useMemo(() => getEternalBeamInstagramUrl(), []);
 
   useEffect(() => {
@@ -1145,6 +1158,7 @@ export function SoulTraceFlow({
                   : displayPetName,
               createdAt: data.createdAt ?? generationCreatedAtRef.current,
               letterId: data.letterId ?? null,
+              saveProof: data.saveProof ?? null,
               petId: data.petId ?? initialPetId,
               persistenceFailed: data.persistenceFailed === true,
               generationLocale: data.generationLocale ?? lang,
@@ -1197,7 +1211,7 @@ export function SoulTraceFlow({
   };
 
   const handleDownloadImage = async () => {
-    if (!captureRef.current) return;
+    if (!captureRef.current) return false;
     try {
       setIsDownloading(true);
       setError(null);
@@ -1211,16 +1225,97 @@ export function SoulTraceFlow({
       anchor.download = "soul-trace-letter.jpg";
       anchor.href = dataUrl;
       anchor.click();
+      return true;
     } catch (err) {
       setError(
         err instanceof Error
           ? `${t("errors.saveImageFailed")} ${err.message}`
           : t("errors.saveImageGeneric"),
       );
+      return false;
     } finally {
       setIsDownloading(false);
     }
   };
+
+  const saveCurrentLetter = async () => {
+    if (!result?.letterId || !result.saveProof) return "missing" as const;
+    const response = await fetch("/api/account-result/letter", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ letterId: result.letterId, proof: result.saveProof }),
+    });
+    if (response.status === 403) return "forbidden" as const;
+    if (!response.ok) return "failed" as const;
+    const payload = await response.json() as { status?: string };
+    return payload.status === "saved" || payload.status === "already_saved" ? "saved" as const : "failed" as const;
+  };
+
+  const saveAndDownloadLetter = async (): Promise<"saved" | "save_failed"> => {
+    if (letterSaveLock.current) return "saved";
+    letterSaveLock.current = true;
+    const pending = readPendingResultSave();
+    if (pending?.kind === "letter" && pending.resultId === result?.letterId) clearPendingResultSave();
+    try {
+      const saved = await saveCurrentLetter();
+      if (saved !== "saved") {
+        setError(t("result.saveFailed"));
+        return "save_failed";
+      }
+      setLetterSaved(true);
+      const downloaded = await handleDownloadImage();
+      setManualDownloadNotice(!downloaded);
+      return "saved";
+    } finally {
+      letterSaveLock.current = false;
+    }
+  };
+
+  const startLetterSave = () => {
+    setShareTrayOpen(false);
+    if (authSession.status === "loading" || waitingForContact || !result) return;
+    if (result.letterId && result.saveProof) {
+      writePendingResultSave({ kind: "letter", resultId: result.letterId, proof: result.saveProof });
+    }
+    if (authSession.status === "authenticated") {
+      void saveAndDownloadLetter();
+      return;
+    }
+    setDownloadGateOpen(true);
+  };
+
+  useEffect(() => {
+    if (authSession.status !== "authenticated" || !result?.letterId) return;
+    const pending = readPendingResultSave();
+    if (!pending || pending.kind !== "letter" || pending.resultId !== result.letterId) return;
+    void saveAndDownloadLetter();
+  }, [authSession.status, result?.letterId]);
+
+  useEffect(() => {
+    if (!result?.letterId || !result.saveProof) return;
+    let cancelled = false;
+    void fetch("/api/account-result/letter/contact", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ letterId: result.letterId, proof: result.saveProof }),
+    }).then(async (response) => {
+      if (cancelled) return;
+      if (!response.ok) {
+        setServerContactEmail("");
+        return;
+      }
+      const payload = await response.json() as { email?: unknown };
+      setServerContactEmail(typeof payload.email === "string" ? payload.email : "");
+    }).catch(() => {
+      if (!cancelled) setServerContactEmail("");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [result?.letterId, result?.saveProof]);
+
+  const pendingEmail = resolvePendingContactEmail(serverContactEmail, email);
+  const waitingForContact = Boolean(result?.letterId && result.saveProof && serverContactEmail === null && !pendingEmail);
 
   const captureImage = async (): Promise<File | null> => {
     const source = instagramStoryRef.current;
@@ -1350,6 +1445,7 @@ export function SoulTraceFlow({
   };
 
   const goBackFromResult = () => {
+    setDownloadGateOpen(false);
     if (!initialResult) {
       setResult(null);
       setResultLocale(null);
@@ -1386,6 +1482,7 @@ export function SoulTraceFlow({
     setGenerationLoadingMessage(null);
     setStoryShareLine(null);
     setShowValidationErrors(false);
+    setDownloadGateOpen(false);
     stopResultBgm(bgmPrimeRef);
   };
 
@@ -1702,19 +1799,36 @@ export function SoulTraceFlow({
             </div>
 
             <div className="mx-auto grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
               <button
                 type="button"
-                onClick={handleDownloadImage}
-                disabled={!canCaptureArtwork || isDownloading || isSharing}
+                onClick={startLetterSave}
+                disabled={!canCaptureArtwork || isDownloading || isSharing || authSession.status === "loading" || waitingForContact}
                 className={`flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#C7A43A] px-5 py-3 text-center text-sm font-medium text-[#0B0A08] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] transition hover:bg-[#D4B34A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5C761] active:bg-[#B28F2E] disabled:cursor-not-allowed disabled:opacity-45 sm:text-base ${
                   lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
                 }`}
               >
                 <span className="inline-flex items-center justify-center gap-2.5">
                   <DownloadIcon />
-                  <span>{isDownloading ? t("result.preparingImage") : t("result.keepForever")}</span>
+                  <span>{isDownloading ? t("result.preparingImage") : authSession.status === "loading" || waitingForContact ? t("result.checkingAccount") : t("result.keepForever")}</span>
                 </span>
               </button>
+              {authSession.status === "anonymous" ? (
+                <p className={`text-center text-xs leading-relaxed text-[#A39888] ${lang === "ko" ? "font-ko" : "font-display-en"}`}>
+                  {t("result.saveHint")}
+                </p>
+              ) : null}
+              {manualDownloadNotice ? (
+                <p className={`text-center text-xs leading-relaxed text-[#E7DCC8] ${lang === "ko" ? "font-ko" : "font-display-en"}`}>
+                  {t("result.savedDownloadManually")}
+                </p>
+              ) : null}
+              {letterSaved ? (
+                <a href="/life-archive" className={`text-center text-sm text-[#D8B84C] underline underline-offset-4 ${lang === "ko" ? "font-ko" : "font-display-en"}`}>
+                  {t("result.viewMemories")}
+                </a>
+              ) : null}
+              </div>
               <div ref={shareTrayRef} className="relative flex min-w-0 flex-col gap-2 sm:block">
                 <button
                   type="button"
@@ -1817,6 +1931,21 @@ export function SoulTraceFlow({
               </div>
             </div>
 
+            <LetterDownloadGate
+              open={downloadGateOpen}
+              purpose="letter"
+              pendingEmail={pendingEmail}
+              onClose={() => setDownloadGateOpen(false)}
+              onVerified={async () => {
+                const saved = await saveAndDownloadLetter();
+                if (saved === "saved") {
+                  setDownloadGateOpen(false);
+                  await authSession.refresh();
+                }
+                return saved;
+              }}
+            />
+
             <VisualMemoryPromo
               language={lang}
               eyebrow={t("result.visualMemory.eyebrow")}
@@ -1843,6 +1972,7 @@ export function SoulTraceFlow({
                 photoPreviewUrl: petPhotoPreviewUrl,
               }}
               photoFile={petPhotoFile}
+              pendingEmail={pendingEmail}
               generationContext={{
                 petName: visualMemoryPetName,
                 petType: visualMemoryPetType,
@@ -1940,7 +2070,7 @@ export function SoulTraceFlow({
             <section
               aria-label={t("result.productCards.label")}
               className={`mx-auto mt-6 grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-2 ${
-                lang === "ko" ? "font-ko" : "font-display-en"
+                lang === "ko" ? "font-ko break-keep" : "font-display-en"
               }`}
             >
               <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#C7A43A]/40 bg-[#0C0B09] shadow-[0_16px_42px_rgba(0,0,0,0.28)]">
@@ -1957,17 +2087,17 @@ export function SoulTraceFlow({
                   <h2 className="text-lg font-medium leading-snug text-[#F3E8D2]">
                     {t("result.productCards.keepsake.title")}
                   </h2>
-                  <p className="mt-2 flex-1 text-sm font-light leading-relaxed text-[#C4B8A8]">
+                  <p className="mt-2 flex-1 whitespace-pre-line text-sm font-light leading-relaxed text-[#C4B8A8]">
                     {t("result.productCards.keepsake.description")}
                   </p>
-                  <button
-                    type="button"
-                    disabled
-                    aria-disabled="true"
-                    className="mt-5 flex min-h-11 w-full cursor-not-allowed items-center justify-center rounded-xl bg-[#C7A43A] px-4 py-3 text-center text-sm font-medium text-[#0B0A08]"
+                  <a
+                    href={memoryShopLetterSetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 flex min-h-11 w-full items-center justify-center rounded-xl bg-[#C7A43A] px-4 py-3 text-center text-sm font-medium text-[#0B0A08] transition hover:bg-[#D4B34A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5C761]"
                   >
                     {t("result.productCards.keepsake.cta")}
-                  </button>
+                  </a>
                 </div>
               </article>
 
@@ -1985,7 +2115,7 @@ export function SoulTraceFlow({
                   <h2 className="text-lg font-medium leading-snug text-[#F3E8D2]">
                     {t("result.productCards.eternalBeam.title")}
                   </h2>
-                  <p className="mt-2 flex-1 text-sm font-light leading-relaxed text-[#C4B8A8]">
+                  <p className="mt-2 flex-1 whitespace-pre-line text-sm font-light leading-relaxed text-[#C4B8A8]">
                     {t("result.productCards.eternalBeam.description")}
                   </p>
                   <a
@@ -2082,7 +2212,7 @@ export function SoulTraceFlow({
       ) : (
       <main
         data-questionnaire-pet-theme={questionnairePetTheme.key}
-        className={`relative isolate z-[1] flex min-h-screen flex-col ${
+        className={`relative isolate z-[1] flex min-h-dvh flex-col overflow-x-hidden ${
           showChannelBackground ? "bg-transparent" : "bg-black"
         }`}
       >
@@ -2104,7 +2234,7 @@ export function SoulTraceFlow({
           </div>
         ) : null}
         <WarmRisingSparkles />
-        <header className="relative z-[2] flex w-full shrink-0 items-center justify-between px-5 pt-6 md:px-8 md:pt-8">
+        <header className="relative z-[2] flex w-full shrink-0 items-center justify-between px-5 pt-[calc(1.5rem+env(safe-area-inset-top))] md:px-8 md:pt-8">
           {/* 갈래를 잘못 골랐을 때 되돌아갈 길 — 없으면 새로고침밖에 방법이 없다. */}
           <Link
             href="/choose"
@@ -2119,17 +2249,17 @@ export function SoulTraceFlow({
         <div className="relative z-[2] flex flex-1 items-center justify-center px-5 pb-14 pt-2 md:px-8 md:pb-16">
         <section className="w-full max-w-2xl">
           <div className="animate-fade-in mb-10 text-center">
-            <p className="font-display-en text-xs uppercase tracking-[0.35em] text-[#D4AF37]">
+            <p className="font-display-en px-1 text-xs uppercase !tracking-[0.18em] text-[#D4AF37] sm:!tracking-[0.35em]">
               {t("hero.eyebrow")}
             </p>
-            <h1 className="font-display-en mt-6 text-4xl text-[#FFFFFF] md:text-5xl">
+            <h1 className="font-display-en mt-6 max-w-full px-1 text-[clamp(1.75rem,8.5vw,3rem)] !tracking-[0.08em] text-[#FFFFFF] sm:!tracking-[0.22em] md:text-5xl">
               {t("hero.title")}
             </h1>
             <div
               className={`mx-auto mt-7 max-w-xl space-y-6 text-[#F3EAD8]/[0.94] ${
                 lang === "ko"
-                  ? "font-ko break-keep text-[15px] font-extralight leading-[2.05] tracking-[0.055em] sm:text-base sm:leading-[2.1] sm:tracking-[0.05em]"
-                  : "font-display-en text-sm font-extralight leading-[2.05] tracking-[0.2em] sm:text-base sm:leading-[2.15] sm:tracking-[0.18em]"
+                  ? "font-ko break-keep text-[15px] font-extralight leading-[1.85] tracking-[0.02em] sm:text-base sm:leading-[2.1] sm:tracking-[0.05em]"
+                  : "font-display-en text-sm font-extralight leading-[1.85] tracking-[0.08em] sm:text-base sm:leading-[2.15] sm:tracking-[0.18em]"
               }`}
             >
               <p className="whitespace-pre-line">{introduction.headline}</p>
@@ -2138,11 +2268,11 @@ export function SoulTraceFlow({
           </div>
 
           <article className="rounded-3xl border-[0.5px] border-[rgba(212,175,55,0.3)] bg-transparent p-6 md:p-10">
-            <div className="mb-6 flex items-center justify-between gap-4 text-xs text-[#D4AF37]">
-              <span className="font-display-en uppercase">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[#D4AF37]">
+              <span className="shrink-0 font-display-en uppercase">
                 {t("questionHeader.label")} {questionIndex + 1} {t("questionHeader.of")} {totalQuestionCount}
               </span>
-              <span className={lang === "ko" ? "font-ko" : "font-display-en"}>
+              <span className={`min-w-0 text-right ${lang === "ko" ? "font-ko" : "font-display-en"}`}>
                 {lang === "ko"
                   ? `질문 ${questionsLeft}개 남음`
                   : <>{questionsLeft} {t("questionHeader.left")}</>}

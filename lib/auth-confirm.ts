@@ -28,6 +28,7 @@ export async function authenticateAuthCallback(
     code: string | null;
     tokenHash: string | null;
     type: EmailOtpType | null;
+    skipLegacyClaim?: boolean;
   },
 ): Promise<AuthConfirmationResult> {
   const code = input.code?.trim();
@@ -56,6 +57,8 @@ export async function authenticateAuthCallback(
     );
     return "verification_failed";
   }
+
+  if (input.skipLegacyClaim) return "authenticated";
 
   const { error: claimError } = await supabase.rpc(
     "claim_soul_trace_legacy_records",

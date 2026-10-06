@@ -115,6 +115,20 @@ export default async function LifeArchivePage({ searchParams }: { searchParams: 
     return <LifeArchivePreview status="error" {...previewNavigation} />;
   }
 
+  const visualMemoryResult = await supabase
+    .from("visual_memory_results")
+    .select("result_id, pet_name, title, created_at")
+    .eq("owner_user_id", userData.user.id)
+    .order("created_at", { ascending: false });
+  const visualMemories = visualMemoryResult.error
+    ? []
+    : (visualMemoryResult.data ?? []).map((memory) => ({
+        resultId: memory.result_id,
+        petName: memory.pet_name,
+        title: memory.title,
+        createdAt: memory.created_at,
+      }));
+
   return (
     <LifeArchivePreview
       status="ready"
@@ -149,6 +163,7 @@ export default async function LifeArchivePage({ searchParams }: { searchParams: 
       }))}
       selectedPetId={selectedPetId}
       selectedSubmissionId={submission.submission_id}
+      visualMemories={visualMemories}
       {...previewNavigation}
     />
   );

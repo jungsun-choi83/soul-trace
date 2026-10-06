@@ -118,6 +118,9 @@ export function SurveyFlow({
           <p className="text-xl font-extralight leading-relaxed text-[#FFFFFF] md:text-2xl">
             {formatSurveyName(memoryItem.promptText, petDisplayName)}
           </p>
+          <p className="survey-hint font-extralight leading-relaxed text-[#D4AF37]/90">
+            {t("survey.focusHint").replace("%NAME%", petDisplayName.trim() || (lang === "ko" ? "아이" : "your pet"))}
+          </p>
           {memoryItem.optional ? (
             <p className="survey-hint font-extralight text-[#C4B8A8]/90">
               {memoryItem.optionalNote}

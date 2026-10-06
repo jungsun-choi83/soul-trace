@@ -25,12 +25,22 @@ export function LetterPreview() {
             <h2
               className={`${display} ${styles.mobileHeadingOnDark} text-[clamp(1.2rem,5.8vw,1.75rem)] font-light leading-tight sm:text-4xl lg:text-5xl`}
             >
-              {t("homepage.letter.title")}
+              {t("homepage.letter.title").split("\n").map((line, index) => (
+                <span key={line}>
+                  {index > 0 ? <br /> : null}
+                  {line}
+                </span>
+              ))}
             </h2>
             <p
               className={`${display} mt-3 max-w-md text-[0.68rem] leading-relaxed text-[#f8f2e7]/70 sm:mt-4 sm:text-sm lg:mt-5 lg:text-base`}
             >
-              {t("homepage.letter.body")}
+              {t("homepage.letter.body").split("\n").map((line, index) => (
+                <span key={line}>
+                  {index > 0 ? <br /> : null}
+                  {line}
+                </span>
+              ))}
             </p>
           </Reveal>
           <div className="mt-4 space-y-2 sm:mt-6 sm:space-y-3 lg:mt-9 lg:space-y-4">
