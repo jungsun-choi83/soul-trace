@@ -45,7 +45,7 @@ export function EternalBeam({
               ETERNAL BEAM
             </p>
             <h2
-              className={`${display} text-[clamp(1.25rem,5.8vw,2rem)] font-light leading-[1.2] sm:leading-tight sm:text-4xl lg:text-5xl`}
+              className={`${display} ${styles.mobileHeadingOnDark} whitespace-pre-line text-[clamp(1.25rem,5.8vw,2rem)] font-light leading-[1.2] sm:leading-tight sm:text-4xl lg:text-5xl`}
             >
               {t("homepage.eternalBeam.title")}
             </h2>

@@ -49,7 +49,7 @@ export function HowItWorks() {
               {t("homepage.howItWorks.label")}
             </p>
             <h2
-              className={`${display} text-[1.6875rem] font-light sm:text-5xl`}
+              className={`${display} ${styles.mobileHeadingOnLight} text-[1.6875rem] font-light sm:text-5xl`}
             >
               {t("homepage.howItWorks.title")}
             </h2>
@@ -76,7 +76,7 @@ export function HowItWorks() {
                 </span>
               </div>
               <h3
-                className={`${display} mt-3 text-[clamp(0.7rem,2.5vw,1.5rem)] leading-snug sm:mt-5 md:mt-6 ${styles.howStepTitle}`}
+                className={`${display} mt-3 min-h-[2.75em] text-[clamp(0.7rem,2.5vw,1.5rem)] leading-snug sm:mt-5 md:mt-6 md:min-h-0 ${styles.howStepTitle}`}
               >
                 {t(`homepage.howItWorks.${key}Title`)}
               </h3>

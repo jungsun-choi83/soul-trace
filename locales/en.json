@@ -476,6 +476,108 @@
       "line": "Share to LINE",
       "copyLink": "Copy link"
     },
+    "visualMemory": {
+      "eyebrow": "VISUAL MEMORY",
+      "title": "Turn one moment from your story into a picture.",
+      "description": "Using the memories you shared, Soul Trace can turn a meaningful moment into a personalized visual memory.",
+      "cta": "Create Visual Memory →",
+      "captions": {
+        "byTheSea": "By the Sea",
+        "rightBesideMe": "Right Beside Me",
+        "walk": "Walk?"
+      },
+      "preview": {
+        "title": "Upload your pet's photo",
+        "intro": "Choose a clear photo of your pet. We'll use it to keep their unique features recognizable.",
+        "close": "Close Visual Memory preview",
+        "petName": "Pet name",
+        "petType": "Pet type",
+        "breed": "Breed",
+        "favoriteMemory": "Favorite memory",
+        "uniqueHabit": "Unique habit",
+        "loveAnswer": "How they show love",
+        "excitementSigns": "Signs of excitement",
+        "letterTone": "Letter tone",
+        "mode": "Story mode",
+        "petPhoto": "Pet photo",
+        "available": "Available",
+        "unavailable": "Not available on this result page",
+        "generate": "Generate Visual Memory →",
+        "generating": "Creating Visual Memory…",
+        "retry": "Try Again →",
+        "photoStep": "Photo",
+        "sceneStep": "Scene",
+        "memoryStep": "Memory",
+        "resultStep": "Result",
+        "uploadPhoto": "+ Upload Pet Photo",
+        "changePhoto": "Change Photo",
+        "identityReference": "We'll use this photo as the identity reference.",
+        "continue": "Continue →",
+        "invalidPhoto": "Choose a JPG, JPEG, PNG, or WebP image up to 10 MB.",
+        "sceneTitle": "Choose a Scene",
+        "sceneIntro": "Choose where you'd like this memory to take place.",
+        "back": "← Back",
+        "creatingTitle": "Creating your Visual Memory...",
+        "creatingIntro": "We're turning your photo and memory into a special scene.",
+        "generationError": "Visual Memory could not be generated. Please try again.",
+        "customUnavailable": "Custom scenes still need a description and are not available in this test yet. Choose one of the prepared scenes to continue.",
+        "resultTitle": "Your Visual Memory is ready.",
+        "resultIntro": "A little moment, made yours.",
+        "download": "Download Visual Memory",
+        "generateAgain": "Generate Again",
+        "regenerating": "Generating another version...",
+        "chooseDifferentScene": "Choose a different scene",
+        "soulTraceMark": "SOUL TRACE",
+        "preparingDownload": "Preparing Download...",
+        "downloadError": "We couldn't prepare your Visual Memory download. Please try again.",
+        "customScene": {
+          "livingLabel": "Describe the scene you want",
+          "livingPlaceholder": "For example: On our balcony in the morning sunlight",
+          "memorialLabel": "Describe the place you'd like this memory to return to",
+          "memorialPlaceholder": "For example: Under the tree where we used to sit together"
+        },
+        "scenes": {
+          "by-the-sea": "By the Sea",
+          "at-home": "At Home",
+          "on-a-walk": "On a Walk",
+          "flower-field": "Flower Field",
+          "playtime": "Playtime",
+          "cozy-bedtime": "Cozy Bedtime",
+          "golden-sunset": "Golden Sunset",
+          "custom-scene": "Custom Scene",
+          "favorite-place": "A Favorite Place",
+          "our-walk": "Our Walk",
+          "peaceful-garden": "Peaceful Garden",
+          "golden-evening": "Golden Evening",
+          "together-again": "Together Again",
+          "custom-memory": "Custom Memory"
+        },
+        "memory": {
+          "living": {
+            "title": "Add one little memory",
+            "intro": "What small detail should this memory capture?",
+            "placeholder": "For example: He always jumped when I picked up the leash.",
+            "suggestions": [
+              "The way they looked at me",
+              "Something they always did"
+            ]
+          },
+          "memorial": {
+            "title": "Hold onto one little detail",
+            "intro": "What do you want to remember most about this moment?",
+            "placeholder": "For example: She always looked back at me during our walks.",
+            "suggestions": [
+              "A little habit I remember",
+              "A moment that stays with me"
+            ]
+          }
+        },
+        "modes": {
+          "living": "Living",
+          "memorial": "Memorial"
+        }
+      }
+    },
     "productCards": {
       "label": "Keepsake options",
       "keepsake": {

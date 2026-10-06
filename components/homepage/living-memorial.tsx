@@ -3,6 +3,7 @@
 import { useLocale } from "@/components/locale-provider";
 import { LuHeart, LuPawPrint } from "react-icons/lu";
 import { Reveal } from "./reveal";
+import styles from "./homepage.module.css";
 
 export function LivingMemorial() {
   const { lang, t } = useLocale();
@@ -26,7 +27,7 @@ export function LivingMemorial() {
           </Reveal>
           <Reveal delay={80}>
             <h2
-              className={`${display} text-[clamp(1.45rem,7vw,1.875rem)] font-light leading-tight sm:text-4xl`}
+              className={`${display} ${styles.mobileHeadingOnLight} whitespace-pre-line text-[clamp(1.45rem,7vw,1.875rem)] font-light leading-tight sm:text-4xl`}
             >
               {t("homepage.livingMemorial.title")}
             </h2>
