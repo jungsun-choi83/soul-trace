@@ -134,16 +134,23 @@ describe("편지 문체 — 대화체 규칙", () => {
       if (locale === "ko") {
         assert.match(rules, /개별 인식\(가장 높은 우선순위\)/);
         assert.match(rules, /이상한 버릇 \/ 고집스러운 행동/);
-        assert.match(rules, /행동 → 작은 해석 → 감정/);
-        assert.match(rules, /최소 2~3개/);
-        assert.match(rules, /기억에 남을 한 줄/);
+        assert.match(rules, /행동 → 아주 작은 해석 → 감정/);
+        assert.match(rules, /이상하게 그게 제일 편했어/);
+        assert.match(rules, /아빠가 웃으셨겠지\?/);
+        assert.match(rules, /중요한 사람이라는 생각이 들었나 봐/);
+        assert.match(rules, /마지막 25~30%/);
+        assert.match(rules, /마지막 세 문장/);
+        assert.match(rules, /디테일 1~3개/);
         assert.match(rules, /뭔가 신호를 주긴 했었는데/);
       } else {
         assert.match(rules, /Individual recognition \(highest priority\)/);
         assert.match(rules, /strange habits \/ stubborn behaviors/);
-        assert.match(rules, /behavior → small interpretation → emotional meaning/);
-        assert.match(rules, /at least 2-3/);
-        assert.match(rules, /One memorable line/);
+        assert.match(rules, /behavior → a very small pet-like observation → feeling/);
+        assert.match(rules, /Dad must have smiled, right\?/);
+        assert.match(rules, /someone important/);
+        assert.match(rules, /final 25-30%/);
+        assert.match(rules, /last three sentences/);
+        assert.match(rules, /combines 1-3 real supplied details/);
         assert.match(rules, /vague placeholders/);
       }
     }
