@@ -9,11 +9,26 @@ test("generated letters use scoped handwritten fonts by language", () => {
   assert.match(fonts, /Caveat/);
   assert.match(fonts, /Allura/);
   assert.match(fonts, /UnPen\.ttf/);
+  assert.match(fonts, /--font-letter-en-opening/);
+  assert.match(fonts, /--font-letter-en-body/);
+  assert.match(fonts, /--font-letter-ko/);
   assert.match(flow, /data-letter-salutation/);
-  assert.match(flow, /--font-letter-en-opening/);
-  assert.match(flow, /--font-letter-en-body/);
-  assert.match(flow, /--font-letter-ko/);
+  assert.match(flow, /letterBodyFontFamily/);
+  assert.match(flow, /letterOpeningFontFamily/);
   assert.match(flow, /break-words/);
+});
+
+test("living Korean letters use a casual gothic instead of myeongjo", () => {
+  assert.match(fonts, /Gowun_Dodum/);
+  assert.match(fonts, /--font-letter-ko-living/);
+  assert.match(fonts, /mode === "living"/);
+  assert.match(fonts, /Apple SD Gothic Neo/);
+  assert.match(flow, /koreanLivingLetterFont/);
+  assert.match(flow, /letterBodyFontFamily\(letterLanguage, mode\)/);
+  assert.doesNotMatch(
+    flow,
+    /fontFamily: letterLanguage === "ko"\s*\? "var\(--font-letter-ko\), var\(--font-noto-serif-kr\)/,
+  );
 });
 
 test("the bundled UnPen asset is a real TrueType font", () => {
