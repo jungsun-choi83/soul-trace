@@ -11,7 +11,7 @@ import {
 const flow = readFileSync("components/soul-trace-flow.tsx", "utf8");
 
 const pensionDraft: QuestionnaireDraft = {
-  version: 6,
+  version: 7,
   mode: "living",
   channel: "pension",
   questionIndex: 8,

@@ -157,7 +157,7 @@ export function SurveyFlow({
               ? t("survey.letterToneTitle")
               : toneItem.promptText.replace(/^Q\d+\.\s*/, "")}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className={`flex gap-2 ${toneItem.id === "q12" ? "flex-col" : "flex-wrap"}`}>
             {toneItem.id === "q10"
               ? toneItem.options.map((opt) => (
                   <button
@@ -176,7 +176,7 @@ export function SurveyFlow({
                     key={opt.id}
                     type="button"
                     onClick={() => onToneLength(opt.id as LetterTonePrefs["length"])}
-                    className={chipClass(tonePrefs.length === opt.id, lang)}
+                    className={`${chipClass(tonePrefs.length === opt.id, lang)} w-full whitespace-normal py-3 text-left leading-snug`}
                   >
                     {opt.label}
                   </button>

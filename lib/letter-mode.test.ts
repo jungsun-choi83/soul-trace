@@ -29,7 +29,7 @@ describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () 
     for (const mode of LETTER_MODES) {
       it(`${name}/${mode}: 모드별 기억 질문과 톤 질문이 채워져 있다`, () => {
         const copy = modeCopy(messages, mode);
-        assert.equal(copy.memory.length, mode === "living" ? 3 : 4);
+        assert.equal(copy.memory.length, mode === "living" ? 4 : 5);
         assert.equal(copy.tone.length, 2);
         assert.deepEqual(
           copy.tone.map((q) => q.id),
@@ -41,8 +41,8 @@ describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () 
         }
         if (mode === "memorial") {
           // 못다 한 말 질문은 추모 갈래에만 남고 선택적으로 건너뛸 수 있다.
-          assert.equal(copy.memory[3].optional, true);
-          assert.ok((copy.memory[3].skipLabel ?? "").trim().length > 0);
+          assert.equal(copy.memory[4].optional, true);
+          assert.ok((copy.memory[4].skipLabel ?? "").trim().length > 0);
         } else {
           assert.ok(copy.memory.every((item) => item.optional !== true));
         }
@@ -93,14 +93,16 @@ describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () 
       assert.notEqual(living.yearPartedPlaceholder, memorial.yearPartedPlaceholder);
     });
 
-    it(`${name}: 보통 길이는 20줄, 짧은 길이는 12줄이라고 적혀 있다`, () => {
+    it(`${name}: 편지 길이는 짧게/길게 대신 한 장과 기억을 더 담은 편지로 고른다`, () => {
       for (const mode of LETTER_MODES) {
         const lengthOpts = modeCopy(messages, mode).tone.find((item) => item.id === "q12")?.options ?? [];
         const short = lengthOpts.find((o) => o.id === "short")?.label ?? "";
         const normal = lengthOpts.find((o) => o.id === "normal")?.label ?? "";
-        // 화면 숫자와 프롬프트 숫자가 어긋나면 사용자는 10줄을 골랐는데 20줄이 온다.
-        assert.match(short, /12/);
-        assert.match(normal, /20/);
+        assert.doesNotMatch(short, /12|짧게|Short/);
+        assert.doesNotMatch(normal, /20|보통|길게|Medium/);
+        assert.ok(short.trim().length > 0);
+        assert.ok(normal.trim().length > 0);
+        assert.notEqual(short, normal);
       }
     });
   }

@@ -64,11 +64,11 @@ test("required channel answers use existing completion validation", () => {
   assert.equal(isSurveyComplete(["one", "", "three", "four"], tonePrefs, en, "living", "pension"), false);
   assert.equal(isSurveyComplete(["one", "two", "three", "four", ""], tonePrefs, en, "living", "grooming"), true);
   assert.equal(isSurveyComplete(["one", "two", "three", "", "optional"], tonePrefs, en, "living", "grooming"), false);
-  assert.equal(isSurveyComplete(["one", "two", "three", ""], tonePrefs, en, "living", null), true);
+  assert.equal(isSurveyComplete(["one", "two", "three", "four"], tonePrefs, en, "living", null), true);
 });
 
-test("no channel keeps the default four-question flow and typed answers survive locale changes", () => {
-  assert.equal(memoryQuestionCount(null), 4);
+test("no channel keeps the default memorial questionnaire and typed answers survive locale changes", () => {
+  assert.equal(memoryQuestionCount(null), 5);
   const answers = buildSurveyAnswers(en, "living", ["typed answer", "", "", ""], tonePrefs, "Milo");
   const switched = buildSurveyAnswers(ko, "living", ["typed answer", "", "", ""], tonePrefs, "Milo");
   assert.equal(answers[0].answer, "typed answer");

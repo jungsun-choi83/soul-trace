@@ -8,7 +8,7 @@ import {
   type ServiceChannel,
 } from "./service-channel.ts";
 
-export const MEMORY_STEP_COUNT = 4;
+export const MEMORY_STEP_COUNT = 5;
 /**
  * TEMPORARILY FROZEN: keep the pet-photo upload implementation for a later release.
  * Change this to `true` to restore the photo upload, consent, and motion step.
@@ -17,8 +17,8 @@ export const PET_PHOTO_UPLOAD_ENABLED = true;
 export const PHOTO_STEP_COUNT = PET_PHOTO_UPLOAD_ENABLED ? 1 : 0;
 export const TONE_STEP_COUNT = 2;
 export const SURVEY_STEP_COUNT = MEMORY_STEP_COUNT + PHOTO_STEP_COUNT + TONE_STEP_COUNT;
-/** Final default memory question — 0-based index 3 */
-export const OPTIONAL_MEMORY_STEP = 3;
+/** Final default memorial memory question — 0-based index 4 */
+export const OPTIONAL_MEMORY_STEP = 4;
 /** 기억 질문과 편지 스타일 질문 직후 — 영상용 사진 업로드 */
 export const PHOTO_SURVEY_STEP = MEMORY_STEP_COUNT + TONE_STEP_COUNT;
 
@@ -90,7 +90,7 @@ export function memoryQuestionCount(
   mode: LetterMode = "memorial",
 ): number {
   if (isCustomizedServiceChannel(channel)) return CHANNEL_MEMORY_COUNTS[channel];
-  return mode === "living" ? 3 : MEMORY_STEP_COUNT;
+  return mode === "living" ? 4 : MEMORY_STEP_COUNT;
 }
 
 export function isChannelMemoryOptional(
