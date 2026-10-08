@@ -4,7 +4,7 @@ import { parseServiceChannel, type ServiceChannel } from "./service-channel.ts";
 import type { LetterTonePrefs } from "./survey.ts";
 import { isPrivacySelections, type PrivacySelections } from "./privacy-consent-selection.ts";
 
-export const QUESTIONNAIRE_DRAFT_VERSION = 7;
+export const QUESTIONNAIRE_DRAFT_VERSION = 8;
 
 export type QuestionnaireDraft = {
   version: typeof QUESTIONNAIRE_DRAFT_VERSION;

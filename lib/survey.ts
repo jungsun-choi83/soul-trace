@@ -2,13 +2,15 @@ import type { Messages } from "@/lib/i18n";
 // lib 안에서는 상대 경로 + 확장자를 쓴다. `@/` 별칭은 번들러만 알아서,
 // node --test / 프롬프트 확인 스크립트가 이 파일을 못 읽는다.
 import { modeCopy, type LetterMode } from "./letter-mode.ts";
+import { funnelMemoryQuestionCount, MAX_FUNNEL_MEMORY_QUESTIONS } from "./questionnaires/index.ts";
 import {
   isCustomizedServiceChannel,
   type CustomizedServiceChannel,
   type ServiceChannel,
 } from "./service-channel.ts";
 
-export const MEMORY_STEP_COUNT = 5;
+/** Largest memory-question count across independent funnels — used to size answer arrays. */
+export const MEMORY_STEP_COUNT = MAX_FUNNEL_MEMORY_QUESTIONS;
 /**
  * TEMPORARILY FROZEN: keep the pet-photo upload implementation for a later release.
  * Change this to `true` to restore the photo upload, consent, and motion step.
@@ -17,8 +19,8 @@ export const PET_PHOTO_UPLOAD_ENABLED = true;
 export const PHOTO_STEP_COUNT = PET_PHOTO_UPLOAD_ENABLED ? 1 : 0;
 export const TONE_STEP_COUNT = 2;
 export const SURVEY_STEP_COUNT = MEMORY_STEP_COUNT + PHOTO_STEP_COUNT + TONE_STEP_COUNT;
-/** Final default memorial memory question — 0-based index 4 */
-export const OPTIONAL_MEMORY_STEP = 4;
+/** Final default memorial memory question — last memorial item is optional. */
+export const OPTIONAL_MEMORY_STEP = funnelMemoryQuestionCount("memorial") - 1;
 /** 기억 질문과 편지 스타일 질문 직후 — 영상용 사진 업로드 */
 export const PHOTO_SURVEY_STEP = MEMORY_STEP_COUNT + TONE_STEP_COUNT;
 
@@ -45,6 +47,7 @@ export type SurveyQuestion = {
   id?: string;
   promptText: string;
   placeholder: string;
+  helper?: string;
   example?: string;
   optional?: boolean;
   optionalNote?: string;
@@ -90,7 +93,7 @@ export function memoryQuestionCount(
   mode: LetterMode = "memorial",
 ): number {
   if (isCustomizedServiceChannel(channel)) return CHANNEL_MEMORY_COUNTS[channel];
-  return mode === "living" ? 4 : MEMORY_STEP_COUNT;
+  return funnelMemoryQuestionCount(mode);
 }
 
 export function isChannelMemoryOptional(
@@ -146,49 +149,92 @@ export function buildSurveyAnswers(
   return [...memory, ...tone];
 }
 
-const TONE_STYLE_GUIDANCE: Record<"ko" | "en", Record<LetterToneMood, string>> = {
+const TONE_STYLE_GUIDANCE: Record<
+  "ko" | "en",
+  Record<LetterMode, Record<LetterToneMood, string>>
+> = {
   en: {
-    bright: [
-      "- Playful, affectionate, and a little mischievous.",
-      "- Use lively, conversational rhythm and slightly shorter sentences.",
-      "- Light humor is allowed only when it comes from the pet's actual supplied behavior.",
-      "- Do not overuse exclamation marks or text-laugh (lol, haha).",
-      "- Do not invent jokes, antics, excitement, motives, or events.",
-    ].join("\n"),
-    calm: [
-      "- Restrained, simple, and sincere.",
-      "- Prefer steady pacing, fewer rhetorical questions, and fewer exclamation marks.",
-      "- Keep emotional expression understated. Avoid melodrama.",
-      "- Do not make the letter sad simply because the tone is calm.",
-      "- Do not add new facts or feelings.",
-    ].join("\n"),
-    warm: [
-      "- Gentle, emotionally warm, and reassuring—not therapy copy.",
-      "- Let supplied moments of closeness carry the warmth.",
-      "- Do not invent love, longing, comfort, grief, or affection unless supported by the guardian's answers.",
-      "- Do not manufacture sadness. Avoid exaggerated sentimentality.",
-    ].join("\n"),
+    living: {
+      bright: [
+        "- Playful, affectionate, and a little mischievous.",
+        "- Use lively, conversational rhythm and slightly shorter sentences.",
+        "- Light humor is allowed only when it comes from the pet's actual supplied behavior.",
+        "- Do not overuse exclamation marks or text-laugh (lol, haha).",
+        "- Do not invent jokes, antics, excitement, motives, or events.",
+      ].join("\n"),
+      calm: [
+        "- Calm, affectionate, and unhurried.",
+        "- Prefer steady pacing and fewer exclamation marks.",
+        "- Keep the warmth of everyday closeness; do not make the letter sad.",
+        "- Do not add new facts or feelings.",
+      ].join("\n"),
+      warm: [
+        "- Warm and loving, like a note about today together.",
+        "- Let supplied moments of closeness carry the affection.",
+        "- Do not invent love or longing. Do not write consolation or grief language.",
+      ].join("\n"),
+    },
+    memorial: {
+      bright: [
+        "- Sound like this specific pet: simple, natural, recognizable.",
+        "- Do not force playful jokes or mischievous humor.",
+        "- Do not force grief language or therapy copy.",
+        "- Stay with supplied memories only.",
+      ].join("\n"),
+      calm: [
+        "- Restrained, simple, and sincere.",
+        "- Prefer steady pacing, fewer rhetorical questions, and fewer exclamation marks.",
+        "- Keep emotional expression understated. Avoid melodrama.",
+        "- Do not make the letter sad simply because the tone is calm.",
+        "- Do not add new facts or feelings.",
+      ].join("\n"),
+      warm: [
+        "- Gentle, emotionally warm, and reassuring—not therapy copy.",
+        "- Let supplied remembered moments carry the warmth.",
+        "- Do not invent love, longing, comfort, grief, or affection unless supported by the guardian's answers.",
+        "- Do not manufacture sadness. Avoid exaggerated sentimentality.",
+      ].join("\n"),
+    },
   },
   ko: {
-    bright: [
-      "- 밝고 장난스럽고 다정한 말투. 장난기는 설문에 나온 실제 행동에서만 가져온다.",
-      "- 조금 더 경쾌한 리듬과 짧은 문장을 허용한다.",
-      "- ㅋㅋ, ㅋ, 느낌표를 남발하지 마. 유머는 아이의 실제 버릇에서만.",
-      "- 새로운 장난, 행동, 신남, 이유를 만들어내지 않는다.",
-    ].join("\n"),
-    calm: [
-      "- 담담하고 차분하고 솔직한 문장. 수사 의문문을 줄인다.",
-      "- 느낌표를 줄이고 멜로드라마처럼 쓰지 마.",
-      "- 감정 표현은 절제한다.",
-      "- 차분한 톤이라고 해서 슬픔을 새로 만들지 않는다.",
-      "- 새로운 사실이나 감정을 추가하지 않는다.",
-    ].join("\n"),
-    warm: [
-      "- 부드럽고 따뜻한 위로. 상담 카피처럼 들리지 않게 한다.",
-      "- 설문에 나온 함께한 장면에서 따뜻함이 느껴지게 한다.",
-      "- 설문에 없는 사랑, 그리움, 위로, 슬픔, 애정을 새로 만들지 않는다.",
-      "- 슬픔을 만들어내지 마. 지나치게 감상적이거나 과장된 표현을 피한다.",
-    ].join("\n"),
+    living: {
+      bright: [
+        "- 밝고 장난스럽고 다정한 말투. 장난기는 설문에 나온 실제 행동에서만 가져온다.",
+        "- 조금 더 경쾌한 리듬과 짧은 문장을 허용한다.",
+        "- ㅋㅋ, ㅋ, 느낌표를 남발하지 마. 유머는 아이의 실제 버릇에서만.",
+        "- 새로운 장난, 행동, 신남, 이유를 만들어내지 않는다.",
+      ].join("\n"),
+      calm: [
+        "- 담담하고 다정한 문장. 일상의 온기를 지키되 슬픔을 만들지 마.",
+        "- 느낌표를 줄이고 과장하지 않는다.",
+        "- 새로운 사실이나 감정을 추가하지 않는다.",
+      ].join("\n"),
+      warm: [
+        "- 따뜻하고 사랑스러운 말투. 오늘의 곁에 있는 느낌.",
+        "- 설문에 나온 함께하는 장면에서 애정이 느껴지게 한다.",
+        "- 위로·이별·그리움 문장을 쓰지 마. 설문에 없는 감정을 만들지 마.",
+      ].join("\n"),
+    },
+    memorial: {
+      bright: [
+        "- 그 아이답고 자연스러운 말투. 장난 섞인 유머를 억지로 넣지 마.",
+        "- 상담 카피나 슬픔을 키우는 문장도 쓰지 마.",
+        "- 설문에 나온 기억된 버릇과 장면만 근거로 한다.",
+      ].join("\n"),
+      calm: [
+        "- 담담하고 차분하고 솔직한 문장. 수사 의문문을 줄인다.",
+        "- 느낌표를 줄이고 멜로드라마처럼 쓰지 마.",
+        "- 감정 표현은 절제한다.",
+        "- 차분한 톤이라고 해서 슬픔을 새로 만들지 않는다.",
+        "- 새로운 사실이나 감정을 추가하지 않는다.",
+      ].join("\n"),
+      warm: [
+        "- 부드럽고 따뜻한 위로. 상담 카피처럼 들리지 않게 한다.",
+        "- 설문에 나온 함께한 장면에서 따뜻함이 느껴지게 한다.",
+        "- 설문에 없는 사랑, 그리움, 위로, 슬픔, 애정을 새로 만들지 않는다.",
+        "- 슬픔을 만들어내지 마. 지나치게 감상적이거나 과장된 표현을 피한다.",
+      ].join("\n"),
+    },
   },
 };
 
@@ -201,7 +247,7 @@ export function buildTonePromptBlock(
   const tone = modeCopy(messages, mode).tone;
   const moodLabel = tone.find((item) => item.id === "q10")?.options.find((o) => o.id === tonePrefs.mood)?.label ?? "";
   const lengthLabel = tone.find((item) => item.id === "q12")?.options.find((o) => o.id === tonePrefs.length)?.label ?? "";
-  const moodGuidance = tonePrefs.mood ? TONE_STYLE_GUIDANCE[locale][tonePrefs.mood] : "";
+  const moodGuidance = tonePrefs.mood ? TONE_STYLE_GUIDANCE[locale][mode][tonePrefs.mood] : "";
 
   if (locale === "ko") {
     return [

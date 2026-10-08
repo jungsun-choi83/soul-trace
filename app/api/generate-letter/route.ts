@@ -192,8 +192,8 @@ type ParsedResponse = {
   endingPhrase: string;
 };
 
-function generatedLetterTitle(locale: Locale, profile: PetIntroProfile): string {
-  const template = (locale === "ko" ? ko : en).modes.memorial.letterHeading;
+function generatedLetterTitle(locale: Locale, profile: PetIntroProfile, mode: LetterMode): string {
+  const template = (locale === "ko" ? ko : en).modes[mode].letterHeading;
   return template.replace("%RECIPIENT%", resolveRecipientAddress(profile, locale));
 }
 
@@ -1351,7 +1351,7 @@ export async function POST(request: Request) {
             debugTiming("OpenAI letter stream completes");
 
             let letterStructure = parseMarkedLetter(
-              generatedLetterTitle(locale, petProfile),
+              generatedLetterTitle(locale, petProfile, mode),
               fullLetter,
               locale,
             );
@@ -1581,7 +1581,7 @@ export async function POST(request: Request) {
     }
 
     let letterStructure = createGeneratedLetterStructure(
-      generatedLetterTitle(locale, petProfile),
+      generatedLetterTitle(locale, petProfile, mode),
       parsed.letter,
       parsed.endingPhrase,
       locale,

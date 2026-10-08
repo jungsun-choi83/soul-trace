@@ -36,12 +36,20 @@ describe("explicit letter tone profiles", () => {
   });
 
   it("English and Korean receive their own natural-language guidance", () => {
-    assert.match(toneBlock("en", "bright", "short"), /lively, conversational rhythm/);
-    assert.match(toneBlock("en", "calm", "short"), /restrained, quiet phrasing/);
-    assert.match(toneBlock("en", "warm", "short"), /gentle, reassuring wording/);
-    assert.match(toneBlock("ko", "bright", "short"), /경쾌한 리듬/);
-    assert.match(toneBlock("ko", "calm", "short"), /안정적인 호흡/);
-    assert.match(toneBlock("ko", "warm", "short"), /부드럽고 따뜻한 어휘/);
+    assert.match(toneBlock("en", "bright", "short"), /Playful, affectionate/);
+    assert.match(toneBlock("en", "calm", "short"), /Calm, affectionate/);
+    assert.match(toneBlock("en", "warm", "short"), /Warm and loving/);
+    assert.match(toneBlock("ko", "bright", "short"), /밝고 장난스럽고 다정한/);
+    assert.match(toneBlock("ko", "calm", "short"), /담담하고 다정한/);
+    assert.match(toneBlock("ko", "warm", "short"), /따뜻하고 사랑스러운/);
+  });
+
+  it("memorial tone guidance is not the living playful profile", () => {
+    const living = buildTonePromptBlock("ko", { mood: "bright", length: "short", options: [] }, messages.ko, "living");
+    const memorial = buildTonePromptBlock("ko", { mood: "bright", length: "short", options: [] }, messages.ko, "memorial");
+    assert.match(living, /밝고 장난스럽고 다정한/);
+    assert.match(memorial, /그 아이답고 자연스러운/);
+    assert.notEqual(living, memorial);
   });
 
   it("short and normal length behavior remains unchanged", () => {
@@ -50,11 +58,11 @@ describe("explicit letter tone profiles", () => {
         const short = toneBlock(locale, mood, "short");
         const normal = toneBlock(locale, mood, "normal");
         if (locale === "en") {
-          assert.match(short, /Keep the letter naturally short/);
-          assert.match(normal, /Use a natural length shaped by the available memories/);
+          assert.match(short, /about 9-12 visually readable lines/);
+          assert.match(normal, /about 15-20 visually readable lines/);
         } else {
-          assert.match(short, /편지는 짧고 자연스럽게 쓴다/);
-          assert.match(normal, /편지는 기억의 양과 감정 흐름에 맞는 자연스러운 길이로 쓴다/);
+          assert.match(short, /대략 9~12줄/);
+          assert.match(normal, /대략 15~20줄/);
         }
       }
     }

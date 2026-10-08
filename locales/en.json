@@ -111,31 +111,47 @@
       "landingCta": "A companion still beside me",
       "landingHint": "Hear how today went—from their side of the room.",
       "headline": "What were they thinking today?",
-      "subline": "They can't say it out loud, but there's something they'd tell you every day.",
-      "letterHeading": "A letter to %RECIPIENT%",
+      "subline": "A small letter about their everyday life—what they might tell you today.",
+      "letterHeading": "Today, to %RECIPIENT%",
+      "memoryKicker": "STEP 2 — Today",
       "q1Label": "Pet's Name",
       "q2Label": "Pet Type",
       "yearPartedPlaceholder": "Now (this year)",
       "memory": [
         {
-          "promptText": "What little habit or quirk is unique to ○○?",
-          "placeholder": "Small, specific habits",
-          "example": "Has to sleep buried under blankets / Barks only at the delivery person"
+          "id": "living-habit",
+          "promptText": "What does ○○ do often these days—or when they don’t want to do something?",
+          "helper": "A strange habit or stubborn streak is perfect.",
+          "placeholder": "A current habit or stubborn behavior",
+          "example": "Runs over as soon as the fridge opens / Plants their whole body when they don’t want to move"
         },
         {
+          "id": "living-affection",
           "promptText": "How does ○○ show you they love you?",
+          "helper": "It doesn’t have to be a big gesture.",
           "placeholder": "Their way of showing love",
           "example": "Waits outside the bathroom / Sleeps only on your feet"
         },
         {
-          "promptText": "What lets you know ○○ is excited?",
+          "id": "living-excitement",
+          "promptText": "What sound or situation makes ○○ most excited?",
+          "helper": "Even a tiny signal is enough.",
           "placeholder": "Sounds, habits, little triggers",
           "example": "Treat bag rustling / The door code beeping / Running when the leash comes out"
         },
         {
-          "promptText": "What’s the first small scene that comes to mind when you think of this pet?",
-          "placeholder": "A small scene that comes to mind",
-          "example": "Waiting by the door / Napping in a patch of sun"
+          "id": "living-routine",
+          "promptText": "What’s ○○’s favorite spot or time of day right now?",
+          "helper": "A small everyday routine is enough.",
+          "placeholder": "A favorite place or time",
+          "example": "The afternoon sun patch / The sofa cushion beside you in the evening"
+        },
+        {
+          "id": "living-scene",
+          "promptText": "What’s a recent little moment that made you smile because of ○○?",
+          "helper": "It doesn’t have to be a big story—just a small scene from lately.",
+          "placeholder": "A recent everyday scene",
+          "example": "Drooling in front of a treat / Waiting with the leash in their mouth"
         }
       ],
       "tone": [
@@ -144,8 +160,8 @@
           "promptText": "Q10. What tone would you like?",
           "options": [
             { "id": "bright", "label": "Bright and playful" },
-            { "id": "calm", "label": "Calm and quiet" },
-            { "id": "warm", "label": "Warm and comforting" }
+            { "id": "calm", "label": "Calm and affectionate" },
+            { "id": "warm", "label": "Warm and loving" }
           ]
         },
         {
@@ -162,35 +178,60 @@
       "landingCta": "A companion who crossed the rainbow bridge",
       "landingHint": "There are still words they never got to say.",
       "headline": "The words they never got to say",
-      "subline": "They still had words left in their heart—words they never got to share.",
+      "subline": "Recall how they lived, through the small scenes you still see clearly.",
       "letterHeading": "A letter to %RECIPIENT%",
+      "memoryKicker": "STEP 2 — Memories",
       "q1Label": "Pet's Name",
       "q2Label": "Pet Type",
       "yearPartedPlaceholder": "Year they passed",
       "memory": [
         {
-          "promptText": "What little habit or quirk was unique to ○○?",
+          "id": "memorial-habit",
+          "promptText": "What little habit or stubborn quirk was unique to ○○?",
+          "helper": "Small is better. A habit only they had is enough.",
           "placeholder": "Small, specific habits",
           "example": "Had to sleep buried under blankets / Barked only at the delivery person"
         },
         {
+          "id": "memorial-affection",
           "promptText": "How did ○○ show you they loved you?",
+          "helper": "It doesn’t have to be a big gesture.",
           "placeholder": "Their way of showing love",
           "example": "Waiting outside the bathroom / Sleeping only on your feet"
         },
         {
-          "promptText": "What let you know ○○ was excited?",
+          "id": "memorial-excitement",
+          "promptText": "What sound or situation made ○○ most excited?",
+          "helper": "Even a tiny signal is enough.",
           "placeholder": "Sounds, habits, little triggers",
-          "example": "Treat bag rustling / The door code beeping / Running when the carrier came out"
+          "example": "Treat bag rustling / The door code beeping / Running from the carrier"
         },
         {
+          "id": "memorial-comfort",
+          "promptText": "Where or when did ○○ seem most comfortable?",
+          "helper": "A nap spot, a window, your lap—small places count.",
+          "placeholder": "A place or moment they seemed at ease",
+          "example": "Napping in a patch of sun / The spot by the door / Sitting on your lap"
+        },
+        {
+          "id": "memorial-scene",
           "promptText": "What’s the first small scene that comes to mind when you think of this pet?",
+          "helper": "It doesn’t have to be a big memory.\nSleeping beside you, waiting at the door,\nthe face they made for a treat.",
           "placeholder": "A small scene that comes to mind",
           "example": "Waiting by the door / Napping in a patch of sun"
         },
         {
-          "promptText": "(Optional) Is there something you still wish you could tell ○○?",
-          "placeholder": "Anything left unsaid",
+          "id": "memorial-unique",
+          "promptText": "Was there something only you knew about ○○—something others might miss?",
+          "helper": "A habit, a look, a strange preference. Anything that was uniquely them.",
+          "placeholder": "A trait only you would recognize",
+          "example": "Always turned the bowl before eating / Tilted their head at one specific song"
+        },
+        {
+          "id": "memorial-unsaid",
+          "promptText": "(Optional) Is there a small thing you wish you could tell ○○?",
+          "helper": "You can skip this. You don’t need a last word or a regret.",
+          "placeholder": "Anything you’d like to say",
           "optional": true,
           "optionalNote": "You can skip this one.",
           "skipLabel": "Skip"
@@ -201,9 +242,9 @@
           "id": "q10",
           "promptText": "Q10. What tone would you like?",
           "options": [
-            { "id": "bright", "label": "Bright and playful" },
             { "id": "calm", "label": "Calm and quiet" },
-            { "id": "warm", "label": "Warm and comforting" }
+            { "id": "warm", "label": "Warm and comforting" },
+            { "id": "bright", "label": "Like them, naturally" }
           ]
         },
         {

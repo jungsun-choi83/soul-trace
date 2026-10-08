@@ -29,7 +29,7 @@ describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () 
     for (const mode of LETTER_MODES) {
       it(`${name}/${mode}: 모드별 기억 질문과 톤 질문이 채워져 있다`, () => {
         const copy = modeCopy(messages, mode);
-        assert.equal(copy.memory.length, mode === "living" ? 4 : 5);
+        assert.equal(copy.memory.length, mode === "living" ? 5 : 7);
         assert.equal(copy.tone.length, 2);
         assert.deepEqual(
           copy.tone.map((q) => q.id),
@@ -40,9 +40,10 @@ describe("갈래별 문구 — 두 언어가 같은 모양이어야 한다", () 
           assert.ok(item.placeholder.trim().length > 0);
         }
         if (mode === "memorial") {
-          // 못다 한 말 질문은 추모 갈래에만 남고 선택적으로 건너뛸 수 있다.
-          assert.equal(copy.memory[4].optional, true);
-          assert.ok((copy.memory[4].skipLabel ?? "").trim().length > 0);
+          const optional = copy.memory[copy.memory.length - 1];
+          assert.equal(optional.optional, true);
+          assert.ok((optional.skipLabel ?? "").trim().length > 0);
+          assert.equal(copy.memory.filter((item) => item.optional).length, 1);
         } else {
           assert.ok(copy.memory.every((item) => item.optional !== true));
         }

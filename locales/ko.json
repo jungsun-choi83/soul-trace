@@ -111,31 +111,47 @@
       "landingCta": "지금 곁에 있는 아이",
       "landingHint": "우리 아이의 오늘을 편지로 받아보세요.",
       "headline": "우리 아이는 오늘 무슨 생각을 했을까요?",
-      "subline": "아이의 표정과 행동에는 저마다의 이야기가 담겨 있어요.",
-      "letterHeading": "%RECIPIENT%에게 보내는 편지",
+      "subline": "오늘 하루, 아이가 전하고 싶은 작은 이야기를 들려주세요.",
+      "letterHeading": "오늘 %RECIPIENT%에게",
+      "memoryKicker": "STEP 2 — 오늘",
       "q1Label": "아이 이름",
       "q2Label": "반려동물 종류",
       "yearPartedPlaceholder": "지금 (올해)",
       "memory": [
         {
-          "promptText": "○○만 하는 이상한 버릇이나 고집이 있나요?",
-          "placeholder": "사소하고 특별한 습관을 적어주세요",
-          "example": "꼭 이불 속으로 파고들어야 자요 / 택배 아저씨한테만 짖어요"
+          "id": "living-habit",
+          "promptText": "○○가 요즘 자주 하거나, 하기 싫을 때 보여주는 행동이 있나요?",
+          "helper": "이상한 버릇이나 고집이어도 좋아요.",
+          "placeholder": "요즘 자주 하는 행동을 적어주세요",
+          "example": "냉장고 문만 열어도 달려와요 / 하기 싫으면 온몸을 심고 버텨요"
         },
         {
-          "promptText": "○○가 당신에게 사랑을 표현하는 방식은?",
-          "placeholder": "아이만의 방식을 적어주세요",
+          "id": "living-affection",
+          "promptText": "○○는 당신에게 사랑을 어떻게 표현하나요?",
+          "helper": "큰 제스처가 아니어도 괜찮아요.",
+          "placeholder": "아이만의 애정 표현을 적어주세요",
           "example": "화장실 앞에서 기다려요 / 발등에만 올라와서 자요"
         },
         {
-          "promptText": "○○가 신났다는 걸 알 수 있는 신호가 있나요?",
-          "placeholder": "소리·습관·트리거를 적어주세요",
+          "id": "living-excitement",
+          "promptText": "○○가 어떤 소리나 상황에 가장 신나 하나요?",
+          "helper": "작은 신호여도 좋아요.",
+          "placeholder": "신날 때 보이는 신호를 적어주세요",
           "example": "간식 봉지 소리 / 현관 비밀번호 소리 / 산책 줄 꺼내면 뛰어와요"
         },
         {
-          "promptText": "이 아이를 떠올리면 가장 먼저 생각나는 작은 장면은?",
-          "placeholder": "떠오르는 작은 장면을 적어주세요",
-          "example": "현관에서 나를 기다리던 모습 / 햇살 아래 낮잠 자던 모습"
+          "id": "living-routine",
+          "promptText": "○○가 요즘 가장 좋아하는 자리나 시간이 있나요?",
+          "helper": "매일 반복되는 작은 루틴이면 충분해요.",
+          "placeholder": "좋아하는 자리나 시간을 적어주세요",
+          "example": "오후 햇살 자리 / 저녁에 소파 옆자리"
+        },
+        {
+          "id": "living-scene",
+          "promptText": "최근에 ○○ 때문에 웃었던 작은 장면이 있나요?",
+          "helper": "거창한 사건이 아니어도 괜찮아요. 오늘이나 요즈음의 작은 순간이면 돼요.",
+          "placeholder": "최근의 작은 장면을 적어주세요",
+          "example": "간식 앞에서 침 흘리던 표정 / 산책 나가자고 줄 물고 기다리던 모습"
         }
       ],
       "tone": [
@@ -144,8 +160,8 @@
           "promptText": "Q10. 어떤 분위기가 좋으세요?",
           "options": [
             { "id": "bright", "label": "밝고 장난스럽게" },
-            { "id": "calm", "label": "담담하고 차분하게" },
-            { "id": "warm", "label": "따뜻한 위로 중심" }
+            { "id": "calm", "label": "담담하고 다정하게" },
+            { "id": "warm", "label": "따뜻하고 사랑스럽게" }
           ]
         },
         {
@@ -161,36 +177,61 @@
     "memorial": {
       "landingCta": "무지개 다리를 건넌 아이",
       "landingHint": "함께한 기억을 한 통의 편지로 남겨보세요.",
-      "headline": "함께한 아이에게 쓰는 편지",
-      "subline": "함께한 기억을 떠올리며 아이의 이야기를 들려주세요.",
+      "headline": "그 아이에게 아직 남아 있던 말",
+      "subline": "그 아이가 어떻게 살았는지, 작은 장면으로 떠올려 주세요.",
       "letterHeading": "%RECIPIENT%에게 보내는 편지",
+      "memoryKicker": "STEP 2 — 기억",
       "q1Label": "아이 이름",
       "q2Label": "반려동물 종류",
       "yearPartedPlaceholder": "헤어진 해",
       "memory": [
         {
-          "promptText": "○○만 하던 이상한 버릇이나 고집이 있었나요?",
+          "id": "memorial-habit",
+          "promptText": "○○만의 이상한 버릇이나 고집이 있었나요?",
+          "helper": "사소해도 좋아요. 그 아이만의 습관이면 충분해요.",
           "placeholder": "사소하고 특별한 습관을 적어주세요",
           "example": "꼭 이불 속으로 파고들어야 잤어요 / 택배 아저씨한테만 짖었어요"
         },
         {
+          "id": "memorial-affection",
           "promptText": "○○가 당신에게 사랑을 표현하던 방식은?",
+          "helper": "큰 제스처가 아니어도 괜찮아요.",
           "placeholder": "아이만의 방식을 적어주세요",
           "example": "화장실 앞에서 기다렸어요 / 발등에만 올라와서 잤어요"
         },
         {
-          "promptText": "○○가 신났던 순간을 알 수 있는 신호가 있었나요?",
+          "id": "memorial-excitement",
+          "promptText": "○○가 어떤 소리나 상황에 가장 신나 했나요?",
+          "helper": "작은 신호여도 좋아요.",
           "placeholder": "소리·습관·트리거를 적어주세요",
-          "example": "간식 봉지 소리 / 현관 비밀번호 소리 / 캐리어 꺼내면 도망"
+          "example": "간식 봉지 소리 / 현관 비밀번호 소리 / 캐리어 꺼내면 도망갔어요"
         },
         {
-          "promptText": "이 아이를 떠올리면 가장 먼저 생각나는 작은 장면은?",
+          "id": "memorial-comfort",
+          "promptText": "○○가 가장 편안해 보였던 순간이나 장소가 있었나요?",
+          "helper": "같이 자던 자리, 창가, 무릎 위처럼 작은 곳이어도 괜찮아요.",
+          "placeholder": "편안해 보였던 자리나 순간을 적어주세요",
+          "example": "햇살 아래 낮잠 / 현관 앞 자리 / 무릎 위에 올라와 있던 모습"
+        },
+        {
+          "id": "memorial-scene",
+          "promptText": "이 아이를 떠올리면 가장 먼저 생각나는 작은 장면이 있나요?",
+          "helper": "거창한 추억이 아니어도 괜찮아요.\n같이 자던 모습, 현관에서 기다리던 순간,\n간식을 기다리던 표정처럼요.",
           "placeholder": "떠오르는 작은 장면을 적어주세요",
           "example": "현관에서 나를 기다리던 모습 / 햇살 아래 낮잠 자던 모습"
         },
         {
-          "promptText": "(선택) ○○에게 아직 미안한 게 있으신가요?",
-          "placeholder": "마음에 남은 말이 있다면 적어주세요",
+          "id": "memorial-unique",
+          "promptText": "다른 사람은 잘 모르지만, 보호자만 아는 ○○만의 모습이 있었나요?",
+          "helper": "버릇, 표정, 이상한 취향처럼 그 아이만의 작은 특징이면 돼요.",
+          "placeholder": "보호자만 아는 모습을 적어주세요",
+          "example": "밥그릇을 꼭 돌려 놓고 먹었어요 / 특정 노래만 나오면 고개를 기울였어요"
+        },
+        {
+          "id": "memorial-unsaid",
+          "promptText": "(선택) ○○에게 전하고 싶은 작은 말이 있나요?",
+          "helper": "없어도 괜찮아요. 후회나 마지막 말을 적을 필요는 없어요.",
+          "placeholder": "전하고 싶은 말이 있다면 적어주세요",
           "optional": true,
           "optionalNote": "이 질문은 답하지 않으셔도 괜찮아요.",
           "skipLabel": "건너뛰기"
@@ -201,9 +242,9 @@
           "id": "q10",
           "promptText": "Q10. 어떤 분위기가 좋으세요?",
           "options": [
-            { "id": "bright", "label": "밝고 장난스럽게" },
             { "id": "calm", "label": "담담하고 차분하게" },
-            { "id": "warm", "label": "따뜻한 위로 중심" }
+            { "id": "warm", "label": "따뜻한 위로 중심" },
+            { "id": "bright", "label": "그 아이답고 자연스럽게" }
           ]
         },
         {

@@ -26,6 +26,7 @@ export type ModeSurveyItem = {
   id?: string;
   promptText: string;
   placeholder: string;
+  helper?: string;
   example?: string;
   optional?: boolean;
   optionalNote?: string;
@@ -44,6 +45,7 @@ export type ModeCopy = {
   headline: string;
   subline: string;
   letterHeading: string;
+  memoryKicker?: string;
   q1Label: string;
   q2Label: string;
   yearPartedPlaceholder: string;
