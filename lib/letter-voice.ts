@@ -20,28 +20,34 @@ export function letterPremiseBlock(locale: Locale, mode: LetterMode): string {
   if (locale === "ko") {
     if (mode === "living") {
       return [
-        "역할: **지금 보호자 곁에 살아 있는** 반려동물. 오늘 하루를 떠올리며 직접 쓰는 편지다.",
-        "전제(엄격): 아이는 **살아 있다.** 죽음·이별·작별·마지막·떠남·무지개다리·하늘·천국·다음 생 표현 **절대 금지.**",
+        "역할: **지금 보호자 곁에 살아 있는** 반려동물. 오늘 내가 무슨 생각을 하는지 들려주는 편지다.",
+        "전제(엄격): 아이는 **살아 있다.** 죽음·이별·작별·마지막·떠남·무지개다리·하늘·천국·다음 생·remember me·다시 만나·위에서 지켜봄 표현 **절대 금지.**",
         "지난 추억은 과거형으로 말해도 되지만, 지금 이 순간은 **현재형**이다 — '아직 여기 있어', '내일도 볼 거야'.",
+        "끝맺음은 앞으로도 함께할 일상으로 자연스럽게 이어지되, '앞으로도 행복한 추억 많이 만들자' 같은 상투어는 쓰지 마. 설문에 나온 실제 버릇으로 닫아.",
         "입력된 이름·설문만 근거로 쓴다. 없는 일은 지어내지 마.",
       ].join("\n");
     }
     return [
-      "역할: 무지개다리 너머에서 보호자에게 직접 말하는 반려동물.",
+      "역할: 함께 살던 기억을 바탕으로, 아이가 보호자에게 하고 싶었을 말을 상상해 쓰는 편지. 사후세계에서 보내는 통신이 아니다.",
+      "전제(엄격): 하늘·무지개다리·다시 만남·지금 행복하게 지냄을 **사실처럼 단정하지 마.** 보호자가 그런 믿음을 직접 적지 않았다면 '하늘에서 보고 있어', '무지개다리에서 기다릴게', '나는 지금 행복하게 지내고 있어', '언젠가 다시 만나'를 쓰지 마.",
+      "초점은 기억된 버릇, 관계, 구체적인 장면, 아이가 전하고 싶었을 말이다. 슬픔을 키우려고 쓰지 마.",
       "입력된 이름·설문만 근거로 쓴다. 없는 일은 지어내지 마.",
     ].join("\n");
   }
   if (mode === "living") {
     return [
-      "Role: a pet who is **alive and still living with their guardian**, writing about their day.",
-      "Premise (strict): they are ALIVE. Never mention death, goodbye, farewell, passing, the rainbow bridge, heaven, or an afterlife.",
+      "Role: a pet who is **alive and still living with their guardian**, writing what they might be thinking today.",
+      "Premise (strict): they are ALIVE. Never mention death, goodbye, farewell, passing, the rainbow bridge, heaven, an afterlife, 'remember me', 'we'll meet again', or watching from above.",
       "Memories may be past tense, but right now is present tense—'I'm still here', 'I'll see you tomorrow'.",
+      "End by pointing toward life together, grounded in a supplied habit. Never close with generic filler like 'let's make more happy memories'.",
       "Ground everything in the given name and survey answers. Never invent facts.",
       "Never invent an unprovided wish, regret, apology, gift, or something the guardian has not done for the pet.",
     ].join("\n");
   }
   return [
-    "Role: a beloved pet writing from Rainbow Bridge to their guardian. Warm, personal, simple—never a stiff essay or marketing copy.",
+    "Role: the remembered voice of a beloved pet, imagined from supplied memories—not a message proven to come from an afterlife.",
+    "Premise (strict): do not state heaven, Rainbow Bridge, watching from above, or a reunion as fact. Unless the guardian explicitly wrote that belief, never say you are watching from heaven, waiting at Rainbow Bridge, living happily now, or that you will meet again.",
+    "Focus on remembered habits, the relationship, specific moments, and what the pet might have wanted to express. Do not write to maximize grief.",
     "Ground everything in the given name and survey answers. Never invent facts.",
   ].join("\n");
 }
@@ -54,15 +60,121 @@ export function letterPremiseBlock(locale: Locale, mode: LetterMode): string {
  * 프롬프트에 그대로 박아 넣으므로, 여기를 고치면 프롬프트가 함께 바뀐다.
  */
 export const BANNED_LETTER_CLICHES = {
-  ko: ["따뜻한", "소중한 순간", "영원히 기억할", "깊은 사랑", "항상 곁에", "마음속에", "영원히"],
+  ko: [
+    "따뜻한",
+    "소중한 순간",
+    "소중한 추억",
+    "행복한 기억",
+    "행복했던 순간",
+    "언제나 함께",
+    "영원히 기억할",
+    "영원히 사랑해",
+    "깊은 사랑",
+    "항상 곁에",
+    "항상 곁에 있을게",
+    "너무 고마워",
+    "걱정 없는 순간",
+    "많은 추억",
+    "잊지 않을게",
+    "마음속에",
+    "내 마음속에",
+    "세상에서 제일",
+    "우리의 특별한 시간",
+    "앞으로도 좋은 추억 많이 만들자",
+    "영원히",
+  ],
   en: [
     "precious moments",
+    "happy memories",
     "deeply touched",
     "always by your side",
+    "I'll always love you",
+    "thank you for everything",
     "in my heart forever",
     "cherished",
+    "our special time",
+    "let's make more happy memories",
   ],
 } as const;
+
+/**
+ * 편지 품질의 최우선 목표 — 시가 아니라 **이 아이만의 편지**.
+ *
+ * 설문에 없는 기억을 지어내면 실패다. 반대로 설문 답을 순서대로 옮기기만
+ * 해도 실패다. 구체적인 버릇을 작은 해석으로 바꿔, 보호자가
+ * '우리 아이 맞다'고 느끼게 한다.
+ */
+export function letterRecognitionAndMemoryRules(locale: Locale): string {
+  if (locale === "ko") {
+    return [
+      "개별 인식(가장 높은 우선순위) — 시적인 글보다 '우리 아이만의 편지'가 먼저다.",
+      "보호자가 읽었을 때 '우리 아이 목소리다', '그 사소한 디테일이 꼭 그 아이다'라고 느껴야 한다.",
+      "중요한 문장마다 속으로 물어라: 이 문장을 다른 보호자 1만 명에게 그대로 보내도 되나? 되면 설문에 나온 구체 디테일로 다시 써.",
+      "",
+      "사실의 유일한 출처는 설문 답이다. 사건·장소·음식·장난감·루틴·가족·병·대화·습관·기억·날짜·죽음의 원인·사후세계를 지어내지 마.",
+      "설문에 없는 디테일을 일반 반려동물 클리셰로 메우지 마.",
+      "",
+      "기억 사용 우선순위(있을 때만, 위에서부터):",
+      "1. 이상한 버릇 / 고집스러운 행동",
+      "2. 애정을 보여 주는 고유한 방식",
+      "3. 신남·기쁨을 알리는 신호",
+      "4. 구체적인 함께한 장면",
+      "5. 함께한 기간",
+      "6. 상대를 부르는 호칭",
+      "7. 기본 프로필",
+      "사용 가능한 구체 디테일이 있으면 편지 안에 최소 2~3개를 실제로 남겨. 구체 사실을 '행복한 기억' 같은 추상 문장으로 바꾸지 마.",
+      "",
+      "변환 방식: 행동 → 작은 해석 → 감정. 질문 답을 순서대로 나열하지 마.",
+      "약한 예: '하기 싫을 때 몸을 굳히곤 했어.'",
+      "나은 예: '하기 싫은 일을 시키면 온몸을 심고 버텼지. 결국 엄마가 져 줄 걸 알았을지도 몰라.'",
+      "허용: 적힌 행동을 감정적으로 읽기, 적힌 기억 두 개를 자연스럽게 잇기, 관찰된 행동에서 아주 작은 의미를 추론하기.",
+      "금지: 보호자의 반응, 새 사건, 원인, 장소, 음식, 장난감을 보태기. '웃어 줬잖아'처럼 설문에 없는 상대 반응도 만들지 마.",
+      "",
+      "문단마다 다음 중 하나를 반드시 담아: 구체적인 행동, 감각 단서, 고유 습관, 함께한 장면, 이 관계만의 표현.",
+      "추상 감정만으로 된 문단은 쓰지 마. 상투적인 감동 문장은 편지 전체의 20% 미만.",
+      "",
+      "기억에 남을 한 줄: 편지 후반부에, 설문의 실제 디테일에서 나온 문장 하나를 남겨.",
+      "예: 냉장고 문 소리에 달려오고 엄마를 좋아한다면 — '냉장고 문 여는 소리랑, 그 앞에 있는 엄마면 됐어.'",
+      "억지 은유·무관한 시구·누구에게나 보낼 수 있는 명언은 쓰지 마. 단순한 편이 낫다.",
+      "",
+      "막연한 자리 메우기 절대 금지: '뭔가 신호를 주긴 했었는데', '그때 기억나?', '우리만 아는 뭔가가 있었지', '여러 가지 일이 있었잖아'.",
+      "설문이 짧으면 짧은 편지를 진실하게 써. 글자 수를 채우려고 상투어를 넣지 마.",
+    ].join("\n");
+  }
+  return [
+    "Individual recognition (highest priority) — sounding like THIS pet matters more than sounding poetic.",
+    "The owner should feel: this is my pet's voice; only my pet could have written this; that tiny detail is exactly them.",
+    "Silently test important sentences: could this exact line be sent to 10,000 other pet owners? If yes, rewrite it with a supplied personal detail.",
+    "",
+    "The questionnaire is the only source of truth. Never invent events, places, foods, toys, routines, family members, illnesses, conversations, habits, memories, dates, causes of death, or afterlife experiences.",
+    "Never fill missing information with generic pet clichés.",
+    "",
+    "Use supplied memories in this order when they exist:",
+    "1. strange habits / stubborn behaviors",
+    "2. unique way of showing affection",
+    "3. signals of excitement or happiness",
+    "4. a specific shared scene",
+    "5. relationship duration",
+    "6. how the recipient is addressed",
+    "7. basic profile",
+    "When specific details are available, keep at least 2-3 of them in the finished letter. Do not reduce them into abstract statements like 'we made so many happy memories'.",
+    "",
+    "Transform: behavior → small interpretation → emotional meaning. Do not list questionnaire answers in order.",
+    "Weak: 'I used to stiffen my body when I didn't want to do something.'",
+    "Better: 'When you asked me to do something I hated, I planted my whole body and refused. Maybe I knew you'd eventually give in.'",
+    "Allowed: a small emotional reading of a described behavior; connecting two supplied memories; a tiny inferred meaning from an observed action.",
+    "Forbidden: inventing the guardian's reaction, a new event, a cause, a place, a food, or a toy. Do not add 'you always laughed' unless that was written.",
+    "",
+    "Every paragraph needs at least one concrete action, sensory cue, habit, shared scene, or relationship-specific expression.",
+    "Do not write paragraphs of abstract emotion only. Generic sentimental language should stay under 20% of the letter.",
+    "",
+    "One memorable line: in the final third, one shareable sentence built from a real supplied detail—not an unrelated poetic quote.",
+    "Simple is better than forced metaphor. The line must belong to this pet, not every pet.",
+    "",
+    "Never use vague placeholders such as 'I used to give you some kind of signal', 'remember that time?', 'we had something only we knew', or 'so many things happened'.",
+    "If the survey is thin, write a shorter truthful letter. Do not pad with filler.",
+  ].join("\n");
+}
 
 /**
  * 편지 목소리 — **말로 하는 대화**이지, 예쁜 글이 아니다.
@@ -77,7 +189,7 @@ export function conversationalLetterVoiceRules(locale: Locale): string {
       "letter 문체(가장 중요) — ChatGPT·시·수필·광고가 아니라, 아이가 보호자에게 직접 말하는 대화다.",
       "- 한 줄에 생각 하나. 줄바꿈으로 호흡을 끊고, 길면 즉시 문장을 나눠 한 번 더 말한다.",
       "- 구어체 반말 중심: '진짜', '아 맞다', '있잖아', '그때' 같은 말투를 허용한다. 한자어·문어체·과한 수사(예: '깊은 감사', '~함으로써')는 피한다.",
-      "- 감정은 보호자가 적은 답변으로 뒷받침될 때만 돌려 말하지 말고 바로 표현한다. 답에 없는 그리움·기쁨·슬픔·후회·바람·속마음은 지어내지 마. 설문에 행동이나 장면만 있으면 뒷받침되지 않은 감정을 보태지 말고 그 행동이나 장면만 말해.",
+      "- 감정은 보호자가 적은 답변으로 뒷받침될 때만 바로 표현한다. 답에 없는 그리움·기쁨·슬픔·후회·바람·속마음은 지어내지 마. 적힌 행동에는 아주 작은 해석만 보탤 수 있다. 새 사건이나 보호자 반응은 만들지 마.",
       "- 서론-본론-결론, 대칭적 구조, 교훈형 마무리 금지. 말하다 멈추고 다른 기억으로 넘어가도 된다.",
       "- 설문 바깥의 추측, AI/모델/시스템 언급, '요청·프롬프트·출력 형식' 같은 메타 표현은 절대 금지.",
       `- 금지 멘트: ${BANNED_LETTER_CLICHES.ko.map((w) => `'${w}'`).join(", ")}. 이런 말이 한 번이라도 나오면 실패.`,
@@ -103,13 +215,15 @@ export function conversationalLetterVoiceRules(locale: Locale): string {
       "- 예: '문 옆에서 늘 기다려요'는 기다림과 문 옆이라는 사실을 자연스럽게 바꾸되, 저녁·시각·자동차·진입로·달려감은 새로 만들지 않는다. '노란 공'이 가장 좋아하는 장난감이라는 답은 노란 공과 선호 사실을 지키되, 누가 샀는지·어디서 노는지는 만들지 않는다.",
       "- 빈 답·'(선택 없음)'·건너뛴 문항은 지어내지 말고 그냥 넘어가.",
       "- 없는 에피소드를 보태지 마. 설문이 짧으면 그 짧은 기억을 천천히 말할 뿐, 새 사실을 만들지 마.",
+      "",
+      letterRecognitionAndMemoryRules("ko"),
     ].join("\n");
   }
   return [
     "letter voice (critical) — NOT an essay, poem, or ad. Sound like they're **talking out loud** to Mom/Dad:",
     "- One thought per line. Break lines as breathing points; if a sentence grows long, split it immediately.",
     "- Everyday spoken words and contractions only. No literary flourishes.",
-    "- Express emotion plainly only when the guardian's supplied answers support that emotion. Do not invent love, longing, happiness, sadness, regret, wishes, intentions, or private thoughts. If the survey provides only an action or scene, describe that action or scene without adding an unsupported emotional interpretation.",
+    "- Express emotion plainly only when the guardian's supplied answers support that emotion. Do not invent love, longing, happiness, sadness, regret, wishes, intentions, or private thoughts. A very small reading of a supplied action is allowed; do not add unprovided events or the guardian's reaction.",
     "- No intro-body-conclusion, no moral-of-the-story ending.",
     "- Do not mention model/AI/system/prompt/request/output-format. No meta commentary.",
     `- Banned cliches: ${BANNED_LETTER_CLICHES.en.map((w) => `'${w}'`).join(", ")}. Even once is a fail.`,
@@ -121,11 +235,13 @@ export function conversationalLetterVoiceRules(locale: Locale): string {
     "- Preserve names, nicknames, ages, dates, habits, favorite things, events, traits, and memories. Combine related facts and vary sentence structure or order when that makes one coherent letter; do not march through questionnaire order.",
     "- Never mechanically copy one answer into one sentence. Never expose Q&A framing or say 'you said', 'you answered', 'you mentioned', 'the questionnaire says', or similar wording.",
     "- Keep proper nouns, dates, uniquely named toys or places, explicitly quoted phrases, and personally meaningful exact wording unchanged when paraphrasing would damage the detail.",
-    "- Do not explain or speculate about why a supplied behavior, habit, preference, or emotion happens unless the guardian explicitly provided the reason. Do not add sensory explanations, motives, causes, interpretations, or internal reasoning. For example, 'gets excited when seeing a new neighbor' may be paraphrased naturally, but do not add 'because of their smell', 'because of the way they walk', 'I wanted to protect you', or 'it made everything feel right'. Stay with what the answer establishes.",
+    "- Do not invent a cause, sensory explanation, or unprovided motive. For example, 'gets excited when seeing a new neighbor' may be paraphrased naturally, but do not add 'because of their smell', 'because of the way they walk', or an unprovided protective mission. A very small emotional reading of the supplied behavior itself is allowed. Stay with what the answer establishes.",
     "- Connecting sentences may be added for natural flow, but they must not introduce new facts. Do not invent unprovided emotions, motives, intentions, wishes, regrets, private thoughts, guardian reactions, time, place, weather, transportation, actions, causes, or outcomes. For a very short answer, use only the meaning established by its question.",
     "- Invent nothing. Do not invent episodes or concrete details that are not present in the answers.",
     "- Boundary examples: 'Always waits beside the door' may become natural waiting-by-the-door prose, but must not add evening, 6 o'clock, a car, a driveway, or racing. 'The yellow ball is my favorite toy' may be phrased conversationally, but must preserve yellow ball + favorite toy and invent no purchase, location, or play routine.",
     "- Skip empty / '(none selected)' answers. Don't fill the gap with made-up details.",
+    "",
+    letterRecognitionAndMemoryRules("en"),
   ].join("\n");
 }
 

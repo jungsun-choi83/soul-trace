@@ -5,6 +5,7 @@ import {
   BANNED_LETTER_CLICHES,
   conversationalLetterVoiceRules,
   letterPremiseBlock,
+  letterRecognitionAndMemoryRules,
 } from "./letter-voice.ts";
 import { __internal, buildLetterAddressingBlock } from "./pet-profile.ts";
 
@@ -61,9 +62,17 @@ describe("편지 전제 — 갈래별 금지어", () => {
     assert.match(en, /rainbow bridge/i);
   });
 
-  it("추모 갈래는 무지개다리 너머에서 말한다", () => {
-    assert.match(letterPremiseBlock("ko", "memorial"), /무지개다리 너머/);
-    assert.match(letterPremiseBlock("en", "memorial"), /Rainbow Bridge/);
+  it("추모 갈래는 사후세계를 사실로 단정하지 않는다", () => {
+    const ko = letterPremiseBlock("ko", "memorial");
+    const en = letterPremiseBlock("en", "memorial");
+    assert.doesNotMatch(ko, /무지개다리 너머에서/);
+    assert.doesNotMatch(en, /writing from Rainbow Bridge/i);
+    assert.match(ko, /사실처럼 단정하지 마/);
+    assert.match(ko, /하늘에서 보고 있어/);
+    assert.match(ko, /무지개다리에서 기다릴게/);
+    assert.match(en, /do not state heaven, Rainbow Bridge/i);
+    assert.match(en, /waiting at Rainbow Bridge/i);
+    assert.match(en, /Do not write to maximize grief/i);
   });
 
   it("두 갈래의 전제가 서로 다르다", () => {
@@ -116,6 +125,29 @@ describe("편지 문체 — 대화체 규칙", () => {
       }
     });
   }
+
+  it("개별 인식 규칙을 대화체 프롬프트에 포함한다", () => {
+    for (const locale of ["ko", "en"] as const) {
+      const rules = conversationalLetterVoiceRules(locale);
+      const recognition = letterRecognitionAndMemoryRules(locale);
+      assert.ok(rules.includes(recognition));
+      if (locale === "ko") {
+        assert.match(rules, /개별 인식\(가장 높은 우선순위\)/);
+        assert.match(rules, /이상한 버릇 \/ 고집스러운 행동/);
+        assert.match(rules, /행동 → 작은 해석 → 감정/);
+        assert.match(rules, /최소 2~3개/);
+        assert.match(rules, /기억에 남을 한 줄/);
+        assert.match(rules, /뭔가 신호를 주긴 했었는데/);
+      } else {
+        assert.match(rules, /Individual recognition \(highest priority\)/);
+        assert.match(rules, /strange habits \/ stubborn behaviors/);
+        assert.match(rules, /behavior → small interpretation → emotional meaning/);
+        assert.match(rules, /at least 2-3/);
+        assert.match(rules, /One memorable line/);
+        assert.match(rules, /vague placeholders/);
+      }
+    }
+  });
 
   it("한국어 작성 원칙은 한국어 프롬프트에만 포함한다", () => {
     const ko = conversationalLetterVoiceRules("ko");
