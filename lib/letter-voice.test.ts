@@ -70,9 +70,18 @@ describe("편지 전제 — 갈래별 금지어", () => {
     assert.match(ko, /사실처럼 단정하지 마/);
     assert.match(ko, /하늘에서 보고 있어/);
     assert.match(ko, /무지개다리에서 기다릴게/);
+    assert.match(ko, /나를 잊지 마/);
+    assert.match(ko, /기다리고 있을게/);
+    assert.match(ko, /아직도/);
+    assert.match(ko, /경계심이 있었던 걸까/);
+    assert.match(ko, /어떻게 살았는지 정확히 기억난다/);
     assert.match(en, /do not state heaven, Rainbow Bridge/i);
     assert.match(en, /waiting at Rainbow Bridge/i);
     assert.match(en, /Do not write to maximize grief/i);
+    assert.match(en, /don't forget me/);
+    assert.match(en, /I'll be waiting/);
+    assert.match(en, /how this pet lived/i);
+    assert.match(en, /speaking from somewhere now/i);
   });
 
   it("두 갈래의 전제가 서로 다르다", () => {
@@ -138,6 +147,8 @@ describe("편지 문체 — 대화체 규칙", () => {
         assert.match(rules, /이상하게 그게 제일 편했어/);
         assert.match(rules, /아빠가 웃으셨겠지\?/);
         assert.match(rules, /중요한 사람이라는 생각이 들었나 봐/);
+        assert.match(rules, /경계심이 있었던 걸까/);
+        assert.match(rules, /문밖에서 인기척만 나도/);
         assert.match(rules, /마지막 25~30%/);
         assert.match(rules, /마지막 세 문장/);
         assert.match(rules, /디테일 1~3개/);

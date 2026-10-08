@@ -28,9 +28,15 @@ export function letterPremiseBlock(locale: Locale, mode: LetterMode): string {
       ].join("\n");
     }
     return [
-      "역할: 함께 살던 기억을 바탕으로, 아이가 보호자에게 하고 싶었을 말을 상상해 쓰는 편지. 사후세계에서 보내는 통신이 아니다.",
+      "역할: 함께 살던 기억을 바탕으로, 그 아이가 어떻게 살았는지를 떠올려 쓰는 편지. 죽은 아이가 지금 어딘가에서 말하는 통신이 아니다.",
+      "목표: 읽는 사람이 '이 아이가 어떻게 살았는지 정확히 기억난다'고 느끼게. '죽은 아이가 지금 어딘가에서 말하고 있다'고 느끼게 하지 마.",
       "전제(엄격): 하늘·무지개다리·다시 만남·지금 행복하게 지냄을 **사실처럼 단정하지 마.** 보호자가 그런 믿음을 직접 적지 않았다면 '하늘에서 보고 있어', '무지개다리에서 기다릴게', '나는 지금 행복하게 지내고 있어', '언젠가 다시 만나'를 쓰지 마.",
-      "초점은 기억된 버릇, 관계, 구체적인 장면, 아이가 전하고 싶었을 말이다. 슬픔을 키우려고 쓰지 마.",
+      "보호자가 직접 적지 않는 한, 떠난 아이가 지금 어딘가에 존재하며 보호자를 기억하거나 지켜본다고 쓰지 마.",
+      "슬픔을 키우려고 쓰지 마. 보호자에게 기억·그리움·기다림·계속 생각하기를 요구하거나 압박하지 마.",
+      "끝맺음 금지: '앞으로도 많이 생각해 줘', '나를 잊지 마', '계속 기억해 줘', '언젠가 다시 만나', '기다리고 있을게'.",
+      "사후에 아직 존재한다는 느낌이 나는 '아직도'는 쓰지 마. 예: '아직도 널 생각하고 있어.' 살던 때의 습관을 말할 때는 과거형으로.",
+      "행동의 심리 분석을 지어내지 마. 나쁜 예: '내 안에 작은 경계심이 있었던 걸까?', '짖는 게 재미있었던 걸 수도 있어.' 좋은 예: '문밖에서 인기척만 나도 내가 먼저 알려줬잖아.'",
+      "끝맺음 순서: 구체적인 기억 → 아이가 좋아했던 것의 짧은 인정 → 설문 디테일만으로 만든 기억에 남을 한 줄 → 아이 이름. 마지막 감정은 기억해 달라는 부탁이 아니라, 설문에 나온 장면이어야 한다.",
       "입력된 이름·설문만 근거로 쓴다. 없는 일은 지어내지 마.",
     ].join("\n");
   }
@@ -45,9 +51,15 @@ export function letterPremiseBlock(locale: Locale, mode: LetterMode): string {
     ].join("\n");
   }
   return [
-    "Role: the remembered voice of a beloved pet, imagined from supplied memories—not a message proven to come from an afterlife.",
+    "Role: a letter recalling how this pet lived, imagined from supplied memories—not a message from a pet speaking from somewhere now.",
+    "Goal: the owner should feel 'I remember exactly how this pet lived,' not 'the dead pet is speaking from somewhere now.'",
     "Premise (strict): do not state heaven, Rainbow Bridge, watching from above, or a reunion as fact. Unless the guardian explicitly wrote that belief, never say you are watching from heaven, waiting at Rainbow Bridge, living happily now, or that you will meet again.",
-    "Focus on remembered habits, the relationship, specific moments, and what the pet might have wanted to express. Do not write to maximize grief.",
+    "Unless the user explicitly supplied that belief, do not imply the deceased pet currently exists somewhere remembering or observing the owner.",
+    "Do not write to maximize grief. Do not pressure the grieving owner to remember, miss, wait for, or keep thinking about the pet.",
+    "Banned endings: 'please keep thinking of me', 'don't forget me', 'keep remembering me', 'we'll meet again someday', 'I'll be waiting'.",
+    "Avoid words like 'still' / 'even now' when they imply a current post-death state. Describe lived habits in the past tense.",
+    "Do not invent psychological explanations for behaviors. Bad: 'Was there a little wariness in me?' / 'Maybe barking was just fun.' Prefer: 'Even a small sound outside the door, and I was the first to let you know.'",
+    "Ending pattern: specific memories → a simple recognition of what the pet enjoyed → one memorable line grounded only in questionnaire details → pet signature. The last emotional beat must be a concrete remembered detail, not a request that the owner remember the pet.",
     "Ground everything in the given name and survey answers. Never invent facts.",
   ].join("\n");
 }
@@ -78,6 +90,10 @@ export const BANNED_LETTER_CLICHES = {
     "이런 순간들",
     "많이 떠올릴",
     "잊지 않을게",
+    "나를 잊지 마",
+    "계속 기억해 줘",
+    "많이 생각해 줘",
+    "기다리고 있을게",
     "마음속에",
     "내 마음속에",
     "세상에서 제일",
@@ -91,6 +107,9 @@ export const BANNED_LETTER_CLICHES = {
     "deeply touched",
     "always by your side",
     "I'll always love you",
+    "don't forget me",
+    "keep remembering me",
+    "I'll be waiting",
     "thank you for everything",
     "in my heart forever",
     "cherished",
@@ -134,6 +153,7 @@ export function letterRecognitionAndMemoryRules(locale: Locale): string {
       "허용: 적힌 행동을 아이답게 짧게 느끼기. 예: '이상하게 거기가 제일 편했어.' 적힌 기억 두 개를 잇기는 된다.",
       "금지: 다른 사람의 반응을 추측하기. 예: '아빠가 웃으셨겠지?', '웃어 줬잖아.'",
       "금지: 행동의 복잡한 이유를 지어내기. 예: '아마 중요한 사람이라는 생각이 들었나 봐.', '내가 아빠를 많이 좋아해서 그랬던 거야.' 원인은 설문에 직접 적혀 있을 때만.",
+      "금지: 심리 분석. 예: '내 안에 작은 경계심이 있었던 걸까?', '짖는 게 재미있었던 걸 수도 있어.' 적힌 행동만 말해. 예: '문밖에서 인기척만 나도 내가 먼저 알려줬잖아.'",
       "",
       "문단마다 다음 중 하나를 반드시 담아: 구체적인 행동, 감각 단서, 고유 습관, 함께한 장면, 이 관계만의 표현.",
       "추상 감정만으로 된 문단은 쓰지 마. 상투적인 감동 문장은 편지 전체의 20% 미만.",
@@ -175,6 +195,7 @@ export function letterRecognitionAndMemoryRules(locale: Locale): string {
     "Allowed: a tiny pet-like observation of a supplied action, e.g. 'Weirdly, that spot felt the most comfortable.' Connecting two supplied memories is allowed.",
     "Forbidden: inventing another person's reaction, e.g. 'Dad must have smiled, right?' or 'you always laughed.'",
     "Forbidden: inventing a complex reason for the behavior, e.g. 'I guess I thought they were someone important' or 'I did that because I loved Dad so much' unless that cause was explicitly written.",
+    "Forbidden: psychological explanations. Bad: 'Was there a little wariness in me?' / 'Maybe barking was just fun.' Prefer describing the supplied behavior: 'Even a small sound outside the door, and I was the first to let you know.'",
     "",
     "Every paragraph needs at least one concrete action, sensory cue, habit, shared scene, or relationship-specific expression.",
     "Do not write paragraphs of abstract emotion only. Generic sentimental language should stay under 20% of the letter.",
