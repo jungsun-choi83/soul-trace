@@ -3,18 +3,23 @@ import "server-only";
 import { createHmac } from "node:crypto";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
-export type AiGenerationKind = "letter" | "visual_memory";
+export type AiGenerationKind = "letter" | "visual_memory" | "seasonal_polaroid";
 
 export type AiGuardDecision =
-  | { decision: "acquired"; jobId?: string }
-  | { decision: "queued" | "processing" | "pending" | "rate_limited" | "busy"; retryAfter: number; jobId?: string }
-  | { decision: "succeeded"; result: Record<string, unknown> }
+  | { decision: "acquired"; jobId?: string; trialRemaining?: number }
+  | { decision: "queued" | "processing" | "pending" | "rate_limited" | "busy"; retryAfter: number; jobId?: string; trialRemaining?: number }
+  | { decision: "succeeded"; result: Record<string, unknown>; jobId?: string; trialRemaining?: number }
+  | { decision: "guest_trial_exhausted"; trialRemaining: 0 }
   | { decision: "conflict" }
   | { decision: "unavailable" };
 
 const POLICY = {
   letter: { windowSeconds: 600, ipLimit: 10, identityLimit: 2, ipDailyLimit: 30, identityDailyLimit: 6 },
   visual_memory: { windowSeconds: 600, ipLimit: 6, identityLimit: 0, ipDailyLimit: 15, identityDailyLimit: 0 },
+  // Proposed Phase 3B-1 defaults for anonymous Seasonal Polaroid work.
+  // These are intentionally conservative and must be approved before the
+  // Seasonal endpoint is enabled in production.
+  seasonal_polaroid: { windowSeconds: 600, ipLimit: 3, identityLimit: 0, ipDailyLimit: 8, identityDailyLimit: 0 },
 } as const;
 
 export const AI_ROUTE_MAX_DURATION_SECONDS = 240;
@@ -146,6 +151,59 @@ export async function attachAiGenerationInput(args: {
   return data === true;
 }
 
+/**
+ * Move a newly admitted, input-ready job into the durable queue so the
+ * normal worker claim RPC can take ownership of its lease. The admission RPC
+ * may optimistically mark the first available job as `processing`; Seasonal
+ * generation is worker-only, so it must be handed back to the queue before a
+ * generic worker can claim it.
+ *
+ * The status and input-ready predicates make this transition atomic. If two
+ * triggers race, only one can change `processing` to `queued`; the other sees
+ * the already-queued row and may safely trigger the worker as well. The
+ * existing claim RPC remains the sole path that assigns a processing lease.
+ */
+export async function handoffAiGenerationJob(args: {
+  kind: AiGenerationKind;
+  requestHash: string;
+}): Promise<"queued" | "already_queued" | "unavailable"> {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) return "unavailable";
+  const idempotencyKey = await aiGenerationIdempotencyKey(args.kind, args.requestHash);
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("ai_generation_jobs")
+    .update({
+      status: "queued",
+      lease_expires_at: null,
+      next_attempt_at: now,
+      updated_at: now,
+      last_error: null,
+    })
+    .eq("idempotency_key", idempotencyKey)
+    .eq("request_hash", args.requestHash)
+    .eq("generation_kind", args.kind)
+    .eq("status", "processing")
+    .eq("input_ready", true)
+    .gt("lease_expires_at", now)
+    .select("idempotency_key");
+  if (error) {
+    console.error("[ai-generation-guard] worker handoff failed", {
+      kind: args.kind,
+      code: error.code,
+    });
+    return "unavailable";
+  }
+  if (Array.isArray(data) && data.length > 0) return "queued";
+
+  // A concurrent handoff may have won the conditional update. Treat that as
+  // success; the existing claim RPC will serialize the actual worker lease.
+  const current = await readAiGenerationJob(idempotencyKey);
+  return current?.generation_kind === args.kind && current.status === "queued" && current.input_ready
+    ? "already_queued"
+    : "unavailable";
+}
+
 export async function readAiGenerationJob(idempotencyKey: string): Promise<AiGenerationJob | null> {
   const supabase = createSupabaseServerClient();
   if (!supabase || !/^[a-f0-9]{64}$/i.test(idempotencyKey)) return null;
@@ -209,6 +267,16 @@ export function failAiGeneration(kind: AiGenerationKind, requestHash: string, co
 }
 
 export function guardHttpResponse(decision: Exclude<AiGuardDecision, { decision: "acquired" | "succeeded" }>) {
+  if (decision.decision === "guest_trial_exhausted") {
+    return Response.json(
+      {
+        error: "Your 2 free Polaroids are complete. You can still revisit your saved results.",
+        code: "guest_trial_exhausted",
+        trialRemaining: 0,
+      },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   if (decision.decision === "queued" || decision.decision === "processing") {
     return Response.json(
       {
@@ -219,10 +287,27 @@ export function guardHttpResponse(decision: Exclude<AiGuardDecision, { decision:
       { status: 202, headers: { "Retry-After": String(Math.max(1, decision.retryAfter)) } },
     );
   }
-  if (decision.decision === "rate_limited" || decision.decision === "busy") {
-    const retryAfter = decision.retryAfter;
+  if (decision.decision === "rate_limited") {
+    const retryAfter = Number.isFinite(decision.retryAfter) ? Math.max(1, Math.ceil(decision.retryAfter)) : 600;
     return Response.json(
-      { error: "Generation is busy right now. Please wait a moment and try again." },
+      {
+        // Keep `error` human-readable for the existing Letter and Visual
+        // Memory clients. `code` is the stable machine-readable discriminator.
+        error: "Generation rate limit reached. Please wait before trying again.",
+        code: "rate_limited",
+        retryAfter,
+      },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } },
+    );
+  }
+  if (decision.decision === "busy") {
+    const retryAfter = Number.isFinite(decision.retryAfter) ? Math.max(1, Math.ceil(decision.retryAfter)) : 15;
+    return Response.json(
+      {
+        error: "Generation is busy right now. Please wait a moment and try again.",
+        code: "busy",
+        retryAfter,
+      },
       { status: 429, headers: { "Retry-After": String(retryAfter) } },
     );
   }
