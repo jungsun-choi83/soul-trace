@@ -22,6 +22,10 @@ const resultFlow = readFileSync(
   new URL("../components/soul-trace-flow.tsx", import.meta.url),
   "utf8",
 );
+const archivePage = readFileSync(
+  new URL("../app/life-archive/page.tsx", import.meta.url),
+  "utf8",
+);
 
 test("Life Archive uses ID relationships and preserves the existing letter ID", () => {
   for (const field of [
@@ -68,6 +72,8 @@ test("verification reuses the email stored behind letter_id", () => {
 });
 
 test("the result connection does not collect the owner's email again", () => {
-  assert.match(resultFlow, /\/api\/life-archive\/access/);
-  assert.match(resultFlow, /JSON\.stringify\(\{ letterId \}\)/);
+  assert.match(resultFlow, /href="\/life-archive"/);
+  assert.doesNotMatch(resultFlow, /\/api\/life-archive\/access/);
+  assert.doesNotMatch(resultFlow, /JSON\.stringify\(\{ letterId \}\)/);
+  assert.match(archivePage, /requestHasEternalBeamAccess|verifyEternalBeamAccessSession/);
 });

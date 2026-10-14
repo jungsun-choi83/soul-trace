@@ -69,9 +69,12 @@ export async function acquireAiGeneration(args: {
   kind: AiGenerationKind;
   requestHash: string;
   identity?: string | null;
+  /** Server-selected namespace used only by the local Seasonal test mode. */
+  rateLimitIsolationKey?: string;
 }): Promise<AiGuardDecision> {
   const supabase = createSupabaseServerClient();
-  const ipHash = digest(`ip:${requestIp(args.request)}`);
+  const isolatedSubject = args.rateLimitIsolationKey?.trim();
+  const ipHash = digest(isolatedSubject ? `seasonal-dev:${isolatedSubject}` : `ip:${requestIp(args.request)}`);
   const identityHash = args.identity ? digest(`identity:${args.identity.trim().toLowerCase()}`) : null;
   if (!supabase || !ipHash || (args.identity && !identityHash)) return { decision: "unavailable" };
 

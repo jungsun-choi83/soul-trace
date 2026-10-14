@@ -36,7 +36,7 @@ export function useAuthSession(): AuthSessionState {
       });
       unsubscribe = () => data.subscription.unsubscribe();
     } catch {
-      setStatus("anonymous");
+      // The scheduled refresh below owns the initial failure fallback.
     }
     const timer = window.setTimeout(() => {
       void refresh();

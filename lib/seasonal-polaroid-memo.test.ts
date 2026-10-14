@@ -49,7 +49,7 @@ test("memo validation rejects the former third-person template", () => {
     lines: [
       "Mom, happy Halloween from Tuli!",
       "Tuli is dressed in a pumpkin costume.",
-      "I can almost see Tuli napping in the sun.",
+      "I can see Tuli nap in the sun.",
       "Wishing you a cozy Halloween.",
     ],
   }, ANSWERS);

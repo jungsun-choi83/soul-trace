@@ -191,7 +191,11 @@ export function buildSeasonalPolaroidImagePrompt(
     ...identityRules,
     "REFERENCE ORDER: The first image is the primary identity reference. Any second image is supporting evidence of the SAME pet; never add a second animal and never blend two different animals.",
     `SUBJECT: one ${species}, clearly visible from head to body with the face unobstructed.`,
+    "COMPOSITION PRIORITY: Use a natural medium portrait framing with the complete head, both ears, face, neck, and upper body inside the square frame. Leave visible breathing room above the ears and at both sides; do not crop the top of the head, ears, face, or body.",
+    "IDENTITY VISIBILITY: Keep the eyes, muzzle, nose, coat boundaries, and distinctive markings unobstructed and sharply readable. The seasonal setting and costume must support the pet, never cover or reshape those features.",
     `COSTUME: ${costume}. SCENE: ${scene}. VIBE: ${vibe}. PERSONALITY: ${personality}.`,
+    "COSTUME FIT: Make the approved costume look physically wearable, gentle, and naturally fitted to this pet. Keep hats, hoods, wings, and fabric away from the eyes, nose, ears, and distinctive facial markings.",
+    "REALISM: Render a believable candid photograph with natural anatomy, paws, fur, fabric, lighting, and contact shadows. Avoid extra limbs, duplicated features, plastic-looking fur, or an overly zoomed-in beauty portrait.",
     "Use the approved descriptions as visual direction only. Do not add text, captions, lettering, logos, signatures, watermarks, borders, or a Polaroid frame.",
     "Compose a clean square 1:1 image with the pet as the clear focal point and enough surrounding seasonal context to read as Halloween.",
     ...memorialRules,
@@ -203,7 +207,10 @@ export type SeasonalPolaroidMemoValidation =
   | { valid: true; memo: SeasonalPolaroidMemo }
   | { valid: false; reason: string };
 
-const MEMO_LINE_LIMITS = { en: 96, ko: 72 } as const;
+// The caption window is intentionally small. Keep model output compact enough
+// to remain readable inside the fixed decorative frame on preview and export.
+const MEMO_LINE_LIMITS = { en: 64, ko: 32 } as const;
+const MEMO_BODY_LINE_LIMITS = { en: 40, ko: 22 } as const;
 const MEMORIAL_FORBIDDEN = [
   /\bheaven\b/i, /rainbow\s*bridge/i, /\b(dead|died|death|gone|goodbye)\b/i,
   /\bangels?\b/i, /천국/u, /무지개\s*다리/u, /죽/u, /사망/u, /세상을\s*떠/u, /천사/u,
@@ -217,7 +224,10 @@ export function validateSeasonalPolaroidMemo(
   if (!normalized || normalized.locale !== answers.locale) return { valid: false, reason: "memo_shape_or_locale" };
   const lines = normalized.lines;
   const limit = answers.locale === "ko" ? MEMO_LINE_LIMITS.ko : MEMO_LINE_LIMITS.en;
-  if (lines.some((line) => line.length > limit || /[\r\n]/.test(line))) return { valid: false, reason: "memo_line_length" };
+  const bodyLimit = answers.locale === "ko" ? MEMO_BODY_LINE_LIMITS.ko : MEMO_BODY_LINE_LIMITS.en;
+  if (lines.some((line, index) => line.length > (index === 0 ? limit : bodyLimit) || /[\r\n]/.test(line))) {
+    return { valid: false, reason: "memo_line_length" };
+  }
   const callName = resolvedCallName(answers, answers.locale);
   if (!lines[0]!.toLocaleLowerCase().includes(callName.toLocaleLowerCase())) return { valid: false, reason: "memo_missing_call_name" };
   if (!lines[0]!.toLocaleLowerCase().includes(answers.petName.toLocaleLowerCase())) return { valid: false, reason: "memo_missing_pet_name" };
@@ -263,12 +273,13 @@ function lowerFirst(value: string): string {
 }
 
 function memoLineWithDetail(base: string, detail: string | undefined, locale: "en" | "ko"): string {
-  const target = locale === "en" ? 48 : 48;
+  const target = locale === "en" ? MEMO_BODY_LINE_LIMITS.en : MEMO_BODY_LINE_LIMITS.ko;
   const withDetail = detail ? `${base} — ${detail}` : base;
   // Optional details are useful only when they still fit the handwritten
   // rhythm. Prefer the concise factual line over a crowded, clipped one.
   const content = detail && withDetail.length <= target ? withDetail : base;
-  return `${content.slice(0, target - 1).trimEnd()}.`;
+  const withoutTrailingPunctuation = content.replace(/[.!?]+$/u, "");
+  return `${withoutTrailingPunctuation.slice(0, target - 1).trimEnd()}.`;
 }
 
 const ENGLISH_PERSONALITY_VOICE: Record<string, string> = {
@@ -347,7 +358,42 @@ const KOREAN_HABIT_VOICE: Record<string, string> = {
   "cozy-cuddler": "포근히 기대고",
 };
 
-export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnswers): SeasonalPolaroidMemo {
+const KOREAN_COSTUME_VOICE: Record<string, string> = {
+  vampire: "작은 뱀파이어 옷",
+  witch: "마녀 모자",
+  pumpkin: "호박 옷",
+  "bat-wings": "박쥐 날개",
+  wizard: "마법사 모자",
+  "ghost-sheet": "유령 시트",
+  skeleton: "해골 옷",
+  "little-angel": "작은 천사 옷",
+};
+
+const KOREAN_PERSONALITY_VOICE: Record<string, string> = {
+  foodie: "간식을 좋아해",
+  drama: "표정이 풍부해",
+  "scaredy-cat": "조심조심해",
+  zoomies: "에너지가 넘쳐",
+  "cuddle-bug": "꼭 안아줘",
+  "little-boss": "작은 대장이야",
+  sleepyhead: "잠이 솔솔 와",
+  "curious-explorer": "호기심이 많아",
+};
+
+function compactMemoValue(value: string, limit: number): string {
+  const trimmed = value.trim();
+  return trimmed.length <= limit ? trimmed : trimmed.slice(0, limit).trimEnd();
+}
+
+function memoVariationIndex(answers: SeasonalPolaroidPromptAnswers): number {
+  const nonce = answers.generationNonce?.trim();
+  if (!nonce) return 0;
+  return Array.from(nonce).reduce((sum, character) => sum + character.codePointAt(0)!, 0) % 3;
+}
+
+// Retained for compatibility with older callers while the compact fallback is adopted.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function legacyFallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnswers): SeasonalPolaroidMemo {
   assertPromptAnswers(answers);
   const locale = answers.locale as "en" | "ko";
   const callName = resolvedCallName(answers, locale);
@@ -388,6 +434,75 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
       answers.status === "passed"
         ? `My love stays close, ${callName}.`
         : `I hope you smile, ${callName}.`,
+    ],
+  };
+}
+
+export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnswers): SeasonalPolaroidMemo {
+  assertPromptAnswers(answers);
+  const locale = answers.locale as "en" | "ko";
+  const callName = resolvedCallName(answers, locale);
+  const costumeId = resolveSeasonalPolaroidCostume(answers);
+  const treat = resolvedTreat(answers, locale);
+  const detail = answers.personalDetail?.trim().replace(/[.!?]+$/u, "");
+  const variation = memoVariationIndex(answers);
+
+  if (locale === "ko") {
+    const costume = KOREAN_COSTUME_VOICE[costumeId] ?? compactMemoValue(description(costumeId, locale), 8);
+    const personality = KOREAN_PERSONALITY_VOICE[answers.personalities[0]!] ?? "다정한 마음";
+    const habit = KOREAN_HABIT_VOICE[answers.habit] ?? "포근히 쉬며";
+    const treatShort = compactMemoValue(treat, 8);
+    return {
+      locale,
+      lines: [
+        `${callName}, ${answers.petName}야! 해피 할로윈!`,
+        variation === 0
+            ? `${costume} 입고, ${personality}!`
+            : variation === 1
+              ? `오늘은 ${costume}, ${personality}!`
+            : `${costume}, ${personality}!`,
+        memoLineWithDetail(`${habit}, ${treatShort} 기다려`, detail, locale),
+        variation === 0
+          ? `${callName}, 내 인사 받아줘!`
+          : variation === 1
+            ? `${callName}, 꼭 웃어줘!`
+            : `${callName}, 사랑해!`,
+      ],
+    };
+  }
+
+  const costume = ENGLISH_COSTUME_VOICE[costumeId] ?? compactMemoValue(description(costumeId, locale), 20);
+  const costumeBare = costume.replace(/^a\s+/iu, "");
+  const personality = ENGLISH_PERSONALITY_VOICE[answers.personalities[0]!] ?? "sweetly playful";
+  const habit = ENGLISH_HABIT_VOICE[answers.habit] ?? "stay close";
+  const treatShort = compactMemoValue(treat, 16);
+  const bodyLine = variation === 0
+    ? `I ${habit} and love ${treatShort}.`
+    : variation === 1
+      ? `I ${habit}; ${treatShort} makes me grin.`
+      : `My ${habit} time tastes better with ${treatShort}.`;
+  const closing = answers.status === "passed"
+    ? variation === 0
+      ? `Keep my memory warm, ${callName}.`
+      : variation === 1
+        ? `My love feels close, ${callName}.`
+        : `I’m holding this memory with you, ${callName}.`
+    : variation === 0
+      ? `Keep my little purr close, ${callName}.`
+      : variation === 1
+        ? `I’m sending you a soft purr, ${callName}.`
+        : `My Halloween hug is yours, ${callName}.`;
+  return {
+    locale,
+    lines: [
+      `${callName}, happy Halloween from ${answers.petName}!`,
+        variation === 0
+          ? `I’m feeling ${personality} in ${costume}.`
+          : variation === 1
+            ? `I wear ${costume}; feeling ${personality}!`
+            : `My ${costumeBare} look feels ${personality}.`,
+      memoLineWithDetail(bodyLine, detail, locale),
+      closing,
     ],
   };
 }
@@ -433,19 +548,20 @@ export function buildSeasonalPolaroidMemoSystemPrompt(locale: "en" | "ko", statu
   const memorial = status === "passed";
   return [
     "You write a short keepsake memo for a seasonal pet Polaroid.",
-    "Return exactly one JSON object with exactly one field: lines.",
+    `Return exactly one JSON object with exactly two fields: locale and lines. The locale field must be exactly "${locale}" (en or ko), matching the requested language.`,
     "lines must be an array of exactly four non-empty strings, one sentence or fragment per line, with no embedded newline characters.",
     locale === "ko"
       ? "Write natural conversational Korean in the pet's first-person voice, speaking affectionately and directly to the owner; use natural Korean particles and do not mechanically translate English."
       : "Write natural affectionate English in the pet's first-person voice, speaking directly to the owner.",
     "Voice rule: every line after the greeting must use first-person I/me/my (or natural Korean 나/내/저/제/우리). Never describe the pet from outside, never mention the pet's name again after line 1 (including phrases like '[name] is wearing…' or 'I can see [name]…'), and never write image-description prose.",
-    "Write the four lines as one tiny connected note, not as a checklist or a description of the image.",
-    "Keep each line short for a handwritten Polaroid: aim for 28-64 characters in English or 18-48 characters in Korean. If an optional detail does not fit naturally, leave it out.",
+    "First-person guard: begin each of lines 2-4 with or clearly include an explicit first-person construction (I, I'm, I've, I'll, I'd, my, me, or a natural Korean equivalent). Do not make a bare costume, scene, or treat noun the grammatical subject.",
+    "Write the four lines as one tiny connected note from the pet, not as a checklist or a description of the image. Vary sentence openings, rhythm, punctuation, and which supplied details you emphasize; do not force every answer into the memo and never copy a stock template.",
+    "Avoid repetitive constructions and close variants such as 'I'm in ..., feeling ...', 'I ...; save me ...', or 'I hope you smile, ...'. Make the note sound like a spontaneous affectionate message, not a form being filled in.",
+    "Keep each line short for a handwritten Polaroid: aim for 20-40 characters in English or 12-22 characters in Korean. The greeting may be a little longer when names require it. If an optional detail does not fit naturally, leave it out.",
     "Line 1 must greet the owner with the supplied owner call name and pet name, like: Mom, happy Halloween from Tuli!",
-    "Line 2 must be a first-person sentence mentioning the approved costume and at least one personality trait.",
-    "Line 3 must be a first-person sentence using the approved habit, favorite treat, or personal detail; never invent facts.",
+    "Lines 2-4 should be natural first-person sentences or fragments that weave in one or two approved details (costume, personality, scene, vibe, habit, treat, or personal detail) when they fit; do not mechanically enumerate them and never invent facts.",
     "Line 4 must be a first-person warm seasonal closing addressed to the owner, not a generic caption.",
-    `Each line must be ${MEMO_LINE_LIMITS[locale]} characters or fewer.`,
+    `The greeting must be ${MEMO_LINE_LIMITS[locale]} characters or fewer; lines 2-4 must be ${MEMO_BODY_LINE_LIMITS[locale]} characters or fewer.`,
     memorial
       ? "Memorial tone: gentle and grateful. Do not mention death, heaven, Rainbow Bridge, graves, angels, goodbye, being gone, or unsupported promises; do not imply physical presence."
       : "Living tone: playful, safe, present-tense, and affectionate; do not introduce distress or danger.",

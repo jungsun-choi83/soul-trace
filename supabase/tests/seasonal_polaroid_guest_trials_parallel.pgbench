@@ -1,0 +1,22 @@
+-- Review-only pgbench script for genuine cross-connection admission races.
+-- Run against a disposable database only after both Seasonal migrations:
+--   pgbench -n -c 8 -j 8 -t 1 -f seasonal_polaroid_guest_trials_parallel.pgbench DB
+-- Then inspect the returned decisions and verify exactly two reservations can
+-- remain reserved for the guest (the remaining calls must be exhausted).
+-- Verification query after pgbench completes:
+--   select successful_count,
+--          count(*) filter (where status = 'reserved') as reserved_count
+--     from public.seasonal_polaroid_guest_trials t
+--     left join public.seasonal_polaroid_guest_reservations r using (guest_hash)
+--    where t.guest_hash = 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd'
+--    group by successful_count;
+-- This script never performs AI work and is not run by the application tests.
+
+\set guest_hash 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd'
+
+select public.reserve_seasonal_polaroid_guest_trial(
+  :'guest_hash',
+  repeat(md5(:client_id::text || clock_timestamp()::text || random()::text), 2),
+  repeat(md5(:client_id::text || clock_timestamp()::text || random()::text), 2),
+  now() + interval '1 hour'
+);

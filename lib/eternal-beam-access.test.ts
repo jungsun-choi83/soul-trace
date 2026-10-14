@@ -56,14 +56,12 @@ describe("Life Archive Phase 1 enforcement and localized result states", () => {
     assert.doesNotMatch(generation, /EternalBeamAccess|LIFE_ARCHIVE_ACCESS_SESSION/);
   });
 
-  it("keeps the explanation hidden until a public visitor clicks the Journey button", () => {
-    assert.match(flow, /hasEternalBeamAccess/);
-    assert.match(flow, /onClick=\{handleLifeArchiveJourney\}/);
-    assert.match(flow, /lifeArchiveExplanationOpen && !hasEternalBeamAccess/);
-    assert.match(flow, /setLifeArchiveExplanationOpen\(true\)/);
-    assert.match(flow, /if \(hasEternalBeamAccess\)[\s\S]*?continueToLifeArchive/);
-    assert.match(flow, /result\.lifeArchive\.lockedBody/);
-    assert.equal((flow.match(/continueToEternalBeam}/g) ?? []).length, 1);
+  it("keeps Life Archive standalone and gated before data loads", () => {
+    const gate = page.indexOf("if (!hasEternalBeamAccess)");
+    const data = page.indexOf('from("soul_trace_pets")');
+    assert.ok(gate >= 0 && gate < data);
+    assert.match(page, /<LifeArchiveAccessRequired/);
+    assert.doesNotMatch(flow, /handleLifeArchiveJourney|lifeArchiveExplanationOpen|continueToLifeArchive/);
   });
 
   it("uses the required English copy", () => {

@@ -6,6 +6,7 @@ import { classifyAiUpstreamFailure } from "./ai-generation-errors.ts";
 const migration = readFileSync("supabase/migration_ai_generation_safety.sql", "utf8");
 const letterRoute = readFileSync("app/api/generate-letter/route.ts", "utf8");
 const visualRoute = readFileSync("app/api/visual-memory/route.ts", "utf8");
+const visualAi = readFileSync("lib/visual-memory-ai.ts", "utf8");
 const letterClient = readFileSync("components/soul-trace-flow.tsx", "utf8");
 const visualClient = readFileSync("components/visual-memory-promo.tsx", "utf8");
 const guard = readFileSync("lib/ai-generation-guard.ts", "utf8");
@@ -70,10 +71,17 @@ test("OpenAI 429, timeout, and 500 cannot be amplified by SDK retries", () => {
   assert.equal(classifyAiUpstreamFailure({ status: 500 }), "upstream");
   assert.match(guard, /OPENAI_CHAT_OPTIONS = \{ timeout: 45_000, maxRetries: 0 \}/);
   assert.match(guard, /OPENAI_IMAGE_OPTIONS = \{ timeout: 90_000, maxRetries: 0 \}/);
-  for (const route of [letterRoute, visualRoute]) {
+  for (const route of [letterRoute]) {
     assert.match(route, /OPENAI_CHAT_OPTIONS/);
     assert.match(route, /failAiGeneration/);
   }
+  assert.match(visualAi, /OPENAI_CHAT_OPTIONS/);
+  assert.match(visualAi, /OPENAI_IMAGE_OPTIONS/);
+  assert.match(visualAi, /petIdentityPreservationPrompt/);
+  assert.match(visualRoute, /generateVisualMemoryImage/);
+  assert.match(visualRoute, /generateVisualMemoryCopy/);
+  assert.match(visualRoute, /petIdentityPreservationPrompt/);
+  assert.match(visualRoute, /failAiGeneration/);
   assert.match(visualRoute, /Please try again/);
   assert.match(letterRoute, /friendlyGenerateError/);
 });

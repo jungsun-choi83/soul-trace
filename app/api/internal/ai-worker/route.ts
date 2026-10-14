@@ -201,6 +201,25 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
     return;
   }
 
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) {
+    await requeueSeasonalJob(job, "openai_unavailable");
+    return;
+  }
+  const promptAnswers = validated.answers as SeasonalPolaroidPromptAnswers;
+  const openai = new OpenAI({ apiKey });
+  // Image and memo generation use independent inputs. Start the memo while
+  // the image model is working, but keep the job incomplete until both have
+  // been validated and the image is safely stored.
+  const memoPromise = generateSeasonalPolaroidMemo({
+    openai,
+    answers: promptAnswers,
+  });
+  // An image failure can finish the worker before the memo promise settles;
+  // attach a rejection handler so bounded retry handling remains the only
+  // observable outcome.
+  void memoPromise.catch(() => undefined);
+
   const resultPath = payload.resultPath;
   const existingImage = await downloadSeasonalPolaroidResultImage({ storage, objectKey: resultPath });
   let imageBytes: ArrayBuffer;
@@ -209,13 +228,8 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
   if (existingImage) {
     imageBytes = await existingImage.arrayBuffer();
   } else {
-    const apiKey = process.env.OPENAI_API_KEY?.trim();
-    if (!apiKey) {
-      await requeueSeasonalJob(job, "openai_unavailable");
-      return;
-    }
     const imageResult = await generateSeasonalPolaroidImage({
-      openai: new OpenAI({ apiKey }),
+      openai,
       answers: validated.answers as SeasonalPolaroidPromptAnswers,
       primary: { bytes: primaryBytes, name: primaryName, type: primaryType },
       ...(secondaryBytes ? { secondary: { bytes: secondaryBytes, name: secondaryName, type: secondaryType } } : {}),
@@ -239,16 +253,7 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
     }
   }
 
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) {
-    await requeueSeasonalJob(job, "openai_unavailable");
-    return;
-  }
-  const promptAnswers = validated.answers as SeasonalPolaroidPromptAnswers;
-  const memoResult = await generateSeasonalPolaroidMemo({
-    openai: new OpenAI({ apiKey }),
-    answers: promptAnswers,
-  });
+  const memoResult = await memoPromise;
   if (!validateSeasonalPolaroidMemo(memoResult.memo, promptAnswers).valid) {
     await requeueSeasonalJob(job, "seasonal_memo_invalid");
     return;

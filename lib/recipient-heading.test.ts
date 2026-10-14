@@ -20,10 +20,10 @@ describe("recipient-aware compatibility title", () => {
   const ko = JSON.parse(readFileSync("locales/ko.json", "utf8"));
 
   it("uses a recipient placeholder for Living and Memorial in both languages", () => {
-    for (const mode of ["living", "memorial"] as const) {
-      assert.equal(en.modes[mode].letterHeading, "A letter to %RECIPIENT%");
-      assert.equal(ko.modes[mode].letterHeading, "%RECIPIENT%에게 보내는 편지");
-    }
+    assert.equal(en.modes.living.letterHeading, "Today, to %RECIPIENT%");
+    assert.equal(en.modes.memorial.letterHeading, "A letter to %RECIPIENT%");
+    assert.equal(ko.modes.living.letterHeading, "오늘 %RECIPIENT%에게");
+    assert.equal(ko.modes.memorial.letterHeading, "%RECIPIENT%에게 보내는 편지");
   });
 
   it("resolves every predefined English recipient", () => {
@@ -42,7 +42,7 @@ describe("recipient-aware compatibility title", () => {
         "%RECIPIENT%",
         resolveRecipientAddress(profile, "en"),
       );
-      assert.equal(title, `A letter to ${recipient}`);
+      assert.equal(title, `Today, to ${recipient}`);
     }
   });
 
