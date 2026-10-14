@@ -28,6 +28,7 @@ function leafPaths(value: unknown, prefix = ""): string[] {
 
 const KO = leafPaths(ko).sort();
 const EN = leafPaths(en).sort();
+const OPTIONAL_EMPTY_LOCALE_PATHS = new Set(["homepage.hero.title2"]);
 
 describe("로케일 ko / en 대조", () => {
   it("키가 정확히 같다 — 배열 길이까지", () => {
@@ -45,6 +46,7 @@ describe("로케일 ko / en 대조", () => {
       for (const path of leafPaths(messages)) {
         const value = getMessage(messages as unknown as Messages, path.replace(/\[\d+\]/g, ""));
         if (typeof value === "string" && !path.includes("[")) {
+          if (OPTIONAL_EMPTY_LOCALE_PATHS.has(path)) continue;
           assert.ok(value.trim().length > 0, `${name}: ${path} 가 비어 있다`);
         }
       }

@@ -25,7 +25,7 @@ test("only an unowned letter can be attached to the current account", () => {
 test("another visual memory is refused before the image API", () => {
   const route = readFileSync("app/api/visual-memory/route.ts", "utf8");
   const allowance = route.indexOf("if (visualMemoryGenerationUsed");
-  const imageApi = route.indexOf("openai.images.edit");
+  const imageApi = route.indexOf("imageResult = await generateVisualMemoryImage");
   assert.ok(allowance >= 0 && allowance < imageApi);
   assert.match(route, /additional_generation_unavailable/);
   assert.match(readFileSync("app/api/account-result/visual-memory/route.ts", "utf8"), /result_forbidden/);

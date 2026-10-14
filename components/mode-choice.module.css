@@ -1,3 +1,160 @@
+.page {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(94, 62, 25, 0.24), transparent 30rem),
+    radial-gradient(circle at 8% 78%, rgba(75, 43, 22, 0.24), transparent 24rem),
+    #0d0a08;
+}
+
+.ambient,
+.branch {
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+}
+
+.ambient::before,
+.ambient::after {
+  position: absolute;
+  content: "";
+  border-radius: 999px;
+  filter: blur(24px);
+  opacity: 0.42;
+}
+
+.ambient::before {
+  top: 7rem;
+  right: -8rem;
+  width: 22rem;
+  height: 22rem;
+  background: radial-gradient(circle, rgba(213, 157, 75, 0.18), transparent 68%);
+}
+
+.ambient::after {
+  bottom: -8rem;
+  left: -8rem;
+  width: 26rem;
+  height: 26rem;
+  background: radial-gradient(circle, rgba(126, 73, 41, 0.2), transparent 68%);
+}
+
+.branch::before,
+.branch::after {
+  position: absolute;
+  content: "";
+  width: 24rem;
+  height: 14rem;
+  border-top: 1px solid rgba(229, 177, 74, 0.64);
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+.branch::before {
+  top: 3.5rem;
+  left: -7rem;
+  transform: rotate(23deg);
+  box-shadow: 2.5rem 2.5rem 0 -3.5rem rgba(229, 177, 74, 0.9), 5rem 4.5rem 0 -4rem rgba(229, 177, 74, 0.9);
+}
+
+.branch::after {
+  top: 5rem;
+  right: -8rem;
+  transform: rotate(-20deg);
+}
+
+.brandRule {
+  display: block;
+  width: clamp(2rem, 8vw, 7rem);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(227, 177, 77, 0.9));
+}
+
+.brandRule:last-child {
+  transform: scaleX(-1);
+}
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+.card {
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(194, 142, 61, 0.72);
+  border-radius: 1.65rem;
+  background: linear-gradient(155deg, rgba(31, 22, 15, 0.96), rgba(13, 10, 8, 0.98));
+  box-shadow: 0 1.5rem 3.5rem rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  color: inherit;
+  transition: border-color 240ms ease, box-shadow 240ms ease, transform 240ms ease;
+}
+
+.card:hover {
+  border-color: rgba(239, 191, 91, 0.95);
+  box-shadow: 0 1.75rem 4rem rgba(0, 0, 0, 0.48), 0 0 2rem rgba(211, 157, 70, 0.12);
+  transform: translateY(-3px);
+}
+
+.card:focus-visible {
+  outline: 2px solid #f0c65a;
+  outline-offset: 5px;
+}
+
+.cardImage {
+  position: relative;
+  aspect-ratio: 1.32;
+  margin: 0.8rem 0.8rem 0;
+  overflow: hidden;
+  border-radius: 1.2rem;
+  background: #21150f;
+}
+
+.seasonalImage {
+  overflow: visible;
+  background: #3b2116;
+}
+
+.seasonalFrame {
+  position: absolute;
+  inset: 0.55rem;
+  padding: 0.55rem 0.55rem 1.1rem;
+  background: #f2e6d2;
+  box-shadow: 0 1rem 1.8rem rgba(0, 0, 0, 0.42);
+  transform: rotate(-2deg);
+  transition: transform 240ms ease, box-shadow 240ms ease;
+}
+
+.card:hover .seasonalFrame {
+  box-shadow: 0 1.2rem 2.2rem rgba(0, 0, 0, 0.5);
+  transform: rotate(0deg) translateY(-2px);
+}
+
+.cardBody {
+  display: flex;
+  min-height: 15rem;
+  flex: 1;
+  flex-direction: column;
+  padding: 1.35rem 1.35rem 1.35rem;
+}
+
+.cardDecoration {
+  width: 3.8rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  stroke: rgba(223, 174, 78, 0.85);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25;
+  opacity: 0.9;
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -11,12 +168,68 @@
 
 .fadeUp {
   opacity: 0;
-  animation: fade-up 480ms ease-out forwards;
+  animation: fade-up 520ms ease-out forwards;
+}
+
+@media (min-width: 768px) {
+  .choiceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.35rem;
+  }
+
+  .cardBody {
+    height: 15rem;
+    min-height: 15rem;
+  }
+
+  .choiceGrid > :last-child {
+    width: min(100%, calc(50% - 0.675rem));
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+}
+
+@media (min-width: 1024px) {
+  .choiceGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .choiceGrid > :last-child {
+    width: auto;
+    grid-column: auto;
+  }
+
+  .cardBody {
+    height: 16.25rem;
+    min-height: 16.25rem;
+    padding: 1.45rem 1.5rem 1.5rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .cardBody {
+    min-height: 14.5rem;
+  }
+
+  .cardDecoration {
+    width: 3.1rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .fadeUp {
     opacity: 1;
     animation: none;
+  }
+
+  .card,
+  .seasonalFrame {
+    transition: none;
+  }
+
+  .card:hover,
+  .card:hover .seasonalFrame {
+    transform: none;
   }
 }
