@@ -3,7 +3,7 @@ import {
   admitSeasonalPolaroidInternally,
   seasonalPolaroidRequestHash,
 } from "@/lib/seasonal-polaroid-admission";
-import { guardHttpResponse, sha256Hex } from "@/lib/ai-generation-guard";
+import { aiGenerationIdentityHash, guardHttpResponse, sha256Hex } from "@/lib/ai-generation-guard";
 import { validateSeasonalPolaroidRequest, type SeasonalPolaroidQuestionnaire } from "@/lib/seasonal-polaroid-contract";
 import { issueSeasonalPolaroidCapability, seasonalPolaroidCapabilityConfigured } from "@/lib/seasonal-polaroid-capability";
 import { isSeasonalPolaroidEnabled } from "@/lib/seasonal-polaroid-feature";
@@ -15,7 +15,6 @@ import {
   detectSeasonalPolaroidPhotoFormat,
   validateSeasonalPolaroidPhotoContent,
 } from "@/lib/seasonal-polaroid-photo-server";
-import { seasonalGuestIdentity } from "@/lib/seasonal-polaroid-guest-trial";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 
 export const runtime = "nodejs";
@@ -113,11 +112,6 @@ function admissionResponse(
       },
     },
   );
-}
-
-function withGuestCookie(response: Response, cookie: string | null): Response {
-  if (cookie) response.headers.append("Set-Cookie", cookie);
-  return response;
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -232,10 +226,13 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const guest = developerTestMode ? null : seasonalGuestIdentity(request);
-  if (!developerTestMode && !guest) {
+  // The allowance is keyed to the same verified-user HMAC used for queue
+  // ownership, never to a browser cookie. Developer mode is the only local
+  // exception and deliberately has no customer trial identity.
+  const accountHash = authenticatedUserId ? aiGenerationIdentityHash(authenticatedUserId) : null;
+  if (!developerTestMode && !accountHash) {
     return Response.json(
-      { error: "seasonal_polaroid_unavailable", message: "Guest generation is temporarily unavailable." },
+      { error: "seasonal_polaroid_unavailable", message: "Account generation is temporarily unavailable." },
       { status: 503, headers: { "Retry-After": "30", "Cache-Control": "no-store" } },
     );
   }
@@ -258,15 +255,12 @@ export async function POST(request: Request): Promise<Response> {
           },
         }
       : {}),
-    ...(guest ? { guestHash: guest.hash } : {}),
+    ...(accountHash ? { accountHash } : {}),
     identity: authenticatedUserId,
     developerTestMode,
   });
   if (["unavailable", "rate_limited", "busy", "conflict", "guest_trial_exhausted"].includes(decision.decision)) {
-    return withGuestCookie(
-      guardHttpResponse(decision as Exclude<typeof decision, { decision: "acquired" | "succeeded" }>),
-      guest?.setCookie ?? null,
-    );
+    return guardHttpResponse(decision as Exclude<typeof decision, { decision: "acquired" | "succeeded" }>);
   }
-  return withGuestCookie(admissionResponse(decision, requestHash), guest?.setCookie ?? null);
+  return admissionResponse(decision, requestHash);
 }

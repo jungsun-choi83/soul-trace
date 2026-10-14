@@ -36,8 +36,15 @@ test("missing retry data is handled without exposing identifiers", () => {
 });
 
 test("Seasonal questionnaire state and photos remain after a rejected admission", () => {
-  assert.match(component, /setView\("questionnaire"\);[\s\S]{0,180}setGenerationError\(message\);[\s\S]{0,80}setError\(message\)/);
+  assert.match(component, /setView\("questionnaire"\);[\s\S]{0,260}setGenerationError\(sessionExpired \? null : message\)/);
   assert.doesNotMatch(component, /setPrimaryPhoto\(null\).*setSecondPhoto\(null\)/);
+});
+
+test("expired Seasonal sessions reopen OTP instead of reusing a stale verification flag", () => {
+  assert.match(component, /requestError\.status === 401/);
+  assert.match(component, /await authSession\.refresh\(\)/);
+  assert.match(component, /setEmailStep\("email"\)/);
+  assert.match(component, /setEmailModalOpen\(true\)/);
 });
 
 test("rate-limit messages exist in English and Korean", () => {

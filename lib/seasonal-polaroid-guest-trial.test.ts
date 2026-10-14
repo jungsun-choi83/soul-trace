@@ -13,9 +13,12 @@ const retryMigration = readFileSync("supabase/migration_ai_generation_rate_limit
 const queueMigration = readFileSync("supabase/migration_ai_generation_queue.sql", "utf8");
 const guard = readFileSync("lib/ai-generation-guard.ts", "utf8");
 
-test("guest trial is server authoritative and atomic", () => {
-  assert.match(route, /seasonalGuestIdentity/);
-  assert.match(admission, /reserveSeasonalGuestTrial/);
+test("account trial is server authoritative and atomic", () => {
+  assert.match(route, /createSupabaseAuthServerClient/);
+  assert.match(route, /aiGenerationIdentityHash/);
+  assert.doesNotMatch(route, /seasonalGuestIdentity/);
+  assert.match(admission, /reserveSeasonalAccountTrial/);
+  assert.match(admission, /accountHash/);
   assert.match(admission, /guest_trial_exhausted/);
   assert.match(migration, /for update/);
   assert.match(migration, /successful_count[\s\S]*between 0 and 2/);
@@ -23,6 +26,7 @@ test("guest trial is server authoritative and atomic", () => {
   assert.match(migration, /finalize_seasonal_polaroid_guest_trial/);
   assert.match(migration, /release_seasonal_polaroid_guest_trial/);
   assert.match(guestMigration, /existing\.guest_hash <> p_guest_hash/);
+  assert.match(guestMigration, /HMAC of the verified[\s\S]*Supabase user ID/);
   assert.match(guestMigration, /status in \('queued', 'pending', 'processing'\)/);
   assert.match(guestMigration, /job_status <> 'failed'/);
   assert.match(guestMigration, /Lock order is always guest trial -> reservation/);
@@ -77,14 +81,21 @@ test("pending SQL files are plain SQL without Markdown fences or leading prose",
   }
 });
 
-test("guest trial state is exposed without putting the cookie or allowance in client storage", () => {
+test("account trial state is server-derived without putting the allowance in client storage", () => {
   assert.match(client, /\/api\/seasonal-polaroid\/trial/);
   assert.doesNotMatch(client, /localStorage.*trial|sessionStorage.*trial/);
-  assert.match(route, /Set-Cookie/);
-  assert.match(guest, /HttpOnly/);
-  assert.match(guest, /SameSite=Lax/);
-  assert.match(guest, /Secure/);
-  assert.match(guest, /timingSafeEqual/);
+  assert.match(route, /authentication_required/);
+  assert.match(guest, /seasonalPolaroidAccountIdentityHash/);
+  assert.match(guest, /aiGenerationIdentityHash/);
+});
+
+test("account identity is stable across browsers and distinct across accounts", () => {
+  assert.match(guest, /aiGenerationIdentityHash\(userId\)/);
+  assert.match(route, /const accountHash = authenticatedUserId \? aiGenerationIdentityHash\(authenticatedUserId\) : null/);
+  assert.doesNotMatch(route, /Set-Cookie/);
+  assert.doesNotMatch(route, /guest\.hash/);
+  assert.match(guestMigration, /guest_hash text primary key/);
+  assert.match(guestMigration, /p_guest_hash/);
 });
 
 test("developer admissions do not reserve or finalize customer guest trials", () => {

@@ -60,6 +60,11 @@ test("Seasonal save verifies the job capability and keeps result objects private
   assert.doesNotMatch(route, /getPublicUrl/);
 });
 
+test("Seasonal save binds the verified job to the authenticated owner", () => {
+  assert.match(route, /seasonalPolaroidOwnerMatches\(job\?\.owner_identity_hash, user\.id\)/);
+  assert.match(route, /result_unverified/);
+});
+
 test("Seasonal save migration is additive and owner-protected", () => {
   assert.match(migration, /create table if not exists public\.seasonal_polaroid_results/);
   assert.match(migration, /owner_user_id uuid not null/);

@@ -6,6 +6,7 @@ import { normalizeSeasonalPolaroidMemo } from "@/lib/seasonal-polaroid-contract"
 import { isSeasonalPolaroidResultPath, downloadSeasonalPolaroidResultImage } from "@/lib/seasonal-polaroid-result-storage";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { seasonalPolaroidOwnerMatches } from "@/lib/seasonal-polaroid-ownership";
 
 const RESULT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const JOB_ID_PATTERN = /^[0-9a-f]{64}$/i;
@@ -78,6 +79,9 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   const user = await authenticatedUser();
   if (!user) return genericError(401, "authentication_required");
+  if (!seasonalPolaroidOwnerMatches(job?.owner_identity_hash, user.id)) {
+    return genericError(403, "result_unverified");
+  }
   const db = createSupabaseServerClient();
   if (!db) return genericError(503, "storage_unavailable");
 

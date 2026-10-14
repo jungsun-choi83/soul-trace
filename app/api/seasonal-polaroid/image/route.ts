@@ -14,6 +14,7 @@ import {
 } from "@/lib/seasonal-polaroid-result-storage";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
+import { seasonalPolaroidOwnerMatches } from "@/lib/seasonal-polaroid-ownership";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
@@ -39,10 +40,13 @@ function notFound(): Response {
 export async function GET(request: Request): Promise<Response> {
   if (!isSeasonalPolaroidEnabled()) return notFound();
   if (!(await seasonalPolaroidAccessAllowed(request))) return notFound();
-  if (!seasonalPolaroidDeveloperRequestAllowed(request)) {
+  const seasonalDeveloperRequest = seasonalPolaroidDeveloperRequestAllowed(request);
+  let seasonalUserId: string | null = null;
+  if (!seasonalDeveloperRequest) {
     const auth = await createSupabaseAuthServerClient();
     const user = auth ? (await auth.auth.getUser()).data.user : null;
     if (!user) return notFound();
+    seasonalUserId = user.id;
   }
   const jobId = new URL(request.url).searchParams.get("jobId")?.trim().toLowerCase() ?? "";
   if (!/^[a-f0-9]{64}$/.test(jobId)) return notFound();
@@ -58,6 +62,9 @@ export async function GET(request: Request): Promise<Response> {
     !job.result ||
     !job.result.image || typeof job.result.image !== "object"
   ) return notFound();
+  if (!seasonalDeveloperRequest && !seasonalPolaroidOwnerMatches(job.owner_identity_hash, seasonalUserId)) {
+    return notFound();
+  }
 
   const image = job.result.image as Record<string, unknown>;
   if (image.kind !== "private-object" || typeof image.objectKey !== "string" || !isSeasonalPolaroidResultPath(jobId, image.objectKey)) return notFound();

@@ -1,7 +1,13 @@
--- Seasonal Polaroid guest trial allowance (additive; do not execute without review).
+-- Seasonal Polaroid account trial allowance (additive; do not execute without review).
 -- Prerequisites: migration_ai_generation_seasonal_polaroid.sql and the existing
 -- ai_generation_jobs queue schema. This migration is intentionally isolated
 -- from Letter and Visual Memory tables and RPCs.
+--
+-- The legacy guest_* identifiers are retained for compatibility with the
+-- reviewed RPC contract, but p_guest_hash is an HMAC of the verified
+-- Supabase user ID for all normal requests. Browser-cookie identities must not
+-- be passed by the production admission route. This makes the two-success
+-- allowance account-scoped while keeping the migration additive.
 -- Deployment prerequisite: deploy a worker version that understands the
 -- reservation id and version before enabling Seasonal admission. Until then
 -- the feature flag must remain false; this migration does not make old

@@ -286,7 +286,6 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "verifying">("idle");
   const [resendAvailableAt, setResendAvailableAt] = useState(0);
   const [, setResendTick] = useState(0);
-  const [emailVerificationReady, setEmailVerificationReady] = useState(false);
   const [saveGateOpen, setSaveGateOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<"save" | "download" | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
@@ -678,7 +677,6 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
       });
       if (result === "authenticated") {
         await authSession.refresh();
-        setEmailVerificationReady(true);
         setEmailModalOpen(false);
         setEmailStep("email");
         setEmailStatus("idle");
@@ -721,7 +719,10 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     }
     setError(null);
     setEmailError(null);
-    if (emailVerificationReady) {
+    // The server session is the only source of truth. A previous OTP result
+    // must not survive a sign-out or expired/revoked session.
+    if (authSession.status === "loading") return;
+    if (authSession.status === "authenticated") {
       void runGeneration();
       return;
     }
@@ -795,9 +796,20 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     } catch (requestError) {
       setGenerationStatus(null);
       setView("questionnaire");
+      const sessionExpired = requestError instanceof SeasonalPolaroidRequestError && requestError.status === 401;
       const message = seasonalRequestErrorMessage(requestError, lang, t);
-      setGenerationError(message);
-      setError(message);
+      setGenerationError(sessionExpired ? null : message);
+      setError(sessionExpired ? null : message);
+      // A session can expire between the client check and server admission.
+      // Refresh the authoritative session state and reopen OTP instead of
+      // allowing a stale client flag to retry as if it were authenticated.
+      if (sessionExpired) {
+        await authSession.refresh();
+        setEmailStep("email");
+        setGenerationCode("");
+        setEmailError(null);
+        setEmailModalOpen(true);
+      }
       void readSeasonalPolaroidTrial().then((trial) => {
         setDeveloperTesting(trial.developer === true);
         if (trial.remaining !== null) setTrialRemaining(trial.remaining);
@@ -823,7 +835,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     setSaveError(null);
     releaseImagePreview();
     setMockMode(false);
-    if (emailVerificationReady || authSession.status === "authenticated") {
+    if (authSession.status === "authenticated") {
       void runGeneration(true);
       return;
     }
@@ -1241,7 +1253,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
             <nav className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6" aria-label="Polaroid questionnaire navigation">
               <button type="button" onClick={goBack} disabled={step === 1} className={`min-h-12 rounded-xl border border-[#D4AF37]/35 px-5 py-3 text-sm text-[#E3D4BF] transition hover:bg-[#D4AF37]/10 disabled:cursor-not-allowed disabled:opacity-35 ${bodyFont}`}>{t("seasonalPolaroid.flow.backStep")}</button>
               <div className="ml-auto flex flex-wrap justify-end gap-3">
-                <button type="button" onClick={goNext} className={`min-h-12 rounded-xl bg-[#B89A2E] px-6 py-3 text-sm font-medium text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] transition hover:bg-[#D0AE3D] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F3EAD8] ${bodyFont}`}>
+                <button type="button" onClick={goNext} disabled={step === 6 && authSession.status === "loading"} className={`min-h-12 rounded-xl bg-[#B89A2E] px-6 py-3 text-sm font-medium text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] transition hover:bg-[#D0AE3D] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F3EAD8] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}>
                   {step === 6 ? (status === "passed" ? t("seasonalPolaroid.flow.createPassed") : t("seasonalPolaroid.flow.createLiving")) : t("seasonalPolaroid.flow.next")}
                 </button>
               </div>

@@ -129,7 +129,8 @@ test("terminal generation failures leave the developing view and keep answers av
 
 test("email OTP gates generation without starting an AI job before verification", () => {
   assert.match(component, /setEmailModalOpen\(true\)/);
-  assert.match(component, /emailVerificationReady/);
+  assert.match(component, /authSession\.status === "authenticated"/);
+  assert.doesNotMatch(component, /emailVerificationReady/);
   assert.match(component, /emailHeading/);
   assert.match(component, /emailInvalid/);
   assert.match(component, /requestLetterDownloadCode/);

@@ -78,10 +78,11 @@ test("fallback memos remain four lines, localized, and call-name addressed", () 
 test("fallback memo keeps the pet's voice natural and first-person", () => {
   const english = fallbackSeasonalPolaroidMemo(LIVING);
   assert.match(english.lines[0], /Mom, happy Halloween from Mochi!/);
-  assert.match(english.lines[1], /^I'm in/);
+  assert.match(english.lines[1], /^I’m feeling/);
   assert.match(english.lines[2], /^I /);
-  assert.match(english.lines[3], /^I hope/);
+  assert.match(english.lines[3], /Mom/);
   assert.doesNotMatch(english.lines.slice(1).join(" "), /Mochi|their/i);
+  assert.doesNotMatch(english.lines.slice(1).join(" "), /I'm in|save me|I hope you smile/i);
   assert.doesNotMatch(english.lines[2], /\.\./);
 });
 
@@ -122,12 +123,56 @@ test("normal concise first-person AI memo passes validation", () => {
     locale: "en",
     lines: [
       "Mom, happy Halloween from Mochi!",
-      "I'm in pumpkin orange, feeling snacky.",
-      "I nap in sunbeams; save me tuna.",
-      "I hope you smile, Mom.",
+      "Pumpkin lights make my whiskers dance.",
+      "I nap in sunbeams and dream of tuna.",
+      "Keep my tiny purr close, Mom.",
     ],
   }, LIVING);
   assert.equal(result.valid, true);
+});
+
+test("first-person validation accepts natural English contractions and possessives", () => {
+  const result = validateSeasonalPolaroidMemo({
+    locale: "en",
+    lines: [
+      "Mom, happy Halloween from Mochi!",
+      "I’m cozy in pumpkin orange.",
+      "I’ve saved my purr for you.",
+      "I’ll cuddle close tonight.",
+    ],
+  }, LIVING);
+  assert.equal(result.valid, true);
+});
+
+test("first-person validation pinpoints noun-led narration", () => {
+  const result = validateSeasonalPolaroidMemo({
+    locale: "en",
+    lines: [
+      "Mom, happy Halloween from Mochi!",
+      "Pumpkin glow warms the room.",
+      "I nap in sunbeams and dream of tuna.",
+      "I’ll cuddle close tonight.",
+    ],
+  }, LIVING);
+  assert.deepEqual(result, { valid: false, reason: "memo_not_first_person" });
+});
+
+test("different answers produce different compact fallback details without stock caption phrases", () => {
+  const pumpkin = fallbackSeasonalPolaroidMemo(LIVING);
+  const witch = fallbackSeasonalPolaroidMemo({
+    ...LIVING,
+    petName: "Tuli",
+    costume: "witch",
+    personalities: ["curious-explorer"],
+    habit: "box-inspector",
+    favoriteTreat: "churu",
+    generationNonce: "regen-c",
+  });
+  assert.notDeepEqual(pumpkin.lines, witch.lines);
+  assert.match(witch.lines[0], /Tuli/);
+  assert.match(witch.lines.slice(1).join(" "), /witch|curious|box|churu/i);
+  assert.doesNotMatch(witch.lines.slice(1).join(" "), /I'm in|save me|I hope you smile/i);
+  assert.equal(validateSeasonalPolaroidMemo(witch, { ...LIVING, petName: "Tuli", costume: "witch", personalities: ["curious-explorer"], habit: "box-inspector", favoriteTreat: "churu", generationNonce: "regen-c" }).valid, true);
 });
 
 test("fallback memo keeps optional details inside the localized line budget", () => {
@@ -182,11 +227,16 @@ test("memo system prompt locks the four-line JSON and memorial rules", () => {
   const prompt = buildSeasonalPolaroidMemoSystemPrompt("ko", "passed");
   assert.match(prompt, /exactly four non-empty strings/);
   assert.match(prompt, /JSON object/);
+  assert.match(prompt, /exactly two fields: locale and lines/);
+  assert.match(prompt, /locale field must be exactly "ko"/);
   assert.match(prompt, /32 characters or fewer/);
   assert.match(prompt, /Rainbow Bridge/);
   assert.match(prompt, /first-person voice/);
+  assert.match(prompt, /First-person guard: begin each of lines 2-4/);
   assert.match(prompt, /never mention the pet's name again after line 1/);
   assert.match(prompt, /one tiny connected note/);
+  assert.match(prompt, /never copy a stock template/);
+  assert.match(prompt, /Avoid repetitive constructions/);
   assert.match(prompt, /20-40 characters in English/);
 });
 
@@ -223,7 +273,7 @@ test("server generator reuses Visual Memory image fallback and chat safety utili
   assert.match(generator, /secondary \? \[primary, secondary\] : \[primary\]/);
   assert.match(generator, /size: "1024x1024"/);
   assert.match(generator, /OPENAI_CHAT_OPTIONS/);
-  assert.match(generator, /response_format: \{ type: "json_object" \}/);
+  assert.match(generator, /response_format: seasonalMemoResponseFormat\(answers\.locale as "en" \| "ko"\)/);
   assert.match(generator, /for \(let attempt = 0; attempt < 2; attempt \+= 1\)/);
   assert.match(generator, /fallbackSeasonalPolaroidMemo/);
   assert.match(generator, /gpt-4o-mini/);

@@ -9,6 +9,7 @@ import {
   seasonalPolaroidDeveloperRequestAllowed,
 } from "@/lib/seasonal-polaroid-access";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
+import { seasonalPolaroidOwnerMatches } from "@/lib/seasonal-polaroid-ownership";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -71,10 +72,14 @@ export async function GET(request: Request) {
   if (kind === "seasonal_polaroid" && !(await seasonalPolaroidAccessAllowed(request))) {
     return seasonalPrivateResponse({ error: "Generation not found." }, { status: 404 });
   }
-  if (kind === "seasonal_polaroid" && !seasonalPolaroidDeveloperRequestAllowed(request)) {
+  const seasonalDeveloperRequest = kind === "seasonal_polaroid"
+    && seasonalPolaroidDeveloperRequestAllowed(request);
+  let seasonalUserId: string | null = null;
+  if (kind === "seasonal_polaroid" && !seasonalDeveloperRequest) {
     const auth = await createSupabaseAuthServerClient();
     const user = auth ? (await auth.auth.getUser()).data.user : null;
     if (!user) return seasonalPrivateResponse({ error: "Generation not found." }, { status: 404 });
+    seasonalUserId = user.id;
   }
 
   const job = await readAiGenerationJob(jobId);
@@ -85,6 +90,9 @@ export async function GET(request: Request) {
     const capability = request.headers.get("x-soul-trace-seasonal-capability")?.trim() ?? "";
     if (!seasonalPolaroidCapabilityMatches(capability, jobId, job.request_hash)) {
       return Response.json({ error: "Generation not found." }, { status: 404 });
+    }
+    if (!seasonalDeveloperRequest && !seasonalPolaroidOwnerMatches(job.owner_identity_hash, seasonalUserId)) {
+      return seasonalPrivateResponse({ error: "Generation not found." }, { status: 404 });
     }
   }
   if (kind === "letter") {

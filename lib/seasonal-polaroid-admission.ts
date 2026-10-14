@@ -26,7 +26,7 @@ import {
   bindSeasonalGuestTrial,
   finalizeSeasonalGuestTrial,
   releaseSeasonalGuestTrial,
-  reserveSeasonalGuestTrial,
+  reserveSeasonalAccountTrial,
 } from "./seasonal-polaroid-guest-trial";
 
 export type SeasonalPolaroidQueuePayload = {
@@ -198,15 +198,19 @@ export async function admitSeasonalPolaroidInternally(args: {
   secondary?: { bytes: ArrayBuffer; contentType: "image/jpeg" | "image/png" | "image/webp"; name: string };
   requestHash: string;
   identity?: string | null;
+  /** Stable HMAC of the verified Supabase user ID. */
+  accountHash?: string;
+  /** @deprecated Cookie identity retained for legacy isolated callers only. */
   guestHash?: string;
   developerTestMode?: boolean;
 }): Promise<AiGuardDecision> {
   const idempotencyKey = await aiGenerationIdempotencyKey("seasonal_polaroid", args.requestHash);
   const developerTestMode = args.developerTestMode === true && seasonalPolaroidDeveloperTestMode();
-  if (!developerTestMode && !args.guestHash) return { decision: "unavailable" };
+  const accountHash = args.accountHash ?? args.guestHash;
+  if (!developerTestMode && !accountHash) return { decision: "unavailable" };
   const trial = developerTestMode
     ? null
-    : await reserveSeasonalGuestTrial({ guestHash: args.guestHash!, idempotencyKey, requestHash: args.requestHash });
+    : await reserveSeasonalAccountTrial({ accountHash: accountHash!, idempotencyKey, requestHash: args.requestHash });
   if (trial?.decision === "unavailable") return { decision: "unavailable" };
   if (trial?.decision === "exhausted") return { decision: "guest_trial_exhausted", trialRemaining: 0 };
 
