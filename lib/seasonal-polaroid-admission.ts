@@ -21,10 +21,7 @@ import { sha256Hex } from "./ai-generation-guard";
 import { createSupabaseServerClient } from "./supabase-server";
 import { scheduleAiGenerationWorker } from "./ai-generation-worker-trigger";
 import { seasonalPolaroidResultPath } from "./seasonal-polaroid-result-storage.ts";
-<<<<<<< HEAD
 import { seasonalPolaroidDeveloperTestMode } from "./seasonal-polaroid-access";
-=======
->>>>>>> origin/master
 import {
   bindSeasonalGuestTrial,
   finalizeSeasonalGuestTrial,
