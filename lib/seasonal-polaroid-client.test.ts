@@ -4,7 +4,7 @@ import test from "node:test";
 
 import { buildSeasonalPolaroidFormData } from "./seasonal-polaroid-client.ts";
 
-const clientSource = readFileSync("lib/seasonal-polaroid-client.ts", "utf8");
+const clientSource = readFileSync("lib/seasonal-polaroid-client.ts", "utf8").replace(/\r\n/g, "\n");
 const trialRoute = readFileSync("app/api/seasonal-polaroid/trial/route.ts", "utf8");
 const componentSource = readFileSync("components/polaroid-entry.tsx", "utf8");
 

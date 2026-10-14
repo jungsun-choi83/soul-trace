@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const guard = readFileSync("lib/ai-generation-guard.ts", "utf8");
-const worker = readFileSync("app/api/internal/ai-worker/route.ts", "utf8");
+const worker = readFileSync("app/api/internal/ai-worker/route.ts", "utf8").replace(/\r\n/g, "\n");
 const statusRoute = readFileSync("app/api/ai-generation/status/route.ts", "utf8");
-const migration = readFileSync("supabase/migration_ai_generation_seasonal_polaroid.sql", "utf8");
+const migration = readFileSync("supabase/migration_ai_generation_seasonal_polaroid.sql", "utf8").replace(/\r\n/g, "\n");
 const storageMigration = readFileSync("supabase/migration_ai_generation_seasonal_polaroid_storage.sql", "utf8");
 const existingQueueMigration = readFileSync("supabase/migration_ai_generation_queue.sql", "utf8");
 const safetyMigration = readFileSync("supabase/migration_ai_generation_safety.sql", "utf8");
