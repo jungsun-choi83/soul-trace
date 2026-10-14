@@ -90,7 +90,11 @@ export function SurveyFlow({
   return (
     <div className={bodyFont}>
       <p className="step-kicker">
-        {isPhoto ? t("survey.stampPhoto.label") : isMemory ? t("survey.memoryKicker") : t("survey.toneKicker")}
+        {isPhoto
+          ? t("survey.stampPhoto.label")
+          : isMemory
+            ? (copy.memoryKicker ?? t("survey.memoryKicker"))
+            : t("survey.toneKicker")}
       </p>
 
       {isPhoto ? (
@@ -118,8 +122,9 @@ export function SurveyFlow({
           <p className="text-xl font-extralight leading-relaxed text-[#FFFFFF] md:text-2xl">
             {formatSurveyName(memoryItem.promptText, petDisplayName)}
           </p>
-          <p className="survey-hint font-extralight leading-relaxed text-[#D4AF37]/90">
-            {t("survey.focusHint").replace("%NAME%", petDisplayName.trim() || (lang === "ko" ? "아이" : "your pet"))}
+          <p className="survey-hint whitespace-pre-line font-extralight leading-relaxed text-[#D4AF37]/90">
+            {memoryItem.helper ??
+              t("survey.focusHint").replace("%NAME%", petDisplayName.trim() || (lang === "ko" ? "아이" : "your pet"))}
           </p>
           {memoryItem.optional ? (
             <p className="survey-hint font-extralight text-[#C4B8A8]/90">
@@ -157,7 +162,7 @@ export function SurveyFlow({
               ? t("survey.letterToneTitle")
               : toneItem.promptText.replace(/^Q\d+\.\s*/, "")}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className={`flex gap-2 ${toneItem.id === "q12" ? "flex-col" : "flex-wrap"}`}>
             {toneItem.id === "q10"
               ? toneItem.options.map((opt) => (
                   <button
@@ -176,7 +181,7 @@ export function SurveyFlow({
                     key={opt.id}
                     type="button"
                     onClick={() => onToneLength(opt.id as LetterTonePrefs["length"])}
-                    className={chipClass(tonePrefs.length === opt.id, lang)}
+                    className={`${chipClass(tonePrefs.length === opt.id, lang)} w-full whitespace-normal py-3 text-left leading-snug`}
                   >
                     {opt.label}
                   </button>

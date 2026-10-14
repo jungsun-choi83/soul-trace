@@ -102,35 +102,361 @@
     "subtitleLine1": "If they could speak to you,\nwhat would they say?"
   },
   "landing": {
-    "prompt": "Whose story should we tell?",
+    "prompt": "What Would You Like to Create?",
+    "subtitle": "Every bond has a story worth keeping.\nChoose how you'd like to celebrate your pet.",
     "back": "Start over",
-    "navBack": "Back"
+    "navBack": "Back",
+    "livingEyebrow": "01 · LIVING LETTER",
+    "livingTitle": "Still By My Side",
+    "livingDescription": "Hear how today went — from their side of the room.",
+    "memorialEyebrow": "02 · MEMORIAL LETTER",
+    "memorialTitle": "Forever In My Heart",
+    "memorialDescription": "There are still words they never got to say.",
+    "letterCta": "Create a Letter",
+    "letterSectionTitle": "A Letter From Your Pet",
+    "polaroidSectionTitle": "Seasonal Polaroid",
+    "polaroidCardEyebrow": "03 · SEASONAL POLAROID",
+    "polaroidTitle": "A Moment to Keep",
+    "polaroidCardDescription": "Turn one favorite moment into a seasonal keepsake made to feel like yours.",
+    "polaroidEyebrow": "HALLOWEEN EDITION",
+    "polaroidDescription": "Turn one favorite moment into a seasonal keepsake made to feel like yours.",
+    "polaroidCta": "Create a Polaroid",
+    "polaroidPreviewAlt": "Halloween-themed seasonal Polaroid preview"
+  },
+  "polaroid": {
+    "eyebrow": "SEASONAL POLAROID",
+    "title": "A little seasonal magic, made from your memory.",
+    "description": "This six-step keepsake experience will help you shape one moment into a Polaroid to keep.",
+    "edition": "Halloween Edition",
+    "previewLabel": "A Halloween moment",
+    "previewCaption": "The memories we make together stay close.",
+    "stepProgress": "Your six-step experience starts here.",
+    "comingSoon": "The questionnaire is coming next.",
+    "backToChoose": "Back to choose"
+  },
+  "seasonalPolaroid": {
+    "flow": {
+      "back": "Back to choose",
+      "stepOf": "STEP %STEP% OF 6",
+      "steps": { "meet": "Meet", "photos": "Photos", "costume": "Costume", "scene": "Scene", "personality": "Personality", "details": "Details" },
+      "next": "Next",
+      "backStep": "Back",
+      "skip": "Skip for now",
+      "personalityCount": "%COUNT% of 2 selected",
+      "createLiving": "Create My Polaroid",
+      "createPassed": "Create Our Memorial Polaroid",
+      "developmentNotice": "Development preview: generation will be connected in Phase 3. Your answers are saved on this device for now.",
+      "generation": {
+        "emailHeading": "One Little Step Away",
+        "emailDescription": "Enter your email to continue creating your special memory.",
+        "emailLabel": "Email Address",
+        "emailPlaceholder": "your@email.com",
+        "emailContinue": "Continue",
+        "emailSupporting": "Your email will be verified before you can view your Polaroid.",
+        "emailInvalid": "Please enter a valid email address.",
+        "emailVerificationSoon": "Email verification will be available soon.",
+        "emailClose": "Close",
+        "emailCodeHeading": "Check Your Email",
+        "emailCodeDescription": "Enter the six-digit code we sent to continue.",
+        "emailCodeLabel": "Verification Code",
+        "emailCodePlaceholder": "000000",
+        "emailCodeSupporting": "The code expires soon. You can request another one if needed.",
+        "emailVerify": "Verify & Create",
+        "emailSending": "Sending code…",
+        "emailVerifying": "Verifying…",
+        "emailResend": "Resend code",
+        "emailResendCountdown": "Resend in %TIME%s",
+        "emailResendWait": "Please wait before requesting another code.",
+        "emailChange": "Change email",
+        "emailSendFailed": "We couldn’t send the code. Please try again.",
+        "emailVerifyFailed": "We couldn’t verify that code. Please try again.",
+        "emailCodeInvalid": "That code is not correct. Please check it and try again.",
+        "emailCodeExpired": "That code has expired. Request a new one.",
+        "emailUnavailable": "Email verification is temporarily unavailable. Please try again.",
+        "eyebrow": "SEASONAL POLAROID",
+        "developingTitle": "Developing your little keepsake",
+        "readyTitle": "Your Polaroid is ready",
+        "cardTitleLiving": "%NAME%'s Halloween keepsake",
+        "cardTitlePassed": "%NAME%'s Halloween memory",
+        "developingPhoto": "A little seasonal magic is taking shape...",
+        "memoWaiting": "Your little note will appear here.",
+        "queued": "Your place is saved in the queue.",
+        "processing": "The studio is bringing every detail together.",
+        "inProgress": "Generation in progress",
+        "failed": "We couldn't finish this Polaroid. Your answers are safe.",
+        "pollingError": "We lost the live update briefly. We'll keep trying.",
+        "imageUnavailable": "Your Polaroid is ready, but its private image needs another try.",
+        "requestError": "We couldn't start the Polaroid just yet. Please try again.",
+        "rateLimited": "You've reached the Polaroid limit for now. Please wait %TIME% before trying again.",
+        "busy": "The Polaroid studio is busy right now. Please wait %TIME% before trying again.",
+        "tryLater": "a little while",
+        "freeRemaining": "%COUNT% free Polaroids remaining",
+        "freeComplete": "Your 2 free Polaroids are complete.",
+        "developerUnlimited": "Unlimited developer generations",
+        "retry": "Try again",
+        "regenerate": "Regenerate",
+        "startOver": "Back to the questionnaire",
+        "saveUnavailable": "Save (coming soon)",
+        "downloadUnavailable": "Download (coming soon)",
+        "save": "Save to My Memories",
+        "download": "Download PNG",
+        "saving": "Saving...",
+        "downloading": "Preparing PNG...",
+        "saved": "Saved to My Memories",
+        "saveError": "This Polaroid could not be saved. Your result is still here.",
+        "downloadError": "The PNG could not be prepared. Please try again.",
+        "authenticationRequired": "Please verify your email before saving this Polaroid.",
+        "mockSaveUnavailable": "Saving and downloading are disabled for the development mock.",
+        "mockBadge": "Development mock preview",
+        "openMockDeveloping": "Preview development loading",
+        "openMock": "Open development mock preview",
+        "mockOwner": "you",
+        "messages": {
+          "livingOne": "%NAME% is trying on a costume...",
+          "livingTwo": "Finding the perfect pumpkin light...",
+          "livingThree": "Writing you a little note...",
+          "passedOne": "Holding %NAME%'s familiar light close...",
+          "passedTwo": "Finding a gentle place for this memory...",
+          "passedThree": "Writing a little note from the heart..."
+        }
+      },
+      "photoLimit": "JPG, PNG, or WebP · up to 15 MB",
+      "photoHeic": "HEIC and HEIF are not supported in this preview. Please convert the photo to JPG, PNG, or WebP first.",
+      "photoType": "Please choose a JPG, PNG, or WebP image.",
+      "photoSize": "Please choose an image up to 15 MB.",
+      "photoEmpty": "That file appears to be empty. Please choose another image.",
+      "validation": {
+        "name": "Please enter your pet's name.",
+        "nameLength": "Keep the name to 12 characters or fewer.",
+        "species": "Please choose a species.",
+        "status": "Please tell us whether your pet is with you now.",
+        "photo": "Please upload one clear photo before continuing.",
+        "costume": "Please choose a costume.",
+        "scene": "Please choose a scene.",
+        "vibe": "Please choose a vibe.",
+        "personality": "Choose one or two personality traits.",
+        "habit": "Please choose one favorite habit.",
+        "treat": "Please choose or enter a favorite treat.",
+        "callName": "Please choose what your pet calls you.",
+        "callNameCustom": "Enter the name your pet calls you."
+      },
+      "screen1": {
+        "kicker": "STEP 1 — MEET YOUR PET",
+        "title": "Who is this little Halloween star?",
+        "titlePassed": "Who is this beloved Halloween star?",
+        "intro": "Start with the little details that make them unmistakably yours.",
+        "introPassed": "Start with the little details you still hold close.",
+        "nameLabel": "Pet name",
+        "namePlaceholder": "Their name",
+        "speciesLabel": "What kind of companion are they?",
+        "statusLabel": "Where are they in your story?"
+      },
+      "screen2": {
+        "kicker": "STEP 2 — PHOTOS",
+        "title": "Let me see that face.",
+        "titlePassed": "Let me see the face you remember.",
+        "intro": "One clear photo is all I need to recognize their little details. Add a second if you want.",
+        "introPassed": "One clear photo helps keep their familiar details close. A second is welcome too.",
+        "primaryLabel": "Main photo · required",
+        "secondLabel": "Second photo · optional",
+        "upload": "Upload photo",
+        "change": "Change",
+        "remove": "Remove",
+        "tipsTitle": "Photo tips",
+        "tips": "Choose a well-lit photo where their face is easy to see. Avoid heavy filters and group photos.",
+        "empty": "Your pet's photo will appear here."
+      },
+      "screen3": {
+        "kicker": "STEP 3 — COSTUME",
+        "title": "How should we dress up?",
+        "titlePassed": "How should we remember them tonight?",
+        "intro": "Pick one costume, or let the Halloween magic choose for you.",
+        "introPassed": "Pick a gentle costume, or let the Halloween magic choose for you."
+      },
+      "screen4": {
+        "kicker": "STEP 4 — SCENE & VIBE",
+        "title": "Where does the little adventure happen?",
+        "titlePassed": "Where does this warm memory happen?",
+        "intro": "Choose a place and the feeling you want the Polaroid to hold.",
+        "introPassed": "Choose a place and the feeling you want this keepsake to hold.",
+        "sceneLabel": "Choose a scene",
+        "vibeLabel": "Choose a vibe"
+      },
+      "screen5": {
+        "kicker": "STEP 5 — PERSONALITY",
+        "title": "What makes them, them?",
+        "titlePassed": "What made them, them?",
+        "intro": "Choose one or two traits, then tell us about one tiny habit.",
+        "introPassed": "Choose one or two traits, then hold onto one tiny habit.",
+        "personalityLabel": "Pick one or two",
+        "habitLabel": "A habit only they have"
+      },
+      "screen6": {
+        "kicker": "STEP 6 — FINAL DETAILS",
+        "title": "One last little touch.",
+        "titlePassed": "One last gentle touch.",
+        "intro": "Add their favorite treat and the name they use for you.",
+        "introPassed": "Add their favorite treat and the name they used for you.",
+        "treatLabel": "Favorite treat",
+        "treatCustomPlaceholder": "Tell us the treat",
+        "callNameLabel": "What does your pet call you?",
+        "callNameLabelPassed": "What did your pet call you?",
+        "callNameCustomPlaceholder": "The name they use for you",
+        "personalLabel": "One personal detail · optional",
+        "personalPlaceholder": "A tiny detail that makes this feel like them",
+        "characterCount": "%COUNT% / 60"
+      },
+      "preview": {
+        "label": "LIVE PREVIEW",
+        "placeholder": "Your pet's Polaroid will take shape here.",
+        "whisperLabel": "A little whisper",
+        "selections": "Your selections"
+      },
+      "options": {
+        "species": {
+          "dog": "Dog",
+          "cat": "Cat",
+          "rabbit": "Rabbit",
+          "hamster": "Hamster",
+          "bird": "Bird",
+          "other": "Other"
+        },
+        "status": {
+          "living": "With me now",
+          "passed": "Over the Rainbow Bridge"
+        },
+        "costumes": {
+          "vampire": "Vampire",
+          "witch": "Witch",
+          "pumpkin": "Pumpkin",
+          "batWings": "Bat wings",
+          "wizard": "Wizard",
+          "ghostSheet": "Ghost sheet",
+          "skeleton": "Skeleton",
+          "littleAngel": "Little angel",
+          "surprise": "Surprise me"
+        },
+        "scenes": {
+          "pumpkinPatch": "Pumpkin patch",
+          "candyRoom": "Cozy room full of candy",
+          "moonlitForest": "Moonlit forest",
+          "trickOrTreatStreet": "Trick-or-treat street",
+          "hauntedPorch": "Haunted house porch",
+          "lanternMeadow": "Lantern-lit meadow under the stars"
+        },
+        "vibes": {
+          "cuteCozy": "Cute & cozy",
+          "sillyChaotic": "Silly & chaotic",
+          "spookyCool": "Spooky & cool",
+          "gentleWarm": "Gentle & warm"
+        },
+        "personalities": {
+          "foodie": "Foodie",
+          "drama": "Drama queen/king",
+          "scaredyCat": "Scaredy-cat",
+          "zoomies": "Zoomies machine",
+          "cuddleBug": "Cuddle bug",
+          "littleBoss": "Little boss",
+          "sleepyhead": "Sleepyhead",
+          "curiousExplorer": "Curious explorer"
+        },
+        "habits": {
+          "dog": { "toyCarrier": "Carries a favorite toy", "headTilt": "Tilts their head", "wholeBodyWiggle": "Wiggles their whole body", "doorwayWatcher": "Keeps watch by the door" },
+          "cat": { "sunbeamNapper": "Naps in every sunbeam", "midnightZoomies": "Runs midnight zoomies", "boxInspector": "Inspects every box", "tinyJudge": "Judges from a high place" },
+          "rabbit": { "binky": "Does joyful binkies", "noseBoop": "Gives tiny nose boops", "hayRearranger": "Rearranges the hay", "happyFlop": "Flops when content" },
+          "hamster": { "wheelRunner": "Runs the wheel at night", "cheekStuffer": "Fills both cheeks", "tinyBurrower": "Burrows into everything", "nightExplorer": "Explores after dark" },
+          "bird": { "morningSinger": "Sings every morning", "headCock": "Cocks their head to listen", "shinyThief": "Steals shiny things", "shoulderPerch": "Finds a shoulder to perch on" },
+          "other": { "favoriteRoutine": "Has a favorite little routine", "curiousExplorer": "Investigates everything", "snackSeeker": "Always searches for snacks", "cozyCuddler": "Finds the coziest spot" }
+        },
+        "treats": {
+          "dog": { "pumpkinBiscuit": "Pumpkin biscuit", "jerky": "Jerky", "cheese": "Cheese" },
+          "cat": { "tuna": "Tuna", "churu": "Churu", "catnip": "Catnip" },
+          "rabbit": { "carrot": "Carrot", "apple": "Apple", "freshGreens": "Fresh greens" },
+          "hamster": { "sunflowerSeed": "Sunflower seed", "tinyFruit": "Tiny fruit", "crunchyTreat": "A crunchy treat" },
+          "bird": { "millet": "Millet", "berries": "Berries", "sunflowerSeed": "Sunflower seed" },
+          "other": { "favoriteSnack": "Their favorite snack", "specialBite": "A special little bite" },
+          "custom": "Something else"
+        },
+        "callNames": { "mom": "Mom", "dad": "Dad", "both": "Mom and Dad", "sister": "Sister", "brother": "Brother", "byName": "A name", "custom": "Something else" }
+      },
+      "whispers": {
+        "default": "%NAME% is already imagining the perfect little Polaroid.",
+        "defaultLiving": "%NAME% is already imagining the perfect little Polaroid.",
+        "defaultPassed": "%NAME% feels close in this little memory.",
+        "photo": "There you are, %NAME%. I know that face anywhere.",
+        "costume": {
+          "vampire": "%NAME% says, “A little fang-tastic, please.”",
+          "witch": "%NAME% has found the perfect spell for this photo.",
+          "pumpkin": "A pumpkin? %NAME% will be the cutest little pumpkin tonight!",
+          "batWings": "%NAME% is ready to flap into the night.",
+          "wizard": "%NAME% says this look is pure magic.",
+          "ghostSheet": "%NAME% promises to be the friendliest ghost around.",
+          "skeleton": "%NAME% is bringing a little good-bone energy.",
+          "littleAngel": "%NAME% looks peaceful enough to light the whole night.",
+          "surprise": "%NAME% loves a little mystery. Surprise accepted!"
+        },
+        "scene": {
+          "pumpkinPatch": "%NAME% is ready to find the roundest pumpkin.",
+          "candyRoom": "Wait… will there be snacks in this candy room too?",
+          "moonlitForest": "%NAME% knows every quiet secret in the moonlit forest.",
+          "trickOrTreatStreet": "%NAME% is checking every doorstep for treats.",
+          "hauntedPorch": "%NAME% says the porch looks spooky—in the best way.",
+          "lanternMeadow": "%NAME% is resting somewhere warm beneath the lanterns."
+        },
+        "vibe": { "cuteCozy": "%NAME% votes for blankets, soft lights, and one more cuddle.", "sillyChaotic": "%NAME% has chosen chaos. Perfect.", "spookyCool": "%NAME% can make spooky look very cool.", "gentleWarm": "%NAME% is keeping this little memory soft and warm." },
+        "personality": { "foodie": "Wait… will there be snacks too?", "drama": "%NAME% would like everyone to know this entrance is very important.", "scaredyCat": "%NAME% is brave enough—with you close by.", "zoomies": "%NAME% is ready, set, zoom!", "cuddleBug": "%NAME% saved the coziest corner for you.", "littleBoss": "%NAME% has approved the creative direction.", "sleepyhead": "%NAME% would like a tiny nap before the photo.", "curiousExplorer": "%NAME% is inspecting every little detail." },
+        "habit": "%NAME% says this tiny habit deserves its own spotlight.",
+        "treat": "Now that %NAME% knows the favorite treat, the picture can begin.",
+        "callName": "%NAME% knows exactly who this keepsake is for."
+      }
+    }
   },
   "modes": {
     "living": {
       "landingCta": "A companion still beside me",
       "landingHint": "Hear how today went—from their side of the room.",
       "headline": "What were they thinking today?",
-      "subline": "They can't say it out loud, but there's something they'd tell you every day.",
-      "letterHeading": "A letter to %RECIPIENT%",
+      "subline": "A small letter about their everyday life—what they might tell you today.",
+      "letterHeading": "Today, to %RECIPIENT%",
+      "memoryKicker": "STEP 2 — Today",
       "q1Label": "Pet's Name",
       "q2Label": "Pet Type",
       "yearPartedPlaceholder": "Now (this year)",
       "memory": [
         {
-          "promptText": "What little habit or quirk is unique to ○○?",
-          "placeholder": "Small, specific habits",
-          "example": "Has to sleep buried under blankets / Barks only at the delivery person"
+          "id": "living-habit",
+          "promptText": "What does ○○ do often these days—or when they don’t want to do something?",
+          "helper": "A strange habit or stubborn streak is perfect.",
+          "placeholder": "A current habit or stubborn behavior",
+          "example": "Runs over as soon as the fridge opens / Plants their whole body when they don’t want to move"
         },
         {
+          "id": "living-affection",
           "promptText": "How does ○○ show you they love you?",
+          "helper": "It doesn’t have to be a big gesture.",
           "placeholder": "Their way of showing love",
           "example": "Waits outside the bathroom / Sleeps only on your feet"
         },
         {
-          "promptText": "What lets you know ○○ is excited?",
+          "id": "living-excitement",
+          "promptText": "What sound or situation makes ○○ most excited?",
+          "helper": "Even a tiny signal is enough.",
           "placeholder": "Sounds, habits, little triggers",
           "example": "Treat bag rustling / The door code beeping / Running when the leash comes out"
+        },
+        {
+          "id": "living-routine",
+          "promptText": "What’s ○○’s favorite spot or time of day right now?",
+          "helper": "A small everyday routine is enough.",
+          "placeholder": "A favorite place or time",
+          "example": "The afternoon sun patch / The sofa cushion beside you in the evening"
+        },
+        {
+          "id": "living-scene",
+          "promptText": "What’s a recent little moment that made you smile because of ○○?",
+          "helper": "It doesn’t have to be a big story—just a small scene from lately.",
+          "placeholder": "A recent everyday scene",
+          "example": "Drooling in front of a treat / Waiting with the leash in their mouth"
         }
       ],
       "tone": [
@@ -139,16 +465,16 @@
           "promptText": "Q10. What tone would you like?",
           "options": [
             { "id": "bright", "label": "Bright and playful" },
-            { "id": "calm", "label": "Calm and quiet" },
-            { "id": "warm", "label": "Warm and comforting" }
+            { "id": "calm", "label": "Calm and affectionate" },
+            { "id": "warm", "label": "Warm and loving" }
           ]
         },
         {
           "id": "q12",
           "promptText": "Letter Length",
           "options": [
-          { "id": "short", "label": "Short (~12 lines)" },
-          { "id": "normal", "label": "Medium (~20 lines)" }
+          { "id": "short", "label": "A light one-page letter" },
+          { "id": "normal", "label": "A letter that holds a little more of our memories" }
           ]
         }
       ]
@@ -157,30 +483,60 @@
       "landingCta": "A companion who crossed the rainbow bridge",
       "landingHint": "There are still words they never got to say.",
       "headline": "The words they never got to say",
-      "subline": "They still had words left in their heart—words they never got to share.",
+      "subline": "Recall how they lived, through the small scenes you still see clearly.",
       "letterHeading": "A letter to %RECIPIENT%",
+      "memoryKicker": "STEP 2 — Memories",
       "q1Label": "Pet's Name",
       "q2Label": "Pet Type",
       "yearPartedPlaceholder": "Year they passed",
       "memory": [
         {
-          "promptText": "What little habit or quirk was unique to ○○?",
+          "id": "memorial-habit",
+          "promptText": "What little habit or stubborn quirk was unique to ○○?",
+          "helper": "Small is better. A habit only they had is enough.",
           "placeholder": "Small, specific habits",
           "example": "Had to sleep buried under blankets / Barked only at the delivery person"
         },
         {
+          "id": "memorial-affection",
           "promptText": "How did ○○ show you they loved you?",
+          "helper": "It doesn’t have to be a big gesture.",
           "placeholder": "Their way of showing love",
           "example": "Waiting outside the bathroom / Sleeping only on your feet"
         },
         {
-          "promptText": "What let you know ○○ was excited?",
+          "id": "memorial-excitement",
+          "promptText": "What sound or situation made ○○ most excited?",
+          "helper": "Even a tiny signal is enough.",
           "placeholder": "Sounds, habits, little triggers",
-          "example": "Treat bag rustling / The door code beeping / Running when the carrier came out"
+          "example": "Treat bag rustling / The door code beeping / Running from the carrier"
         },
         {
-          "promptText": "(Optional) Is there something you still wish you could tell ○○?",
-          "placeholder": "Anything left unsaid",
+          "id": "memorial-comfort",
+          "promptText": "Where or when did ○○ seem most comfortable?",
+          "helper": "A nap spot, a window, your lap—small places count.",
+          "placeholder": "A place or moment they seemed at ease",
+          "example": "Napping in a patch of sun / The spot by the door / Sitting on your lap"
+        },
+        {
+          "id": "memorial-scene",
+          "promptText": "What’s the first small scene that comes to mind when you think of this pet?",
+          "helper": "It doesn’t have to be a big memory.\nSleeping beside you, waiting at the door,\nthe face they made for a treat.",
+          "placeholder": "A small scene that comes to mind",
+          "example": "Waiting by the door / Napping in a patch of sun"
+        },
+        {
+          "id": "memorial-unique",
+          "promptText": "Was there something only you knew about ○○—something others might miss?",
+          "helper": "A habit, a look, a strange preference. Anything that was uniquely them.",
+          "placeholder": "A trait only you would recognize",
+          "example": "Always turned the bowl before eating / Tilted their head at one specific song"
+        },
+        {
+          "id": "memorial-unsaid",
+          "promptText": "(Optional) Is there a small thing you wish you could tell ○○?",
+          "helper": "You can skip this. You don’t need a last word or a regret.",
+          "placeholder": "Anything you’d like to say",
           "optional": true,
           "optionalNote": "You can skip this one.",
           "skipLabel": "Skip"
@@ -191,17 +547,17 @@
           "id": "q10",
           "promptText": "Q10. What tone would you like?",
           "options": [
-            { "id": "bright", "label": "Bright and playful" },
             { "id": "calm", "label": "Calm and quiet" },
-            { "id": "warm", "label": "Warm and comforting" }
+            { "id": "warm", "label": "Warm and comforting" },
+            { "id": "bright", "label": "Like them, naturally" }
           ]
         },
         {
           "id": "q12",
           "promptText": "Letter Length",
           "options": [
-          { "id": "short", "label": "Short (~12 lines)" },
-          { "id": "normal", "label": "Medium (~20 lines)" }
+          { "id": "short", "label": "A light one-page letter" },
+          { "id": "normal", "label": "A letter that holds a little more of our memories" }
           ]
         }
       ]
@@ -637,6 +993,7 @@
       "title": "Keep your pet’s memories in one place.",
       "bodyLetter": "Save this letter and come back to it.",
       "bodyVisualMemory": "Save this visual memory and come back to it.",
+      "bodySeasonalPolaroid": "Save this Seasonal Polaroid and come back to its little memory.",
       "emailLabel": "Email address",
       "emailPlaceholder": "Enter your email",
       "sendCode": "Send a verification code",
@@ -645,6 +1002,7 @@
       "useOtherEmail": "Use a different email",
       "pendingSaveLetter": "We'll send a confirmation code to the email you just entered and can save this letter to your memories.",
       "pendingSaveVisualMemory": "We'll send a confirmation code to the email you just entered and can save this visual memory to your memories.",
+      "pendingSaveSeasonalPolaroid": "We'll send a confirmation code to the email you just entered and save this Polaroid to your memories.",
       "codeSentMasked": "We sent a 6-digit code to\n%EMAIL%.",
       "resendCountdown": "Send the code again %TIME%",
       "dismissLetter": "I'll just read the letter for now.",

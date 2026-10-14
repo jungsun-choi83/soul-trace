@@ -68,10 +68,14 @@ describe("dynamic letter composition", () => {
     assert.match(route, /No stock opening or closing/i);
   });
 
-  it("uses flexible length guidance instead of fixed line targets", () => {
+  it("uses approximate visual-line length without padding to a quota", () => {
     const survey = readFileSync("lib/survey.ts", "utf8");
-    assert.doesNotMatch(survey, /12줄 전후|20줄 전후|12 lines|20 lines/i);
-    assert.match(survey, /do not pad, repeat, or target a fixed line count/i);
+    assert.match(survey, /대략 9~12줄/);
+    assert.match(survey, /대략 15~20줄/);
+    assert.match(survey, /about 9-12 visually readable lines/);
+    assert.match(survey, /about 15-20 visually readable lines/);
+    assert.match(survey, /Do not pad, repeat, or stretch sentences to hit a quota/);
+    assert.match(survey, /줄 수를 맞추려고 문장을 늘리거나 반복하지 마/);
   });
 
   it("uses current semantic profile fields and excludes deleted-question controls", () => {

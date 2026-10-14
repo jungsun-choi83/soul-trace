@@ -87,7 +87,8 @@ describe("result download and Instagram actions", () => {
     assert.match(source, /FaInstagram/);
     assert.match(source, /FaTiktok/);
     assert.match(source, /FaFacebookF/);
-    assert.match(source, /SiKakaotalk/);
+    assert.match(source, /KakaoTalkMark/);
+    assert.match(source, /KAKAOTALK_WEBSITE_URL/);
     assert.match(source, /FaLine/);
     assert.match(source, /HiOutlineLink/);
     assert.match(source, /facebook\.com\/sharer\/sharer\.php/);
@@ -113,8 +114,8 @@ describe("result download and Instagram actions", () => {
 
     assert.ok(productCards >= 0 && productCards < banner);
     assert.ok(banner < retry);
-    assert.match(kickstarterPromo, /comingsoon-ko\.png/);
-    assert.match(kickstarterPromo, /comingsoon\.png/);
+    assert.match(kickstarterPromo, /comingsoon-ko-small\.png/);
+    assert.match(kickstarterPromo, /comingsoon-small\.png/);
     assert.match(kickstarterPromo, /fetch\("\/api\/kickstarter-waitlist"/);
     assert.match(kickstarterPromo, /homepage\.kickstarter\.success/);
     assert.match(kickstarterPromo, /KICKSTARTER_URL \? \([\s\S]*?href=\{KICKSTARTER_URL\}[\s\S]*?\) : \([\s\S]*?<button/);

@@ -59,7 +59,7 @@ describe("separate sister and brother relationships", () => {
       assert.equal(resolveRecipientAddress(value, "en"), recipient);
       assert.equal(
         en.modes.living.letterHeading.replace("%RECIPIENT%", recipient),
-        `A letter to ${recipient}`,
+        `Today, to ${recipient}`,
       );
     });
   }

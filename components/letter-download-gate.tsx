@@ -15,7 +15,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 type LetterDownloadGateProps = {
   open: boolean;
-  purpose: "letter" | "visual-memory";
+  purpose: "letter" | "visual-memory" | "seasonal-polaroid";
   pendingEmail?: string | null;
   onClose: () => void;
   onVerified: () => Promise<"saved" | "save_failed">;
@@ -107,6 +107,16 @@ export function LetterDownloadGate({
   const resendLabel = resendSeconds > 0
     ? t("result.downloadGate.resendCountdown").replace("%TIME%", `${String(Math.floor(resendSeconds / 60)).padStart(2, "0")}:${String(resendSeconds % 60).padStart(2, "0")}`)
     : t("result.downloadGate.resendCode");
+  const bodyKey = purpose === "letter"
+    ? "result.downloadGate.bodyLetter"
+    : purpose === "visual-memory"
+      ? "result.downloadGate.bodyVisualMemory"
+      : "result.downloadGate.bodySeasonalPolaroid";
+  const pendingSaveKey = purpose === "letter"
+    ? "result.downloadGate.pendingSaveLetter"
+    : purpose === "visual-memory"
+      ? "result.downloadGate.pendingSaveVisualMemory"
+      : "result.downloadGate.pendingSaveSeasonalPolaroid";
 
   const chooseOtherEmail = () => {
     setChoseOtherEmail(true);
@@ -232,14 +242,14 @@ export function LetterDownloadGate({
             <p className="mt-4 whitespace-pre-line text-[15px] font-extralight leading-[1.75] text-[#E7DCC8]">
               {step === "code"
                 ? t("result.downloadGate.codeSentMasked").replace("%EMAIL%", maskedEmail)
-                : t(purpose === "letter" ? "result.downloadGate.bodyLetter" : "result.downloadGate.bodyVisualMemory")}
+                : t(bodyKey)}
             </p>
             {step === "pending" ? (
               <p className="mt-4 text-sm leading-relaxed text-[#D8B84C]">{maskedEmail}</p>
             ) : null}
             {step === "pending" ? (
               <p className="mt-3 text-sm font-extralight leading-relaxed text-[#E7DCC8]">
-                {t(purpose === "letter" ? "result.downloadGate.pendingSaveLetter" : "result.downloadGate.pendingSaveVisualMemory")}
+                {t(pendingSaveKey)}
               </p>
             ) : null}
 

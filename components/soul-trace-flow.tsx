@@ -18,6 +18,9 @@ import {
   englishLetterBodyFont,
   englishLetterOpeningFont,
   koreanLetterFont,
+  koreanLivingLetterFont,
+  letterBodyFontFamily,
+  letterOpeningFontFamily,
 } from "@/components/generated-letter-fonts";
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
@@ -1696,7 +1699,7 @@ export function SoulTraceFlow({
               >
                 <div className="flex min-h-full items-center justify-center">
                   <article
-                    className={`${englishLetterBodyFont.variable} ${englishLetterOpeningFont.variable} ${koreanLetterFont.variable} relative mx-auto w-full max-w-2xl overflow-hidden rounded-[1.1rem] border px-4 pb-28 pt-[7.5rem] shadow-[0_24px_70px_rgba(8,10,20,0.34),inset_0_0_70px_rgba(130,91,35,0.06)] min-[400px]:px-5 min-[400px]:pb-32 min-[400px]:pt-[8.5rem] sm:rounded-[1.35rem] sm:px-10 sm:pb-36 sm:pt-[11rem] md:px-14`}
+                    className={`${englishLetterBodyFont.variable} ${englishLetterOpeningFont.variable} ${koreanLetterFont.variable} ${koreanLivingLetterFont.variable} relative mx-auto w-full max-w-2xl overflow-hidden rounded-[1.1rem] border px-4 pb-28 pt-[7.5rem] shadow-[0_24px_70px_rgba(8,10,20,0.34),inset_0_0_70px_rgba(130,91,35,0.06)] min-[400px]:px-5 min-[400px]:pb-32 min-[400px]:pt-[8.5rem] sm:rounded-[1.35rem] sm:px-10 sm:pb-36 sm:pt-[11rem] md:px-14`}
                     style={{
                       background: letterTheme.cardBackground,
                       borderColor: letterTheme.panelBorderColor,
@@ -1744,9 +1747,7 @@ export function SoulTraceFlow({
                         letterLanguage === "ko" ? "break-keep sm:text-[19px]" : "sm:text-[20px]"
                       }`}
                       style={{
-                        fontFamily: letterLanguage === "ko"
-                          ? "var(--font-letter-ko), var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif"
-                          : "var(--font-letter-en-body), 'Segoe Print', 'Bradley Hand', cursive",
+                        fontFamily: letterBodyFontFamily(letterLanguage, mode),
                       }}
                     >
                       {letterOpening ? (
@@ -1757,9 +1758,7 @@ export function SoulTraceFlow({
                           }`}
                           style={{
                             color: letterTheme.dropCapColor,
-                            fontFamily: letterLanguage === "ko"
-                              ? "var(--font-letter-ko), var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif"
-                              : "var(--font-letter-en-opening), var(--font-letter-en-body), 'Segoe Script', cursive",
+                            fontFamily: letterOpeningFontFamily(letterLanguage, mode),
                             textShadow: "0 1px 1px rgba(83,55,24,0.12)",
                           }}
                         >
@@ -1783,9 +1782,7 @@ export function SoulTraceFlow({
                           <p
                             className="mt-2 text-[25px] leading-tight sm:text-[30px]"
                             style={{
-                              fontFamily: letterLanguage === "ko"
-                                ? "var(--font-letter-ko), var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif"
-                                : "var(--font-letter-en-opening), var(--font-letter-en-body), 'Segoe Script', cursive",
+                              fontFamily: letterOpeningFontFamily(letterLanguage, mode),
                             }}
                           >
                             {signatureName}
