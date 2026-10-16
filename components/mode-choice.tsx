@@ -81,13 +81,13 @@ function ChoiceCard({
   return (
     <Link
       href={href}
-      className={`${styles.card} ${styles.fadeUp} group`}
+      className={`${styles.card} ${seasonal ? styles.seasonalCard : ""} ${styles.fadeUp} group`}
       style={{ animationDelay: `${kind === "living" ? 100 : kind === "memorial" ? 180 : 260}ms` }}
     >
       <div className={`${styles.cardImage} ${seasonal ? styles.seasonalImage : ""}`}>
         {seasonal ? (
           <div className={styles.seasonalFrame}>
-            <div className="relative aspect-[1.35/1] overflow-hidden bg-[#2B1813]">
+            <div className="relative aspect-[1.32/1] overflow-hidden bg-[#2B1813]">
               <Image
                 src={imageSrc}
                 alt={imageAlt}
