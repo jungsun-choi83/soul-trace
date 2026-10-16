@@ -25,8 +25,13 @@ test("gallery images reuse the authenticated private result endpoint", () => {
   assert.match(page, /LetterDownloadGate/);
   assert.match(page, /purpose="seasonal-polaroid"/);
   assert.match(page, /toCanvas/);
-  assert.match(page, /width: 1080/);
-  assert.match(page, /height: 1350/);
+  assert.match(page, /document\.fonts\?\.ready/);
+  assert.match(page, /image\.decode/);
+  assert.match(page, /cacheBust: false/);
+  assert.match(page, /output\.width = 1080/);
+  assert.match(page, /output\.height = 1620/);
+  assert.match(page, /drawImage\(rendered, 0, 0, output\.width, output\.height\)/);
+  assert.doesNotMatch(page, /toCanvas\(frameRef\.current,\s*\{[\s\S]*?width: 1080/);
 });
 
 test("gallery navigation is additive and does not alter generation actions", () => {
