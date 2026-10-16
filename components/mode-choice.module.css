@@ -121,9 +121,13 @@
   background: #3b2116;
 }
 
+.seasonalCard {
+  min-width: 0;
+}
+
 .seasonalFrame {
   position: absolute;
-  inset: 0.55rem;
+  inset: 0;
   padding: 0.55rem 0.55rem 1.1rem;
   background: #f2e6d2;
   box-shadow: 0 1rem 1.8rem rgba(0, 0, 0, 0.42);
@@ -182,7 +186,7 @@
     min-height: 15rem;
   }
 
-  .choiceGrid > :last-child {
+  .choiceGrid > .seasonalCard {
     width: min(100%, calc(50% - 0.675rem));
     grid-column: 1 / -1;
     justify-self: center;
@@ -195,9 +199,10 @@
     gap: 1.5rem;
   }
 
-  .choiceGrid > :last-child {
-    width: auto;
+  .choiceGrid > .seasonalCard {
+    width: 100%;
     grid-column: auto;
+    justify-self: stretch;
   }
 
   .cardBody {
