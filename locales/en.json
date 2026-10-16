@@ -121,7 +121,8 @@
     "polaroidEyebrow": "HALLOWEEN EDITION",
     "polaroidDescription": "Turn one favorite moment into a seasonal keepsake made to feel like yours.",
     "polaroidCta": "Create a Polaroid",
-    "polaroidPreviewAlt": "Halloween-themed seasonal Polaroid preview"
+    "polaroidPreviewAlt": "Halloween-themed seasonal Polaroid preview",
+    "myPolaroids": "My Polaroids"
   },
   "polaroid": {
     "eyebrow": "SEASONAL POLAROID",
@@ -211,6 +212,7 @@
         "openMockDeveloping": "Preview development loading",
         "openMock": "Open development mock preview",
         "mockOwner": "you",
+        "viewMyPolaroids": "View My Polaroids",
         "messages": {
           "livingOne": "%NAME% is trying on a costume...",
           "livingTwo": "Finding the perfect pumpkin light...",
@@ -410,6 +412,24 @@
         "callName": "%NAME% knows exactly who this keepsake is for."
       }
     }
+  },
+  "myPolaroids": {
+    "eyebrow": "SEASONAL POLAROIDS",
+    "title": "My Polaroids",
+    "description": "Your keepsakes, held close in one quiet place.",
+    "halloween": "Halloween",
+    "back": "Back to choose",
+    "loading": "Gathering your keepsakes...",
+    "empty": "Your saved Polaroids will appear here after your first memory is complete.",
+    "authRequired": "Verify your email to view the Polaroids saved to your account.",
+    "verifyEmail": "Verify email",
+    "loadError": "We couldn't load your Polaroids right now. Please try again.",
+    "retry": "Try again",
+    "download": "Download PNG",
+    "downloading": "Preparing...",
+    "downloadError": "This Polaroid could not be prepared. Please try again.",
+    "imageUnavailable": "This private image is temporarily unavailable.",
+    "petImageAlt": "%NAME%'s saved Polaroid"
   },
   "modes": {
     "living": {

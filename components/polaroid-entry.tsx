@@ -1541,6 +1541,9 @@ function PolaroidGenerationExperience({
               <button type="button" disabled={!generationEnabled || mockMode || isSaving || isDownloading || authStatus === "loading"} onClick={onRegenerate} className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#D4AF37]/55 px-5 py-3 text-sm text-[#F0CF71] transition hover:bg-[#D4AF37]/10 focus-visible:outline-2 focus-visible:outline-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}><LuRefreshCw aria-hidden="true" className="size-4" />{t("seasonalPolaroid.generation.regenerate")}</button>
               <button type="button" disabled={mockMode || isSaving || isDownloading || authStatus === "loading"} onClick={onDownload} className={`min-h-12 rounded-xl bg-[#B89A2E] px-5 py-3 text-sm font-medium text-black transition hover:bg-[#D0AE3D] focus-visible:outline-2 focus-visible:outline-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}>{isDownloading ? t("seasonalPolaroid.generation.downloading") : t("seasonalPolaroid.generation.download")}</button>
             </div>
+            <Link href="/my-polaroids" className={`mt-5 inline-flex min-h-10 items-center justify-center text-sm text-[#D8B84C] underline underline-offset-4 transition hover:text-[#F5E6C8] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] ${bodyFont}`}>
+              {t("seasonalPolaroid.generation.viewMyPolaroids")}
+            </Link>
           </div>
         ) : null}
 
