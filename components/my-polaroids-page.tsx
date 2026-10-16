@@ -1,9 +1,8 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- private same-origin image URLs are rendered and rasterized by html-to-image. */
-
 import { LetterDownloadGate } from "@/components/letter-download-gate";
 import { LanguageToggle } from "@/components/language-toggle";
+import { SeasonalPolaroidFrame } from "@/components/seasonal-polaroid-frame";
 import { useAuthSession } from "@/components/use-auth-session";
 import { useLocale } from "@/components/locale-provider";
 import { fetchMyPolaroids, myPolaroidImageUrl, type SavedSeasonalPolaroid } from "@/lib/my-polaroids-client";
@@ -97,13 +96,19 @@ function SavedPolaroidCard({ item, lang, t }: {
 
   return (
     <article className="rounded-2xl border border-[#D4AF37]/25 bg-[#17130f]/80 p-4 shadow-[0_20px_60px_rgba(0,0,0,.25)] sm:p-5">
-      <div ref={frameRef} className="relative mx-auto aspect-[4/5] w-full max-w-[440px] overflow-hidden bg-[#F2E8D7] text-[#806A56]">
-        <img src="/images/soul_trace_seasonal_polaroid_blank_caption_template.png" alt="" aria-hidden="true" className="absolute inset-0 z-10 h-full w-full object-fill" />
-        {!imageError ? <img src={imageUrl} alt={t("myPolaroids.petImageAlt").replace("%NAME%", item.petName)} onError={() => setImageError(true)} className="absolute left-[11%] top-[10%] z-0 h-[57%] w-[78%] object-cover object-center" /> : <div className="absolute inset-x-[11%] top-[10%] z-0 flex h-[57%] items-center justify-center bg-[#ded0bb] px-5 text-center text-xs text-[#806A56]">{t("myPolaroids.imageUnavailable")}</div>}
-        <div className={`absolute inset-x-[15%] bottom-[11%] z-20 flex h-[17%] flex-col justify-center text-center text-[clamp(8px,1.15vw,16px)] leading-[1.35] ${bodyFont}`}>
-          {item.memoLines.map((line, index) => <p key={`${item.resultId}-${index}`} className="break-words">{line}</p>)}
-        </div>
-      </div>
+      <SeasonalPolaroidFrame
+        polaroidRef={frameRef}
+        lang={lang}
+        t={t}
+        imageUrl={imageError ? null : imageUrl}
+        imageAlt={t("myPolaroids.petImageAlt").replace("%NAME%", item.petName)}
+        onImageError={() => setImageError(true)}
+        memoLines={item.memoLines}
+        showMemo
+        placeholder={false}
+        className="relative mx-auto aspect-[2/3] w-full max-w-[440px] overflow-hidden bg-[#F2E8D7] text-[#806A56]"
+        imageFallback={<div className="flex h-full w-full items-center justify-center bg-[#ded0bb] px-5 text-center text-xs text-[#806A56]">{t("myPolaroids.imageUnavailable")}</div>}
+      />
       <div className={`mt-4 flex items-start justify-between gap-3 ${bodyFont}`}>
         <div className="min-w-0">
           <h2 className="truncate text-lg text-[#F3EAD8]">{item.petName}</h2>

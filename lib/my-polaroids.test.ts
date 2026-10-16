@@ -4,6 +4,7 @@ import test from "node:test";
 
 const route = readFileSync("app/api/my-polaroids/route.ts", "utf8");
 const page = readFileSync("components/my-polaroids-page.tsx", "utf8");
+const frame = readFileSync("components/seasonal-polaroid-frame.tsx", "utf8");
 const client = readFileSync("lib/my-polaroids-client.ts", "utf8");
 const choose = readFileSync("components/mode-choice.tsx", "utf8");
 const result = readFileSync("components/polaroid-entry.tsx", "utf8");
@@ -32,6 +33,10 @@ test("gallery images reuse the authenticated private result endpoint", () => {
   assert.match(page, /output\.height = 1620/);
   assert.match(page, /drawImage\(rendered, 0, 0, output\.width, output\.height\)/);
   assert.doesNotMatch(page, /toCanvas\(frameRef\.current,\s*\{[\s\S]*?width: 1080/);
+  assert.match(frame, /aspect-\[2\/3\]/);
+  assert.match(frame, /template\.png.*z-0/);
+  assert.match(frame, /left-\[16\.2%\].*top-\[15\.2%\].*z-10/);
+  assert.match(frame, /memoLines\.slice\(0, 4\)/);
 });
 
 test("gallery navigation is additive and does not alter generation actions", () => {
