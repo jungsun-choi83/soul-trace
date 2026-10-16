@@ -39,13 +39,48 @@ function SavedPolaroidCard({ item, lang, t }: {
     setDownloading(true);
     setDownloadError(false);
     try {
-      const canvas = await toCanvas(frameRef.current, {
-        cacheBust: true,
-        pixelRatio: 1,
-        width: 1080,
-        height: 1350,
-      });
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+      const node = frameRef.current;
+      if (document.fonts?.ready) await document.fonts.ready;
+      await Promise.all(Array.from(node.querySelectorAll("img")).map(async (image) => {
+        if (!image.complete) {
+          await new Promise<void>((resolve) => {
+            image.addEventListener("load", () => resolve(), { once: true });
+            image.addEventListener("error", () => resolve(), { once: true });
+          });
+        }
+        if (typeof image.decode === "function") await image.decode().catch(() => undefined);
+      }));
+
+      // Capture at the rendered card size, then scale the complete composition
+      // into the approved 2:3 output. Passing 1080/1620 directly to html-to-image
+      // enlarges the canvas without enlarging the DOM node, leaving transparent
+      // space around the small gallery card.
+      let rendered: HTMLCanvasElement;
+      try {
+        rendered = await toCanvas(node, {
+          cacheBust: false,
+          pixelRatio: 1,
+          backgroundColor: "#F2E8D7",
+          skipFonts: false,
+        });
+      } catch {
+        rendered = await toCanvas(node, {
+          cacheBust: false,
+          pixelRatio: 1,
+          backgroundColor: "#F2E8D7",
+          skipFonts: true,
+          fontEmbedCSS: "",
+        });
+      }
+      const output = document.createElement("canvas");
+      output.width = 1080;
+      output.height = 1620;
+      const context = output.getContext("2d");
+      if (!context) throw new Error("download_failed");
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      context.drawImage(rendered, 0, 0, output.width, output.height);
+      const blob = await new Promise<Blob | null>((resolve) => output.toBlob(resolve, "image/png"));
       if (!blob) throw new Error("download_failed");
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
