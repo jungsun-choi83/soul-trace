@@ -45,6 +45,7 @@ security definer
 set search_path = public
 as $$
 declare
+  job_row public.ai_generation_jobs%rowtype;
   changed integer;
   existing_owner public.seasonal_polaroid_job_owners%rowtype;
 begin
@@ -55,15 +56,21 @@ begin
     return false;
   end if;
 
-  -- Validate the queue row and any existing association before creating the
-  -- owner-registry row. This keeps a rejected attach side-effect free.
-  perform 1
+  -- Lock and validate the queue row before changing either ownership table.
+  -- Newly admitted rows have not reached set_ai_generation_input yet, so the
+  -- queue hash is legitimately NULL at this point. Establish it here while
+  -- the row is locked; set_ai_generation_input will then accept the same hash.
+  select * into job_row
     from public.ai_generation_jobs
    where idempotency_key = p_job_id
      and generation_kind = 'seasonal_polaroid'
-     and owner_identity_hash = p_owner_identity_hash
    for update;
-  if not found then
+  if not found or job_row.status not in ('queued', 'processing') then
+    return false;
+  end if;
+
+  if job_row.owner_identity_hash is not null
+     and job_row.owner_identity_hash <> p_owner_identity_hash then
     return false;
   end if;
 
@@ -73,6 +80,17 @@ begin
    for update;
   if found and (existing_owner.owner_user_id <> p_owner_user_id
                 or existing_owner.owner_identity_hash <> p_owner_identity_hash) then
+    return false;
+  end if;
+
+  update public.ai_generation_jobs
+     set owner_identity_hash = p_owner_identity_hash,
+         updated_at = now()
+   where idempotency_key = p_job_id
+     and generation_kind = 'seasonal_polaroid'
+     and status in ('queued', 'processing')
+     and (owner_identity_hash is null or owner_identity_hash = p_owner_identity_hash);
+  if not found then
     return false;
   end if;
 
@@ -86,11 +104,7 @@ begin
   on conflict (user_id) do nothing;
 
   insert into public.seasonal_polaroid_job_owners(job_id, owner_user_id, owner_identity_hash)
-  select p_job_id, p_owner_user_id, p_owner_identity_hash
-    from public.ai_generation_jobs
-   where idempotency_key = p_job_id
-     and generation_kind = 'seasonal_polaroid'
-     and owner_identity_hash = p_owner_identity_hash
+  values (p_job_id, p_owner_user_id, p_owner_identity_hash)
   on conflict (job_id) do update
     set owner_user_id = excluded.owner_user_id,
         owner_identity_hash = excluded.owner_identity_hash

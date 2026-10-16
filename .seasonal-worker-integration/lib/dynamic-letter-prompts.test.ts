@@ -1,0 +1,151 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { describe, it } from "node:test";
+
+import {
+  buildLetterAddressingBlock,
+  buildLetterRequestFields,
+  buildPetProfilePromptBlock,
+  type PetIntroProfile,
+} from "./pet-profile.ts";
+
+const profile: PetIntroProfile = {
+  petName: "Coco",
+  petNickname: "Bean",
+  petGender: "female",
+  petType: "dog",
+  petBreed: "mixed-not-sure",
+  petAge: "5",
+  yearMet: "2018",
+  yearParted: "2024",
+  letterRecipient: "mom",
+  letterRecipientDetail: "",
+};
+
+describe("dynamic letter composition", () => {
+  it("does not prescribe the former fixed English openings or closings", () => {
+    for (const mode of ["living", "memorial"] as const) {
+      const prompt = buildLetterAddressingBlock("en", profile, mode);
+      assert.doesNotMatch(prompt, /Open with exactly|Required closing|once, verbatim/i);
+      assert.doesNotMatch(prompt, /I'll be right here waiting|I'll always stay close/i);
+      assert.match(prompt, /supplied memory|selected mood/i);
+      assert.match(prompt, /Vary the wording every time/i);
+    }
+  });
+
+  it("varies openings only within recipient-safe English and Korean salutations", () => {
+    for (const mode of ["living", "memorial"] as const) {
+      const enPrompt = buildLetterAddressingBlock("en", profile, mode);
+      for (const salutation of [
+        "Dear Mom,",
+        "To my Mom,",
+        "To my beloved Mom,",
+        "My dear Mom,",
+        "For Mom,",
+        '"Mom,"',
+      ]) assert.ok(enPrompt.includes(salutation), salutation);
+      assert.match(enPrompt, /do not default to "Hey Mom"/i);
+      assert.match(enPrompt, /free-text answer/i);
+      assert.match(enPrompt, /"Owner", "Master", or "Human"/);
+
+      const koPrompt = buildLetterAddressingBlock("ko", profile, mode);
+      for (const salutation of [
+        "사랑하는 엄마에게,",
+        "소중한 엄마에게,",
+        "나의 소중한 엄마에게,",
+        "엄마에게,",
+        '"엄마,"',
+      ]) assert.ok(koPrompt.includes(salutation), salutation);
+      assert.match(koPrompt, /자유 서술 답변에 나온 관계를 호칭으로 바꾸지 말고/);
+      assert.match(koPrompt, /'주인', '마스터', '인간'/);
+    }
+  });
+
+  it("keeps streaming, non-streaming, and language regeneration free of fixed endings", () => {
+    const route = readFileSync("app/api/generate-letter/route.ts", "utf8");
+    assert.doesNotMatch(route, /required closing|마무리 필수 문장/i);
+    assert.match(route, /fresh memory-led opening and closing/i);
+    assert.match(route, /No stock opening or closing/i);
+  });
+
+  it("uses approximate visual-line length without padding to a quota", () => {
+    const survey = readFileSync("lib/survey.ts", "utf8");
+    assert.match(survey, /대략 9~12줄/);
+    assert.match(survey, /대략 15~20줄/);
+    assert.match(survey, /about 9-12 visually readable lines/);
+    assert.match(survey, /about 15-20 visually readable lines/);
+    assert.match(survey, /Do not pad, repeat, or stretch sentences to hit a quota/);
+    assert.match(survey, /줄 수를 맞추려고 문장을 늘리거나 반복하지 마/);
+  });
+
+  it("uses current semantic profile fields and excludes deleted-question controls", () => {
+    for (const locale of ["en", "ko"] as const) {
+      for (const mode of ["living", "memorial"] as const) {
+        const prompt = buildPetProfilePromptBlock(locale, profile, mode);
+        assert.match(prompt, locale === "en" ? /Gender: Female/ : /성별: 암컷/);
+        assert.match(prompt, locale === "en" ? /Years together: 5 years/ : /함께한 시간: 5년/);
+        assert.match(prompt, /Mixed \/ Not Sure|믹스 \/ 잘 모르겠음/);
+        assert.match(prompt, /do not infer a breed|품종을 추측하지 말 것/);
+      }
+    }
+
+    const fields = buildLetterRequestFields(
+      profile,
+      { mood: "warm", length: "normal", options: ["frequent_name"] },
+    );
+    assert.ok(fields);
+    assert.equal(fields.petGender, "female");
+    assert.equal("preferredScenery" in fields, false);
+    assert.deepEqual(fields.tonePrefs.options, []);
+  });
+
+  it("does not feed email, stamp data, deleted Q11, or a positional first answer into the AI prompt", () => {
+    const route = readFileSync("app/api/generate-letter/route.ts", "utf8");
+    const survey = readFileSync("lib/survey.ts", "utf8");
+    assert.doesNotMatch(route, /body\.preferredScenery|answers\[0\]/);
+    assert.match(route, /memoryQuestionCount\(channel, mode\) \+ TONE_STEP_COUNT/);
+    assert.doesNotMatch(route, /설문 8문항|Eight answers are required|memoryQuestionCount\(channel\) \+ 3/);
+    assert.doesNotMatch(survey, /item\.id === "q11"|tonePrefs\.options\.includes/);
+    assert.doesNotMatch(route, /stampPhoto|stampType/);
+    assert.doesNotMatch(route, /promptFormattedAnswers[\s\S]{0,120}userEmail/);
+  });
+
+  it("uses questionnaire email for active generation and stamp ownership while preserving future auth", () => {
+    const flow = readFileSync("components/soul-trace-flow.tsx", "utf8");
+    const generationRoute = readFileSync("app/api/generate-letter/route.ts", "utf8");
+    const stampRoute = readFileSync("app/api/stamp-photo/route.ts", "utf8");
+    const eligibilityRoute = readFileSync("app/api/check-letter-eligibility/route.ts", "utf8");
+    const en = readFileSync("locales/en.json", "utf8");
+
+    assert.match(flow, /isEmailQuestion/);
+    assert.match(flow, /totalQuestionCount = emailQuestionIndex \+ 1/);
+    assert.match(en, /"emailStep"/);
+
+    for (const route of [generationRoute, stampRoute]) {
+      assert.doesNotMatch(route, /createSupabaseAuthServerClient|auth\.getUser\(\)|status: 401/);
+      assert.match(route, /normalizeQuestionnaireEmail/);
+    }
+    assert.match(eligibilityRoute, /createSupabaseAuthServerClient/);
+    assert.match(eligibilityRoute, /auth\.getUser\(\)/);
+    assert.match(generationRoute, /body\.email/);
+    assert.match(stampRoute, /form\?\.get\("email"\)/);
+    assert.match(stampRoute, /\.eq\("letter_id", letterId\)\.eq\("user_email", normalizedEmail\)/);
+    assert.match(flow, /form\.set\("email", normalizeQuestionnaireEmail\(email\)\)/);
+    assert.doesNotMatch(generationRoute, /body\.userEmail/);
+    assert.doesNotMatch(stampRoute, /form\?\.get\("userEmail"\)/);
+  });
+
+  it("persists each generation by letterId instead of enforcing one letter per email", () => {
+    const route = readFileSync("app/api/generate-letter/route.ts", "utf8");
+    const migration = readFileSync("supabase/migration_allow_multiple_letters_per_account.sql", "utf8");
+    const en = readFileSync("locales/en.json", "utf8");
+    const ko = readFileSync("locales/ko.json", "utf8");
+
+    assert.doesNotMatch(route, /hasSavedLetter|alreadyGenerated|onConflict: "user_email"/);
+    assert.match(route, /crypto\.randomUUID\(\)/);
+    assert.match(route, /onConflict: "letter_id"/);
+    assert.match(route, /onConflict: "letter_id,answer_order"/);
+    assert.match(migration, /primary key \(letter_id\)/i);
+    assert.doesNotMatch(en + ko, /one letter per|한 이메일당|같은 이메일로는 한 번만/);
+  });
+});

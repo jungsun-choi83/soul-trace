@@ -1585,10 +1585,10 @@ function PolaroidResultFrame({
         </div>
         <span className="absolute right-4 top-4 text-2xl text-[#F7D47D]" aria-hidden="true">✦</span>
       </div>
-      <div className="absolute bottom-[17.5%] left-[22%] right-[22%] top-[71.5%] z-20 flex items-center justify-center overflow-hidden px-1 text-center [&>p:last-child]:hidden">
+      <div className="absolute bottom-[18%] left-[22%] right-[22%] top-[71.5%] z-20 flex items-center justify-center overflow-hidden px-1 text-center [&>p:last-child]:hidden">
         {showMemo ? (
           <>
-            <div className={`max-w-full text-[clamp(0.48rem,1.8vw,0.75rem)] leading-[1.25] ${bodyFont}`}>
+            <div className={`max-w-full text-[clamp(0.42rem,1.55vw,0.68rem)] leading-[1.15] ${bodyFont}`}>
               {memoLines.slice(0, 4).map((line, index) => <p key={`${index}-${line.slice(0, 8)}`} className="break-words">{line}</p>)}
             </div>
           </>

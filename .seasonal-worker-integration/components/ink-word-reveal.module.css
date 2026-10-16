@@ -1,0 +1,34 @@
+.word {
+  display: inline-block;
+}
+
+.animated {
+  animation: ink-reveal var(--ink-duration) cubic-bezier(0.22, 0.72, 0.28, 1) var(--ink-delay) both;
+  will-change: opacity, clip-path;
+}
+
+@keyframes ink-reveal {
+  from {
+    opacity: 0;
+    clip-path: inset(-0.35em 100% -0.35em -0.22em);
+  }
+
+  99% {
+    opacity: 1;
+    clip-path: inset(-0.35em -0.35em -0.35em -0.22em);
+  }
+
+  to {
+    opacity: 1;
+    clip-path: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated {
+    animation: none;
+    opacity: 1;
+    clip-path: none;
+    will-change: auto;
+  }
+}

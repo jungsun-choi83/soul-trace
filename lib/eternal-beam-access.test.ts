@@ -40,15 +40,25 @@ describe("Eternal Beam Life Archive access session", () => {
 
 describe("Life Archive Phase 1 enforcement and localized result states", () => {
   it("blocks the page before archive data is loaded", () => {
-    const gate = page.indexOf("if (!hasEternalBeamAccess)");
+    const gate = page.indexOf("if (!hasEternalBeamAccess && !authData.user)");
     const data = page.indexOf('from("soul_trace_pets")');
     assert.ok(gate >= 0 && gate < data);
   });
 
-  it("protects every Life Archive API with the same access session", () => {
-    for (const route of ["access", "memories", "photos", "videos"]) {
+  it("lets an authenticated saved-letter owner open the archive without Eternal Beam access", () => {
+    assert.match(page, /authClient\.auth\.getUser\(\)/);
+    assert.match(page, /hasEternalBeamAccess && !authData\.user/);
+    assert.match(page, /secureLifeArchiveEnabled \|\| authData\.user/);
+  });
+
+  it("protects archive mutations with authenticated ownership checks", () => {
+    const access = readFileSync("app/api/life-archive/access/route.ts", "utf8");
+    assert.match(access, /requestHasEternalBeamAccess/);
+    for (const route of ["memories", "photos", "videos"]) {
       const source = readFileSync(`app/api/life-archive/${route}/route.ts`, "utf8");
-      assert.match(source, /requestHasEternalBeamAccess/);
+      assert.match(source, /auth\.getUser\(\)/);
+      assert.match(source, /owner_user_id/);
+      assert.doesNotMatch(source, /requestHasEternalBeamAccess/);
     }
   });
 
@@ -57,7 +67,7 @@ describe("Life Archive Phase 1 enforcement and localized result states", () => {
   });
 
   it("keeps Life Archive standalone and gated before data loads", () => {
-    const gate = page.indexOf("if (!hasEternalBeamAccess)");
+    const gate = page.indexOf("if (!hasEternalBeamAccess && !authData.user)");
     const data = page.indexOf('from("soul_trace_pets")');
     assert.ok(gate >= 0 && gate < data);
     assert.match(page, /<LifeArchiveAccessRequired/);

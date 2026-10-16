@@ -1,0 +1,40 @@
+diff --git a/app/api/internal/ai-worker/route.ts b/app/api/internal/ai-worker/route.ts
+--- a/app/api/internal/ai-worker/route.ts
++++ b/app/api/internal/ai-worker/route.ts
+@@ -98,9 +98,16 @@ async function processVisualMemoryJob(job: AiGenerationJob, baseUrl: string): Pr
+ async function processJob(job: AiGenerationJob, baseUrl: string): Promise<void> {
+   try {
+-    if (job.generation_kind === "letter") {
+-      await processLetterJob(job, baseUrl);
+-    } else {
+-      await processVisualMemoryJob(job, baseUrl);
++    switch (job.generation_kind) {
++      case "letter":
++        await processLetterJob(job, baseUrl);
++        return;
++      case "visual_memory":
++        await processVisualMemoryJob(job, baseUrl);
++        return;
++      default:
++        // Never route a future or unsupported job kind through Visual Memory.
++        // The existing bounded requeue RPC moves it to failed after the
++        // configured retry budget, preventing an infinite retry loop.
++        await requeueAiGenerationJob(job.idempotency_key, "unsupported_generation_kind");
+     }
+   } catch (error) {
+     console.error("[ai-worker] job execution failed", {
+diff --git a/lib/ai-generation-queue.test.ts b/lib/ai-generation-queue.test.ts
+--- a/lib/ai-generation-queue.test.ts
++++ b/lib/ai-generation-queue.test.ts
+@@ -99,3 +99,11 @@ test("worker drains bounded continuation rounds while PostgreSQL remains authori
+   assert.match(migration, /for update\s+skip locked/);
+   assert.match(migration, /status = 'processing' and lease_expires_at > now\(\)/);
+ });
++
++test("worker dispatch keeps Letter and Visual Memory explicit and fails closed for future kinds", () => {
++  assert.match(worker, /switch \(job\.generation_kind\)/);
++  assert.match(worker, /case "letter":\s+[\s\S]*?await processLetterJob\(job, baseUrl\);/);
++  assert.match(worker, /case "visual_memory":\s+[\s\S]*?await processVisualMemoryJob\(job, baseUrl\);/);
++  assert.match(worker, /unsupported_generation_kind/);
++  assert.doesNotMatch(worker, /else\s*\{\s*await processVisualMemoryJob/);
++});

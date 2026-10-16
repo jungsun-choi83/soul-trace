@@ -40,7 +40,7 @@ test("Email follows the required Privacy Notice step", () => {
 });
 
 test("Stamp Photo does not directly trigger generation", () => {
-  assert.match(flow, /isLastQuestion \? \([\s\S]*?onClick=\{submitAnswers\}/);
+  assert.match(flow, /isLastQuestion \? \([\s\S]*?onClick=\{(?:submitAnswers|\(\) => void submitAnswers\(\))\}/);
   assert.match(flow, /isEmailQuestion \? \(/);
   assert.doesNotMatch(flow, /onSkipPhoto=\{submitAnswers\}/);
 });
@@ -88,7 +88,7 @@ test("existing questionnaire and photo state are not reset during navigation", (
 test("Reveal the Letter is the sole visible final generation action", () => {
   assert.equal(en.buttons.generate, "Reveal the Letter");
   assert.equal(ko.buttons.generate, "편지 확인하기");
-  assert.match(flow, /onClick=\{submitAnswers\}/);
+  assert.match(flow, /onClick=\{\(\) => void submitAnswers\(\)\}/);
 });
 
 test("normalized email is included in the generation request", () => {
@@ -126,9 +126,10 @@ test("Korean Email screen keeps only the natural field copy", () => {
   assert.match(flow, /aria-label=\{t\("form\.emailStep\.label"\)\}/);
 });
 
-test("backend uses the normalized questionnaire email without requiring auth", () => {
+test("backend requires a verified account and uses its normalized email", () => {
   assert.match(generation, /normalizeQuestionnaireEmail\(body\.email \?\? ""\)/);
-  assert.match(generation, /const userEmail = submittedEmail/);
+  assert.match(generation, /createSupabaseAuthServerClient/);
+  assert.match(generation, /const userEmail = authenticatedEmail \|\| submittedEmail/);
+  assert.match(generation, /status: 401/);
   assert.match(generation, /email owner lookup/);
-  assert.doesNotMatch(generation, /auth\.getUser\(\)|status: 401|Please sign in to continue/);
 });

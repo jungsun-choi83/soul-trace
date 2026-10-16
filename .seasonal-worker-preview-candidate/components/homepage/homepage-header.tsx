@@ -1,0 +1,114 @@
+"use client";
+
+import { LanguageToggle } from "@/components/language-toggle";
+import { useLocale } from "@/components/locale-provider";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { getMemoryShopUrl } from "@/lib/memory-shop-url";
+import { CloseIcon, MenuIcon } from "./icons";
+import { createPortal } from "react-dom";
+
+const KICKSTARTER_URL = process.env.NEXT_PUBLIC_KICKSTARTER_URL?.trim() || null;
+const SHOP_URL = getMemoryShopUrl();
+
+function KickstarterNavLink({ mobile = false }: { mobile?: boolean }) {
+  const className = mobile
+    ? "mt-8 flex min-h-14 items-center justify-center gap-3 rounded-xl border border-[#05CE78]/55 bg-[#05CE78]/10 px-5 py-4 text-center text-base font-medium text-[#19E589] transition hover:border-[#19E589] hover:bg-[#05CE78]/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#19E589]"
+    : "inline-flex min-h-10 items-center gap-1 whitespace-nowrap rounded-full border border-[#05CE78]/50 bg-[#05CE78]/10 px-3 py-2 text-xs font-medium text-[#19E589] transition hover:border-[#19E589] hover:bg-[#05CE78]/16 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#19E589]";
+  const content = <><span aria-hidden="true" className="shrink-0 text-base leading-none">🚀</span><span>Launching soon on Kickstarter</span></>;
+
+  return KICKSTARTER_URL ? (
+    <a href={KICKSTARTER_URL} target="_blank" rel="noopener noreferrer" className={className}>
+      {content}
+    </a>
+  ) : (
+    <button type="button" className={`${className} cursor-pointer`}>
+      {content}
+    </button>
+  );
+}
+
+export function HomepageHeader({ choiceHref }: { choiceHref: string }) {
+  const { lang, t } = useLocale();
+  const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const lockedScrollY = useRef(0);
+  const displayFont = lang === "ko" ? "font-ko break-keep" : "font-display-en !tracking-normal";
+  const links = [
+    [t("homepage.nav.howItWorks"), "#how-it-works"],
+    [t("homepage.nav.eternalBeam"), "#eternal-beam"],
+    [t("homepage.nav.about"), "#about"],
+  ];
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  useEffect(() => {
+    if (!open) return;
+
+    lockedScrollY.current = window.scrollY;
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+
+    return () => {
+      const scrollY = lockedScrollY.current;
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+      window.requestAnimationFrame(() => window.scrollTo(0, scrollY));
+    };
+  }, [open]);
+
+  const mobileMenu = (
+    <div className={`fixed inset-0 z-[60] h-[100dvh] w-full overflow-y-auto bg-[#0b0a09]/98 pt-[env(safe-area-inset-top)] backdrop-blur-lg transition-opacity duration-300 xl:hidden ${open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`} aria-hidden={!open}>
+      <div className="flex h-16 items-center justify-between px-5">
+        <span className="font-display-en text-lg uppercase !tracking-[0.2em]">Soul Trace</span>
+        <button type="button" onClick={() => setOpen(false)} aria-label={t("homepage.nav.close")} className="grid size-11 place-items-center rounded-full hover:bg-white/10"><CloseIcon className="size-5" /></button>
+      </div>
+      <nav className="flex flex-col gap-1 px-6 pb-10 pt-8" aria-label={t("homepage.accessibility.mobileNav")}>
+        {links.map(([label, href]) => <a key={href} href={href} onClick={() => setOpen(false)} className={`border-b border-white/10 py-5 text-3xl text-[#f8f2e7]/90 hover:text-[#c8a24a] ${displayFont}`}>{label}</a>)}
+        <a href={SHOP_URL} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className={`border-b border-white/10 py-5 text-3xl text-[#f8f2e7]/90 transition hover:text-[#c8a24a] ${displayFont}`}>{t("homepage.nav.shop")}<span aria-hidden="true" className="ml-2 align-middle text-base">↗</span></a>
+        <KickstarterNavLink mobile />
+        <Link href={choiceHref} onClick={() => setOpen(false)} className={`mt-8 rounded-full bg-[#c8a24a] px-6 py-4 text-center text-base font-medium text-[#0b0a09] ${displayFont}`}>{t("homepage.nav.createLetter")}</Link>
+      </nav>
+    </div>
+  );
+
+  return (
+    <>
+    <header className={`fixed inset-x-0 top-0 z-50 border-b pt-[env(safe-area-inset-top)] transition-colors duration-500 ${scrolled ? "border-[#f8f2e7]/10 bg-[#0b0a09]/85 backdrop-blur-md" : "border-[#f8f2e7]/15 bg-[#0b0a09]/55 backdrop-blur-sm"}`}>
+      <div className="relative flex h-16 w-full items-center justify-between px-4 sm:px-8 xl:h-20 xl:px-10">
+        <a href="#top" className="flex min-w-0 items-center gap-2.5" aria-label={t("homepage.accessibility.home")}>
+          <span className="size-2 shrink-0 rounded-full bg-[#c8a24a] shadow-[0_0_12px_rgba(200,162,74,0.7)]" aria-hidden="true" />
+          <span className="font-display-en truncate text-[0.95rem] uppercase !tracking-[0.14em] text-[#f8f2e7] sm:text-lg sm:!tracking-[0.2em] xl:text-xl">Soul Trace</span>
+        </a>
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 xl:flex" aria-label={t("homepage.accessibility.primaryNav")}>
+          {links.map(([label, href]) => <a key={href} href={href} className={`whitespace-nowrap text-sm text-[#f8f2e7]/70 transition-colors hover:text-[#f8f2e7] ${displayFont}`}>{label}</a>)}
+          <a href={SHOP_URL} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-1 whitespace-nowrap text-sm text-[#f8f2e7]/70 transition-colors hover:text-[#f8f2e7] ${displayFont}`}><span>{t("homepage.nav.shop")}</span><span aria-hidden="true" className="text-xs leading-none">↗</span></a>
+        </nav>
+        <div className="ml-auto hidden items-center gap-5 xl:flex">
+          <KickstarterNavLink />
+          <LanguageToggle />
+        </div>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2 xl:hidden">
+          <LanguageToggle />
+          <button type="button" onClick={() => setOpen(true)} aria-label={t("homepage.nav.menu")} aria-expanded={open} className="grid size-11 place-items-center rounded-full text-[#f8f2e7] hover:bg-white/10"><MenuIcon className="size-5" /></button>
+        </div>
+      </div>
+    </header>
+    {mounted && open ? createPortal(mobileMenu, document.body) : null}
+    </>
+  );
+}
