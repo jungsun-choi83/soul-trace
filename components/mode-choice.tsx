@@ -193,7 +193,13 @@ export function ModeChoice({
           <span className={styles.brandRule} aria-hidden="true" />
         </div>
 
-        <div className="justify-self-end">
+        <div className="flex items-center justify-self-end gap-3 sm:gap-5">
+          <Link
+            href="/my-polaroids"
+            className={`inline-flex rounded-md text-[10px] text-[#E8D6B4] transition hover:text-[#FFF4DE] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] sm:text-xs ${bodyFont}`}
+          >
+            {t("landing.myPolaroids")}
+          </Link>
           <LanguageToggle />
         </div>
       </header>

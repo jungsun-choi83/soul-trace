@@ -1,5 +1,4 @@
 import {
-  completeAiGeneration,
   claimAiGenerationJobs,
   requeueAiGenerationJob,
   readAiGenerationJob,
@@ -33,6 +32,7 @@ import {
   finalizeSeasonalGuestTrial,
   releaseSeasonalGuestTrial,
 } from "@/lib/seasonal-polaroid-guest-trial";
+import { completeSeasonalPolaroidJob } from "@/lib/seasonal-polaroid-persistence";
 
 export const runtime = "nodejs";
 // One cron invocation claims at most the configured worker capacity. The OpenAI
@@ -278,11 +278,16 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
       referenceCount: imageReferenceCount,
       memoFallback: memoResult.fallback,
     },
-    // Seasonal authenticated saving is a later phase; do not mint a proof
-    // that existing letter/Visual Memory save endpoints would accept.
+    // Gallery persistence is completed atomically by the Seasonal completion
+    // RPC; save/download proof remains separate from the existing Letter and
+    // Visual Memory proof systems.
     saveProof: null,
   };
-  await completeAiGeneration("seasonal_polaroid", job.request_hash, result);
+  const persisted = await completeSeasonalPolaroidJob(job.request_hash, result);
+  if (!persisted) {
+    await requeueSeasonalJob(job, "seasonal_result_persistence_failed");
+    return;
+  }
   const reservation = seasonalReservation(job);
   if (reservation && !(await finalizeSeasonalGuestTrial(reservation.id, reservation.version))) {
     console.error("[ai-worker] Seasonal guest trial finalization pending", { jobId: job.idempotency_key });

@@ -34,10 +34,20 @@ test("duplicate queued requests can wake a durable job without replacing its inp
   assert.match(admission, /return decision;/);
 });
 
+test("owner association completes before input_ready can wake a worker", () => {
+  const uploadAt = admission.indexOf("const uploaded = await uploadSeasonalPolaroidInputs");
+  const ownerAt = admission.indexOf("if (!(await attachOwner(jobId)))", uploadAt);
+  const inputAt = admission.indexOf("const attached = await attachAiGenerationInput", uploadAt);
+  assert.ok(uploadAt >= 0, "the private upload must precede queue attachment");
+  assert.ok(ownerAt > uploadAt && ownerAt < inputAt, "owner association must precede input attachment");
+  assert.match(admission.slice(ownerAt, inputAt), /cleanupSeasonalPolaroidInputs/);
+  assert.match(admission.slice(ownerAt, inputAt), /seasonal_owner_attach_failed/);
+});
+
 test("the normal Seasonal path still uses the explicit worker branch and queue claim", () => {
   assert.match(worker, /claimAiGenerationJobs\(\)/);
   assert.match(worker, /case "seasonal_polaroid":\s*await processSeasonalPolaroidJob/);
-  assert.match(worker, /completeAiGeneration\("seasonal_polaroid"/);
+  assert.match(worker, /completeSeasonalPolaroidJob\(job\.request_hash, result\)/);
   assert.match(trigger, /x-soul-trace-ai-worker-token/);
   assert.doesNotMatch(seasonalRoute, /app\/api\/visual-memory/);
 });

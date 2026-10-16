@@ -15,7 +15,7 @@ test("worker dispatches all supported generation kinds explicitly", () => {
 test("Seasonal worker uses the shared queue and reservation-aware completion", () => {
   assert.match(guard, /"seasonal_polaroid"/);
   assert.match(worker, /claimAiGenerationJobs\(\)/);
-  assert.match(worker, /completeAiGeneration\("seasonal_polaroid"/);
+  assert.match(worker, /completeSeasonalPolaroidJob\(job\.request_hash, result\)/);
   assert.match(worker, /finalizeSeasonalGuestTrial/);
   assert.match(worker, /releaseSeasonalGuestTrial/);
 });
