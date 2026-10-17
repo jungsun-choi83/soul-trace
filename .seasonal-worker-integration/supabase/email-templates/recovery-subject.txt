@@ -1,1 +1,0 @@
-{{ if eq .Data.locale "ko" }}Soul Trace 비밀번호 설정{{ else }}Set your Soul Trace password{{ end }}
