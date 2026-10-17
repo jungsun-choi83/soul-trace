@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const component = readFileSync("components/polaroid-entry.tsx", "utf8");
+const frame = readFileSync("components/seasonal-polaroid-frame.tsx", "utf8");
 const gate = readFileSync("components/letter-download-gate.tsx", "utf8");
 const route = readFileSync("app/api/account-result/seasonal-polaroid/route.ts", "utf8");
 const migration = readFileSync("supabase/migration_seasonal_polaroid_results.sql", "utf8");
@@ -39,16 +40,16 @@ test("Seasonal export renders the approved 1080 by 1620 template canvas", () => 
 });
 
 test("Seasonal preview uses the stable decorative frame and bounded caption window", () => {
-  assert.match(component, /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
-  assert.match(component, /aspect-\[2\/3\]/);
-  assert.match(component, /bottom-\[17\.5%\] left-\[22%\] right-\[22%\] top-\[71\.5%\]/);
-  assert.match(component, /overflow-hidden/);
-  assert.match(component, /memoLines\.slice\(0, 4\)/);
+  assert.match(frame, /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
+  assert.match(frame, /aspect-\[2\/3\]/);
+  assert.match(frame, /bottom-\[18%\] left-\[22%\] right-\[22%\] top-\[71\.5%\]/);
+  assert.match(frame, /overflow-hidden/);
+  assert.match(frame, /memoLines\.slice\(0, 4\)/);
   assert.match(component, /SOUL TRACE/);
 });
 
 test("Seasonal result preview clips the square generated image inside the approved photo window", () => {
-  assert.match(component, /imageUrl && !placeholder[^\n]*className="h-full w-full object-cover object-center"/);
+  assert.match(frame, /imageUrl && !placeholder[^\n]*className="h-full w-full object-cover object-center"/);
 });
 
 test("Seasonal save verifies the job capability and keeps result objects private", () => {

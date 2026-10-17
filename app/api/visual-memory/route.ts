@@ -1,20 +1,14 @@
 import { validatePetPhotoFile } from "@/lib/pet-photo";
 import { createResultSaveProof, resultSaveSecret } from "@/lib/result-save-proof";
-import { visualMemoryGenerationCookie, visualMemoryGenerationUsed } from "@/lib/visual-memory-generation-allowance";
 import { randomUUID } from "node:crypto";
 import {
-  acquireAiGeneration,
-  aiGenerationIdempotencyKey,
-  attachAiGenerationInput,
   completeAiGeneration,
   failAiGeneration,
-  guardHttpResponse,
   readAiGenerationJob,
   sha256Hex,
 } from "@/lib/ai-generation-guard";
 import { aiUpstreamHttpResponse } from "@/lib/ai-generation-errors";
 import { scheduleAiGenerationWorker } from "@/lib/ai-generation-worker-trigger";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
 import {
   fallbackVisualMemoryCopy,
   generateVisualMemoryCopy,
@@ -149,9 +143,28 @@ function readOptionalText(formData: FormData, key: string, maxLength: number): s
   return value.trim().slice(0, maxLength);
 }
 
+function hasWorkerCredentials(request: Request): boolean {
+  const jobId = request.headers.get("x-soul-trace-ai-job-id")?.trim() ?? "";
+  const token = request.headers.get("x-soul-trace-ai-worker-token") ?? "";
+  return Boolean(
+    process.env.AI_GENERATION_WORKER_SECRET &&
+    token &&
+    token === process.env.AI_GENERATION_WORKER_SECRET &&
+    /^[a-f0-9]{64}$/i.test(jobId),
+  );
+}
+
 export async function POST(request: Request) {
   let activeRequestHash: string | null = null;
   const requestStartedAt = Date.now();
+  // Visual Memory is retired for new public requests. Historical queued jobs
+  // may still call this route through the authenticated internal worker path.
+  if (!hasWorkerCredentials(request)) {
+    return Response.json(
+      { error: "visual_memory_unavailable" },
+      { status: 410, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return Response.json({ error: "Visual Memory is not configured yet." }, { status: 503 });
@@ -178,10 +191,6 @@ export async function POST(request: Request) {
     if (!mode || !selectedSceneId || !memoryDetail) {
       return Response.json({ error: "The Visual Memory request is incomplete." }, { status: 400 });
     }
-    if (visualMemoryGenerationUsed(request.headers.get("cookie"))) {
-      return Response.json({ error: "additional_generation_unavailable" }, { status: 403 });
-    }
-
     const customSceneId = mode === "living" ? "custom-scene" : "custom-memory";
     const isCustomScene = selectedSceneId === customSceneId;
     const presetEnvironment = SCENE_ENVIRONMENTS[mode][selectedSceneId];
@@ -236,13 +245,7 @@ export async function POST(request: Request) {
       generationNonce,
     }));
     const workerJobId = request.headers.get("x-soul-trace-ai-job-id")?.trim() ?? "";
-    const workerToken = request.headers.get("x-soul-trace-ai-worker-token") ?? "";
-    const workerAuthorized = Boolean(
-      process.env.AI_GENERATION_WORKER_SECRET &&
-      workerToken &&
-      workerToken === process.env.AI_GENERATION_WORKER_SECRET &&
-      /^[a-f0-9]{64}$/i.test(workerJobId),
-    );
+    const workerAuthorized = hasWorkerCredentials(request);
     const workerJob = workerAuthorized ? await readAiGenerationJob(workerJobId) : null;
     const isAuthorizedWorkerJob = Boolean(
       workerJob &&
@@ -251,69 +254,13 @@ export async function POST(request: Request) {
       workerJob.status === "processing",
     );
 
-    if (isAuthorizedWorkerJob) {
-      activeRequestHash = requestHash;
-    } else {
-      const admission = await acquireAiGeneration({
-        request,
-        kind: "visual_memory",
-        requestHash,
-      });
-      if (admission.decision === "succeeded") {
-        return Response.json(admission.result, { headers: { "X-Idempotent-Replay": "true" } });
-      }
-      if (admission.decision === "acquired" || admission.decision === "queued") {
-        const jobId = admission.jobId ?? await aiGenerationIdempotencyKey("visual_memory", requestHash);
-        const storagePath = `visual-memory/${jobId}.input`;
-        const storage = createSupabaseServerClient();
-        const upload = storage
-          ? await storage.storage.from("ai-generation-inputs").upload(storagePath, referenceBytes, {
-              contentType: photo.type || "image/jpeg",
-              upsert: true,
-            })
-          : { error: new Error("Supabase is not configured") };
-        if (upload.error) {
-          await failAiGeneration("visual_memory", requestHash, "queue_input_upload_failed");
-          scheduleAiGenerationWorker(request);
-          console.error("[visual-memory] queued input upload failed", { code: upload.error.message });
-          return Response.json(
-            { error: "Your Visual Memory request could not be queued. Please try again shortly." },
-            { status: 503, headers: { "Retry-After": "15" } },
-          );
-        }
-        const attached = await attachAiGenerationInput({
-          kind: "visual_memory",
-          requestHash,
-          storagePath,
-          payload: {
-            selectedSceneId,
-            memoryDetail,
-            customSceneDescription,
-            mode,
-            petName,
-            petType,
-            breed,
-            photoName: photo.name || "pet-reference.jpg",
-            photoType: photo.type || "image/jpeg",
-            generationNonce,
-          },
-        });
-        if (!attached) {
-          await failAiGeneration("visual_memory", requestHash, "queue_input_failed");
-          scheduleAiGenerationWorker(request);
-          return Response.json(
-            { error: "Your Visual Memory request could not be queued. Please try again shortly." },
-            { status: 503, headers: { "Retry-After": "15" } },
-          );
-        }
-      }
-      if (admission.decision === "queued") {
-        scheduleAiGenerationWorker(request, { queuedKnown: true });
-      }
-      if (admission.decision !== "acquired") return guardHttpResponse(admission);
-      activeRequestHash = requestHash;
+    if (!isAuthorizedWorkerJob) {
+      return Response.json(
+        { error: "visual_memory_unavailable" },
+        { status: 404, headers: { "Cache-Control": "no-store" } },
+      );
     }
-
+    activeRequestHash = requestHash;
     const openai = new OpenAI({ apiKey });
     const imageResult = await generateVisualMemoryImage({
       openai,
@@ -369,11 +316,7 @@ export async function POST(request: Request) {
     };
     await completeAiGeneration("visual_memory", requestHash, completedPayload);
     scheduleAiGenerationWorker(request);
-    return Response.json(completedPayload, {
-      headers: {
-        "Set-Cookie": visualMemoryGenerationCookie(process.env.NODE_ENV === "production"),
-      },
-    });
+    return Response.json(completedPayload);
   } catch (error) {
     if (activeRequestHash) {
       await failAiGeneration("visual_memory", activeRequestHash, "generation_failed");

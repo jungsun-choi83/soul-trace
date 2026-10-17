@@ -53,6 +53,7 @@ import {
   isRetryableSupabaseMessage,
   sleep,
 } from "@/lib/supabase-server";
+import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 import { resolvePartnerCode } from "@/lib/partner";
 import {
   acquireAiGeneration,
@@ -78,6 +79,8 @@ type AnswerInput = {
 
 type RequestBody = {
   email?: string;
+  /** Server-attached identity carried only inside an already-admitted worker job. */
+  authenticatedUserId?: string;
   letterId?: string;
   petId?: string;
   locale?: string;
@@ -935,8 +938,32 @@ export async function POST(request: Request) {
     if (body.privacyConsent !== true) {
       return err(locale, "privacyRequired", 400);
     }
+    const workerJobId = request.headers.get("x-soul-trace-ai-job-id")?.trim() ?? "";
+    const workerToken = request.headers.get("x-soul-trace-ai-worker-token") ?? "";
+    const workerAuthorized = Boolean(
+      process.env.AI_GENERATION_WORKER_SECRET &&
+      workerToken &&
+      workerToken === process.env.AI_GENERATION_WORKER_SECRET &&
+      /^[a-f0-9]{64}$/i.test(workerJobId),
+    );
+    const authClient = await createSupabaseAuthServerClient();
+    const authenticatedUser = authClient ? (await authClient.auth.getUser()).data.user : null;
+    const authenticatedEmail = normalizeQuestionnaireEmail(authenticatedUser?.email ?? "");
     const submittedEmail = normalizeQuestionnaireEmail(body.email ?? "");
-    if (!isValidQuestionnaireEmail(submittedEmail)) {
+    if (authenticatedUser) {
+      if (!authenticatedEmail) {
+        return NextResponse.json({ error: "authentication_required" }, { status: 401 });
+      }
+      // The verified Supabase account, not a form field, owns this request.
+      body.email = authenticatedEmail;
+      body.authenticatedUserId = authenticatedUser.id;
+    } else if (!workerAuthorized) {
+      return NextResponse.json(
+        { error: "authentication_required" },
+        { status: 401, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    if (!authenticatedUser && !isValidQuestionnaireEmail(submittedEmail)) {
       return NextResponse.json(
         { error: locale === "ko" ? "올바른 이메일 주소를 입력해주세요." : "Please enter a valid email address." },
         { status: 400 },
@@ -947,11 +974,8 @@ export async function POST(request: Request) {
       return err(locale, "profileIncomplete", 400);
     }
 
-    // FUTURE AUTH FEATURE
-    // Authenticated account ownership can be restored/used later. The current
-    // SoulTrace flow identifies ownership using the submitted email.
     const ownershipClient = createSupabaseServerClient();
-    const userEmail = submittedEmail;
+    const userEmail = authenticatedEmail || submittedEmail;
     if (!ownershipClient) {
       return NextResponse.json(
         { error: locale === "ko" ? "저장소에 연결할 수 없습니다." : "Could not connect to storage." },
@@ -1121,14 +1145,6 @@ export async function POST(request: Request) {
     // The hash is derived from the complete logical payload, not a browser flag,
     // so duplicate requests from retries or other tabs converge on one durable job.
     const aiRequestHash = await sha256Hex(JSON.stringify(body));
-    const workerJobId = request.headers.get("x-soul-trace-ai-job-id")?.trim() ?? "";
-    const workerToken = request.headers.get("x-soul-trace-ai-worker-token") ?? "";
-    const workerAuthorized = Boolean(
-      process.env.AI_GENERATION_WORKER_SECRET &&
-      workerToken &&
-      workerToken === process.env.AI_GENERATION_WORKER_SECRET &&
-      /^[a-f0-9]{64}$/i.test(workerJobId),
-    );
     const workerJob = workerAuthorized ? await readAiGenerationJob(workerJobId) : null;
     const isAuthorizedWorkerJob = Boolean(
       workerJob &&
@@ -1136,6 +1152,10 @@ export async function POST(request: Request) {
       workerJob.generation_kind === "letter" &&
       workerJob.status === "processing",
     );
+
+    if (workerAuthorized && !isAuthorizedWorkerJob) {
+      return NextResponse.json({ error: "Generation not found." }, { status: 404 });
+    }
 
     if (isAuthorizedWorkerJob) {
       activeRequestHash = aiRequestHash;

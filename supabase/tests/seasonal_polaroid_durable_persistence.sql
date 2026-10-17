@@ -23,6 +23,11 @@ declare
   wrong_key_result uuid := gen_random_uuid();
   invalid_owner_id uuid := gen_random_uuid();
   missing_job text := repeat('9', 64);
+  attach_job text := repeat('a', 64);
+  attach_request text := repeat('b', 64);
+  failed_unowned_job text := repeat('c', 64);
+  failed_unowned_request text := repeat('d', 64);
+  different_owner_hash text := repeat('b', 64);
   result_payload jsonb;
 begin
   select id into owner_id from auth.users order by created_at limit 1;
@@ -39,6 +44,46 @@ begin
   end if;
   if exists (select 1 from public.soul_trace_owners where user_id = invalid_owner_id) then
     raise exception 'invalid owner attachment left an owner row';
+  end if;
+
+  -- A newly acquired job has no queue owner hash until input attachment. The
+  -- owner RPC must establish that hash while holding the queue-row lock.
+  insert into public.ai_generation_jobs(
+    idempotency_key, request_hash, generation_kind, status, attempt_count,
+    input_ready, owner_identity_hash
+  ) values (
+    attach_job, attach_request, 'seasonal_polaroid', 'processing', 1, false, null
+  );
+  if not public.attach_seasonal_polaroid_job_owner(attach_job, owner_id, owner_hash) then
+    raise exception 'null owner hash was not attached';
+  end if;
+  if (select owner_identity_hash from public.ai_generation_jobs where idempotency_key = attach_job) <> owner_hash then
+    raise exception 'owner hash was not written to the queue row';
+  end if;
+  if not exists (
+    select 1 from public.seasonal_polaroid_job_owners
+     where job_id = attach_job and owner_user_id = owner_id and owner_identity_hash = owner_hash
+  ) then
+    raise exception 'owner registry row was not created';
+  end if;
+  if not public.attach_seasonal_polaroid_job_owner(attach_job, owner_id, owner_hash) then
+    raise exception 'matching owner reattachment was not idempotent';
+  end if;
+  if public.attach_seasonal_polaroid_job_owner(attach_job, owner_id, different_owner_hash) then
+    raise exception 'mismatched owner hash was accepted';
+  end if;
+
+  insert into public.ai_generation_jobs(
+    idempotency_key, request_hash, generation_kind, status, attempt_count,
+    input_ready, owner_identity_hash
+  ) values (
+    failed_unowned_job, failed_unowned_request, 'seasonal_polaroid', 'failed', 1, false, null
+  );
+  if public.attach_seasonal_polaroid_job_owner(failed_unowned_job, owner_id, owner_hash) then
+    raise exception 'failed job accepted an owner attachment';
+  end if;
+  if exists (select 1 from public.seasonal_polaroid_job_owners where job_id = failed_unowned_job) then
+    raise exception 'failed owner attachment created a registry row';
   end if;
 
   result_payload := jsonb_build_object(

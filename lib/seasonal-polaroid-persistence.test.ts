@@ -8,6 +8,7 @@ const persistence = readFileSync("lib/seasonal-polaroid-persistence.ts", "utf8")
 const worker = readFileSync("app/api/internal/ai-worker/route.ts", "utf8");
 const trials = readFileSync("supabase/migration_seasonal_polaroid_guest_trials.sql", "utf8");
 const postgresHarness = readFileSync("supabase/tests/seasonal_polaroid_durable_persistence.sql", "utf8");
+const ownerAttachmentFix = readFileSync("supabase/migration_seasonal_polaroid_owner_attachment_fix.sql", "utf8");
 
 test("Seasonal ownership is isolated from the shared Letter and Visual Memory queue", () => {
   assert.match(migration, /create table if not exists public\.seasonal_polaroid_job_owners/);
@@ -89,12 +90,24 @@ test("succeeded completion verifies the existing result identity before idempote
 });
 
 test("owner attachment validates before creating the owner registry row", () => {
-  const queueCheck = migration.indexOf("Validate the queue row and any existing association");
+  const queueCheck = migration.indexOf("Lock and validate the queue row");
   const ownerInsert = migration.indexOf("insert into public.soul_trace_owners(user_id)");
   assert.ok(queueCheck >= 0);
   assert.ok(ownerInsert > queueCheck);
   assert.match(migration, /seasonal owner association changed before commit/);
   assert.match(postgresHarness, /invalid owner attachment left an owner row/);
+});
+
+test("owner attachment atomically claims a null queue hash and rejects terminal or mismatched jobs", () => {
+  assert.match(migration, /select \* into job_row[\s\S]*for update/);
+  assert.match(migration, /job_row\.status not in \('queued', 'processing'\)/);
+  assert.match(migration, /owner_identity_hash = p_owner_identity_hash/);
+  assert.match(migration, /owner_identity_hash is null or owner_identity_hash = p_owner_identity_hash/);
+  assert.match(ownerAttachmentFix, /create or replace function public\.attach_seasonal_polaroid_job_owner/);
+  assert.match(ownerAttachmentFix, /grant execute on function public\.attach_seasonal_polaroid_job_owner/);
+  assert.match(postgresHarness, /null owner hash was not attached/);
+  assert.match(postgresHarness, /mismatched owner hash was accepted/);
+  assert.match(postgresHarness, /failed job accepted an owner attachment/);
 });
 
 test("persistence failures remain bounded retries and do not consume a trial", () => {

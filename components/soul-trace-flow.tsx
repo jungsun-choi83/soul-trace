@@ -3,7 +3,6 @@
 import { LetterDownloadGate } from "@/components/letter-download-gate";
 import { useAuthSession } from "@/components/use-auth-session";
 import { QuestionnairePrivacyNotice } from "@/components/questionnaire-privacy-notice";
-import { VisualMemoryPromo } from "@/components/visual-memory-promo";
 import { petIntroQuestionIds, PetIntroForm } from "@/components/pet-intro-form";
 import { SurveyFlow } from "@/components/survey-flow";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
@@ -38,7 +37,6 @@ import { serviceChannelBackground } from "@/lib/service-channel-background";
 import { userFacingErrorMessage } from "@/lib/user-facing-error";
 import { clearPendingResultSave, readPendingResultSave, writePendingResultSave } from "@/lib/pending-result-save";
 import { resolvePendingContactEmail } from "@/lib/pending-contact-email";
-import { normalizeAuthEmail } from "@/lib/passwordless-auth";
 import { pickGenerationLoadingMessage } from "@/lib/generation-loading-messages";
 import { primeResultBgm, resolveResultBgmSrc, stopResultBgm } from "@/lib/result-bgm";
 import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
@@ -56,6 +54,7 @@ import {
 } from "@/lib/letter-themes";
 import { getEternalBeamInstagramUrl, getEternalBeamMainUrl, getEternalBeamYoutubeUrl } from "@/lib/eternalbeam-urls";
 import { getMemoryShopLetterSetUrl } from "@/lib/memory-shop-url";
+import { sendKakaoDefaultShare } from "@/lib/kakao-share";
 import {
   buildLetterRequestFields,
   EMPTY_PET_INTRO,
@@ -139,11 +138,9 @@ const CAPTURE_JPEG_QUALITY = 0.88;
 const CAPTURE_PIXEL_RATIO = 2;
 const LETTER_THEME_STORAGE_KEY = "soul-trace-letter-theme";
 const ETERNAL_BEAM_YOUTUBE_URL = getEternalBeamYoutubeUrl();
-const TIKTOK_WEBSITE_URL = "https://www.tiktok.com/login";
-const KAKAOTALK_WEBSITE_URL = "https://accounts.kakao.com/login";
 
 async function waitForAiGenerationResult(
-  kind: "letter" | "visual_memory",
+  kind: "letter",
   jobId: string,
   email: string | null,
   onStatus: (status: "queued" | "processing") => void,
@@ -345,6 +342,7 @@ export function SoulTraceFlow({
   const prefersReducedMotion = useReducedMotion();
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadGateOpen, setDownloadGateOpen] = useState(false);
+  const [generationGateOpen, setGenerationGateOpen] = useState(false);
   const [letterSaved, setLetterSaved] = useState(false);
   const [serverContactEmail, setServerContactEmail] = useState<string | null>(null);
   const [manualDownloadNotice, setManualDownloadNotice] = useState(false);
@@ -352,6 +350,7 @@ export function SoulTraceFlow({
   const letterSaveLock = useRef(false);
   const letterSubmissionPendingRef = useRef(false);
   const [shareableFile, setShareableFile] = useState<File | null>(null);
+  const shareUrlRef = useRef<{ key: string; url: string } | null>(null);
   const [letterThemeId, setLetterThemeId] = useState<LetterThemeId>(() => {
     if (typeof window === "undefined") return DEFAULT_LETTER_THEME_ID;
     const stored = window.localStorage.getItem(LETTER_THEME_STORAGE_KEY);
@@ -419,6 +418,12 @@ export function SoulTraceFlow({
   const privacyTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    if (authSession.status === "authenticated" && authSession.email) {
+      setEmail(authSession.email);
+    }
+  }, [authSession.email, authSession.status]);
+
+  useEffect(() => {
     if (!serviceChannel || isServiceChannelCompatible(serviceChannel, mode)) return;
 
     const destination = new URL(window.location.href);
@@ -478,6 +483,10 @@ export function SoulTraceFlow({
       setDraftReady(true);
     }
   }, [draftStorageKey, initialResult, mode, resultStorageKey, serviceChannel, surveyStepCount]);
+
+  useEffect(() => {
+    shareUrlRef.current = null;
+  }, [result?.letterId, result?.saveProof]);
 
   useEffect(() => {
     if (!draftReady || initialResult || result) return;
@@ -600,24 +609,6 @@ export function SoulTraceFlow({
   }, []);
 
   const displayPetName = letterPetName(petIntro);
-  const visualMemoryPetName = displayPetName || result?.savedPetName?.trim() || "";
-  const visualMemoryQuestions = channelMemoryQuestions(messages, serviceChannel) ?? copy.memory;
-  const visualMemoryAnswerItems = visualMemoryQuestions.map((question, index) => ({
-    question: question.promptText.replace(/○○|%NAME%/g, visualMemoryPetName),
-    answer: memoryAnswers[index]?.trim() ?? "",
-  }));
-  const visualMemoryTone = copy.tone
-    .find((item) => item.id === "q10")
-    ?.options.find((option) => option.id === tonePrefs.mood)?.label ?? null;
-  const visualMemoryPetType = petIntro.petType
-    ? t(`form.step1.petTypes.${petIntro.petType}`)
-    : "";
-  const visualMemoryBreedKey = petIntro.petBreed?.trim() ?? "";
-  const visualMemoryBreedPath = `form.step1.petBreeds.${visualMemoryBreedKey}`;
-  const visualMemoryBreedLabel = visualMemoryBreedKey ? t(visualMemoryBreedPath) : "";
-  const visualMemoryBreed = visualMemoryBreedLabel === visualMemoryBreedPath
-    ? visualMemoryBreedKey.split("-").filter(Boolean).join(" ")
-    : visualMemoryBreedLabel;
   const letterHeading = copy.letterHeading.replace(
     "%RECIPIENT%",
     resolveRecipientAddress(petIntro, lang),
@@ -823,7 +814,7 @@ export function SoulTraceFlow({
         petIntro.letterRecipientDetail.trim())
     ) : false;
   const isAnswerValid = isEmailQuestion
-    ? isValidQuestionnaireEmail(email)
+    ? authSession.status === "authenticated" || isValidQuestionnaireEmail(email)
     : isIntroQuestion
       ? isIntroAnswerValid
       : isSurveyStepValid(step, memoryAnswers, tonePrefs, {
@@ -944,7 +935,14 @@ export function SoulTraceFlow({
       setResultLocale(completedResult.generationLocale ?? lang);
       window.sessionStorage.removeItem(pendingGenerationStorageKey);
     }).catch((err) => {
-      if (!cancelled) setError(userFacingErrorMessage(err, t("errors.generateFailed")));
+      if (!cancelled) {
+        try {
+          window.sessionStorage.removeItem(pendingGenerationStorageKey);
+        } catch {
+          // The error message still lets the user recover when storage is unavailable.
+        }
+        setError(userFacingErrorMessage(err, t("errors.generateFailed")));
+      }
     }).finally(() => {
       if (!cancelled) {
         setIsLoading(false);
@@ -954,23 +952,44 @@ export function SoulTraceFlow({
     return () => { cancelled = true; };
   }, [clearQuestionnaireDraft, displayPetName, isLoading, lang, pendingGenerationStorageKey, persistCompletedResult, result, t]);
 
-  const submitAnswers = async () => {
-    if (letterSubmissionPendingRef.current) return;
+  const submitAnswers = async (afterOtp = false) => {
+    if (letterSubmissionPendingRef.current) {
+      setError(t("errors.generationInProgress"));
+      return;
+    }
     setShowValidationErrors(true);
     if (!privacyConsent) {
       privacyTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setPrivacyModalOpen(true);
       return;
     }
-    if (!isAnswerValid) return;
-    const normalizedEmail = normalizeQuestionnaireEmail(email);
+    if (!isAnswerValid) {
+      setError(isEmailQuestion ? t("form.emailStep.validation") : t("errors.questionnaireIncomplete"));
+      return;
+    }
+    const normalizedEmail = normalizeQuestionnaireEmail(authSession.email ?? email);
+    if (!normalizedEmail) {
+      setError(t("form.emailStep.validation"));
+      return;
+    }
     setEmail(normalizedEmail);
     if (!isSurveyComplete(memoryAnswers, tonePrefs, messages, mode, serviceChannel)) {
+      setError(t("errors.questionnaireIncomplete"));
       return;
     }
     if (!isProfileValid) {
       setError(t("errors.profileIncomplete"));
       return;
+    }
+
+    if (!afterOtp) {
+      const sessionStatus = authSession.status === "loading"
+        ? await authSession.refresh()
+        : authSession.status;
+      if (sessionStatus !== "authenticated") {
+        setGenerationGateOpen(true);
+        return;
+      }
     }
 
     // React state updates are not synchronous, so close the same-tick click gap.
@@ -1375,7 +1394,25 @@ export function SoulTraceFlow({
     return file;
   };
 
-  const openInstagramShare = async (file?: File | null) => {
+  const ensureLetterShareUrl = async (): Promise<string> => {
+    if (!result?.letterId || !result.saveProof) throw new Error(t("errors.shareUnavailable"));
+    const key = `${result.letterId}:${result.saveProof}`;
+    if (shareUrlRef.current?.key === key) return shareUrlRef.current.url;
+    const response = await fetch("/api/letter-share", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ letterId: result.letterId, proof: result.saveProof }),
+      cache: "no-store",
+    });
+    const payload = await response.json().catch(() => null) as { url?: unknown; error?: unknown } | null;
+    if (!response.ok || typeof payload?.url !== "string") {
+      throw new Error(response.status === 401 ? t("errors.shareAuthenticationRequired") : t("errors.shareUnavailable"));
+    }
+    shareUrlRef.current = { key, url: payload.url };
+    return payload.url;
+  };
+
+  const openInstagramShare = async (file?: File | null, shareUrl?: string) => {
     const activeFile = file ?? shareableFile;
     if (!activeFile) return;
     setError(null);
@@ -1399,6 +1436,7 @@ export function SoulTraceFlow({
           files: [activeFile],
           title: t("share.title"),
           text: t("share.text"),
+          url: shareUrl,
         };
         if (navigator.canShare?.(sharePayload)) {
           await navigator.share(sharePayload);
@@ -1421,7 +1459,11 @@ export function SoulTraceFlow({
     void (async () => {
       const file = await prepareInstagramShare();
       if (file) {
-        await openInstagramShare(file);
+        try {
+          await openInstagramShare(file, await ensureLetterShareUrl());
+        } catch (err) {
+          setError(err instanceof Error ? err.message : t("errors.shareFailed"));
+        }
       }
     })();
   };
@@ -1430,25 +1472,68 @@ export function SoulTraceFlow({
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  const openKakaoShare = () => {
+    void (async () => {
+      try {
+        const url = await ensureLetterShareUrl();
+        await sendKakaoDefaultShare({
+          objectType: "text",
+          text: t("share.text"),
+          link: { mobileWebUrl: url, webUrl: url },
+        });
+      } catch (error: unknown) {
+        setError(error instanceof Error ? error.message : t("errors.shareFailed"));
+      }
+    })();
+  };
+
+  const openNativeShare = () => {
+    void (async () => {
+      try {
+        const url = await ensureLetterShareUrl();
+        if (typeof navigator !== "undefined" && "share" in navigator) {
+          await navigator.share({ title: t("share.title"), text: t("share.text"), url });
+          return;
+        }
+        openShareUrl("https://www.tiktok.com/");
+      } catch (error: unknown) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setError(error instanceof Error ? error.message : t("errors.shareFailed"));
+      }
+    })();
+  };
+
   const shareCurrentPage = (platform: "facebook" | "line" | "x") => {
-    const url = encodeURIComponent(window.location.href);
-    openShareUrl(
-      platform === "facebook"
-        ? `https://www.facebook.com/sharer/sharer.php?u=${url}`
-        : platform === "line"
-          ? `https://social-plugins.line.me/lineit/share?url=${url}`
-          : `https://x.com/intent/post?url=${url}`,
-    );
+    void (async () => {
+      try {
+        const sharedUrl = await ensureLetterShareUrl();
+        const url = encodeURIComponent(sharedUrl);
+        openShareUrl(
+          platform === "facebook"
+            ? `https://www.facebook.com/sharer/sharer.php?u=${url}`
+            : platform === "line"
+              ? `https://social-plugins.line.me/lineit/share?url=${url}`
+              : `https://x.com/intent/post?url=${url}`,
+        );
+      } catch (error: unknown) {
+        setError(error instanceof Error ? error.message : t("errors.shareFailed"));
+      }
+    })();
   };
 
   const copyResultLink = () => {
-    void navigator.clipboard.writeText(window.location.href).catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : t("errors.shareFailed"));
-    });
+    void (async () => {
+      try {
+        await navigator.clipboard.writeText(await ensureLetterShareUrl());
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : t("errors.shareFailed"));
+      }
+    })();
   };
 
   const goBackFromResult = () => {
     setDownloadGateOpen(false);
+    setGenerationGateOpen(false);
     if (!initialResult) {
       setResult(null);
       setResultLocale(null);
@@ -1486,6 +1571,7 @@ export function SoulTraceFlow({
     setStoryShareLine(null);
     setShowValidationErrors(false);
     setDownloadGateOpen(false);
+    setGenerationGateOpen(false);
     stopResultBgm(bgmPrimeRef);
   };
 
@@ -1869,7 +1955,7 @@ export function SoulTraceFlow({
                           label: t("result.shareOptions.tiktok"),
                           icon: <FaTiktok aria-hidden="true" className="size-5" />,
                           className: "text-white drop-shadow-[1px_1px_0_#25F4EE] hover:bg-white/15",
-                          action: () => openShareUrl(TIKTOK_WEBSITE_URL),
+                          action: openNativeShare,
                         },
                         {
                           label: t("result.shareOptions.facebook"),
@@ -1887,7 +1973,7 @@ export function SoulTraceFlow({
                           label: t("result.shareOptions.kakao"),
                           icon: <KakaoTalkMark />,
                           className: "!bg-transparent !text-[#191919] hover:bg-white/10",
-                          action: () => openShareUrl(KAKAOTALK_WEBSITE_URL),
+                          action: openKakaoShare,
                         },
                         {
                           label: t("result.shareOptions.line"),
@@ -1940,127 +2026,6 @@ export function SoulTraceFlow({
                   await authSession.refresh();
                 }
                 return saved;
-              }}
-            />
-
-            <VisualMemoryPromo
-              language={lang}
-              eyebrow={t("result.visualMemory.eyebrow")}
-              title={t("result.visualMemory.title")}
-              description={t("result.visualMemory.description")}
-              cta={t("result.visualMemory.cta")}
-              captions={{
-                byTheSea: t("result.visualMemory.captions.byTheSea"),
-                rightBesideMe: t("result.visualMemory.captions.rightBesideMe"),
-                walk: t("result.visualMemory.captions.walk"),
-              }}
-              previewData={{
-                petName: visualMemoryPetName,
-                petType: visualMemoryPetType,
-                breed: visualMemoryBreed,
-                favoriteMemory: null,
-                uniqueHabit: serviceChannel ? null : memoryAnswers[0]?.trim() || null,
-                loveAnswer: serviceChannel ? null : memoryAnswers[1]?.trim() || null,
-                excitementSigns: serviceChannel ? null : memoryAnswers[2]?.trim() || null,
-                letterTone: visualMemoryTone,
-                mode: t(`result.visualMemory.preview.modes.${mode}`),
-                photoAvailable: Boolean(petPhotoFile && petPhotoPreviewUrl),
-                photoReference: petPhotoFile?.name ?? null,
-                photoPreviewUrl: petPhotoPreviewUrl,
-              }}
-              photoFile={petPhotoFile}
-              pendingEmail={pendingEmail}
-              generationContext={{
-                petName: visualMemoryPetName,
-                petType: visualMemoryPetType,
-                breed: visualMemoryBreed,
-                mode,
-                letterTone: visualMemoryTone ?? "",
-                memories: visualMemoryAnswerItems,
-              }}
-              previewCopy={{
-                title: t("result.visualMemory.preview.title"),
-                intro: t("result.visualMemory.preview.intro"),
-                close: t("result.visualMemory.preview.close"),
-                petName: t("result.visualMemory.preview.petName"),
-                petType: t("result.visualMemory.preview.petType"),
-                breed: t("result.visualMemory.preview.breed"),
-                favoriteMemory: t("result.visualMemory.preview.favoriteMemory"),
-                uniqueHabit: t("result.visualMemory.preview.uniqueHabit"),
-                loveAnswer: t("result.visualMemory.preview.loveAnswer"),
-                excitementSigns: t("result.visualMemory.preview.excitementSigns"),
-                letterTone: t("result.visualMemory.preview.letterTone"),
-                mode: t("result.visualMemory.preview.mode"),
-                petPhoto: t("result.visualMemory.preview.petPhoto"),
-                available: t("result.visualMemory.preview.available"),
-                unavailable: t("result.visualMemory.preview.unavailable"),
-                generate: t("result.visualMemory.preview.generate"),
-                generating: t("result.visualMemory.preview.generating"),
-                retry: t("result.visualMemory.preview.retry"),
-                photoStep: t("result.visualMemory.preview.photoStep"),
-                sceneStep: t("result.visualMemory.preview.sceneStep"),
-                memoryStep: t("result.visualMemory.preview.memoryStep"),
-                resultStep: t("result.visualMemory.preview.resultStep"),
-                uploadPhoto: t("result.visualMemory.preview.uploadPhoto"),
-                changePhoto: t("result.visualMemory.preview.changePhoto"),
-                identityReference: t("result.visualMemory.preview.identityReference"),
-                continue: t("result.visualMemory.preview.continue"),
-                invalidPhoto: t("result.visualMemory.preview.invalidPhoto"),
-                sceneTitle: t("result.visualMemory.preview.sceneTitle"),
-                sceneIntro: t("result.visualMemory.preview.sceneIntro"),
-                back: t("result.visualMemory.preview.back"),
-                creatingTitle: t("result.visualMemory.preview.creatingTitle"),
-                creatingIntro: t("result.visualMemory.preview.creatingIntro"),
-                generationError: t("result.visualMemory.preview.generationError"),
-                resultTitle: t("result.visualMemory.preview.resultTitle"),
-                resultIntro: t("result.visualMemory.preview.resultIntro"),
-                download: t("result.visualMemory.preview.download"),
-                generateAgain: t("result.visualMemory.preview.generateAgain"),
-                regenerating: t("result.visualMemory.preview.regenerating"),
-                chooseDifferentScene: t("result.visualMemory.preview.chooseDifferentScene"),
-                soulTraceMark: t("result.visualMemory.preview.soulTraceMark"),
-                preparingDownload: t("result.visualMemory.preview.preparingDownload"),
-                downloadError: t("result.visualMemory.preview.downloadError"),
-                customScene: {
-                  livingLabel: t("result.visualMemory.preview.customScene.livingLabel"),
-                  livingPlaceholder: t("result.visualMemory.preview.customScene.livingPlaceholder"),
-                  memorialLabel: t("result.visualMemory.preview.customScene.memorialLabel"),
-                  memorialPlaceholder: t("result.visualMemory.preview.customScene.memorialPlaceholder"),
-                },
-                scenes: {
-                  "by-the-sea": t("result.visualMemory.preview.scenes.by-the-sea"),
-                  "at-home": t("result.visualMemory.preview.scenes.at-home"),
-                  "on-a-walk": t("result.visualMemory.preview.scenes.on-a-walk"),
-                  "flower-field": t("result.visualMemory.preview.scenes.flower-field"),
-                  playtime: t("result.visualMemory.preview.scenes.playtime"),
-                  "cozy-bedtime": t("result.visualMemory.preview.scenes.cozy-bedtime"),
-                  "golden-sunset": t("result.visualMemory.preview.scenes.golden-sunset"),
-                  "custom-scene": t("result.visualMemory.preview.scenes.custom-scene"),
-                  "favorite-place": t("result.visualMemory.preview.scenes.favorite-place"),
-                  "our-walk": t("result.visualMemory.preview.scenes.our-walk"),
-                  "peaceful-garden": t("result.visualMemory.preview.scenes.peaceful-garden"),
-                  "golden-evening": t("result.visualMemory.preview.scenes.golden-evening"),
-                  "together-again": t("result.visualMemory.preview.scenes.together-again"),
-                  "custom-memory": t("result.visualMemory.preview.scenes.custom-memory"),
-                },
-                memory: {
-                  living: {
-                    title: t("result.visualMemory.preview.memory.living.title"),
-                    intro: t("result.visualMemory.preview.memory.living.intro"),
-                    placeholder: t("result.visualMemory.preview.memory.living.placeholder"),
-                    suggestions: [0, 1].map((index) =>
-                      t(`result.visualMemory.preview.memory.living.suggestions.${index}`),
-                    ),
-                  },
-                  memorial: {
-                    title: t("result.visualMemory.preview.memory.memorial.title"),
-                    intro: t("result.visualMemory.preview.memory.memorial.intro"),
-                    placeholder: t("result.visualMemory.preview.memory.memorial.placeholder"),
-                    suggestions: [0, 1].map((index) =>
-                      t(`result.visualMemory.preview.memory.memorial.suggestions.${index}`),
-                    ),
-                  },
-                },
               }}
             />
 
@@ -2318,28 +2283,34 @@ export function SoulTraceFlow({
                   <p className="step-kicker">{t("form.emailStep.kicker")}</p>
                 </div>
                 <div className="space-y-2">
-                  <input
-                    id="questionnaire-email"
-                    type="email"
-                    aria-label={t("form.emailStep.label")}
-                    inputMode="email"
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    maxLength={254}
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    onBlur={() => setEmail((current) => normalizeQuestionnaireEmail(current))}
-                    placeholder={t("form.emailStep.placeholder")}
-                    aria-invalid={showValidationErrors && !isValidQuestionnaireEmail(email)}
-                    aria-describedby={showValidationErrors && !isValidQuestionnaireEmail(email) ? "questionnaire-email-error" : undefined}
-                    className={`w-full rounded-xl border-[0.5px] bg-transparent px-4 py-3 text-base font-extralight text-white outline-none transition placeholder:text-[#EDE4D3]/50 md:text-sm ${
-                      showValidationErrors && !isValidQuestionnaireEmail(email)
-                        ? "border-red-300/75 focus:border-red-300"
-                        : "border-[rgba(212,175,55,0.35)] focus:border-[#D4AF37]"
-                    }`}
-                  />
-                  {showValidationErrors && !isValidQuestionnaireEmail(email) ? (
+                  {authSession.status === "authenticated" && authSession.email ? (
+                    <div className="rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-black/20 px-4 py-3 text-sm text-[#F3EAD8]">
+                      {authSession.email}
+                    </div>
+                  ) : (
+                    <input
+                      id="questionnaire-email"
+                      type="email"
+                      aria-label={t("form.emailStep.label")}
+                      inputMode="email"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      maxLength={254}
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      onBlur={() => setEmail((current) => normalizeQuestionnaireEmail(current))}
+                      placeholder={t("form.emailStep.placeholder")}
+                      aria-invalid={showValidationErrors && authSession.status !== "authenticated" && !isValidQuestionnaireEmail(email)}
+                      aria-describedby={showValidationErrors && authSession.status !== "authenticated" && !isValidQuestionnaireEmail(email) ? "questionnaire-email-error" : undefined}
+                      className={`w-full rounded-xl border-[0.5px] bg-transparent px-4 py-3 text-base font-extralight text-white outline-none transition placeholder:text-[#EDE4D3]/50 md:text-sm ${
+                        showValidationErrors && authSession.status !== "authenticated" && !isValidQuestionnaireEmail(email)
+                          ? "border-red-300/75 focus:border-red-300"
+                          : "border-[rgba(212,175,55,0.35)] focus:border-[#D4AF37]"
+                      }`}
+                    />
+                  )}
+                  {showValidationErrors && authSession.status !== "authenticated" && !isValidQuestionnaireEmail(email) ? (
                     <p id="questionnaire-email-error" className="text-xs font-extralight leading-relaxed text-red-200" role="alert">
                       {t("form.emailStep.validation")}
                     </p>
@@ -2360,11 +2331,15 @@ export function SoulTraceFlow({
               {isLastQuestion ? (
                 <button
                   type="button"
-                  onClick={submitAnswers}
+                  onClick={() => void submitAnswers()}
                   disabled={isLoading}
                   className="font-ko min-h-[44px] rounded-xl bg-[#b89a2e] px-4 py-3 text-sm font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-45"
                 >
-                  {isLoading ? t("buttons.generating") : t("buttons.generate")}
+                  {isLoading
+                    ? t("buttons.generating")
+                    : authSession.status === "loading"
+                      ? t("result.checkingAccount")
+                      : t("buttons.generate")}
                 </button>
               ) : (
                 <button
@@ -2395,6 +2370,18 @@ export function SoulTraceFlow({
               onConfirm={confirmPrivacyNotice}
             />
           ) : null}
+          <LetterDownloadGate
+            open={generationGateOpen}
+            purpose="letter-generation"
+            pendingEmail={email}
+            onClose={() => setGenerationGateOpen(false)}
+            onVerified={async () => {
+              await authSession.refresh();
+              setGenerationGateOpen(false);
+              void submitAnswers(true);
+              return "saved";
+            }}
+          />
           {error ? <p className="mt-4 text-center text-sm text-red-300">{error}</p> : null}
         </section>
         </div>
