@@ -55,4 +55,7 @@ test("cards have responsive, accessible, reduced-motion presentation", () => {
   assert.match(styles, /grid-template-columns: repeat\(3/);
   assert.match(styles, /prefers-reduced-motion: reduce/);
   assert.match(styles, /\.seasonalFrame/);
+  assert.match(styles, /\.seasonalFrame\s*\{[\s\S]*inset: 0;/);
+  assert.match(component, /aspect-\[1\.32\/1\]/);
+  assert.match(styles, /\.choiceGrid\s*>\s*\.seasonalCard\s*\{[\s\S]*justify-self:\s*stretch;/);
 });

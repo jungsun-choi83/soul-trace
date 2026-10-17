@@ -78,6 +78,16 @@ function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
+async function optionalSeasonalUserId(): Promise<string | null> {
+  try {
+    const auth = await createSupabaseAuthServerClient();
+    const user = auth ? (await auth.auth.getUser()).data.user : null;
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function admissionResponse(
   decision: Awaited<ReturnType<typeof admitSeasonalPolaroidInternally>>,
   requestHash: string,
@@ -136,7 +146,9 @@ export async function POST(request: Request): Promise<Response> {
   // exception so local testing does not require a customer account.
   const developerTestMode = seasonalPolaroidDeveloperRequestAllowed(request);
   let authenticatedUserId: string | null = null;
-  if (!developerTestMode) {
+  if (developerTestMode) {
+    authenticatedUserId = await optionalSeasonalUserId();
+  } else {
     const auth = await createSupabaseAuthServerClient();
     const user = auth ? (await auth.auth.getUser()).data.user : null;
     if (!user) {

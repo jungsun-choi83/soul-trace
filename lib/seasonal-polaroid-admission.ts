@@ -17,11 +17,15 @@ import {
   type SeasonalPolaroidInputPaths,
   type SeasonalPolaroidStorage,
 } from "./seasonal-polaroid-input-storage.ts";
-import { sha256Hex } from "./ai-generation-guard";
+import { aiGenerationIdentityHash, sha256Hex } from "./ai-generation-guard";
 import { createSupabaseServerClient } from "./supabase-server";
 import { scheduleAiGenerationWorker } from "./ai-generation-worker-trigger";
 import { seasonalPolaroidResultPath } from "./seasonal-polaroid-result-storage.ts";
 import { seasonalPolaroidDeveloperTestMode } from "./seasonal-polaroid-access";
+import {
+  attachSeasonalPolaroidJobOwner,
+  detachSeasonalPolaroidJobOwner,
+} from "./seasonal-polaroid-persistence";
 import {
   bindSeasonalGuestTrial,
   finalizeSeasonalGuestTrial,
@@ -197,6 +201,7 @@ export async function admitSeasonalPolaroidInternally(args: {
   primary: { bytes: ArrayBuffer; contentType: "image/jpeg" | "image/png" | "image/webp"; name: string };
   secondary?: { bytes: ArrayBuffer; contentType: "image/jpeg" | "image/png" | "image/webp"; name: string };
   requestHash: string;
+  /** Server-verified Supabase auth.users ID; never accept this from FormData. */
   identity?: string | null;
   /** Stable HMAC of the verified Supabase user ID. */
   accountHash?: string;
@@ -222,6 +227,15 @@ export async function admitSeasonalPolaroidInternally(args: {
     if (trial?.owner) {
       await releaseSeasonalGuestTrial(trial.reservationId, trial.reservationVersion);
     }
+  };
+  const ownerIdentityHash = args.identity ? aiGenerationIdentityHash(args.identity) : null;
+  const attachOwner = async (jobId: string): Promise<boolean> => {
+    if (!args.identity || !ownerIdentityHash) return !args.identity;
+    return attachSeasonalPolaroidJobOwner({
+      jobId,
+      ownerUserId: args.identity,
+      ownerIdentityHash,
+    });
   };
 
   const decision = await acquireAiGeneration({
@@ -254,6 +268,10 @@ export async function admitSeasonalPolaroidInternally(args: {
   if (decision.decision === "queued") {
     const existing = await readAiGenerationJob(jobId);
     if (existing?.input_ready) {
+      if (!(await attachOwner(jobId))) {
+        await releaseIfOwner();
+        return { decision: "unavailable" };
+      }
       if (trial?.owner && !(await bindSeasonalGuestTrial({ reservationId: trial.reservationId, reservationVersion: trial.reservationVersion, jobId, requestHash: args.requestHash }))) {
         await releaseIfOwner();
         return { decision: "unavailable" };
@@ -286,6 +304,15 @@ export async function admitSeasonalPolaroidInternally(args: {
     await releaseIfOwner();
     return { decision: "unavailable" };
   }
+  // Associate the verified owner before input_ready can become true. The
+  // input attachment may wake a worker immediately, so exposing the queue row
+  // first would create a completion race with the owner mapping.
+  if (!(await attachOwner(jobId))) {
+    await cleanupSeasonalPolaroidInputs(supabase, uploaded.paths);
+    await failAiGeneration("seasonal_polaroid", args.requestHash, "seasonal_owner_attach_failed");
+    await releaseIfOwner();
+    return { decision: "unavailable" };
+  }
   const payload = seasonalPolaroidQueuePayload(args.answers, uploaded.paths, {
     primary: { name: args.primary.name, contentType: args.primary.contentType },
     secondary: args.secondary
@@ -302,11 +329,13 @@ export async function admitSeasonalPolaroidInternally(args: {
   if (!attached) {
     await cleanupSeasonalPolaroidInputs(supabase, uploaded.paths);
     if (decision.decision === "queued" && (await readAiGenerationJob(jobId))?.input_ready) return decision;
+    await detachSeasonalPolaroidJobOwner(jobId);
     await failAiGeneration("seasonal_polaroid", args.requestHash, "queue_input_failed");
     await releaseIfOwner();
     return { decision: "unavailable" };
   }
   if (trial && !(await bindSeasonalGuestTrial({ reservationId: trial.reservationId, reservationVersion: trial.reservationVersion, jobId, requestHash: args.requestHash }))) {
+    await detachSeasonalPolaroidJobOwner(jobId);
     await cleanupSeasonalPolaroidInputs(supabase, uploaded.paths);
     await failAiGeneration("seasonal_polaroid", args.requestHash, "guest_trial_bind_failed");
     await releaseIfOwner();

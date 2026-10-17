@@ -88,7 +88,8 @@ describe("result download and Instagram actions", () => {
     assert.match(source, /FaTiktok/);
     assert.match(source, /FaFacebookF/);
     assert.match(source, /KakaoTalkMark/);
-    assert.match(source, /KAKAOTALK_WEBSITE_URL/);
+    assert.match(source, /sendKakaoDefaultShare/);
+    assert.match(source, /openKakaoShare/);
     assert.match(source, /FaLine/);
     assert.match(source, /HiOutlineLink/);
     assert.match(source, /facebook\.com\/sharer\/sharer\.php/);

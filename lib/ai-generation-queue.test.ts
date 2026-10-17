@@ -17,7 +17,7 @@ test("capacity-full admissions become durable queued jobs, not capacity 429s", (
   assert.match(migration, /'decision', case when next_status = 'processing' then 'acquired' else 'queued' end/);
   assert.match(migration, /active_count < p_global_limit and queued_count = 0/);
   assert.match(letterRoute, /decision === "acquired" \|\| admission\.decision === "queued"/);
-  assert.match(visualRoute, /decision === "acquired" \|\| admission\.decision === "queued"/);
+  assert.doesNotMatch(visualRoute, /acquireAiGeneration/);
 });
 
 test("FIFO workers claim atomically and use leases for crash recovery", () => {
@@ -43,12 +43,13 @@ test("queued results are polled through an ownership-protected status endpoint",
   assert.match(statusRoute, /aiGenerationIdentityHash/);
   assert.match(statusRoute, /Generation not found/);
   assert.match(readFileSync("components/soul-trace-flow.tsx", "utf8"), /waitForAiGenerationResult/);
-  assert.match(readFileSync("components/visual-memory-promo.tsx", "utf8"), /api\/ai-generation\/status/);
+  assert.doesNotMatch(readFileSync("components/soul-trace-flow.tsx", "utf8"), /VisualMemoryPromo/);
+  assert.match(visualRoute, /visual_memory_unavailable/);
 });
 
 test("Visual Memory queued input uses private storage and worker retries are bounded", () => {
   assert.match(migration, /ai-generation-inputs/);
-  assert.match(visualRoute, /storage\.from\("ai-generation-inputs"\)/);
+  assert.match(visualRoute, /hasWorkerCredentials/);
   assert.match(worker, /download\(job\.input_storage_path\)/);
   assert.match(worker, /requeueAiGenerationJob/);
   assert.match(migration, /p_max_attempts integer default 3/);
@@ -71,14 +72,14 @@ test("automatic processing uses Supabase Cron as the recovery scheduler", () => 
 
 test("new queued work wakes the authenticated worker after durable input attachment", () => {
   assert.match(letterRoute, /scheduleAiGenerationWorker\(request, \{ queuedKnown: true \}\)/);
-  assert.match(visualRoute, /scheduleAiGenerationWorker\(request, \{ queuedKnown: true \}\)/);
+  assert.doesNotMatch(visualRoute, /queuedKnown/);
   assert.match(trigger, /after\(async \(\) =>/);
   assert.match(trigger, /x-soul-trace-ai-worker-token/);
   assert.match(trigger, /AI_GENERATION_WORKER_SECRET/);
   assert.match(trigger, /catch \(error\)/);
   assert.match(trigger, /durable Cron worker will recover it/);
   assert.match(letterRoute, /return guardHttpResponse\(admission\)/);
-  assert.match(visualRoute, /return guardHttpResponse\(admission\)/);
+  assert.doesNotMatch(visualRoute, /guardHttpResponse/);
 });
 
 test("completion wakes only when ready queued work exists and internal workers do not recurse", () => {

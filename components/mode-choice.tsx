@@ -81,13 +81,13 @@ function ChoiceCard({
   return (
     <Link
       href={href}
-      className={`${styles.card} ${styles.fadeUp} group`}
+      className={`${styles.card} ${seasonal ? styles.seasonalCard : ""} ${styles.fadeUp} group`}
       style={{ animationDelay: `${kind === "living" ? 100 : kind === "memorial" ? 180 : 260}ms` }}
     >
       <div className={`${styles.cardImage} ${seasonal ? styles.seasonalImage : ""}`}>
         {seasonal ? (
           <div className={styles.seasonalFrame}>
-            <div className="relative aspect-[1.35/1] overflow-hidden bg-[#2B1813]">
+            <div className="relative aspect-[1.32/1] overflow-hidden bg-[#2B1813]">
               <Image
                 src={imageSrc}
                 alt={imageAlt}
@@ -193,7 +193,13 @@ export function ModeChoice({
           <span className={styles.brandRule} aria-hidden="true" />
         </div>
 
-        <div className="justify-self-end">
+        <div className="flex items-center justify-self-end gap-3 sm:gap-5">
+          <Link
+            href="/my-polaroids"
+            className={`inline-flex rounded-md text-[10px] text-[#E8D6B4] transition hover:text-[#FFF4DE] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] sm:text-xs ${bodyFont}`}
+          >
+            {t("landing.myPolaroids")}
+          </Link>
           <LanguageToggle />
         </div>
       </header>

@@ -27,7 +27,8 @@ test("the worker routes each supported kind explicitly", () => {
   assert.match(worker, /processSeasonalPolaroidJob/);
   assert.match(worker, /generateSeasonalPolaroidImage/);
   assert.match(worker, /generateSeasonalPolaroidMemo/);
-  assert.match(worker, /completeAiGeneration\("seasonal_polaroid"/);
+  assert.match(worker, /completeSeasonalPolaroidJob\(job\.request_hash, result\)/);
+  assert.match(worker, /seasonal_result_persistence_failed/);
   assert.match(worker, /unsupported_generation_kind/);
   assert.match(worker, /case "seasonal_polaroid":\s*await processSeasonalPolaroidJob/);
 });

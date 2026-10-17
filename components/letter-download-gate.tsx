@@ -15,7 +15,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 type LetterDownloadGateProps = {
   open: boolean;
-  purpose: "letter" | "visual-memory" | "seasonal-polaroid";
+  purpose: "letter" | "letter-generation" | "seasonal-polaroid";
   pendingEmail?: string | null;
   onClose: () => void;
   onVerified: () => Promise<"saved" | "save_failed">;
@@ -107,15 +107,18 @@ export function LetterDownloadGate({
   const resendLabel = resendSeconds > 0
     ? t("result.downloadGate.resendCountdown").replace("%TIME%", `${String(Math.floor(resendSeconds / 60)).padStart(2, "0")}:${String(resendSeconds % 60).padStart(2, "0")}`)
     : t("result.downloadGate.resendCode");
+  const titleKey = purpose === "letter-generation"
+    ? "result.downloadGate.titleGeneration"
+    : "result.downloadGate.title";
   const bodyKey = purpose === "letter"
     ? "result.downloadGate.bodyLetter"
-    : purpose === "visual-memory"
-      ? "result.downloadGate.bodyVisualMemory"
+    : purpose === "letter-generation"
+      ? "result.downloadGate.bodyLetterGeneration"
       : "result.downloadGate.bodySeasonalPolaroid";
   const pendingSaveKey = purpose === "letter"
     ? "result.downloadGate.pendingSaveLetter"
-    : purpose === "visual-memory"
-      ? "result.downloadGate.pendingSaveVisualMemory"
+    : purpose === "letter-generation"
+      ? "result.downloadGate.pendingLetterGeneration"
       : "result.downloadGate.pendingSaveSeasonalPolaroid";
 
   const chooseOtherEmail = () => {
@@ -237,7 +240,7 @@ export function LetterDownloadGate({
             </button>
 
             <h2 id={titleId} className="pr-10 text-[1.35rem] font-light leading-snug text-[#F6E7C1] sm:text-[1.55rem]">
-              {t("result.downloadGate.title")}
+              {t(titleKey)}
             </h2>
             <p className="mt-4 whitespace-pre-line text-[15px] font-extralight leading-[1.75] text-[#E7DCC8]">
               {step === "code"
@@ -418,7 +421,13 @@ export function LetterDownloadGate({
               onClick={onClose}
               className="mt-5 min-h-11 w-full text-sm text-[#E7DCC8] underline-offset-4 transition hover:text-[#F6E7C1] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C]"
             >
-              {t(purpose === "letter" ? "result.downloadGate.dismissLetter" : "result.downloadGate.dismiss")}
+              {t(
+                purpose === "letter"
+                  ? "result.downloadGate.dismissLetter"
+                  : purpose === "letter-generation"
+                    ? "result.downloadGate.dismissGeneration"
+                    : "result.downloadGate.dismiss",
+              )}
             </button>
           </motion.section>
         </motion.div>

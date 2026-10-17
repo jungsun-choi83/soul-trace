@@ -8,7 +8,6 @@ const letterRoute = readFileSync("app/api/generate-letter/route.ts", "utf8");
 const visualRoute = readFileSync("app/api/visual-memory/route.ts", "utf8");
 const visualAi = readFileSync("lib/visual-memory-ai.ts", "utf8");
 const letterClient = readFileSync("components/soul-trace-flow.tsx", "utf8");
-const visualClient = readFileSync("components/visual-memory-promo.tsx", "utf8");
 const guard = readFileSync("lib/ai-generation-guard.ts", "utf8");
 
 type Status = "pending" | "succeeded" | "failed";
@@ -97,10 +96,9 @@ test("successful generation settles the job and failed generation permits a vali
   assert.match(visualRoute, /completeAiGeneration/);
 });
 
-test("frontends have synchronous submission guards without changing styling", () => {
+test("the remaining letter frontend has synchronous submission guards without changing styling", () => {
   assert.match(letterClient, /letterSubmissionPendingRef\.current/);
-  assert.match(visualClient, /generationPendingRef\.current/);
-  assert.match(visualClient, /generationNonce/);
+  assert.doesNotMatch(letterClient, /VisualMemoryPromo/);
 });
 
 test("guard data is private and pseudonymized", () => {

@@ -43,3 +43,13 @@ next-env.d.ts
 
 .vercel
 .env*.local
+.seasonal-worker-integration/
+.seasonal-worker-preview-candidate/
+.worktrees/
+seasonal-worker-preview-candidate.patch
+worker-compatibility.patch
+.seasonal-worker-integration/
+.seasonal-worker-preview-candidate/
+.worktrees/
+seasonal-worker-preview-candidate.patch
+worker-compatibility.patch
