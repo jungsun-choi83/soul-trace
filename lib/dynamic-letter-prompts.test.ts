@@ -110,7 +110,7 @@ describe("dynamic letter composition", () => {
     assert.doesNotMatch(route, /promptFormattedAnswers[\s\S]{0,120}userEmail/);
   });
 
-  it("uses questionnaire email for active generation and stamp ownership while preserving future auth", () => {
+  it("uses verified account email for active generation while preserving stamp ownership", () => {
     const flow = readFileSync("components/soul-trace-flow.tsx", "utf8");
     const generationRoute = readFileSync("app/api/generate-letter/route.ts", "utf8");
     const stampRoute = readFileSync("app/api/stamp-photo/route.ts", "utf8");
@@ -121,10 +121,11 @@ describe("dynamic letter composition", () => {
     assert.match(flow, /totalQuestionCount = emailQuestionIndex \+ 1/);
     assert.match(en, /"emailStep"/);
 
-    for (const route of [generationRoute, stampRoute]) {
-      assert.doesNotMatch(route, /createSupabaseAuthServerClient|auth\.getUser\(\)|status: 401/);
-      assert.match(route, /normalizeQuestionnaireEmail/);
-    }
+    assert.match(generationRoute, /createSupabaseAuthServerClient/);
+    assert.match(generationRoute, /auth\.getUser\(\)/);
+    assert.match(generationRoute, /status: 401/);
+    assert.match(generationRoute, /const userEmail = authenticatedEmail \|\| submittedEmail/);
+    assert.match(stampRoute, /normalizeQuestionnaireEmail/);
     assert.match(eligibilityRoute, /createSupabaseAuthServerClient/);
     assert.match(eligibilityRoute, /auth\.getUser\(\)/);
     assert.match(generationRoute, /body\.email/);

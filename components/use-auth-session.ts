@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 export type AuthSessionState = {
   status: "loading" | "authenticated" | "anonymous";
   email: string | null;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<"loading" | "authenticated" | "anonymous">;
 };
 
 export function useAuthSession(): AuthSessionState {
@@ -16,12 +16,18 @@ export function useAuthSession(): AuthSessionState {
   const refresh = useCallback(async () => {
     try {
       const client = createSupabaseBrowserAuthClient();
-      const { data } = await client.auth.getUser();
-      setEmail(data.user?.email ?? null);
-      setStatus(data.user ? "authenticated" : "anonymous");
+      const user = await Promise.race([
+        client.auth.getUser().then(({ data }) => data.user ?? null),
+        new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 5000)),
+      ]);
+      const nextStatus = user ? "authenticated" : "anonymous";
+      setEmail(user?.email ?? null);
+      setStatus(nextStatus);
+      return nextStatus;
     } catch {
       setEmail(null);
       setStatus("anonymous");
+      return "anonymous" as const;
     }
   }, []);
 
