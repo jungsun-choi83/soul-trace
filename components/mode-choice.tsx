@@ -4,6 +4,8 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useLocale } from "@/components/locale-provider";
 import { letterModePath, modeCopy, type LetterMode } from "@/lib/letter-mode";
 import { PARTNER_CODE_PARAM } from "@/lib/partner";
+import { clearLetterExperienceSession } from "@/lib/letter-experience-session";
+import { parseServiceChannel, serviceChannelMode } from "@/lib/service-channel";
 import Image from "next/image";
 import Link from "next/link";
 import styles from "./mode-choice.module.css";
@@ -23,6 +25,7 @@ type ChoiceCardProps = {
   bodyFont: string;
   priority?: boolean;
   seasonal?: boolean;
+  onClick?: () => void;
 };
 
 function PawMark() {
@@ -77,10 +80,12 @@ function ChoiceCard({
   bodyFont,
   priority = false,
   seasonal = false,
+  onClick,
 }: ChoiceCardProps) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={`${styles.card} ${seasonal ? styles.seasonalCard : ""} ${styles.fadeUp} group`}
       style={{ animationDelay: `${kind === "living" ? 100 : kind === "memorial" ? 180 : 260}ms` }}
     >
@@ -167,6 +172,16 @@ export function ModeChoice({
   const querySuffix = destinationQuery ? `?${destinationQuery}` : "";
   const hrefFor = (mode: LetterMode) => `${letterModePath(mode)}${querySuffix}`;
   const polaroidHref = `/polaroid${querySuffix}`;
+  const startLetter = (mode: LetterMode) => {
+    if (typeof window === "undefined") return;
+    const channel = parseServiceChannel(destinationParams.get("ch"));
+    const routedMode = channel ? serviceChannelMode(channel) : mode;
+    try {
+      clearLetterExperienceSession(window.sessionStorage, routedMode, channel);
+    } catch {
+      // Navigation remains valid when sessionStorage is unavailable.
+    }
+  };
   const livingCopy = modeCopy(messages, "living");
   const memorialCopy = modeCopy(messages, "memorial");
 
@@ -229,6 +244,7 @@ export function ModeChoice({
             imageLabel={livingCopy.landingCta}
             bodyFont={bodyFont}
             priority
+            onClick={() => startLetter("living")}
           />
           <ChoiceCard
             kind="memorial"
@@ -241,6 +257,7 @@ export function ModeChoice({
             imageAlt=""
             imageLabel={memorialCopy.landingCta}
             bodyFont={bodyFont}
+            onClick={() => startLetter("memorial")}
           />
           <ChoiceCard
             kind="polaroid"
