@@ -35,7 +35,7 @@ test("homepage uses the existing locale system with complete English and Korean 
   assert.match(header, /<LanguageToggle \/>/);
   assert.match(header, /useLocale/);
   assert.doesNotMatch(homepageSources, /LanguageProvider|LanguageSwitch|useLanguage/);
-  assert.equal(ko.homepage.hero.primary, "우리 아이 편지 만들기");
+  assert.equal(ko.homepage.hero.primary, "우리 아이 이야기 만들기");
   assert.equal(ko.homepage.livingMemorial.memorialTitle, "언제나 기억하며");
 });
 

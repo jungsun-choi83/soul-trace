@@ -53,7 +53,6 @@ import {
   type LetterThemeId,
 } from "@/lib/letter-themes";
 import { getEternalBeamInstagramUrl, getEternalBeamMainUrl, getEternalBeamYoutubeUrl } from "@/lib/eternalbeam-urls";
-import { getMemoryShopLetterSetUrl } from "@/lib/memory-shop-url";
 import { sendKakaoDefaultShare } from "@/lib/kakao-share";
 import {
   buildLetterRequestFields,
@@ -614,7 +613,6 @@ export function SoulTraceFlow({
     resolveRecipientAddress(petIntro, lang),
   );
   const officialSiteUrl = useMemo(() => getEternalBeamMainUrl(), []);
-  const memoryShopLetterSetUrl = useMemo(() => getMemoryShopLetterSetUrl(), []);
   const instagramProfileUrl = useMemo(() => getEternalBeamInstagramUrl(), []);
 
   useEffect(() => {
@@ -2031,60 +2029,32 @@ export function SoulTraceFlow({
 
             <section
               aria-label={t("result.productCards.label")}
-              className={`mx-auto mt-6 grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-2 ${
+              className={`mx-auto mt-6 w-full max-w-2xl ${
                 lang === "ko" ? "font-ko break-keep" : "font-display-en"
               }`}
             >
-              <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#C7A43A]/40 bg-[#0C0B09] shadow-[0_16px_42px_rgba(0,0,0,0.28)]">
-                <div className="relative aspect-[16/7] w-full overflow-hidden bg-black">
-                  <Image
-                    src="/images/letter-keepsake-result.png"
-                    alt={t("result.productCards.keepsake.imageAlt")}
-                    fill
-                    sizes="(max-width: 640px) calc(100vw - 40px), 320px"
-                    className="object-cover object-center"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col p-5">
-                  <h2 className="text-lg font-medium leading-snug text-[#F3E8D2]">
-                    {t("result.productCards.keepsake.title")}
-                  </h2>
-                  <p className="mt-2 flex-1 whitespace-pre-line text-sm font-light leading-relaxed text-[#C4B8A8]">
-                    {t("result.productCards.keepsake.description")}
-                  </p>
-                  <a
-                    href={memoryShopLetterSetUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-5 flex min-h-11 w-full items-center justify-center rounded-xl bg-[#C7A43A] px-4 py-3 text-center text-sm font-medium text-[#0B0A08] transition hover:bg-[#D4B34A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5C761]"
-                  >
-                    {t("result.productCards.keepsake.cta")}
-                  </a>
-                </div>
-              </article>
-
-              <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#C7A43A]/40 bg-[#0C0B09] shadow-[0_16px_42px_rgba(0,0,0,0.28)]">
-                <div className="relative aspect-[16/7] w-full overflow-hidden bg-black">
+              <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#C7A43A]/40 bg-[#0C0B09] shadow-[0_16px_42px_rgba(0,0,0,0.28)] sm:flex-row sm:items-stretch">
+                <div className="relative h-36 w-full shrink-0 overflow-hidden bg-black sm:h-auto sm:min-h-[9.5rem] sm:w-48 md:w-56">
                   <Image
                     src="/images/eternal-beam-result.png"
                     alt={t("result.productCards.eternalBeam.imageAlt")}
                     fill
-                    sizes="(max-width: 640px) calc(100vw - 40px), 320px"
+                    sizes="(max-width: 640px) calc(100vw - 40px), 224px"
                     className="object-cover object-center"
                   />
                 </div>
-                <div className="flex flex-1 flex-col p-5">
-                  <h2 className="text-lg font-medium leading-snug text-[#F3E8D2]">
+                <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6">
+                  <h2 className="text-lg font-medium leading-snug text-[#F3E8D2] sm:text-xl">
                     {t("result.productCards.eternalBeam.title")}
                   </h2>
-                  <p className="mt-2 flex-1 whitespace-pre-line text-sm font-light leading-relaxed text-[#C4B8A8]">
+                  <p className="mt-2 whitespace-pre-line text-sm font-light leading-relaxed text-[#C4B8A8]">
                     {t("result.productCards.eternalBeam.description")}
                   </p>
                   <a
                     href={officialSiteUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-5 flex min-h-11 w-full items-center justify-center rounded-xl border border-[#C7A43A]/75 bg-[#0A0908] px-4 py-3 text-center text-sm font-medium text-[#D8B84C] transition hover:border-[#E0C15A] hover:bg-[#17130D] hover:text-[#E5C761] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C]"
+                    className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-[#C7A43A]/75 bg-[#0A0908] px-4 py-2.5 text-center text-sm font-medium text-[#D8B84C] transition hover:border-[#E0C15A] hover:bg-[#17130D] hover:text-[#E5C761] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C] sm:w-fit sm:self-start"
                   >
                     {t("result.productCards.eternalBeam.cta")}
                   </a>

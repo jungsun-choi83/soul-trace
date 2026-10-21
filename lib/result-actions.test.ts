@@ -97,15 +97,24 @@ describe("result download and Instagram actions", () => {
     assert.match(source, /navigator\.clipboard\.writeText/);
   });
 
-  it("replaces the old Eternal Beam preview with compact product cards", () => {
+  it("keeps the result journey focused on Eternal Beam after removing the retired card", () => {
     assert.doesNotMatch(source, /<EternalBeamPreview/);
-    assert.match(source, /src="\/images\/letter-keepsake-result\.png"/);
     assert.match(source, /src="\/images\/eternal-beam-result\.png"/);
-    assert.match(source, /grid-cols-1 gap-4 sm:grid-cols-2/);
+    assert.match(source, /max-w-2xl/);
+    assert.match(source, /sm:flex-row/);
+    assert.match(source, /sm:w-48/);
+    assert.doesNotMatch(source, /grid-cols-1 gap-4 sm:grid-cols-2/);
     assert.match(source, /href=\{officialSiteUrl\}/);
-    assert.match(source, /href=\{memoryShopLetterSetUrl\}/);
-    assert.match(source, /getMemoryShopLetterSetUrl/);
-    assert.doesNotMatch(source, /result\.productCards\.keepsake[\s\S]{0,400}disabled/);
+    assert.doesNotMatch(source, /letter-keepsake-result|productCards\.keepsake/);
+  });
+
+  it("removes the retired commerce navigation from the homepage", () => {
+    const header = readFileSync("components/homepage/homepage-header.tsx", "utf8");
+    const en = JSON.parse(readFileSync("locales/en.json", "utf8"));
+    const ko = JSON.parse(readFileSync("locales/ko.json", "utf8"));
+    assert.doesNotMatch(header, /SHOP_URL/);
+    assert.deepEqual(Object.keys(en.homepage.nav), ["soulTrace", "howItWorks", "eternalBeam", "about", "createLetter", "menu", "close"]);
+    assert.deepEqual(Object.keys(ko.homepage.nav), ["soulTrace", "howItWorks", "eternalBeam", "about", "createLetter", "menu", "close"]);
   });
 
   it("keeps the responsive Kickstarter artwork near the end of the result flow", () => {
@@ -150,14 +159,14 @@ describe("result download and Instagram actions", () => {
     const en = JSON.parse(readFileSync("locales/en.json", "utf8"));
     const ko = JSON.parse(readFileSync("locales/ko.json", "utf8"));
 
-    assert.equal(en.result.keepForever, "Save and download this letter");
+    assert.equal(en.result.keepForever, "Download Letter");
     assert.equal(en.result.saveHint, "Verify your email to keep it in My Memories.");
     assert.equal(en.result.viewMemories, "View my memories");
-    assert.equal(en.result.instagramShareButton, "Share this letter");
-    assert.equal(ko.result.keepForever, "이 편지 저장하고 다운로드");
+    assert.equal(en.result.instagramShareButton, "Share Letter");
+    assert.equal(ko.result.keepForever, "편지 다운로드");
     assert.equal(ko.result.saveHint, "이메일 인증 후 내 기록에 보관할 수 있어요.");
     assert.equal(ko.result.viewMemories, "내 기록 보기");
-    assert.equal(ko.result.instagramShareButton, "이 편지 공유하기");
+    assert.equal(ko.result.instagramShareButton, "편지 공유");
     assert.equal(ko.result.downloadGate.title, "우리 아이의 기록을 한곳에.");
     assert.equal(en.result.downloadGate.title, "Keep your pet’s memories in one place.");
     assert.equal(ko.result.downloadGate.bodyLetter, "지금 만든 편지를 저장하고 다시 찾아보세요.");
