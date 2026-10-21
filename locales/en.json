@@ -841,7 +841,7 @@
       }
     },
     "instagramShareLead": "Keep this moment with you",
-    "instagramShareButton": "Share this letter",
+    "instagramShareButton": "Share Letter",
     "shareOptions": {
       "label": "Share this letter",
       "instagram": "Share to Instagram",
@@ -959,17 +959,11 @@
       }
     },
     "productCards": {
-      "label": "Keepsake options",
-      "keepsake": {
-        "title": "Get the Letter Keepsake",
-        "description": "Printed letter + envelope + stamp + keepsake.",
-        "cta": "Get Keepsake Set →",
-        "imageAlt": "Printed Soul Trace letter, envelope, stamp, and keepsake"
-      },
+      "label": "Continue the journey",
       "eternalBeam": {
-        "title": "Shop Eternal Beam",
+        "title": "Discover Eternal Beam",
         "description": "Digital & physical keepsakes to keep their memory close, always.",
-        "cta": "Shop Eternal Beam →",
+        "cta": "Explore Eternal Beam →",
         "imageAlt": "Eternal Beam holographic keepsake display"
       }
     },
@@ -1003,7 +997,7 @@
       "body": "This letter can stay with you—as light, right beside you."
     },
     "saveImage": "Save to phone",
-    "keepForever": "Save and download this letter",
+    "keepForever": "Download Letter",
     "saveHint": "Verify your email to keep it in My Memories.",
     "checkingAccount": "Checking your account.",
     "savedDownloadManually": "Saved to your memories.",
@@ -1401,13 +1395,13 @@
     }
   },
   "homepage": {
-    "nav": { "soulTrace": "Soul Trace", "howItWorks": "How It Works", "eternalBeam": "Eternal Beam", "about": "About", "shop": "Shop", "createLetter": "Create My Letter", "menu": "Menu", "close": "Close" },
+    "nav": { "soulTrace": "Soul Trace", "howItWorks": "How It Works", "eternalBeam": "Eternal Beam", "about": "About", "createLetter": "Create My Pet's Story", "menu": "Menu", "close": "Close" },
     "hero": {
       "label": "A Memory Experience by Eternal Beam",
       "title1": "Every pet leaves a story.",
-      "title2": "Turn yours into a letter.",
-      "body": "Share the little moments, habits, and memories that make your pet special. Soul Trace transforms them into a personal letter inspired by your life together.",
-      "primary": "Create My Pet's Letter",
+      "title2": "Keep yours in words and pictures.",
+      "body": "Share the little moments, habits, and memories that make your pet special. Soul Trace turns them into a personal story you can keep in words and pictures.",
+      "primary": "Create My Pet's Story",
       "secondary": "Discover Eternal Beam",
       "cardName": "To my human",
       "cardLine": "I always know when you're coming home."
@@ -1418,9 +1412,9 @@
       "toy": "The toy they always choose.", "sound": "The sound they make when they're excited.", "quiet": "The little look only you understand."
     },
     "howItWorks": {
-      "label": "How It Works", "title": "Three gentle steps.",
+      "label": "How It Works", "title": "Three gentle steps to keep their story close.",
       "shareTitle": "Share Their Story", "shareBody": "Tell Soul Trace about your pet, their personality, and your memories together.",
-      "receiveTitle": "Receive Their Letter", "receiveBody": "Those memories become a personal letter, written in a voice that feels like them.",
+      "receiveTitle": "See Their Story Take Shape", "receiveBody": "Those memories become a personal story told through a heartfelt letter and a seasonal Polaroid.",
       "discoverTitle": "Discover What Comes Next", "discoverBody": "See how Eternal Beam can carry those memories even further."
     },
     "letter": {
@@ -1428,10 +1422,10 @@
       "memoryLabel": "Memory", "memoryText": "I have shared eight years with Goya. Looking back at puppy photos, I realized how quickly our time together was passing. I want to keep a few more of the ordinary moments.", "letterLabel": "Letter",
       "letterText": "To you,\nOur time together has found its way into these photos.\nLet’s keep a few ordinary moments from the days ahead, too.\nThey do not have to be special. They are part of our time together.", "paperName": "To Goya", "paperFrom": "Written from Goya’s point of view"
     },
-    "gallery": { "label": "Gallery", "title": "Thousands of moments. One story.", "body": "The day they first came home, the moment we held hands, a night we traveled together, and the everyday moments we share today.", "dog": "Loyal", "cat": "Curious", "rabbit": "Gentle", "bird": "Bright", "hamster": "Tiny", "calm": "Calm", "loved": "Loved", "cozy": "Cozy", "joyful": "Joyful", "playful": "Playful", "firstHome": "First Home", "quietRest": "Quiet Rest", "littleJourney": "Little Journey", "sunsetMemory": "Sunset Memory", "beachMemory": "Beach Memory", "gentleTouch": "Gentle Touch", "alwaysTogether": "Always Together", "todaysMoment": "Today’s Moment" },
-    "eternalBeam": { "title": "A letter is only the beginning.", "body": "Keep your Soul Trace memories\nclose with Eternal Beam.", "cta": "Visit Eternal Beam →", "benefits": { "photos": "Photos & videos", "easy": "Easy to use", "design": "Fits your space", "lasting": "Keep memories close" } },
+    "gallery": { "label": "HALLOWEEN EDITION · SEASONAL POLAROID", "titleBefore": "A little ", "titleHighlight": "Halloween", "titleAfter": " magic,\na memory to keep.", "body": "Your pet's familiar face, their adorable little quirks, and a touch of Halloween wonder — brought together in a personalized Polaroid made just for them.", "card1Title": "Little Pumpkin", "card1Description": "That little face, looking up at me. Even in a costume, you're still you.", "card1Label": "HALLOWEEN AT HOME", "card1Alt": "Shiba Inu dressed as a witch beside glowing pumpkins", "card2Title": "Trick or Cuddle?", "card2Description": "No tricks, just treats and endless love. Another day with you.", "card2Label": "OUR LITTLE GHOST", "card2Alt": "Puppy dressed as a little ghost holding a pumpkin", "card3Title": "Spooky Adventures", "card3Description": "You, the stars, and a little Halloween adventure. A moment I'm glad I kept.", "card3Label": "A NIGHT TO REMEMBER", "card3Alt": "Small dog dressed as a witch among autumn leaves and pumpkins", "card4Title": "A Little Halloween Magic", "card4Description": "A little Halloween magic, and that familiar look that's always yours. A moment to keep close.", "card4Label": "FOREVER TOGETHER", "card4Alt": "Cat dressed as a pumpkin surrounded by glowing pumpkins" },
+    "eternalBeam": { "title": "Their story can keep growing.", "body": "Keep your Soul Trace memories\nclose with Eternal Beam.", "cta": "Visit Eternal Beam →", "benefits": { "photos": "Photos & videos", "easy": "Easy to use", "design": "Fits your space", "lasting": "Keep memories close" } },
     "livingMemorial": { "label": "For Every Season", "title": "For the ones here, and the ones held close.", "livingTitle": "Together Today", "livingBody": "For the memories you're still making.", "memorialTitle": "Always Remembered", "memorialBody": "For the memories that will always stay." },
-    "finalCta": { "title": "Start with one moment.", "body": "An expression, a memory, a moment you shared.\nTell us what you would like to keep today.", "primary": "Create My Pet's Letter", "secondary": "Visit Eternal Beam" },
+    "finalCta": { "title": "Start with one moment.", "body": "An expression, a memory, a moment you shared.\nTell us what you would like to keep today.", "primary": "Create My Pet's Story", "secondary": "Visit Eternal Beam" },
     "kickstarter": { "notify": "Notify me on Kickstarter", "visit": "Take me to the Kickstarter page", "pageComingSoon": "Our Kickstarter page is coming soon.", "dialogTitle": "Be the first to know", "dialogBody": "Enter your email and we'll let you know when Eternal Beam launches on Kickstarter.", "emailLabel": "Email address", "emailPlaceholder": "you@example.com", "submit": "Notify me", "sending": "Joining…", "success": "You are on the list", "error": "We couldn't add you right now. Please try again.", "done": "Done", "close": "Close" },
     "footer": { "tagline": "A memory experience by Eternal Beam.", "rights": "All rights reserved.", "linksLabel": "Footer links", "privacyPolicy": "Privacy Policy", "termsOfService": "Terms of Service", "contact": "Contact Us" },
     "accessibility": {

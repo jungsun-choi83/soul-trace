@@ -93,11 +93,44 @@
 .letterPaperEntrance.visible { transform: translateX(0) scale(1); }
 .letterPaperContent { opacity: 0; transition: opacity 500ms cubic-bezier(0.16, 1, 0.3, 1) 160ms; }
 .letterPaperEntrance.visible .letterPaperContent { opacity: 1; }
-.galleryCardFace { position: absolute; inset: 0; --gallery-shift: 8px; animation-duration: 9s; animation-timing-function: ease-in-out; animation-iteration-count: infinite; animation-play-state: paused; will-change: opacity, transform; }
-.galleryOriginalFace { z-index: 1; opacity: 1; animation-name: gallery-original-swap; }
-.galleryAlternateFace { z-index: 2; opacity: 0; animation-name: gallery-alternate-swap; }
-.galleryPlaying .galleryOriginalFace,
-.galleryPlaying .galleryAlternateFace { animation-play-state: running; }
+.halloweenSection { position: relative; isolation: isolate; min-height: 46rem; overflow: hidden; padding: 6rem 0; background-color: #fbf4e8 !important; color: #2d1b11 !important; color-scheme: light; }
+.halloweenAmbient { position: absolute; z-index: 0; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(255, 252, 244, 0.58), transparent 72%); }
+.halloweenDecor { position: absolute; z-index: 0; bottom: 0; display: block; width: clamp(22rem, 28vw, 35.8rem); height: auto; max-width: none; pointer-events: none; }
+.halloweenDecorLeft { left: 0; }
+.halloweenDecorRight { right: 0; }
+.halloweenContent { position: relative; z-index: 10; width: min(100% - 2.5rem, 75rem); margin: 0 auto; }
+.halloweenIntro { max-width: 52rem; margin: 0 auto; text-align: center; }
+.halloweenReveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+.halloweenEyebrow { margin: 0 0 1.25rem; color: #c99538; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.28em; line-height: 1.4; text-transform: uppercase; }
+.halloweenHeading { margin: 0; color: #2d1b11 !important; font-size: clamp(2.5rem, 4vw, 4.5rem); font-weight: 300; letter-spacing: normal !important; line-height: 0.98; text-wrap: balance; }
+.halloweenDescription { max-width: 42rem; margin: 1.5rem auto 0; color: rgba(95, 74, 59, 0.82) !important; font-size: 1rem; line-height: 1.65; }
+.halloweenPaw { display: flex; justify-content: center; margin-top: 1rem; color: #c99538; }
+.halloweenPaw svg { width: 1.25rem; height: 1.25rem; }
+.halloweenGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.125rem; width: min(100%, 61.25rem); margin: 3rem auto 0; align-items: stretch; }
+.halloweenCard { display: flex; height: 100%; min-height: 21rem; flex-direction: column; overflow: hidden; border: 1px solid #eadcc8; border-radius: 0.85rem; background: rgba(255, 250, 241, 0.98) !important; color: #302016 !important; box-shadow: 0 12px 24px rgba(83, 54, 27, 0.12); transition: transform 500ms ease, box-shadow 500ms ease; }
+.halloweenCard:hover { transform: translateY(-0.25rem); box-shadow: 0 16px 28px rgba(83, 54, 27, 0.16); }
+.halloweenPhoto { position: relative; flex: 0 0 auto; width: 100%; aspect-ratio: 1.15; overflow: hidden; background: #eee1cd; }
+.halloweenPhotoImage { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; max-width: none !important; object-fit: cover; object-position: center; transform: none; transition: transform 700ms ease; }
+.halloweenCard:hover .halloweenPhotoImage { transform: scale(1.03); }
+.halloweenCardContent { display: flex; min-height: 0; flex: 1; flex-direction: column; padding: 1rem 1rem 1.25rem; }
+.halloweenCardTitle { margin: 0; color: #302016 !important; font-size: 1.05rem; font-weight: 500; line-height: 1.2; }
+.halloweenCardDescription { margin: 0.5rem 0 0; color: #6d5b4d !important; font-size: 0.78rem; line-height: 1.55; }
+.halloweenCardLabel { margin: auto 0 0; padding-top: 1rem; color: #c99538 !important; font-size: 0.62rem; font-weight: 500; letter-spacing: 0.16em; line-height: 1.35; text-transform: uppercase; }
+@media (max-width: 63.999rem) {
+  .halloweenGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 42rem; }
+  .halloweenDecor { width: min(32vw, 23rem); opacity: 0.34; }
+}
+@media (max-width: 39.999rem) {
+  .halloweenSection { min-height: 0; padding: 4.5rem 0; }
+  .halloweenContent { width: min(100% - 2rem, 32rem); }
+  .halloweenEyebrow { font-size: 0.48rem; letter-spacing: 0.12em; }
+  .halloweenHeading { font-size: clamp(1.65rem, 7vw, 2.2rem); letter-spacing: -0.03em !important; line-height: 1.08; }
+  .halloweenHeading > span { display: block; max-width: 100%; overflow-wrap: anywhere; }
+  .halloweenDescription { margin-top: 1.25rem; font-size: 0.8rem; }
+  .halloweenGrid { grid-template-columns: 1fr; gap: 1rem; margin-top: 2.25rem; }
+  .halloweenCard { min-height: 20rem; }
+  .halloweenDecor { display: none; }
+}
 .eternalTextEntrance { transform: translateY(14px); transition-duration: 620ms; }
 .eternalTextEntrance.visible { transform: translateY(0); }
 .eternalProductEntrance { opacity: 0.42; filter: blur(5px); transform: scale(0.985); transition: opacity 900ms cubic-bezier(0.16, 1, 0.3, 1), filter 900ms cubic-bezier(0.16, 1, 0.3, 1), transform 900ms cubic-bezier(0.16, 1, 0.3, 1); }
@@ -136,7 +169,6 @@
   .letterArrowEntrance.visible,
   .letterResultEntrance.visible { transform: translateY(0); }
   .letterPaperEntrance.visible { transform: translateX(0) scale(1); }
-  .galleryCardFace { --gallery-shift: 5px; }
   .eternalTextEntrance { transform: translateY(8px); transition-duration: 540ms; }
   .eternalTextEntrance.visible { transform: translateY(0); }
   .eternalProductEntrance { filter: blur(3px); transform: scale(0.99); transition-duration: 800ms; }
@@ -189,16 +221,6 @@
   100% { opacity: 1; transform: scale(1); border-color: #c8a24a; background-color: #efe4cc; }
 }
 @keyframes how-step-content-complete { to { opacity: 1; } }
-@keyframes gallery-original-swap {
-  0%, 33.333% { opacity: 1; transform: translateY(0) scale(1); }
-  37.778%, 80% { opacity: 0; transform: translateY(var(--gallery-shift)) scale(0.99); }
-  84.444%, 100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes gallery-alternate-swap {
-  0%, 33.333% { opacity: 0; transform: translateY(var(--gallery-shift)) scale(0.99); }
-  37.778%, 80% { opacity: 1; transform: translateY(0) scale(1); }
-  84.444%, 100% { opacity: 0; transform: translateY(var(--gallery-shift)) scale(0.99); }
-}
 @media (prefers-reduced-motion: reduce) {
   .reveal, .visible { opacity: 1; transform: none; transition: none; }
   .glow, .heroFlowers, .heroOpeningVeil { animation: none; }
@@ -209,8 +231,6 @@
   .howStep:hover .howStepCircle { transform: none; box-shadow: none; }
   .howStepIcon, .howStepTitle, .howStepDescription { opacity: 1; animation: none !important; }
   .letterPaperContent { opacity: 1; transition: none; }
-  .galleryOriginalFace { opacity: 1; transform: none; animation: none; }
-  .galleryAlternateFace { opacity: 0; transform: none; animation: none; }
   .eternalProductEntrance { opacity: 1; filter: none; transform: none; transition: none; }
   .finalCtaCreamLight { opacity: 0.3; animation: none; will-change: auto; }
   .finalCtaFlowers { opacity: 1; filter: none; transform: none; animation: none; will-change: auto; }

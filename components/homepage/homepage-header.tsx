@@ -4,12 +4,10 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useLocale } from "@/components/locale-provider";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { getMemoryShopUrl } from "@/lib/memory-shop-url";
 import { CloseIcon, MenuIcon } from "./icons";
 import { createPortal } from "react-dom";
 
 const KICKSTARTER_URL = process.env.NEXT_PUBLIC_KICKSTARTER_URL?.trim() || null;
-const SHOP_URL = getMemoryShopUrl();
 
 function KickstarterNavLink({ mobile = false }: { mobile?: boolean }) {
   const className = mobile
@@ -79,7 +77,6 @@ export function HomepageHeader({ choiceHref }: { choiceHref: string }) {
       </div>
       <nav className="flex flex-col gap-1 px-6 pb-10 pt-8" aria-label={t("homepage.accessibility.mobileNav")}>
         {links.map(([label, href]) => <a key={href} href={href} onClick={() => setOpen(false)} className={`border-b border-white/10 py-5 text-3xl text-[#f8f2e7]/90 hover:text-[#c8a24a] ${displayFont}`}>{label}</a>)}
-        <a href={SHOP_URL} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className={`border-b border-white/10 py-5 text-3xl text-[#f8f2e7]/90 transition hover:text-[#c8a24a] ${displayFont}`}>{t("homepage.nav.shop")}<span aria-hidden="true" className="ml-2 align-middle text-base">↗</span></a>
         <KickstarterNavLink mobile />
         <Link href={choiceHref} onClick={() => setOpen(false)} className={`mt-8 rounded-full bg-[#c8a24a] px-6 py-4 text-center text-base font-medium text-[#0b0a09] ${displayFont}`}>{t("homepage.nav.createLetter")}</Link>
       </nav>
@@ -96,7 +93,6 @@ export function HomepageHeader({ choiceHref }: { choiceHref: string }) {
         </a>
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 xl:flex" aria-label={t("homepage.accessibility.primaryNav")}>
           {links.map(([label, href]) => <a key={href} href={href} className={`whitespace-nowrap text-sm text-[#f8f2e7]/70 transition-colors hover:text-[#f8f2e7] ${displayFont}`}>{label}</a>)}
-          <a href={SHOP_URL} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-1 whitespace-nowrap text-sm text-[#f8f2e7]/70 transition-colors hover:text-[#f8f2e7] ${displayFont}`}><span>{t("homepage.nav.shop")}</span><span aria-hidden="true" className="text-xs leading-none">↗</span></a>
         </nav>
         <div className="ml-auto hidden items-center gap-5 xl:flex">
           <KickstarterNavLink />

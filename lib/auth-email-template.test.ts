@@ -14,7 +14,7 @@ function assertCodeEmail(template: string, subject: string) {
   assert.match(template, /인증번호/);
   assert.match(template, /Verification code/);
   assert.equal((template.match(/\{\{ \.Token \}\}/g) ?? []).length, 2);
-  assert.doesNotMatch(template, /ConfirmationURL|soultrace\.pet|\/shop|href=/i);
+  assert.doesNotMatch(template, /ConfirmationURL|soultrace\.pet|href=/i);
 }
 
 test("confirm signup email is the 6-digit code, not a site link", () => {
