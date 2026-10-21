@@ -42,7 +42,7 @@ describe("partner type normalization", () => {
     assert.equal(normalizePartnerType("funeral"), "FUNERAL");
     assert.equal(normalizePartnerType("grooming"), "GROOMING");
     assert.equal(normalizePartnerType(" pension "), "PENSION");
-    assert.equal(normalizePartnerType("pet shop"), null);
+    assert.equal(normalizePartnerType("retail outlet"), null);
   });
 });
 
