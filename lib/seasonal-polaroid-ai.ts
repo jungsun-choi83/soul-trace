@@ -79,6 +79,8 @@ const SAFE_MEMO_VALIDATION_REASONS = new Set([
   "memo_wrong_locale",
   "memo_third_person",
   "memo_not_first_person",
+  "memo_disconnected_lines",
+  "memo_letter_style",
   "memo_memorial_language",
 ]);
 

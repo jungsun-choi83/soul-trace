@@ -98,9 +98,9 @@ test("valid English structured memo reaches the AI path without fallback", async
       locale: "en",
       lines: [
         "Mom, happy Halloween from Mochi!",
-        "Pumpkin lights make my whiskers dance.",
-        "I nap in sunbeams and dream of tuna.",
-        "Keep my tiny purr close, Mom.",
+        "I see pumpkin lights,",
+        "and my whiskers dance while I nap.",
+        "and my tiny purr fills the frame.",
       ],
     }), calls),
     answers: ANSWERS,
@@ -111,9 +111,9 @@ test("valid English structured memo reaches the AI path without fallback", async
   assert.equal(result.modelUsed, "gpt-4o-mini");
   assert.deepEqual(result.memo.lines, [
     "Mom, happy Halloween from Mochi!",
-    "Pumpkin lights make my whiskers dance.",
-    "I nap in sunbeams and dream of tuna.",
-    "Keep my tiny purr close, Mom.",
+    "I see pumpkin lights,",
+    "and my whiskers dance while I nap.",
+    "and my tiny purr fills the frame.",
   ]);
 });
 
@@ -130,9 +130,9 @@ test("valid Korean structured memo reaches the AI path without fallback", async 
       locale: "ko",
       lines: [
         "엄마, 모찌가 해피 할로윈!",
-        "호박 옷 입고 신나요.",
+        "호박 옷 입고,",
         "참치 간식이 제일 좋아요.",
-        "엄마, 포근한 밤 보내요.",
+        "포근한 밤의 작은 순간이에요.",
       ],
     }), calls),
     answers,

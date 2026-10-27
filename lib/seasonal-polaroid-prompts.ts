@@ -215,6 +215,22 @@ const MEMORIAL_FORBIDDEN = [
   /\bheaven\b/i, /rainbow\s*bridge/i, /\b(dead|died|death|gone|goodbye)\b/i,
   /\bangels?\b/i, /천국/u, /무지개\s*다리/u, /죽/u, /사망/u, /세상을\s*떠/u, /천사/u,
 ];
+const MEMO_LETTER_STYLE_FORBIDDEN = [
+  /\b(?:dear|sending you|i(?:'|’)ll always|i will always|always be your|keep (?:me|my|this)|save (?:me|my|this)|remember me|hope you|please)\b/i,
+  /(?:간직해|기억해|웃어줘|보내줘|보내요)/u,
+];
+
+function hasConnectedMemoBreak(bodyLines: string[], locale: "en" | "ko"): boolean {
+  const openLineEnding = locale === "en"
+    ? /[,;:—…]$/u
+    : /[,;:…]|(?:고|며|면서|서|지만|는데)[.!?…]*$/u;
+  if (bodyLines.slice(0, -1).some((line) => openLineEnding.test(line.trim()))) return true;
+
+  const nextLineConnector = locale === "en"
+    ? /^(?:and|while|so|because|as|today|then|still|with)\b/i
+    : /^(?:그리고|그래서|오늘(?:은|도)?|또|이제)/u;
+  return bodyLines.slice(1).some((line) => nextLineConnector.test(line.trim()));
+}
 
 export function validateSeasonalPolaroidMemo(
   value: unknown,
@@ -244,8 +260,24 @@ export function validateSeasonalPolaroidMemo(
     ? new RegExp(`(?<![A-Za-z0-9])${escapedPetName}(?![A-Za-z0-9])`, "iu")
     : new RegExp(escapedPetName, "u");
   if (bodyLines.some((line) => petNamePattern.test(line))) return { valid: false, reason: "memo_third_person" };
-  if (answers.locale === "en" && bodyLines.some((line) => !/\b(?:i|i'm|i’ve|i've|i’ll|i'll|i'd|i’d|my|me|mine|we|our|us)\b/i.test(line))) {
-    return { valid: false, reason: "memo_not_first_person" };
+  const ownerCallName = resolvedCallName(answers, answers.locale);
+  const escapedOwnerCallName = ownerCallName.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&");
+  const ownerCallNamePattern = /[A-Za-z0-9]/u.test(ownerCallName)
+    ? new RegExp(`(?<![A-Za-z0-9])${escapedOwnerCallName}(?![A-Za-z0-9])`, "iu")
+    : new RegExp(escapedOwnerCallName, "u");
+  if (bodyLines.some((line) => ownerCallNamePattern.test(line) || MEMO_LETTER_STYLE_FORBIDDEN.some((pattern) => pattern.test(line)))) {
+    return { valid: false, reason: "memo_letter_style" };
+  }
+  if (answers.locale === "en") {
+    const firstPersonPattern = /\b(?:i|i'm|i’ve|i've|i’ll|i'll|i'd|i’d|my|me|mine|we|our|us)\b/i;
+    // The first body line establishes the voice. Later lines may naturally
+    // continue the same thought without repeating I/my on every visual line.
+    if (!firstPersonPattern.test(bodyLines[0] ?? "") || !firstPersonPattern.test(bodyLines.join(" "))) {
+      return { valid: false, reason: "memo_not_first_person" };
+    }
+  }
+  if (!hasConnectedMemoBreak(bodyLines, answers.locale as "en" | "ko")) {
+    return { valid: false, reason: "memo_disconnected_lines" };
   }
   // Line 2 is allowed to name the approved little-angel costume. Other
   // memorial lines must not introduce death, loss, or unsupported imagery.
@@ -279,7 +311,12 @@ function memoLineWithDetail(base: string, detail: string | undefined, locale: "e
   // rhythm. Prefer the concise factual line over a crowded, clipped one.
   const content = detail && withDetail.length <= target ? withDetail : base;
   const withoutTrailingPunctuation = content.replace(/[.!?]+$/u, "");
-  return `${withoutTrailingPunctuation.slice(0, target - 1).trimEnd()}.`;
+  if (withoutTrailingPunctuation.length <= target - 1) return `${withoutTrailingPunctuation}.`;
+
+  const clipped = withoutTrailingPunctuation.slice(0, target - 1).trimEnd();
+  const boundary = clipped.lastIndexOf(" ");
+  const wordSafe = boundary >= Math.floor(target * 0.55) ? clipped.slice(0, boundary).trimEnd() : clipped;
+  return `${wordSafe}.`;
 }
 
 const ENGLISH_PERSONALITY_VOICE: Record<string, string> = {
@@ -369,20 +406,16 @@ const KOREAN_COSTUME_VOICE: Record<string, string> = {
   "little-angel": "작은 천사 옷",
 };
 
-const KOREAN_PERSONALITY_VOICE: Record<string, string> = {
-  foodie: "간식을 좋아해",
-  drama: "표정이 풍부해",
-  "scaredy-cat": "조심조심해",
-  zoomies: "에너지가 넘쳐",
-  "cuddle-bug": "꼭 안아줘",
-  "little-boss": "작은 대장이야",
-  sleepyhead: "잠이 솔솔 와",
-  "curious-explorer": "호기심이 많아",
-};
-
 function compactMemoValue(value: string, limit: number): string {
   const trimmed = value.trim();
   return trimmed.length <= limit ? trimmed : trimmed.slice(0, limit).trimEnd();
+}
+
+function compactMemoWords(value: string, limit: number): string {
+  return value.trim().split(/\s+/u).reduce((result, word) => {
+    if (!result) return word.length <= limit ? word : word.slice(0, limit);
+    return `${result} ${word}`.length <= limit ? `${result} ${word}` : result;
+  }, "");
 }
 
 function memoVariationIndex(answers: SeasonalPolaroidPromptAnswers): number {
@@ -449,7 +482,6 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
 
   if (locale === "ko") {
     const costume = KOREAN_COSTUME_VOICE[costumeId] ?? compactMemoValue(description(costumeId, locale), 8);
-    const personality = KOREAN_PERSONALITY_VOICE[answers.personalities[0]!] ?? "다정한 마음";
     const habit = KOREAN_HABIT_VOICE[answers.habit] ?? "포근히 쉬며";
     const treatShort = compactMemoValue(treat, 8);
     return {
@@ -457,50 +489,60 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
       lines: [
         `${callName}, ${answers.petName}야! 해피 할로윈!`,
         variation === 0
-            ? `${costume} 입고, ${personality}!`
+            ? `나는 ${costume} 입고,`
             : variation === 1
-              ? `오늘은 ${costume}, ${personality}!`
-            : `${costume}, ${personality}!`,
-        memoLineWithDetail(`${habit}, ${treatShort} 기다려`, detail, locale),
+              ? `오늘은 ${costume} 입었어,`
+            : `내 ${costume} 모습 어때,`,
         variation === 0
-          ? `${callName}, 내 인사 받아줘!`
+          ? memoLineWithDetail(`${habit} ${treatShort} 기다려`, detail, locale)
           : variation === 1
-            ? `${callName}, 꼭 웃어줘!`
-            : `${callName}, 사랑해!`,
+            ? memoLineWithDetail(`${habit} ${treatShort}도 좋아해`, detail, locale)
+            : memoLineWithDetail(`${habit} ${treatShort} 생각나`, detail, locale),
+        variation === 0
+          ? "포근한 할로윈 밤이야."
+          : variation === 1
+            ? "작은 추억이 따뜻하게 남아."
+            : "사랑스러운 순간 하나를 담았어.",
       ],
     };
   }
 
   const costume = ENGLISH_COSTUME_VOICE[costumeId] ?? compactMemoValue(description(costumeId, locale), 20);
   const costumeBare = costume.replace(/^a\s+/iu, "");
+  const scene = compactMemoWords(
+    description(answers.scene, locale)
+      .replace(/^(?:a|an|the)\s+/iu, "")
+      .replace(/^(?:warm|cozy|softly|lively but safe|charming|peaceful)\s+/iu, ""),
+    20,
+  );
   const personality = ENGLISH_PERSONALITY_VOICE[answers.personalities[0]!] ?? "sweetly playful";
   const habit = ENGLISH_HABIT_VOICE[answers.habit] ?? "stay close";
   const treatShort = compactMemoValue(treat, 16);
   const bodyLine = variation === 0
-    ? `I ${habit} and love ${treatShort}.`
+    ? `and today I'm cozy in the ${scene}.`
     : variation === 1
-      ? `I ${habit}; ${treatShort} makes me grin.`
-      : `My ${habit} time tastes better with ${treatShort}.`;
+        ? `while I ${habit}; ${treatShort} nearby.`
+      : `and I ${habit} with ${treatShort}.`;
   const closing = answers.status === "passed"
     ? variation === 0
-      ? `Keep my memory warm, ${callName}.`
+      ? "and our warm memory stays close in this frame."
       : variation === 1
-        ? `My love feels close, ${callName}.`
-        : `I’m holding this memory with you, ${callName}.`
+        ? "a gentle Halloween moment."
+        : "one warm memory, still close."
     : variation === 0
-      ? `Keep my little purr close, ${callName}.`
+      ? "This tiny moment feels like home."
       : variation === 1
-        ? `I’m sending you a soft purr, ${callName}.`
-        : `My Halloween hug is yours, ${callName}.`;
+        ? "a sweet Halloween moment."
+        : "one little Halloween moment.";
   return {
     locale,
     lines: [
       `${callName}, happy Halloween from ${answers.petName}!`,
         variation === 0
-          ? `I’m feeling ${personality} in ${costume}.`
+          ? `I've got ${costume} on,`
           : variation === 1
-            ? `I wear ${costume}; feeling ${personality}!`
-            : `My ${costumeBare} look feels ${personality}.`,
+            ? `I'm wearing ${costume},`
+            : `I feel ${personality} with ${costumeBare} on,`,
       memoLineWithDetail(bodyLine, detail, locale),
       closing,
     ],
@@ -547,20 +589,22 @@ export function buildSeasonalPolaroidMemoMessages(
 export function buildSeasonalPolaroidMemoSystemPrompt(locale: "en" | "ko", status: PolaroidStatus): string {
   const memorial = status === "passed";
   return [
-    "You write a short keepsake memo for a seasonal pet Polaroid.",
+    "You write four short caption lines for a seasonal pet Polaroid, not a letter.",
     `Return exactly one JSON object with exactly two fields: locale and lines. The locale field must be exactly "${locale}" (en or ko), matching the requested language.`,
     "lines must be an array of exactly four non-empty strings, one sentence or fragment per line, with no embedded newline characters.",
     locale === "ko"
       ? "Write natural conversational Korean in the pet's first-person voice, speaking affectionately and directly to the owner; use natural Korean particles and do not mechanically translate English."
       : "Write natural affectionate English in the pet's first-person voice, speaking directly to the owner.",
-    "Voice rule: every line after the greeting must use first-person I/me/my (or natural Korean 나/내/저/제/우리). Never describe the pet from outside, never mention the pet's name again after line 1 (including phrases like '[name] is wearing…' or 'I can see [name]…'), and never write image-description prose.",
-    "First-person guard: begin each of lines 2-4 with or clearly include an explicit first-person construction (I, I'm, I've, I'll, I'd, my, me, or a natural Korean equivalent). Do not make a bare costume, scene, or treat noun the grammatical subject.",
-    "Write the four lines as one tiny connected note from the pet, not as a checklist or a description of the image. Vary sentence openings, rhythm, punctuation, and which supplied details you emphasize; do not force every answer into the memo and never copy a stock template.",
-    "Avoid repetitive constructions and close variants such as 'I'm in ..., feeling ...', 'I ...; save me ...', or 'I hope you smile, ...'. Make the note sound like a spontaneous affectionate message, not a form being filled in.",
-    "Keep each line short for a handwritten Polaroid: aim for 20-40 characters in English or 12-22 characters in Korean. The greeting may be a little longer when names require it. If an optional detail does not fit naturally, leave it out.",
-    "Line 1 must greet the owner with the supplied owner call name and pet name, like: Mom, happy Halloween from Tuli!",
-    "Lines 2-4 should be natural first-person sentences or fragments that weave in one or two approved details (costume, personality, scene, vibe, habit, treat, or personal detail) when they fit; do not mechanically enumerate them and never invent facts.",
-    "Line 4 must be a first-person warm seasonal closing addressed to the owner, not a generic caption.",
+    "Voice rule: every line after the greeting must belong to the pet's first-person note. In English, use I/me/my naturally. In Korean, natural subject omission is encouraged; do not force 나/내 into every line, but keep the grammar clearly in the pet's voice. Never describe the pet from outside, never mention the pet's name again after line 1 (including phrases like '[name] is wearing…' or 'I can see [name]…'), and never write image-description prose.",
+    "Do not make a bare costume, scene, or treat noun the grammatical subject. Korean may use natural endings such as -했어, -좋아, -기다려, or a natural possessive instead of repeating 나는.",
+    "Treat lines 2-4 as visual line breaks from one connected thought, not three separate captions. Let a sentence or phrase continue naturally across a line break with connectors such as and, while, today, 그래서, 그리고, or -고. Do not force one fact or one complete sentence into every line.",
+    "Connectedness is mandatory: at least one break between lines 2-4 must carry the thought forward. In English, use an unfinished line ending such as a comma or begin the next line with a connector; in Korean, use a natural comma, connective ending, 그리고, 그래서, or -고. A memo where all three body lines are separate complete sentences is invalid.",
+      "Write the four lines as one tiny connected Polaroid caption from the pet, not as a checklist, a letter, or instructions to the owner. Avoid repetitive constructions. Vary sentence openings, rhythm, punctuation, connective phrases, and which supplied details you emphasize; do not force every answer into the caption and never copy a stock template.",
+    "Do not write letter-style phrases such as 'I'm sending you...', 'I'll always be...', 'keep my memory close', 'I hope you smile', 'dear...', or a sign-off. Do not give the owner an instruction, request, promise, or command. Keep the words anchored to the pictured moment.",
+    "Keep each line short for a handwritten Polaroid: aim for 24-36 characters in English or 12-20 characters in Korean. The greeting may be a little longer when names require it. If an optional detail does not fit naturally, choose one shorter detail or leave it out; never cram, clip, or split a word just to include more information.",
+    "Line 1 may be a short Halloween greeting with the supplied owner call name and pet name, like: Mom, happy Halloween from Tuli! Keep any greeting limited to line 1; lines 2-4 must be caption-style and must not address the owner.",
+    "Prioritize details in this order when choosing what to keep: personal detail, habit or favorite treat, costume or personality, then scene or vibe. Lines 2-4 should weave in only one or two approved details; do not mechanically enumerate them and never invent facts.",
+    "The final line should complete the pictured memory with a warm seasonal feeling. It must not address the owner, give an instruction, make an always-promise, or become a generic letter closing.",
     `The greeting must be ${MEMO_LINE_LIMITS[locale]} characters or fewer; lines 2-4 must be ${MEMO_BODY_LINE_LIMITS[locale]} characters or fewer.`,
     memorial
       ? "Memorial tone: gentle and grateful. Do not mention death, heaven, Rainbow Bridge, graves, angels, goodbye, being gone, or unsupported promises; do not imply physical presence."

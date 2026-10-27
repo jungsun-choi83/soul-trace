@@ -127,7 +127,7 @@
   .halloweenHeading { font-size: clamp(1.65rem, 7vw, 2.2rem); letter-spacing: -0.03em !important; line-height: 1.08; }
   .halloweenHeading > span { display: block; max-width: 100%; overflow-wrap: anywhere; }
   .halloweenDescription { margin-top: 1.25rem; font-size: 0.8rem; }
-  .halloweenGrid { grid-template-columns: 1fr; gap: 1rem; margin-top: 2.25rem; }
+  .halloweenGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-top: 2.25rem; }
   .halloweenCard { min-height: 20rem; }
   .halloweenDecor { display: none; }
 }
