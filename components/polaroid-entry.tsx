@@ -75,6 +75,11 @@ type LocalPhoto = {
 
 type GenerationView = "questionnaire" | "developing" | "result";
 
+// UI-only estimates matching the Supabase Email OTP configuration. Supabase
+// remains authoritative for whether a code is actually valid.
+const OTP_VALIDITY_MS = 300_000;
+const OTP_RESEND_COOLDOWN_MS = 30_000;
+
 type PolaroidEntryProps = {
   /** Server-derived flag. It intentionally defaults to false. */
   generationEnabled?: boolean;
@@ -286,6 +291,8 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "verifying">("idle");
   const [resendAvailableAt, setResendAvailableAt] = useState(0);
   const [, setResendTick] = useState(0);
+  const [codeExpiresAt, setCodeExpiresAt] = useState(0);
+  const [, setCodeTick] = useState(0);
   const [saveGateOpen, setSaveGateOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<"save" | "download" | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
@@ -360,6 +367,15 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     }, 1000);
     return () => window.clearInterval(timer);
   }, [resendAvailableAt]);
+
+  useEffect(() => {
+    if (emailStep !== "code" || codeExpiresAt <= Date.now()) return;
+    const timer = window.setInterval(() => {
+      setCodeTick((value) => value + 1);
+      if (Date.now() >= codeExpiresAt) window.clearInterval(timer);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [codeExpiresAt, emailStep]);
 
   useEffect(() => {
     if (!hydrated || !generationEnabled) return;
@@ -650,7 +666,9 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
       if (result === "sent") {
         setGenerationEmail(email);
         setEmailStep("code");
-        setResendAvailableAt(Date.now() + 30_000);
+        const now = Date.now();
+        setResendAvailableAt(now + OTP_RESEND_COOLDOWN_MS);
+        setCodeExpiresAt(now + OTP_VALIDITY_MS);
         return;
       }
       setEmailError(result === "invalid_email"
@@ -703,7 +721,15 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     setEmailError(null);
     setEmailStatus("idle");
     setResendAvailableAt(0);
+    setCodeExpiresAt(0);
   };
+
+  const generationCodeSecondsLeft = codeExpiresAt > 0
+    ? Math.max(0, Math.ceil((codeExpiresAt - Date.now()) / 1000))
+    : null;
+  const generationCodeTimeLeft = generationCodeSecondsLeft === null
+    ? null
+    : `${String(Math.floor(generationCodeSecondsLeft / 60)).padStart(2, "0")}:${String(generationCodeSecondsLeft % 60).padStart(2, "0")}`;
 
   const startGeneration = () => {
     if (view !== "questionnaire") return;
@@ -1326,15 +1352,20 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
                 <p className={`mb-4 text-center text-sm text-[#D8B84C] ${bodyFont}`}>{generationEmail}</p>
                 <label htmlFor="seasonal-generation-code" className={`mb-2 block text-sm text-[#F3EAD8] ${bodyFont}`}>{t("seasonalPolaroid.flow.generation.emailCodeLabel")}</label>
                 <input id="seasonal-generation-code" type="text" inputMode="numeric" autoComplete="one-time-code" autoFocus value={generationCode} onChange={(event) => { setGenerationCode(event.target.value.replace(/\D/g, "").slice(0, 6)); setEmailError(null); }} placeholder={t("seasonalPolaroid.flow.generation.emailCodePlaceholder")} className={`${fieldClass(lang, Boolean(emailError))} text-center tracking-[0.35em]`} aria-invalid={Boolean(emailError)} aria-describedby={emailError ? "seasonal-generation-code-error" : "seasonal-generation-code-supporting"} disabled={emailStatus !== "idle"} />
+                {generationCodeTimeLeft !== null ? (
+                  <p className={`mt-3 text-center text-sm text-[#D8B84C] ${bodyFont}`} aria-live="off">
+                    {generationCodeSecondsLeft === 0
+                      ? t("seasonalPolaroid.flow.generation.emailCodeExpired")
+                      : t("seasonalPolaroid.flow.generation.emailCodeExpiresIn").replace("%TIME%", generationCodeTimeLeft)}
+                  </p>
+                ) : null}
                 {emailError ? <p id="seasonal-generation-code-error" role="alert" className={`mt-2 text-sm text-red-200 ${bodyFont}`}>{emailError}</p> : null}
                 <button type="submit" disabled={emailStatus !== "idle" || generationCode.length !== 6} className={`mt-5 min-h-12 w-full rounded-xl bg-[#C9A43A] px-5 py-3 text-sm font-medium text-[#1B120A] shadow-[0_8px_24px_rgba(201,164,58,0.18)] transition hover:bg-[#E0BD56] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F3EAD8] ${bodyFont}`}>
                   {emailStatus === "verifying" ? t("seasonalPolaroid.flow.generation.emailVerifying") : t("seasonalPolaroid.flow.generation.emailVerify")}
                 </button>
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
                   <button type="button" onClick={() => void requestGenerationCode()} disabled={emailStatus !== "idle" || Date.now() < resendAvailableAt} className={`text-[#D8B84C] underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-45 ${bodyFont}`}>
-                    {Date.now() < resendAvailableAt
-                      ? t("seasonalPolaroid.flow.generation.emailResendCountdown").replace("%TIME%", String(Math.ceil((resendAvailableAt - Date.now()) / 1000)))
-                      : t("seasonalPolaroid.flow.generation.emailResend")}
+                    {t("seasonalPolaroid.flow.generation.emailResend")}
                   </button>
                   <button type="button" onClick={changeGenerationEmail} disabled={emailStatus !== "idle"} className={`text-[#B9AE9B] underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-45 ${bodyFont}`}>
                     {t("seasonalPolaroid.flow.generation.emailChange")}

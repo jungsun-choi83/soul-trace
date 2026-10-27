@@ -64,7 +64,7 @@ test("rejects arbitrary option IDs instead of interpolating them into prompts", 
   assert.throws(() => buildSeasonalPolaroidImagePrompt({ ...LIVING, scene: "custom-scene" }), /seasonal_option_not_allowed/);
 });
 
-test("fallback memos remain four lines, localized, and call-name addressed", () => {
+test("fallback memos remain four lines, localized, and greeting-addressed", () => {
   const english = fallbackSeasonalPolaroidMemo(LIVING);
   const korean = fallbackSeasonalPolaroidMemo(PASSED);
   assert.equal(english.lines.length, 4);
@@ -78,11 +78,11 @@ test("fallback memos remain four lines, localized, and call-name addressed", () 
 test("fallback memo keeps the pet's voice natural and first-person", () => {
   const english = fallbackSeasonalPolaroidMemo(LIVING);
   assert.match(english.lines[0], /Mom, happy Halloween from Mochi!/);
-  assert.match(english.lines[1], /^I’m feeling/);
-  assert.match(english.lines[2], /^I /);
-  assert.match(english.lines[3], /Mom/);
+  assert.match(english.lines[1], /^(?:I've got|I'm wearing|I feel)/);
+  assert.match(english.lines.slice(1).join(" "), /\bI\b/);
+  assert.doesNotMatch(english.lines.slice(1).join(" "), /Mom/);
   assert.doesNotMatch(english.lines.slice(1).join(" "), /Mochi|their/i);
-  assert.doesNotMatch(english.lines.slice(1).join(" "), /I'm in|save me|I hope you smile/i);
+  assert.doesNotMatch(english.lines.slice(1).join(" "), /I'm in|save me|I hope you smile|sending you|I'll always/i);
   assert.doesNotMatch(english.lines[2], /\.\./);
 });
 
@@ -123,9 +123,9 @@ test("normal concise first-person AI memo passes validation", () => {
     locale: "en",
     lines: [
       "Mom, happy Halloween from Mochi!",
-      "Pumpkin lights make my whiskers dance.",
+      "I see pumpkin lights,",
       "I nap in sunbeams and dream of tuna.",
-      "Keep my tiny purr close, Mom.",
+      "and my tiny purr fills the frame.",
     ],
   }, LIVING);
   assert.equal(result.valid, true);
@@ -136,12 +136,38 @@ test("first-person validation accepts natural English contractions and possessiv
     locale: "en",
     lines: [
       "Mom, happy Halloween from Mochi!",
-      "I’m cozy in pumpkin orange.",
+      "I’m cozy in pumpkin orange,",
       "I’ve saved my purr for you.",
       "I’ll cuddle close tonight.",
     ],
   }, LIVING);
   assert.equal(result.valid, true);
+});
+
+test("memo validation rejects three disconnected body sentences", () => {
+  const result = validateSeasonalPolaroidMemo({
+    locale: "en",
+    lines: [
+      "Mom, happy Halloween from Mochi!",
+      "I'm cozy in my pumpkin costume.",
+      "I loved my jerky treats so much!",
+      "I treasure our warm moments.",
+    ],
+  }, LIVING);
+  assert.deepEqual(result, { valid: false, reason: "memo_disconnected_lines" });
+});
+
+test("memo validation rejects letter-style promises and instructions", () => {
+  const result = validateSeasonalPolaroidMemo({
+    locale: "en",
+    lines: [
+      "Mom, happy Halloween from Mochi!",
+      "I loved my tiny vampire cape,",
+      "and I'm sending you cozy cuddles.",
+      "I'll always be your sweet bunny.",
+    ],
+  }, LIVING);
+  assert.deepEqual(result, { valid: false, reason: "memo_letter_style" });
 });
 
 test("first-person validation pinpoints noun-led narration", () => {
@@ -211,7 +237,7 @@ test("memo validation rejects long body lines that would wrap into the frame dec
   const memo = fallbackSeasonalPolaroidMemo(LIVING);
   const result = validateSeasonalPolaroidMemo({
     ...memo,
-    lines: [memo.lines[0], `${memo.lines[1]} ${"x".repeat(8)}`, memo.lines[2], memo.lines[3]],
+    lines: [memo.lines[0], `${memo.lines[1]} ${"x".repeat(20)}`, memo.lines[2], memo.lines[3]],
   }, LIVING);
   assert.deepEqual(result, { valid: false, reason: "memo_line_length" });
 });
@@ -232,12 +258,17 @@ test("memo system prompt locks the four-line JSON and memorial rules", () => {
   assert.match(prompt, /32 characters or fewer/);
   assert.match(prompt, /Rainbow Bridge/);
   assert.match(prompt, /first-person voice/);
-  assert.match(prompt, /First-person guard: begin each of lines 2-4/);
+  assert.match(prompt, /natural subject omission is encouraged/);
+  assert.match(prompt, /visual line breaks from one connected thought/);
+  assert.match(prompt, /Connectedness is mandatory/);
+  assert.match(prompt, /not a letter/);
+  assert.match(prompt, /Do not write letter-style phrases/);
+  assert.match(prompt, /never cram, clip, or split a word/);
   assert.match(prompt, /never mention the pet's name again after line 1/);
-  assert.match(prompt, /one tiny connected note/);
+  assert.match(prompt, /one tiny connected Polaroid caption/);
   assert.match(prompt, /never copy a stock template/);
   assert.match(prompt, /Avoid repetitive constructions/);
-  assert.match(prompt, /20-40 characters in English/);
+  assert.match(prompt, /24-36 characters in English/);
 });
 
 test("memo user data preserves every supplied questionnaire answer", () => {

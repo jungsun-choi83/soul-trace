@@ -58,3 +58,15 @@ test("OTP verification remains strict for invalid and expired codes", () => {
   assert.match(otp, /"expired"/);
   assert.match(otp, /data\?\.session/);
 });
+
+test("OTP countdowns use the five-minute validity window and separate 30-second resend cooldown", () => {
+  for (const source of [otpGate, polaroidFlow]) {
+    assert.match(source, /OTP_VALIDITY_MS = 300_000/);
+    assert.match(source, /OTP_RESEND_COOLDOWN_MS = 30_000/);
+    assert.match(source, /\(codeExpiresAt - Date\.now\(\)\) \/ 1000\)/);
+    assert.match(source, /setCodeExpiresAt\(now \+ OTP_VALIDITY_MS\)/);
+  }
+  assert.match(polaroidFlow, /emailCodeExpiresIn/);
+  assert.doesNotMatch(polaroidFlow, /emailResendCountdown.*replace/);
+  assert.match(otpGate, /codeExpiresIn/);
+});
