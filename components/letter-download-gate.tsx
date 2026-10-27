@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useLocale } from "@/components/locale-provider";
@@ -24,6 +25,11 @@ type LetterDownloadGateProps = {
 type GateStep = "pending" | "edit" | "code";
 type GateStatus = "idle" | "sending" | "verifying";
 
+// UI-only estimate matching Supabase Email OTP expiration.
+// Supabase decides whether the OTP is valid.
+const OTP_VALIDITY_MS = 300_000;
+const OTP_RESEND_COOLDOWN_MS = 30_000;
+
 export function LetterDownloadGate({
   open,
   purpose,
@@ -44,7 +50,8 @@ export function LetterDownloadGate({
   const [status, setStatus] = useState<GateStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [resendAvailableAt, setResendAvailableAt] = useState(0);
-  const [, setResendTick] = useState(0);
+  const [codeExpiresAt, setCodeExpiresAt] = useState(0);
+  const [, setTimerTick] = useState(0);
   const [choseOtherEmail, setChoseOtherEmail] = useState(false);
   const [wasOpen, setWasOpen] = useState(open);
   const codeRefs = useRef<Array<HTMLInputElement | null>>([]);
@@ -59,6 +66,7 @@ export function LetterDownloadGate({
       setStatus("idle");
       setError(null);
       setResendAvailableAt(0);
+      setCodeExpiresAt(0);
       setChoseOtherEmail(false);
       requestPending.current = false;
     }
@@ -91,22 +99,33 @@ export function LetterDownloadGate({
   }, [open, step]);
 
   useEffect(() => {
-    if (Date.now() >= resendAvailableAt) return;
+    if (!open || step !== "code" || Date.now() >= resendAvailableAt) return;
     const timer = window.setInterval(() => {
-      setResendTick((value) => value + 1);
+      setTimerTick((value) => value + 1);
       if (Date.now() >= resendAvailableAt) window.clearInterval(timer);
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [resendAvailableAt]);
+  }, [open, step, resendAvailableAt]);
+
+  useEffect(() => {
+    if (!open || step !== "code" || codeExpiresAt <= Date.now()) return;
+    const timer = window.setInterval(() => {
+      setTimerTick((value) => value + 1);
+      if (Date.now() >= codeExpiresAt) window.clearInterval(timer);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [open, step, codeExpiresAt]);
 
   const bodyFont = lang === "ko" ? "font-ko break-keep" : "font-display-en";
   const emailValid = normalizeAuthEmail(email) !== null;
   const busy = status !== "idle";
   const maskedEmail = maskEmail(email);
   const resendSeconds = Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000));
-  const resendLabel = resendSeconds > 0
-    ? t("result.downloadGate.resendCountdown").replace("%TIME%", `${String(Math.floor(resendSeconds / 60)).padStart(2, "0")}:${String(resendSeconds % 60).padStart(2, "0")}`)
-    : t("result.downloadGate.resendCode");
+  const codeSecondsLeft = codeExpiresAt > 0
+    ? Math.max(0, Math.ceil((codeExpiresAt - Date.now()) / 1000))
+    : null;
+  const codeTimeLeft = codeSecondsLeft === null ? null
+    : `${String(Math.floor(codeSecondsLeft / 60)).padStart(2, "0")}:${String(codeSecondsLeft % 60).padStart(2, "0")}`;
   const titleKey = purpose === "letter-generation"
     ? "result.downloadGate.titleGeneration"
     : "result.downloadGate.title";
@@ -128,6 +147,8 @@ export function LetterDownloadGate({
     setCode("");
     setError(null);
     setStatus("idle");
+    setResendAvailableAt(0);
+    setCodeExpiresAt(0);
   };
 
   const requestCode = async () => {
@@ -157,7 +178,9 @@ export function LetterDownloadGate({
       if (result === "sent") {
         setStep("code");
         setStatus("idle");
-        setResendAvailableAt(Date.now() + 30_000);
+        const now = Date.now();
+        setResendAvailableAt(now + OTP_RESEND_COOLDOWN_MS);
+        setCodeExpiresAt(now + OTP_VALIDITY_MS);
         return;
       }
       setStatus("idle");
@@ -296,7 +319,7 @@ export function LetterDownloadGate({
                 <button
                   type="submit"
                   disabled={busy}
-                  className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#C7A43A] px-5 py-3 text-base font-medium text-[#0B0A08] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] transition hover:bg-[#D4B34A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5C761] active:bg-[#B28F2E] disabled:cursor-not-allowed disabled:opacity-55"
+                  className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#C7A43A] px-5 py-3 text-base font-medium text-[#0B0A08] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] transition hover:bg-[#D4B34A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5C761] active:bg-[#B28F2E] disabled:cursor-not-allowed disabled:opacity-55"
                 >
                   {status === "sending" ? t("result.downloadGate.sending") : t("result.downloadGate.sendCode")}
                 </button>
@@ -386,6 +409,13 @@ export function LetterDownloadGate({
                     />
                   ))}
                 </div>
+                {codeTimeLeft !== null ? (
+                  <p className="mt-3 text-center text-sm text-[#D8B84C]" aria-live="off">
+                    {codeSecondsLeft === 0
+                      ? t("result.downloadGate.codeExpired")
+                      : t("result.downloadGate.codeExpiresIn").replace("%TIME%", codeTimeLeft)}
+                  </p>
+                ) : null}
                 {error ? (
                   <p role="alert" className="mt-3 text-xs leading-relaxed text-amber-200">
                     {error}
@@ -404,7 +434,7 @@ export function LetterDownloadGate({
                   onClick={() => void requestCode()}
                   className="mt-3 min-h-11 w-full text-sm text-[#D8B84C] underline-offset-4 transition hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C] disabled:opacity-55"
                 >
-                  {resendLabel}
+                  {t("result.downloadGate.resendCode")}
                 </button>
                 <button
                   type="button"

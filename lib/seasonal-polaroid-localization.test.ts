@@ -84,7 +84,7 @@ test("generation states are localized in both locales", () => {
     "emailCodeDescription", "emailCodeLabel", "emailCodePlaceholder", "emailCodeSupporting",
     "emailVerify", "emailSending", "emailVerifying", "emailResend", "emailResendCountdown",
     "emailResendWait", "emailChange", "emailSendFailed", "emailVerifyFailed", "emailCodeInvalid",
-    "emailCodeExpired", "emailUnavailable",
+    "emailCodeExpired", "emailCodeExpiresIn", "emailUnavailable",
   ];
   for (const suffix of keys) {
     const path = seasonalPath(`generation.${suffix}`);
