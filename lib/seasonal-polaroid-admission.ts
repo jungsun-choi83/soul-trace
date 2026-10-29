@@ -89,13 +89,13 @@ function normalizedAnswers(answers: SeasonalPolaroidQuestionnaire) {
 export async function seasonalPolaroidRequestHash(args: {
   answers: SeasonalPolaroidQuestionnaire;
   primaryBytes: Uint8Array;
-  secondaryBytes?: Uint8Array;
 }): Promise<string> {
   const primaryPhotoHash = await sha256Hex(args.primaryBytes);
-  const secondaryPhotoHash = args.secondaryBytes ? await sha256Hex(args.secondaryBytes) : null;
+  // The hash shape keeps the retired `secondary: null` slot so one-photo
+  // requests admitted before the second upload was removed still match.
   return sha256Hex(JSON.stringify({
     answers: normalizedAnswers(args.answers),
-    photos: { primary: primaryPhotoHash, secondary: secondaryPhotoHash },
+    photos: { primary: primaryPhotoHash, secondary: null },
   }));
 }
 
@@ -199,7 +199,6 @@ export async function admitSeasonalPolaroidInternally(args: {
   request: Request;
   answers: SeasonalPolaroidQuestionnaire;
   primary: { bytes: ArrayBuffer; contentType: "image/jpeg" | "image/png" | "image/webp"; name: string };
-  secondary?: { bytes: ArrayBuffer; contentType: "image/jpeg" | "image/png" | "image/webp"; name: string };
   requestHash: string;
   /** Server-verified Supabase auth.users ID; never accept this from FormData. */
   identity?: string | null;
@@ -297,7 +296,6 @@ export async function admitSeasonalPolaroidInternally(args: {
     jobId,
     attemptId: attempt.attemptId,
     primary: { bytes: args.primary.bytes, contentType: args.primary.contentType },
-    ...(args.secondary ? { secondary: { bytes: args.secondary.bytes, contentType: args.secondary.contentType } } : {}),
   });
   if (!uploaded.ok) {
     await failAiGeneration("seasonal_polaroid", args.requestHash, uploaded.code);
@@ -315,9 +313,7 @@ export async function admitSeasonalPolaroidInternally(args: {
   }
   const payload = seasonalPolaroidQueuePayload(args.answers, uploaded.paths, {
     primary: { name: args.primary.name, contentType: args.primary.contentType },
-    secondary: args.secondary
-      ? { name: args.secondary.name, contentType: args.secondary.contentType }
-      : null,
+    secondary: null,
   }, trial?.reservationId, trial?.reservationVersion);
   const attached = await attachAiGenerationInput({
     kind: "seasonal_polaroid",

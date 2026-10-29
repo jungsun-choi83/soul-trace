@@ -42,16 +42,11 @@ export async function uploadSeasonalPolaroidInputs(args: {
   jobId: string;
   attemptId: string;
   primary: SeasonalPolaroidUpload;
-  secondary?: SeasonalPolaroidUpload;
 }): Promise<{ ok: true; paths: SeasonalPolaroidInputPaths } | { ok: false; code: "storage_upload_failed" }> {
   const allocatedPaths = seasonalPolaroidInputPaths(args.jobId, args.attemptId);
-  // The secondary key is an optional reference, not an allocated object. Keep
-  // it null for one-photo jobs so the worker cannot mistake an unused key for
-  // an attached photo and download it on every retry.
-  const paths: SeasonalPolaroidInputPaths = {
-    ...allocatedPaths,
-    secondary: args.secondary ? allocatedPaths.secondary : null,
-  };
+  // Only one photo is uploaded. The secondary slot stays in the payload shape
+  // (always null) so older queued jobs and the cleanup paths keep parsing.
+  const paths: SeasonalPolaroidInputPaths = { ...allocatedPaths, secondary: null };
   const bucket = args.storage.storage.from(SEASONAL_POLAROID_INPUT_BUCKET);
   const cleanupAfterFailure = async () => {
     try {
@@ -77,24 +72,6 @@ export async function uploadSeasonalPolaroidInputs(args: {
     await cleanupAfterFailure();
     return { ok: false, code: "storage_upload_failed" };
   }
-  if (args.secondary) {
-    let secondary: { error: { message?: string } | null };
-    try {
-      secondary = await bucket.upload(paths.secondary!, args.secondary.bytes, {
-        contentType: args.secondary.contentType,
-        upsert: false,
-        cacheControl: "3600",
-      });
-    } catch {
-      await cleanupAfterFailure();
-      return { ok: false, code: "storage_upload_failed" };
-    }
-    if (secondary.error) {
-      await cleanupAfterFailure();
-      return { ok: false, code: "storage_upload_failed" };
-    }
-  }
-
   return { ok: true, paths };
 }
 

@@ -8,6 +8,7 @@ import {
   type SeasonalPolaroidQuestionnaire,
   type SeasonalPolaroidRequest,
 } from "./seasonal-polaroid-contract.ts";
+import { HALLOWEEN_POLAROID_THEME } from "./seasonal-polaroid.ts";
 
 function photo(name = "pet.jpg", type = "image/jpeg", size = 1024): File {
   return new File([new Uint8Array(size)], name, { type });
@@ -31,12 +32,10 @@ const BASE_ANSWERS: SeasonalPolaroidQuestionnaire = {
 
 function request(
   answers: Partial<SeasonalPolaroidQuestionnaire> = {},
-  secondaryPhoto?: File,
 ): SeasonalPolaroidRequest {
   return {
     answers: { ...BASE_ANSWERS, ...answers },
     primaryPhoto: photo(),
-    ...(secondaryPhoto ? { secondaryPhoto } : {}),
   };
 }
 
@@ -46,8 +45,8 @@ function issueFor(result: ReturnType<typeof validateSeasonalPolaroidRequest>, fi
   return result.issues.find((issue) => issue.field === field);
 }
 
-test("accepts a complete English living request with an optional second photo", () => {
-  const result = validateSeasonalPolaroidRequest(request({}, photo("second.webp", "image/webp")));
+test("accepts a complete English living request", () => {
+  const result = validateSeasonalPolaroidRequest(request({}));
   assert.equal(result.valid, true);
   if (result.valid) {
     assert.equal(result.answers.locale, "en");
@@ -87,12 +86,30 @@ test("rejects missing required answers", () => {
   assert.equal(issueFor(result, "primaryPhoto"), undefined);
 });
 
-test("requires the primary photo while allowing the secondary photo to be omitted", () => {
+test("requires the primary photo and ignores any extra photo field", () => {
   const result = validateSeasonalPolaroidRequest({
     ...request(),
     primaryPhoto: undefined as unknown as File,
   });
   assert.equal(issueFor(result, "primaryPhoto")?.code, "photo_required");
+  // A stale client that still sends a second file does not change the outcome.
+  const withExtra = validateSeasonalPolaroidRequest({ ...request(), secondaryPhoto: photo("second.webp", "image/webp") } as SeasonalPolaroidRequest);
+  assert.equal(withExtra.valid, true);
+  assert.equal(JSON.stringify(withExtra).includes("secondaryPhoto"), false);
+});
+
+test("the retired 'Something else' call name is read as 'A name' with the typed name", () => {
+  const legacy = validateSeasonalPolaroidRequest(request({ callName: "custom", customCallName: "Grandma" }));
+  assert.equal(legacy.valid, true);
+  if (legacy.valid) {
+    assert.equal(legacy.answers.callName, "by-name");
+    assert.equal(legacy.answers.customCallName, "Grandma");
+  }
+  const legacyMissingName = validateSeasonalPolaroidRequest(request({ callName: "custom", customCallName: "" }));
+  assert.equal(issueFor(legacyMissingName, "customCallName")?.code, "required");
+  // It is no longer a selectable option.
+  assert.equal(HALLOWEEN_POLAROID_THEME.callNames.some((option) => option.id === "custom"), false);
+  assert.deepEqual(HALLOWEEN_POLAROID_THEME.callNames.map((option) => option.id), ["mom", "dad", "both", "sister", "brother", "by-name"]);
 });
 
 test("rejects living and passed option combinations that are restricted by the theme", () => {
@@ -138,7 +155,7 @@ test("enforces text length limits and custom field requirements", () => {
     petName: "This name is too long",
     favoriteTreat: "custom",
     customTreat: "",
-    callName: "custom",
+    callName: "by-name",
     customCallName: "",
     personalDetail: "x".repeat(61),
   }));
@@ -164,13 +181,12 @@ test("rejects unsupported theme, locale, and image formats", () => {
   assert.equal(issueFor(unsupported, "primaryPhoto")?.code, "photo_type");
 });
 
-test("enforces the 15 MB limit for both photos", () => {
+test("enforces the 15 MB limit for the photo", () => {
   const result = validateSeasonalPolaroidRequest({
-    ...request({}, photo("second.jpg", "image/jpeg", 15 * 1024 * 1024 + 1)),
+    ...request(),
     primaryPhoto: photo("pet.jpg", "image/jpeg", 15 * 1024 * 1024 + 1),
   });
   assert.equal(issueFor(result, "primaryPhoto")?.code, "photo_size");
-  assert.equal(issueFor(result, "secondaryPhoto")?.code, "photo_size");
 });
 
 test("validates exactly four memo lines and preserves locale", () => {

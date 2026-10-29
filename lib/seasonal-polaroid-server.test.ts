@@ -59,7 +59,7 @@ test("explicitly rejects HEIC/HEIF and oversized content", () => {
     validateSeasonalPolaroidPhotoContent(
       { name: "pet.jpg", type: "image/jpeg", size: 15 * 1024 * 1024 + 1 },
       JPEG,
-      "secondaryPhoto",
+      "primaryPhoto",
     )?.code,
     "photo_size",
   );
@@ -94,27 +94,26 @@ function storageFixture(failOn?: string): { storage: SeasonalPolaroidStorage; up
   };
 }
 
-test("uploads primary then optional secondary under private, retry-safe paths", async () => {
+test("uploads the single primary photo under a private, retry-safe path", async () => {
   const fixture = storageFixture();
   const result = await uploadSeasonalPolaroidInputs({
     storage: fixture.storage,
     jobId: JOB_ID,
     attemptId: ATTEMPT_A,
     primary: { bytes: JPEG.buffer, contentType: "image/jpeg" },
-    secondary: { bytes: PNG.buffer, contentType: "image/png" },
   });
   assert.equal(result.ok, true);
   assert.deepEqual(fixture.uploads, [
     `seasonal-polaroid/${JOB_ID}/inputs/${ATTEMPT_A}/primary.input`,
-    `seasonal-polaroid/${JOB_ID}/inputs/${ATTEMPT_A}/secondary.input`,
   ]);
+  // The legacy secondary path is still allocated for payload compatibility, never uploaded.
   assert.equal(
     seasonalPolaroidInputPaths(JOB_ID, ATTEMPT_A).secondary,
     `seasonal-polaroid/${JOB_ID}/inputs/${ATTEMPT_A}/secondary.input`,
   );
 });
 
-test("one-photo uploads do not attach an unused secondary reference", async () => {
+test("the queue payload keeps the secondary slot null so older jobs and cleanup keep parsing", async () => {
   const fixture = storageFixture();
   const result = await uploadSeasonalPolaroidInputs({
     storage: fixture.storage,
@@ -133,22 +132,6 @@ test("one-photo uploads do not attach an unused secondary reference", async () =
   assert.deepEqual(fixture.uploads, [
     `seasonal-polaroid/${JOB_ID}/inputs/${ATTEMPT_A}/primary.input`,
   ]);
-});
-
-test("cleans a primary upload when the secondary upload fails", async () => {
-  const fixture = storageFixture("secondary.input");
-  const result = await uploadSeasonalPolaroidInputs({
-    storage: fixture.storage,
-    jobId: JOB_ID,
-    attemptId: ATTEMPT_A,
-    primary: { bytes: JPEG.buffer, contentType: "image/jpeg" },
-    secondary: { bytes: PNG.buffer, contentType: "image/png" },
-  });
-  assert.deepEqual(result, { ok: false, code: "storage_upload_failed" });
-  assert.deepEqual(fixture.removed, [[
-    `seasonal-polaroid/${JOB_ID}/inputs/${ATTEMPT_A}/primary.input`,
-    `seasonal-polaroid/${JOB_ID}/inputs/${ATTEMPT_A}/secondary.input`,
-  ]]);
 });
 
 test("cleans only the allocated path when the primary upload fails", async () => {
@@ -174,7 +157,7 @@ test("cleanup is private-object-only and reports removal failures", async () => 
 });
 
 test("concurrent attempts have isolated object ownership and cleanup", async () => {
-  const fixture = storageFixture("secondary.input");
+  const fixture = storageFixture(`${ATTEMPT_A}/primary.input`);
   const successful = await uploadSeasonalPolaroidInputs({
     storage: fixture.storage,
     jobId: JOB_ID,
@@ -186,13 +169,11 @@ test("concurrent attempts have isolated object ownership and cleanup", async () 
     jobId: JOB_ID,
     attemptId: ATTEMPT_A,
     primary: { bytes: JPEG.buffer, contentType: "image/jpeg" },
-    secondary: { bytes: PNG.buffer, contentType: "image/png" },
   });
   assert.equal(successful.ok, true);
   assert.equal(failed.ok, false);
   assert.deepEqual(fixture.removed.at(-1), [
     `seasonal-polaroid/${JOB_ID}/inputs/${ATTEMPT_A}/primary.input`,
-    `seasonal-polaroid/${JOB_ID}/inputs/${ATTEMPT_A}/secondary.input`,
   ]);
   assert.equal(
     fixture.removed.flat().includes(`seasonal-polaroid/${JOB_ID}/inputs/${ATTEMPT_B}/primary.input`),

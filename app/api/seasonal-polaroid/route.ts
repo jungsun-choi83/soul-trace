@@ -168,18 +168,11 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const primaryPhoto = readFile(formData, "primaryPhoto", "photo");
-  const secondaryPhoto = readFile(formData, "secondaryPhoto", "photoSecondary");
   if (hasRepeatedFile(formData, "primaryPhoto", "photo")) {
     return invalidRequest([{ field: "primaryPhoto", code: "too_many" }]);
   }
-  if (hasRepeatedFile(formData, "secondaryPhoto", "photoSecondary")) {
-    return invalidRequest([{ field: "secondaryPhoto", code: "too_many" }]);
-  }
   if (hasNonFileValue(formData, "primaryPhoto", "photo")) {
     return invalidRequest([{ field: "primaryPhoto", code: "photo_required" }]);
-  }
-  if (hasNonFileValue(formData, "secondaryPhoto", "photoSecondary")) {
-    return invalidRequest([{ field: "secondaryPhoto", code: "photo_type" }]);
   }
   const answers: SeasonalPolaroidQuestionnaire = {
     themeId: text(formData, "themeId", 32),
@@ -200,29 +193,24 @@ export async function POST(request: Request): Promise<Response> {
     generationNonce: optionalText(formData, "generationNonce", 128),
   };
 
-  const validation = validateSeasonalPolaroidRequest({ answers, primaryPhoto: primaryPhoto!, ...(secondaryPhoto ? { secondaryPhoto } : {}) });
+  // Only the primary photo is read; any extra file fields are ignored.
+  const validation = validateSeasonalPolaroidRequest({ answers, primaryPhoto: primaryPhoto! });
   if (!validation.valid) return invalidRequest(validation.issues);
 
   let primaryBytes: Uint8Array;
-  let secondaryBytes: Uint8Array | undefined;
   try {
     primaryBytes = new Uint8Array(await primaryPhoto!.arrayBuffer());
-    secondaryBytes = secondaryPhoto ? new Uint8Array(await secondaryPhoto.arrayBuffer()) : undefined;
   } catch {
     return invalidRequest([{ field: "primaryPhoto", code: "photo_signature" }]);
   }
   const photoIssues = [
     validateSeasonalPolaroidPhotoContent(primaryPhoto!, primaryBytes, "primaryPhoto"),
-    secondaryPhoto && secondaryBytes
-      ? validateSeasonalPolaroidPhotoContent(secondaryPhoto, secondaryBytes, "secondaryPhoto")
-      : null,
   ].filter((issue): issue is NonNullable<typeof issue> => Boolean(issue));
   if (photoIssues.length) return invalidRequest(photoIssues);
 
   const baseRequestHash = await seasonalPolaroidRequestHash({
     answers: validation.answers,
     primaryBytes,
-    ...(secondaryBytes ? { secondaryBytes } : {}),
   });
   // A local developer submission gets its own idempotency namespace. This
   // prevents it from reusing a customer's job while keeping normal retries
@@ -258,15 +246,6 @@ export async function POST(request: Request): Promise<Response> {
       contentType: detectSeasonalPolaroidPhotoFormat(primaryBytes)!,
       name: primaryPhoto!.name || "pet-reference.jpg",
     },
-    ...(secondaryPhoto && secondaryBytes
-      ? {
-          secondary: {
-            bytes: toArrayBuffer(secondaryBytes),
-            contentType: detectSeasonalPolaroidPhotoFormat(secondaryBytes)!,
-            name: secondaryPhoto.name || "pet-reference-2.jpg",
-          },
-        }
-      : {}),
     ...(accountHash ? { accountHash } : {}),
     identity: authenticatedUserId,
     developerTestMode,

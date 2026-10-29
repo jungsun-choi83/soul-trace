@@ -258,10 +258,9 @@
         "kicker": "STEP 2 — PHOTOS",
         "title": "Let me see that face.",
         "titlePassed": "Let me see the face you remember.",
-        "intro": "One clear photo is all I need to recognize their little details. Add a second if you want.",
-        "introPassed": "One clear photo helps keep their familiar details close. A second is welcome too.",
+        "intro": "One clear photo is all I need to recognize their little details.",
+        "introPassed": "One clear photo helps keep their familiar details close.",
         "primaryLabel": "Main photo · required",
-        "secondLabel": "Second photo · optional",
         "upload": "Upload photo",
         "change": "Change",
         "remove": "Remove",
@@ -313,7 +312,9 @@
         "label": "LIVE PREVIEW",
         "placeholder": "Your pet's Polaroid will take shape here.",
         "whisperLabel": "A little whisper",
-        "selections": "Your selections"
+        "selections": "Your selections",
+        "statusLiving": "Here with you this Halloween",
+        "statusPassed": "Remembered with love this Halloween"
       },
       "options": {
         "species": {
@@ -380,7 +381,7 @@
           "other": { "favoriteSnack": "Their favorite snack", "specialBite": "A special little bite" },
           "custom": "Something else"
         },
-        "callNames": { "mom": "Mom", "dad": "Dad", "both": "Mom and Dad", "sister": "Sister", "brother": "Brother", "byName": "A name", "custom": "Something else" }
+        "callNames": { "mom": "Mom", "dad": "Dad", "both": "Mom and Dad", "sister": "Sister", "brother": "Brother", "byName": "A name" }
       },
       "whispers": {
         "default": "%NAME% is already imagining the perfect little Polaroid.",

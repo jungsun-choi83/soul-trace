@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "node --experimental-strip-types --test lib/*.test.ts",
     "deploy:prod": "vercel deploy --prod --yes",
-    "deploy:preview": "vercel deploy --yes"
+    "deploy:preview": "vercel deploy --yes",
+    "test:visual": "SOUL_TRACE_VISUAL=1 node --experimental-strip-types --test lib/seasonal-polaroid-visual.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
@@ -30,6 +31,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
+    "playwright": "^1.64.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vercel": "^51.7.0"

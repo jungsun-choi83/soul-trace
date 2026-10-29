@@ -177,7 +177,6 @@ export const HALLOWEEN_POLAROID_THEME: SeasonalPolaroidTheme = {
     option("sister", "🌼", "options.callNames.sister"),
     option("brother", "🌼", "options.callNames.brother"),
     option("by-name", "✍️", "options.callNames.byName"),
-    option("custom", "✨", "options.callNames.custom"),
   ],
   whispers: {
     default: { id: "default", key: "whispers.default" },

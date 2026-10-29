@@ -107,7 +107,7 @@ export function PetGallery() {
                     src={card.image}
                     alt={t(`homepage.gallery.${card.alt}`)}
                     fill
-                    sizes="(max-width: 639px) 90vw, (max-width: 1023px) 44vw, 230px"
+                    sizes="(max-width: 1023px) 44vw, 230px"
                     className={styles.halloweenPhotoImage}
                   />
                 </div>

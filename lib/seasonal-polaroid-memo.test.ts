@@ -36,11 +36,11 @@ test("fallback memo is four short first-person lines", () => {
 test("memo prompt carries questionnaire data and first-person rules", () => {
   const messages = buildSeasonalPolaroidMemoMessages(ANSWERS);
   assert.match(messages[0]!.content, /first-person/i);
-  const payload = JSON.parse(messages[1]!.content) as { data: Record<string, unknown> };
-  assert.equal(payload.data.petName, "Tuli");
-  assert.equal(payload.data.ownerCallName, "Mom");
-  assert.equal(payload.data.favoriteTreat, "tuna");
-  assert.equal(payload.data.personalDetail, "Waits by the window.");
+  const payload = JSON.parse(messages[1]!.content) as { brief: Record<string, unknown> };
+  assert.equal(payload.brief.petName, "Tuli");
+  assert.equal(payload.brief.ownerCallName, "Mom");
+  assert.equal(payload.brief.personalTouch, "Waits by the window.");
+  assert.equal("favoriteTreat" in payload.brief, false);
 });
 
 test("memo validation rejects the former third-person template", () => {

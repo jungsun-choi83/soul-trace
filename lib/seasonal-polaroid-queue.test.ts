@@ -81,7 +81,7 @@ test("Seasonal migrations target only generation-kind checks and use attempt-sco
 test("Seasonal public admission is disabled without exposing a job capability", () => {
   assert.match(seasonalRoute, /SEASONAL_POLAROID_GENERATION_ENABLED = isSeasonalPolaroidEnabled\(\)/);
   assert.match(seasonalRoute, /primaryPhoto/);
-  assert.match(seasonalRoute, /secondaryPhoto/);
+  assert.doesNotMatch(seasonalRoute, /secondaryPhoto|photoSecondary/);
   assert.match(seasonalRoute, /generationNonce/);
   assert.match(seasonalRoute, /seasonal_polaroid_unavailable/);
   assert.doesNotMatch(seasonalRoute, /visualMemoryGenerationCookie/);
@@ -107,7 +107,7 @@ test("Seasonal input attachment is first-writer-wins without changing legacy kin
 test("Seasonal worker keeps inputs and results private", () => {
   assert.match(worker, /ai-generation-inputs/);
   assert.match(worker, /inputPhotos\.primary/);
-  assert.match(worker, /inputPhotos\.secondary/);
+  assert.doesNotMatch(worker, /inputPhotos\.secondary/);
   assert.match(worker, /kind: "private-object"/);
   assert.match(worker, /objectKey: resultPath/);
   assert.doesNotMatch(worker, /imageDataUrl/);
@@ -116,19 +116,23 @@ test("Seasonal worker keeps inputs and results private", () => {
   assert.match(admission, /payload\.resultPath !== seasonalPolaroidResultPath\(jobId, primaryAttempt\)/);
 });
 
-test("Seasonal worker treats the secondary reference as optional", () => {
-  assert.match(worker, /const secondaryDownload = payload\.inputPhotos\.secondary\s*\n\s*\? await bucket\.download\(payload\.inputPhotos\.secondary\)\n\s*: null/);
-  assert.match(worker, /if \(payload\.inputPhotos\.secondary && \(secondaryDownload\?\.error/);
+test("Seasonal worker generates from the primary photo only, even for a legacy two-photo job", () => {
+  assert.doesNotMatch(worker, /secondaryDownload|secondaryPhoto|secondaryBytes/);
+  assert.match(worker, /const imageReferenceCount = 1;/);
+  assert.match(worker, /primary: \{ bytes: primaryBytes, name: primaryName, type: primaryType \},\n\s*\}\);/);
 });
 
-test("Seasonal worker starts memo work before image generation completes", () => {
-  const memoStart = worker.indexOf("const memoPromise = generateSeasonalPolaroidMemo");
+test("Seasonal worker finishes and stores the image before requesting the caption from it", () => {
   const imageStart = worker.indexOf("const imageResult = await generateSeasonalPolaroidImage");
-  const memoAwait = worker.indexOf("const memoResult = await memoPromise");
-  assert.ok(memoStart >= 0 && imageStart >= 0 && memoAwait >= 0);
-  assert.ok(memoStart < imageStart);
-  assert.ok(imageStart < memoAwait);
-  assert.match(worker, /void memoPromise\.catch\(\(\) => undefined\)/);
+  const imageStored = worker.indexOf("await uploadSeasonalPolaroidResultImage");
+  const memoStart = worker.indexOf("const memoResult = await generateSeasonalPolaroidMemo");
+  assert.ok(imageStart >= 0 && imageStored >= 0 && memoStart >= 0);
+  assert.ok(imageStart < imageStored);
+  assert.ok(imageStored < memoStart, "caption is written only after the image is safely stored");
+  // A caption retry must reuse the stored image rather than regenerate it.
+  assert.match(worker, /const existingImage = await downloadSeasonalPolaroidResultImage/);
+  assert.match(worker, /image: \{ base64: Buffer\.from\(imageBytes\)/);
+  assert.doesNotMatch(worker, /memoPromise/);
 });
 
 test("internal admission is prepared but not reachable from the disabled public route", () => {

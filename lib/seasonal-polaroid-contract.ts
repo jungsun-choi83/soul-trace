@@ -37,7 +37,6 @@ export type SeasonalPolaroidQuestionnaire = {
 export type SeasonalPolaroidRequest = {
   answers: SeasonalPolaroidQuestionnaire;
   primaryPhoto: File;
-  secondaryPhoto?: File;
 };
 
 export type SeasonalPolaroidImageReference = {
@@ -86,8 +85,7 @@ export type SeasonalPolaroidValidationField =
   | "customCallName"
   | "personalDetail"
   | "generationNonce"
-  | "primaryPhoto"
-  | "secondaryPhoto";
+  | "primaryPhoto";
 
 export type SeasonalPolaroidValidationIssue = {
   field: SeasonalPolaroidValidationField;
@@ -144,7 +142,7 @@ function addIssue(
 
 function validatePhoto(
   value: unknown,
-  field: "primaryPhoto" | "secondaryPhoto",
+  field: "primaryPhoto",
   issues: SeasonalPolaroidValidationIssue[],
   required: boolean,
 ) {
@@ -237,10 +235,12 @@ export function validateSeasonalPolaroidRequest(
     if (favoriteTreat === "custom" && !String(answers.customTreat ?? "").trim()) addIssue(issues, "customTreat", "required");
   }
 
-  const callName = String(answers.callName ?? "");
+  // "Something else" ("custom") was retired from the questionnaire. Drafts and
+  // queued jobs that still carry it mean "A name" with the same typed name.
+  const callName = String(answers.callName ?? "") === "custom" ? "by-name" : String(answers.callName ?? "");
   if (!callName) addIssue(issues, "callName", "required");
   else if (!theme || !hasOption(theme.callNames, callName)) addIssue(issues, "callName", "unsupported");
-  if (["by-name", "custom"].includes(callName) && !String(answers.customCallName ?? "").trim()) addIssue(issues, "customCallName", "required");
+  if (callName === "by-name" && !String(answers.customCallName ?? "").trim()) addIssue(issues, "customCallName", "required");
   if (String(answers.customTreat ?? "").length > MAX_CUSTOM_TREAT_LENGTH) addIssue(issues, "customTreat", "too_long");
   if (String(answers.customCallName ?? "").length > MAX_CALL_NAME_LENGTH) addIssue(issues, "customCallName", "too_long");
   if (String(answers.personalDetail ?? "").length > MAX_PERSONAL_DETAIL_LENGTH) addIssue(issues, "personalDetail", "too_long");
@@ -249,7 +249,6 @@ export function validateSeasonalPolaroidRequest(
   }
 
   validatePhoto(request.primaryPhoto, "primaryPhoto", issues, true);
-  validatePhoto(request.secondaryPhoto, "secondaryPhoto", issues, false);
 
   if (issues.length > 0) return { valid: false, issues };
   return {
@@ -263,6 +262,7 @@ export function validateSeasonalPolaroidRequest(
       species,
       status,
       personalities: personalities.map(String),
+      callName,
       customTreat: String(answers.customTreat ?? "").trim(),
       customCallName: String(answers.customCallName ?? "").trim(),
       personalDetail: String(answers.personalDetail ?? "").trim(),
