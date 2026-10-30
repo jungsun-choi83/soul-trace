@@ -160,43 +160,26 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
 
   const bucket = storage.storage.from("ai-generation-inputs");
   const primaryDownload = await bucket.download(payload.inputPhotos.primary);
-  const secondaryDownload = payload.inputPhotos.secondary
-    ? await bucket.download(payload.inputPhotos.secondary)
-    : null;
   if (primaryDownload.error || !primaryDownload.data) {
     await requeueSeasonalJob(job, "seasonal_primary_download_failed");
-    return;
-  }
-  if (payload.inputPhotos.secondary && (secondaryDownload?.error || !secondaryDownload?.data)) {
-    await requeueSeasonalJob(job, "seasonal_secondary_download_failed");
     return;
   }
 
   const metadata = payload.photoMetadata;
   const primaryName = safeReferenceName(metadata?.primary.name, "pet-reference.jpg");
   const primaryType = metadata?.primary.contentType || "image/jpeg";
-  const secondaryName = safeReferenceName(metadata?.secondary?.name, "pet-reference-2.jpg");
-  const secondaryType = metadata?.secondary?.contentType || "image/jpeg";
   const primaryBytes = await primaryDownload.data.arrayBuffer();
-  const secondaryBytes = secondaryDownload?.data ? await secondaryDownload.data.arrayBuffer() : undefined;
   const primaryPhoto = new File([primaryBytes], primaryName, { type: primaryType });
-  const secondaryPhoto = secondaryBytes
-    ? new File([secondaryBytes], secondaryName, { type: secondaryType })
-    : undefined;
   const validated = validateSeasonalPolaroidRequest({
     answers: payload.answers as SeasonalPolaroidQuestionnaire,
     primaryPhoto,
-    ...(secondaryPhoto ? { secondaryPhoto } : {}),
   });
   const primaryIssue = validateSeasonalPolaroidPhotoContent(
     primaryPhoto,
     new Uint8Array(primaryBytes),
     "primaryPhoto",
   );
-  const secondaryIssue = secondaryPhoto && secondaryBytes
-    ? validateSeasonalPolaroidPhotoContent(secondaryPhoto, new Uint8Array(secondaryBytes), "secondaryPhoto")
-    : null;
-  if (!validated.valid || primaryIssue || secondaryIssue) {
+  if (!validated.valid || primaryIssue) {
     await requeueSeasonalJob(job, "invalid_seasonal_input");
     return;
   }
@@ -224,7 +207,7 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
   const existingImage = await downloadSeasonalPolaroidResultImage({ storage, objectKey: resultPath });
   let imageBytes: ArrayBuffer;
   let imageModel = "stored-retry";
-  let imageReferenceCount: 1 | 2 = secondaryPhoto ? 2 : 1;
+  const imageReferenceCount: 1 = 1;
   if (existingImage) {
     imageBytes = await existingImage.arrayBuffer();
   } else {
@@ -232,7 +215,6 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
       openai,
       answers: validated.answers as SeasonalPolaroidPromptAnswers,
       primary: { bytes: primaryBytes, name: primaryName, type: primaryType },
-      ...(secondaryBytes ? { secondary: { bytes: secondaryBytes, name: secondaryName, type: secondaryType } } : {}),
     });
     if (!imageResult.imageBase64) {
       await requeueSeasonalJob(job, "seasonal_image_failed");
@@ -245,7 +227,6 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
     }
     imageBytes = decoded.buffer.slice(decoded.byteOffset, decoded.byteOffset + decoded.byteLength) as ArrayBuffer;
     imageModel = imageResult.modelUsed;
-    imageReferenceCount = imageResult.referenceCount;
     const uploaded = await uploadSeasonalPolaroidResultImage({ storage, objectKey: resultPath, bytes: imageBytes });
     if (!uploaded.ok) {
       await requeueSeasonalJob(job, uploaded.code);

@@ -511,31 +511,7 @@ body {
 }
 
 /* 인스타 스토리 카드: 인용문 최대 줄 수(긴 편지도 이름·워터마크가 잘리지 않게) */
-.instagram-story-quote-clamp {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 5;
-  overflow: hidden;
-  word-break: keep-all;
-}
-
 /* 결과 화면 캡처를 9:16 인스타 스토리로 맞추는 래퍼 */
-.story-wrapper {
-  width: 1080px;
-  height: 1920px;
-  background: linear-gradient(#000, #111);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-}
-
-.story-wrapper #share-card,
-.story-wrapper #share-card-capture {
-  width: 90%;
-  border-radius: 24px;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .warm-sparkle-field {
     display: none;

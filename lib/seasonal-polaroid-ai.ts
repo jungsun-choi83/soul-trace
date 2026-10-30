@@ -22,28 +22,23 @@ export type SeasonalPolaroidImageInput = {
   openai: OpenAI;
   answers: SeasonalPolaroidPromptAnswers;
   primary: PetImageReference;
-  secondary?: PetImageReference;
 };
 
-export type SeasonalPolaroidImageGenerationResult = VisualMemoryImageGenerationResult & {
-  referenceCount: 1 | 2;
-};
+export type SeasonalPolaroidImageGenerationResult = VisualMemoryImageGenerationResult;
 
 export async function generateSeasonalPolaroidImage({
   openai,
   answers,
   primary,
-  secondary,
 }: SeasonalPolaroidImageInput): Promise<SeasonalPolaroidImageGenerationResult> {
-  const references = secondary ? [primary, secondary] : [primary];
   const result = await generatePetReferenceImage({
     openai,
-    references,
+    references: [primary],
     prompt: buildSeasonalPolaroidImagePrompt(answers, petIdentityPreservationPrompt()),
     size: "1024x1024",
     logLabel: "seasonal-polaroid",
   });
-  return { ...result, referenceCount: references.length as 1 | 2 };
+  return result;
 }
 
 export type SeasonalPolaroidMemoInput = {
@@ -261,7 +256,10 @@ export async function generateSeasonalPolaroidMemo({
         model: "gpt-4o-mini",
         temperature: 0.35,
         response_format: seasonalMemoResponseFormat(answers.locale as "en" | "ko"),
-        messages: buildSeasonalPolaroidMemoMessages(answers),
+        messages: buildSeasonalPolaroidMemoMessages(
+          answers,
+          attempt > 0 && lastFailureCode === "memo_line_length" ? "memo_line_length" : undefined,
+        ),
       };
       markStage("api_call");
       const completion = await openai.chat.completions.create(request, OPENAI_CHAT_OPTIONS);

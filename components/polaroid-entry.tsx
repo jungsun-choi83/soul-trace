@@ -46,7 +46,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import Link from "next/link";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
-type PhotoSlot = "primary" | "second";
+type PhotoSlot = "primary";
 type WhisperTrigger =
   | { kind: "default" | "photo" | "habit" | "treat" | "callName" }
   | { kind: "costume" | "scene" | "vibe" | "personality"; id: string };
@@ -60,6 +60,7 @@ type PolaroidAnswers = {
   vibe: string;
   personalities: string[];
   habit: string;
+  customHabit: string;
   favoriteTreat: string;
   customTreat: string;
   callName: string;
@@ -95,6 +96,7 @@ const EMPTY_ANSWERS: PolaroidAnswers = {
   vibe: "",
   personalities: [],
   habit: "",
+  customHabit: "",
   favoriteTreat: "",
   customTreat: "",
   callName: "",
@@ -111,6 +113,12 @@ const SPECIES_OPTIONS: readonly SeasonalOption[] = [
   { id: "bird", emoji: "🐦", labelKey: "options.species.bird" },
   { id: "other", emoji: "🐾", labelKey: "options.species.other" },
 ];
+
+const CUSTOM_HABIT_OPTION: SeasonalOption = {
+  id: "custom",
+  emoji: "✦",
+  labelKey: "options.habits.custom",
+};
 
 function fieldClass(lang: Locale, invalid = false) {
   return `w-full rounded-xl border bg-black/25 px-4 py-3.5 text-base font-extralight text-[#F3EAD8] outline-none transition placeholder:text-[#8F8578] focus:border-[#D4AF37] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37] ${
@@ -155,6 +163,7 @@ function restoreDraft(value: unknown): Partial<PolaroidAnswers> {
       ? draft.personalities.filter((item): item is string => typeof item === "string").slice(0, 2)
       : [],
     habit: typeof draft.habit === "string" ? draft.habit : "",
+    customHabit: typeof draft.customHabit === "string" ? draft.customHabit.slice(0, 60) : "",
     favoriteTreat: typeof draft.favoriteTreat === "string" ? draft.favoriteTreat : "",
     customTreat: typeof draft.customTreat === "string" ? draft.customTreat.slice(0, 60) : "",
     callName: typeof draft.callName === "string" ? draft.callName : "",
@@ -170,11 +179,18 @@ function restoreDraft(value: unknown): Partial<PolaroidAnswers> {
   if (restored.species) {
     const habits = HALLOWEEN_POLAROID_THEME.habitsBySpecies[restored.species];
     const treats = HALLOWEEN_POLAROID_THEME.treatsBySpecies[restored.species];
-    if (restored.habit && !habits.some((item) => item.id === restored.habit)) restored.habit = "";
+    if (restored.habit && restored.habit !== "custom" && !habits.some((item) => item.id === restored.habit)) restored.habit = "";
+    if (restored.habit !== "custom") restored.customHabit = "";
     if (restored.favoriteTreat && !treats.some((item) => item.id === restored.favoriteTreat)) {
       restored.favoriteTreat = "";
       restored.customTreat = "";
     }
+  }
+  if (restored.callName && !HALLOWEEN_POLAROID_THEME.callNames.some((item) => item.id === restored.callName)) {
+    restored.callName = "";
+    restored.customCallName = "";
+  } else if (restored.callName !== "by-name") {
+    restored.customCallName = "";
   }
   return restored;
 }
@@ -267,7 +283,6 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   const [step, setStep] = useState<Step>(1);
   const [answers, setAnswers] = useState<PolaroidAnswers>(EMPTY_ANSWERS);
   const [primaryPhoto, setPrimaryPhoto] = useState<LocalPhoto | null>(null);
-  const [secondPhoto, setSecondPhoto] = useState<LocalPhoto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -301,8 +316,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   const [isDownloading, setIsDownloading] = useState(false);
   const [whisperTrigger, setWhisperTrigger] = useState<WhisperTrigger>({ kind: "default" });
   const primaryInputRef = useRef<HTMLInputElement>(null);
-  const secondInputRef = useRef<HTMLInputElement>(null);
-  const photosRef = useRef<{ primary: LocalPhoto | null; second: LocalPhoto | null }>({ primary: null, second: null });
+  const photosRef = useRef<LocalPhoto | null>(null);
   const imageUrlRef = useRef<string | null>(null);
   const polaroidRef = useRef<HTMLDivElement>(null);
   const saveLock = useRef(false);
@@ -329,13 +343,11 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   }, []);
 
   useEffect(() => {
-    photosRef.current = { primary: primaryPhoto, second: secondPhoto };
-  }, [primaryPhoto, secondPhoto]);
+    photosRef.current = primaryPhoto;
+  }, [primaryPhoto]);
 
   useEffect(() => () => {
-    const { primary, second } = photosRef.current;
-    if (primary) URL.revokeObjectURL(primary.url);
-    if (second) URL.revokeObjectURL(second.url);
+    if (photosRef.current) URL.revokeObjectURL(photosRef.current.url);
   }, []);
 
   useEffect(() => {
@@ -501,6 +513,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   const availableVibes = optionsForStatus(theme.vibes, status);
   const availableHabits = answers.species ? theme.habitsBySpecies[answers.species] : [];
   const availableTreats = answers.species ? theme.treatsBySpecies[answers.species] : [];
+  const habitOptions = [...availableHabits, CUSTOM_HABIT_OPTION];
 
   const whisperRule = useMemo(() => {
     if (!status) return theme.whispers.default;
@@ -526,17 +539,17 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     answers.scene ? optionById(theme.scenes, answers.scene) : undefined,
     answers.vibe ? optionById(theme.vibes, answers.vibe) : undefined,
     ...answers.personalities.map((id) => optionById(theme.personalities, id)),
-    answers.habit ? optionById(availableHabits, answers.habit) : undefined,
+    answers.habit && answers.habit !== "custom"
+      ? optionById(availableHabits, answers.habit)
+      : answers.customHabit
+        ? CUSTOM_HABIT_OPTION
+        : undefined,
     answers.favoriteTreat && answers.favoriteTreat !== "custom"
       ? optionById(availableTreats, answers.favoriteTreat)
       : answers.customTreat
         ? { id: "custom-treat", emoji: "✍️", labelKey: "options.treats.custom" }
         : undefined,
-    answers.callName && answers.callName !== "by-name" && answers.callName !== "custom"
-      ? optionById(theme.callNames, answers.callName)
-      : answers.customCallName
-        ? { id: "custom-call", emoji: "✍️", labelKey: "options.callNames.custom" }
-        : undefined,
+    answers.callName ? optionById(theme.callNames, answers.callName) : undefined,
   ].filter((item): item is SeasonalOption => Boolean(item));
 
   const updateAnswers = (patch: Partial<PolaroidAnswers>, nextWhisper?: WhisperTrigger) => {
@@ -564,7 +577,8 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     setAnswers((current) => ({
       ...current,
       species: nextSpecies,
-      habit: nextHabits.some((item) => item.id === current.habit) ? current.habit : "",
+      habit: current.habit === "custom" || nextHabits.some((item) => item.id === current.habit) ? current.habit : "",
+      customHabit: current.habit === "custom" ? current.customHabit : "",
       favoriteTreat: nextTreats.some((item) => item.id === current.favoriteTreat) ? current.favoriteTreat : "",
       customTreat: current.favoriteTreat === "custom" && nextTreats.some((item) => item.id === "custom") ? current.customTreat : "",
     }));
@@ -581,9 +595,6 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     if (slot === "primary") {
       if (primaryPhoto) URL.revokeObjectURL(primaryPhoto.url);
       setPrimaryPhoto(photo);
-    } else {
-      if (secondPhoto) URL.revokeObjectURL(secondPhoto.url);
-      setSecondPhoto(photo);
     }
     setPhotoError(null);
     setError(null);
@@ -594,23 +605,19 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     if (slot === "primary") {
       if (primaryPhoto) URL.revokeObjectURL(primaryPhoto.url);
       setPrimaryPhoto(null);
-    } else {
-      if (secondPhoto) URL.revokeObjectURL(secondPhoto.url);
-      setSecondPhoto(null);
     }
     setPhotoError(null);
     setWhisperTrigger({ kind: "default" });
   };
 
   const openPhotoPicker = (slot: PhotoSlot) => {
-    (slot === "primary" ? primaryInputRef : secondInputRef).current?.click();
+    if (slot === "primary") primaryInputRef.current?.click();
   };
 
   const onPhotoInput = (slot: PhotoSlot, fileList: FileList | null) => {
     const file = fileList?.[0];
     if (file) setPhoto(slot, file);
-    const input = slot === "primary" ? primaryInputRef.current : secondInputRef.current;
-    if (input) input.value = "";
+    if (primaryInputRef.current) primaryInputRef.current.value = "";
   };
 
   const validateStep = (currentStep: Step): string | null => {
@@ -629,11 +636,12 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     if (currentStep === 5) {
       if (answers.personalities.length < 1) return t("seasonalPolaroid.flow.validation.personality");
       if (!answers.habit) return t("seasonalPolaroid.flow.validation.habit");
+      if (answers.habit === "custom" && !answers.customHabit.trim()) return t("seasonalPolaroid.flow.validation.habitCustom");
     }
     if (currentStep === 6) {
       if (!answers.favoriteTreat || (answers.favoriteTreat === "custom" && !answers.customTreat.trim())) return t("seasonalPolaroid.flow.validation.treat");
       if (!answers.callName) return t("seasonalPolaroid.flow.validation.callName");
-      if (["by-name", "custom"].includes(answers.callName) && !answers.customCallName.trim()) return t("seasonalPolaroid.flow.validation.callNameCustom");
+      if (answers.callName === "by-name" && !answers.customCallName.trim()) return t("seasonalPolaroid.flow.validation.callNameCustom");
     }
     return null;
   };
@@ -784,6 +792,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
       vibe: answers.vibe,
       personalities: answers.personalities,
       habit: answers.habit,
+      customHabit: answers.customHabit.trim(),
       favoriteTreat: answers.favoriteTreat,
       customTreat: answers.customTreat.trim(),
       callName: answers.callName,
@@ -805,7 +814,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     setView("developing");
     try {
       const response = await admitSeasonalPolaroid(
-        buildSeasonalPolaroidFormData(questionnaire, primaryPhoto.file, secondPhoto?.file),
+        buildSeasonalPolaroidFormData(questionnaire, primaryPhoto.file),
       );
       const session: SeasonalPolaroidGenerationSession = {
         jobId: response.jobId,
@@ -1215,9 +1224,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
               {step === 2 ? (
                 <div className="space-y-6">
                   <input ref={primaryInputRef} type="file" accept={SEASONAL_POLAROID_PHOTO_ACCEPT} className="hidden" onChange={(event) => onPhotoInput("primary", event.target.files)} />
-                  <input ref={secondInputRef} type="file" accept={SEASONAL_POLAROID_PHOTO_ACCEPT} className="hidden" onChange={(event) => onPhotoInput("second", event.target.files)} />
                   <PhotoSlotView photo={primaryPhoto} label={t("seasonalPolaroid.flow.screen2.primaryLabel")} emptyLabel={t("seasonalPolaroid.flow.screen2.empty")} uploadLabel={t("seasonalPolaroid.flow.screen2.upload")} changeLabel={t("seasonalPolaroid.flow.screen2.change")} removeLabel={t("seasonalPolaroid.flow.screen2.remove")} onChoose={() => openPhotoPicker("primary")} onRemove={() => removePhoto("primary")} required bodyFont={bodyFont} />
-                  <PhotoSlotView photo={secondPhoto} label={t("seasonalPolaroid.flow.screen2.secondLabel")} emptyLabel={t("seasonalPolaroid.flow.screen2.empty")} uploadLabel={t("seasonalPolaroid.flow.screen2.upload")} changeLabel={t("seasonalPolaroid.flow.screen2.change")} removeLabel={t("seasonalPolaroid.flow.screen2.remove")} onChoose={() => openPhotoPicker("second")} onRemove={() => removePhoto("second")} bodyFont={bodyFont} />
                   <div className="rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/[0.045] p-4">
                     <p className={`text-sm text-[#F3EAD8] ${bodyFont}`}>✦ {t("seasonalPolaroid.flow.screen2.tipsTitle")}</p>
                     <p className={`mt-2 text-xs leading-6 text-[#B6AA99] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen2.tips")}</p>
@@ -1250,7 +1257,8 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
                       }} bodyFont={bodyFont} multi />)}
                     </div>
                   </div>
-                  <OptionGroup label={t("seasonalPolaroid.flow.screen5.habitLabel")} options={availableHabits} selected={answers.habit} onSelect={(id) => updateAnswers({ habit: id }, { kind: "habit" })} bodyFont={bodyFont} />
+                  <OptionGroup label={t("seasonalPolaroid.flow.screen5.habitLabel")} options={habitOptions} selected={answers.habit} onSelect={(id) => updateAnswers({ habit: id, ...(id === "custom" ? {} : { customHabit: "" }) }, { kind: "habit" })} bodyFont={bodyFont} />
+                  {answers.habit === "custom" ? <input type="text" maxLength={60} value={answers.customHabit} onChange={(event) => updateAnswers({ customHabit: event.target.value.slice(0, 60) })} placeholder={t("seasonalPolaroid.flow.screen5.habitCustomPlaceholder")} className={fieldClass(lang)} /> : null}
                 </div>
               ) : null}
 
@@ -1264,7 +1272,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
                     {answers.favoriteTreat === "custom" ? <input type="text" maxLength={60} value={answers.customTreat} onChange={(event) => updateAnswers({ customTreat: event.target.value.slice(0, 60) })} placeholder={t("seasonalPolaroid.flow.screen6.treatCustomPlaceholder")} className={`mt-3 ${fieldClass(lang)}`} /> : null}
                   </div>
                   <OptionGroup label={t(status === "passed" ? "seasonalPolaroid.flow.screen6.callNameLabelPassed" : "seasonalPolaroid.flow.screen6.callNameLabel")} options={theme.callNames} selected={answers.callName} onSelect={(id) => updateAnswers({ callName: id }, { kind: "callName" })} bodyFont={bodyFont} />
-                  {["by-name", "custom"].includes(answers.callName) ? <input type="text" maxLength={40} value={answers.customCallName} onChange={(event) => updateAnswers({ customCallName: event.target.value.slice(0, 40) })} placeholder={t("seasonalPolaroid.flow.screen6.callNameCustomPlaceholder")} className={fieldClass(lang)} /> : null}
+                  {answers.callName === "by-name" ? <input type="text" maxLength={40} value={answers.customCallName} onChange={(event) => updateAnswers({ customCallName: event.target.value.slice(0, 40) })} placeholder={t("seasonalPolaroid.flow.screen6.callNameCustomPlaceholder")} className={fieldClass(lang)} /> : null}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3"><label htmlFor="seasonal-detail" className={`text-sm text-[#F3EAD8] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen6.personalLabel")}</label><span className={`text-xs text-[#8F8578] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen6.characterCount").replace("%COUNT%", String(answers.personalDetail.length))}</span></div>
                     <textarea id="seasonal-detail" maxLength={60} rows={3} value={answers.personalDetail} onChange={(event) => updateAnswers({ personalDetail: event.target.value.slice(0, 60) })} placeholder={t("seasonalPolaroid.flow.screen6.personalPlaceholder")} className={`resize-none ${fieldClass(lang)}`} />

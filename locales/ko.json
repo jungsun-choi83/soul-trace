@@ -213,7 +213,7 @@
           "passedThree": "마음에서 건네는 작은 편지를 쓰고 있어요..."
         }
       },
-      "back": "선택 화면으로 돌아가기",
+      "back": "뒤로",
       "stepOf": "6단계 중 %STEP%단계",
       "steps": { "meet": "소개", "photos": "사진", "costume": "의상", "scene": "장면", "personality": "성격", "details": "마무리" },
       "next": "다음",
@@ -239,6 +239,7 @@
         "vibe": "분위기를 하나 선택해 주세요.",
         "personality": "성격을 한두 가지 선택해 주세요.",
         "habit": "아이만의 작은 습관을 하나 선택해 주세요.",
+        "habitCustom": "작은 습관을 직접 적어 주세요.",
         "treat": "좋아하는 간식을 선택하거나 직접 입력해 주세요.",
         "callName": "아이가 당신을 부르는 이름을 선택해 주세요.",
         "callNameCustom": "아이가 당신을 부르는 이름을 입력해 주세요."
@@ -255,13 +256,12 @@
         "statusLabel": "아이의 이야기는 지금 어디에 있나요?"
       },
       "screen2": {
-        "kicker": "STEP 2 — 사진",
+        "kicker": "STEP 2 — 사진 한 장",
         "title": "그 얼굴을 보여주세요.",
         "titlePassed": "기억 속 그 얼굴을 보여주세요.",
-        "intro": "아이의 작은 특징이 잘 보이는 사진 한 장이면 충분해요. 원하면 한 장 더 올려도 좋아요.",
-        "introPassed": "익숙한 모습을 담은 사진 한 장이면 충분해요. 한 장 더 올려도 좋아요.",
+        "intro": "아이의 작은 특징이 잘 보이는 사진 한 장이면 충분해요.",
+        "introPassed": "익숙한 모습을 담은 사진 한 장이면 충분해요.",
         "primaryLabel": "대표 사진 · 필수",
-        "secondLabel": "두 번째 사진 · 선택",
         "upload": "사진 올리기",
         "change": "사진 바꾸기",
         "remove": "삭제",
@@ -292,7 +292,8 @@
         "intro": "성격을 한두 가지 고른 뒤, 아이만의 작은 습관을 하나 골라주세요.",
         "introPassed": "성격을 한두 가지 고른 뒤, 기억 속 작은 습관을 하나 골라주세요.",
         "personalityLabel": "한두 가지를 골라주세요",
-        "habitLabel": "아이만의 작은 습관"
+        "habitLabel": "아이만의 작은 습관",
+        "habitCustomPlaceholder": "습관을 짧은 동작으로 적어 주세요 (예: 양말을 물고 다녀요)"
       },
       "screen6": {
         "kicker": "STEP 6 — 마지막 디테일",
@@ -326,7 +327,7 @@
         },
         "status": {
           "living": "지금 곁에 있어요",
-          "passed": "무지개 다리를 건넜어요"
+          "passed": "구름 위에 있어요"
         },
         "costumes": {
           "vampire": "뱀파이어",
@@ -369,7 +370,8 @@
           "rabbit": { "binky": "기쁜 마음으로 폴짝 뛰어요", "noseBoop": "작은 코로 인사를 해요", "hayRearranger": "건초를 다시 정리해요", "happyFlop": "편안하면 벌러덩 누워요" },
           "hamster": { "wheelRunner": "밤마다 쳇바퀴를 달려요", "cheekStuffer": "양쪽 볼을 가득 채워요", "tinyBurrower": "무엇이든 파고들어요", "nightExplorer": "어두워지면 탐험을 시작해요" },
           "bird": { "morningSinger": "아침마다 노래해요", "headCock": "소리를 들으며 고개를 갸웃해요", "shinyThief": "반짝이는 것을 훔쳐가요", "shoulderPerch": "어깨 위에 올라앉아요" },
-          "other": { "favoriteRoutine": "좋아하는 작은 루틴이 있어요", "curiousExplorer": "무엇이든 살펴봐요", "snackSeeker": "늘 간식을 찾아요", "cozyCuddler": "가장 포근한 곳을 찾아요" }
+          "other": { "favoriteRoutine": "좋아하는 작은 루틴이 있어요", "curiousExplorer": "무엇이든 살펴봐요", "snackSeeker": "늘 간식을 찾아요", "cozyCuddler": "가장 포근한 곳을 찾아요" },
+          "custom": "다른 습관 직접 입력"
         },
         "treats": {
           "dog": { "pumpkinBiscuit": "호박 비스킷", "jerky": "육포", "cheese": "치즈" },
@@ -380,7 +382,7 @@
           "other": { "favoriteSnack": "가장 좋아하는 간식", "specialBite": "특별한 한입" },
           "custom": "직접 입력하기"
         },
-        "callNames": { "mom": "엄마", "dad": "아빠", "both": "엄마랑 아빠", "sister": "누나/언니", "brother": "형/오빠", "byName": "이름으로 부르기", "custom": "직접 입력하기" }
+        "callNames": { "mom": "엄마", "dad": "아빠", "both": "엄마랑 아빠", "sister": "누나/언니", "brother": "형/오빠", "byName": "이름으로 부르기" }
       },
       "whispers": {
         "default": "%NAME%가 벌써 완벽한 폴라로이드를 상상하고 있어요.",
@@ -501,7 +503,7 @@
       ]
     },
     "memorial": {
-      "landingCta": "무지개 다리를 건넌 아이",
+      "landingCta": "구름위에서 놀고있는 아이로",
       "landingHint": "함께한 기억을 한 통의 편지로 남겨보세요.",
       "headline": "그 아이에게 아직 남아 있던 말",
       "subline": "그 아이가 어떻게 살았는지, 작은 장면으로 떠올려 주세요.",
@@ -1001,7 +1003,7 @@
     "keepForever": "편지 다운로드",
     "saveHint": "이메일 인증 후 내 기록에 보관할 수 있어요.",
     "checkingAccount": "계정을 확인하고 있어요.",
-    "savedDownloadManually": "내 기록에 저장했어요.",
+    "savedDownloadManually": "전체 편지를 준비했어요. 기기에 보관하려면 ‘내 폰에 저장’을 눌러 주세요.",
     "saveFailed": "결과를 내 기록에 저장하지 못했습니다. 화면의 결과는 그대로 남아 있어요.",
     "viewMemories": "내 기록 보기",
     "downloadGate": {
@@ -1285,6 +1287,7 @@
     "saveImageGeneric": "이미지 저장 중 오류가 발생했습니다.",
     "blobFailed": "이미지를 생성하지 못했습니다.",
     "prepareShareFailed": "공유 준비 중 오류가 발생했습니다.",
+    "instagramStoryTooLong": "이 편지는 인스타그램 스토리 한 장에 읽기 좋게 담기에는 너무 길어요. 전체 편지를 다운로드해 주세요.",
     "shareFailed": "공유 중 오류가 발생했습니다.",
     "shareUnavailable": "이 편지를 아직 공유할 수 없습니다.",
     "shareAuthenticationRequired": "이 편지를 공유하려면 먼저 이메일을 인증해 주세요."

@@ -58,11 +58,9 @@ export class SeasonalPolaroidRequestError extends Error {
 export function buildSeasonalPolaroidFormData(
   answers: SeasonalPolaroidQuestionnaire,
   primaryPhoto: File,
-  secondaryPhoto?: File | null,
 ): FormData {
   const formData = new FormData();
   formData.append("primaryPhoto", primaryPhoto, primaryPhoto.name);
-  if (secondaryPhoto) formData.append("secondaryPhoto", secondaryPhoto, secondaryPhoto.name);
 
   formData.append("themeId", String(answers.themeId));
   formData.append("locale", String(answers.locale));
@@ -74,6 +72,7 @@ export function buildSeasonalPolaroidFormData(
   formData.append("vibe", answers.vibe);
   formData.append("personalities", JSON.stringify(answers.personalities));
   formData.append("habit", answers.habit);
+  formData.append("customHabit", answers.customHabit ?? "");
   formData.append("favoriteTreat", answers.favoriteTreat);
   formData.append("customTreat", answers.customTreat ?? "");
   formData.append("callName", answers.callName);

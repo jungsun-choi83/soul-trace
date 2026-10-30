@@ -16,18 +16,19 @@ describe("result download and Instagram actions", () => {
 
   it("places download and share directly below the letter before lower result sections", () => {
     const letter = source.indexOf('id="share-card"');
-    const download = source.indexOf("onClick={startLetterSave}");
+    const download = source.indexOf("onClick={letterDownloadFile ?");
     const share = source.indexOf("aria-controls=\"letter-share-tray\"");
     const productCards = source.indexOf('aria-label={t("result.productCards.label")}');
 
     assert.ok(letter >= 0 && letter < download);
     assert.ok(download < share);
     assert.ok(share < productCards);
-    assert.equal(source.match(/setDownloadGateOpen\(true\)/g)?.length, 1);
-    assert.match(source, /purpose="letter"/);
-    assert.match(source, /pendingEmail=\{pendingEmail\}/);
+    assert.equal(source.match(/setDownloadGateOpen\(true\)/g)?.length ?? 0, 0);
+    assert.doesNotMatch(source, /purpose="letter"/);
+    assert.doesNotMatch(source, /pendingEmail=\{pendingEmail\}/);
     assert.doesNotMatch(source, /initialEmail=\{email\}/);
-    assert.match(source, /saveAndDownloadLetter/);
+    assert.match(source, /const startLetterDownload = \(\) =>/);
+    assert.doesNotMatch(source, /saveAndDownloadLetter/);
     assert.doesNotMatch(source, /onVerified=\{\(\) => \{\s*setDownloadGateOpen\(false\);\s*void handleDownloadImage\(\)/);
     assert.equal(source.match(/action: onInstagramButtonClick/g)?.length, 1);
     assert.doesNotMatch(source, /result\.emotionalBridge/);
@@ -63,6 +64,9 @@ describe("result download and Instagram actions", () => {
     assert.match(source, /setIsDownloading\(true\)/);
     assert.match(source, /finally\s*\{\s*setIsDownloading\(false\)/);
     assert.match(source, /isDownloading \? t\("result.preparingImage"\)/);
+    assert.match(source, /const saveLetterToDevice = async/);
+    assert.match(source, /navigator\.share\(sharePayload\)/);
+    assert.match(source, /setLetterDownloadFile\(file\)/);
   });
 
   it("shows accessible download and share icons without changing either action", () => {
