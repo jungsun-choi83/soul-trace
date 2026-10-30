@@ -93,9 +93,11 @@ export async function seasonalPolaroidRequestHash(args: {
   primaryBytes: Uint8Array;
 }): Promise<string> {
   const primaryPhotoHash = await sha256Hex(args.primaryBytes);
+  // The hash shape keeps the retired `secondary: null` slot so one-photo
+  // requests admitted before the second upload was removed still match.
   return sha256Hex(JSON.stringify({
     answers: normalizedAnswers(args.answers),
-    photos: { primary: primaryPhotoHash },
+    photos: { primary: primaryPhotoHash, secondary: null },
   }));
 }
 

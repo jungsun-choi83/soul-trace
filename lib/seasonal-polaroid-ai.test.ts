@@ -70,16 +70,147 @@ const ANSWERS: SeasonalPolaroidPromptAnswers = {
   personalDetail: "Waits by the window.",
 };
 
-test("memo request sends the full questionnaire to the AI", () => {
+test("memo request sends the compact brief, not the full questionnaire, to the AI", () => {
   const messages = buildSeasonalPolaroidMemoMessages(ANSWERS);
-  const userMessage = JSON.parse(messages[1]!.content) as { data: Record<string, unknown> };
+  const userMessage = JSON.parse(messages[1]!.content) as { brief: Record<string, unknown> };
   assert.equal(messages[0]!.role, "system");
   assert.equal(messages[1]!.role, "user");
-  assert.equal(userMessage.data.petName, "Mochi");
-  assert.equal(userMessage.data.ownerCallName, "Mom");
-  assert.equal(userMessage.data.habit, "napping in every sunbeam");
-  assert.equal(userMessage.data.personalDetail, "Waits by the window.");
-  assert.deepEqual(userMessage.data.personalities, ["a love of snacks", "a deep love of cuddles"]);
+  assert.equal(userMessage.brief.petName, "Mochi");
+  assert.equal(userMessage.brief.ownerCallName, "Mom");
+  assert.equal(userMessage.brief.personality, "a love of snacks");
+  assert.equal(userMessage.brief.personalTouch, "Waits by the window.");
+  assert.deepEqual(userMessage.brief.background, { kind: "habit", text: "napping in every sunbeam" });
+  assert.equal("habit" in userMessage.brief, false, "non-focus habit must not reach the caption model");
+  assert.equal("favoriteTreat" in userMessage.brief, false);
+  assert.equal("costume" in userMessage.brief, false);
+});
+
+function capturingOpenAi(content: string, requests: unknown[]) {
+  return {
+    chat: {
+      completions: {
+        create: async (request: unknown) => {
+          requests.push(request);
+          return { choices: [{ message: { content } }], usage: null };
+        },
+      },
+    },
+  } as never;
+}
+
+const VALID_LINES = [
+  "Mom, happy Halloween from Mochi!",
+  "I'm curled up by the window,",
+  "and my pumpkin hat slipped over one ear",
+  "while I wait for a bite of tuna.",
+];
+
+test("image-first caption request attaches the generated photo and the brief in one call", async () => {
+  const requests: unknown[] = [];
+  const result = await generateSeasonalPolaroidMemo({
+    openai: capturingOpenAi(JSON.stringify({ locale: "en", lines: VALID_LINES }), requests),
+    answers: ANSWERS,
+    image: { base64: "aGVsbG8=", mimeType: "image/jpeg" },
+  });
+
+  assert.equal(requests.length, 1);
+  const request = requests[0] as {
+    model: string;
+    max_completion_tokens: number;
+    messages: Array<{ role: string; content: unknown }>;
+  };
+  assert.equal(request.model, "gpt-4o-mini");
+  assert.equal(request.max_completion_tokens, 220);
+  assert.equal(request.messages[0]!.role, "system");
+  const user = request.messages[1]!.content as Array<Record<string, unknown>>;
+  assert.ok(Array.isArray(user));
+  assert.equal(user[0]!.type, "text");
+  assert.match(String(user[0]!.text), /"personalTouch"/);
+  assert.equal(user[1]!.type, "image_url");
+  assert.deepEqual(user[1]!.image_url, { url: "data:image/jpeg;base64,aGVsbG8=", detail: "low" });
+  assert.equal(result.vision, true);
+  assert.equal(result.fallback, false);
+  assert.deepEqual(result.memo.lines, VALID_LINES);
+  assert.equal(result.attempts, 1);
+  assert.equal(result.firstAttemptValid, true);
+  assert.deepEqual(result.failureCodes, []);
+});
+
+test("telemetry distinguishes a first-try success, an AI retry, and a fallback without leaking text", async () => {
+  const replies = [
+    JSON.stringify({ locale: "en", lines: ["Mom, happy Halloween from Mochi!", "I'm curled up by the window with my pumpkin hat on tonight,", "and still dreaming of tuna.", "This tiny moment feels like home."] }),
+    JSON.stringify({ locale: "en", lines: VALID_LINES }),
+  ];
+  const openai = { chat: { completions: { create: async () => ({ choices: [{ message: { content: replies.shift() } }], usage: null }) } } } as never;
+  const logs: unknown[][] = [];
+  const previousInfo = console.info;
+  const previousWarn = console.warn;
+  console.info = (...args: unknown[]) => logs.push(args);
+  console.warn = (...args: unknown[]) => logs.push(args);
+  let retried;
+  let fallback;
+  try {
+    retried = await generateSeasonalPolaroidMemo({ openai, answers: ANSWERS, image: { base64: "aGVsbG8=", mimeType: "image/jpeg" } });
+    fallback = await generateSeasonalPolaroidMemo({
+      openai: mockedOpenAi(JSON.stringify({ locale: "en", lines: ["Mochi says hi", "x", "y", "z"] }), { count: 0 }),
+      answers: ANSWERS,
+    });
+  } finally {
+    console.info = previousInfo;
+    console.warn = previousWarn;
+  }
+  assert.equal(retried.attempts, 2);
+  assert.equal(retried.firstAttemptValid, false);
+  assert.deepEqual(retried.failureCodes, ["memo_line_length"]);
+  assert.equal(retried.fallback, false);
+  assert.equal(fallback.attempts, 2);
+  assert.equal(fallback.firstAttemptValid, false);
+  assert.deepEqual(fallback.failureCodes, ["memo_missing_call_name", "memo_missing_call_name"]);
+  const outcomes = logs.filter((args) => args[0] === "[seasonal-polaroid] memo path").map((args) => (args[1] as { outcome: string }).outcome);
+  assert.deepEqual(outcomes, ["ai_retry", "fallback"]);
+  assert.doesNotMatch(JSON.stringify(logs), /Mochi|pumpkin|tuna|window/i);
+});
+
+test("text-only caption request stays a plain string message", async () => {
+  const requests: unknown[] = [];
+  const result = await generateSeasonalPolaroidMemo({
+    openai: capturingOpenAi(JSON.stringify({ locale: "en", lines: VALID_LINES }), requests),
+    answers: ANSWERS,
+  });
+  const request = requests[0] as { messages: Array<{ content: unknown }> };
+  assert.equal(typeof request.messages[1]!.content, "string");
+  assert.equal(result.vision, false);
+});
+
+test("a caption that tells the owner what to do is rejected and recovered without a second image", async () => {
+  const requests: unknown[] = [];
+  const warnings: unknown[][] = [];
+  const previousWarn = console.warn;
+  console.warn = (...args: unknown[]) => warnings.push(args);
+  let result;
+  try {
+    result = await generateSeasonalPolaroidMemo({
+      openai: capturingOpenAi(JSON.stringify({
+        locale: "en",
+        lines: [
+          "Mom, happy Halloween from Mochi!",
+          "I'm glowing in my pumpkin costume,",
+          "and my tuna dreams feel warm tonight.",
+          "Hold me near and keep smiling with me.",
+        ],
+      }), requests),
+      answers: ANSWERS,
+      image: { base64: "aGVsbG8=", mimeType: "image/jpeg" },
+    });
+  } finally {
+    console.warn = previousWarn;
+  }
+  assert.equal(requests.length, 2, "one retry, both caption-only");
+  assert.equal(result.fallback, true);
+  assert.equal(result.vision, false);
+  const failure = warnings.find((args) => args[0] === "[seasonal-polaroid] memo request failed");
+  assert.equal((failure?.[1] as { validationReason: string }).validationReason, "memo_owner_instruction");
+  assert.equal((failure?.[1] as { vision: boolean }).vision, true);
 });
 
 function mockedOpenAi(content: string, calls: { count: number }) {

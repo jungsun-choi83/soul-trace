@@ -40,13 +40,13 @@ import {
 } from "@/lib/seasonal-polaroid-client";
 import type { SeasonalPolaroidQuestionnaire, SeasonalPolaroidResult } from "@/lib/seasonal-polaroid-contract";
 import { clearPendingResultSave, readPendingResultSave, writePendingResultSave } from "@/lib/pending-result-save";
-import { toCanvas } from "html-to-image";
+import { SeasonalPolaroidFrame } from "@/components/seasonal-polaroid-frame";
+import { exportSeasonalPolaroidPng } from "@/lib/seasonal-polaroid-export";
 import { LuRefreshCw } from "react-icons/lu";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import Link from "next/link";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
-type PhotoSlot = "primary";
 type WhisperTrigger =
   | { kind: "default" | "photo" | "habit" | "treat" | "callName" }
   | { kind: "costume" | "scene" | "vibe" | "personality"; id: string };
@@ -166,7 +166,8 @@ function restoreDraft(value: unknown): Partial<PolaroidAnswers> {
     customHabit: typeof draft.customHabit === "string" ? draft.customHabit.slice(0, 60) : "",
     favoriteTreat: typeof draft.favoriteTreat === "string" ? draft.favoriteTreat : "",
     customTreat: typeof draft.customTreat === "string" ? draft.customTreat.slice(0, 60) : "",
-    callName: typeof draft.callName === "string" ? draft.callName : "",
+    // "Something else" was retired; a draft that still carries it means "A name" with the same typed name.
+    callName: typeof draft.callName === "string" ? (draft.callName === "custom" ? "by-name" : draft.callName) : "",
     customCallName: typeof draft.customCallName === "string" ? draft.customCallName.slice(0, 40) : "",
     personalDetail: typeof draft.personalDetail === "string" ? draft.personalDetail.slice(0, 60) : "",
   };
@@ -316,7 +317,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   const [isDownloading, setIsDownloading] = useState(false);
   const [whisperTrigger, setWhisperTrigger] = useState<WhisperTrigger>({ kind: "default" });
   const primaryInputRef = useRef<HTMLInputElement>(null);
-  const photosRef = useRef<LocalPhoto | null>(null);
+  const photoRef = useRef<LocalPhoto | null>(null);
   const imageUrlRef = useRef<string | null>(null);
   const polaroidRef = useRef<HTMLDivElement>(null);
   const saveLock = useRef(false);
@@ -343,11 +344,11 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   }, []);
 
   useEffect(() => {
-    photosRef.current = primaryPhoto;
+    photoRef.current = primaryPhoto;
   }, [primaryPhoto]);
 
   useEffect(() => () => {
-    if (photosRef.current) URL.revokeObjectURL(photosRef.current.url);
+    if (photoRef.current) URL.revokeObjectURL(photoRef.current.url);
   }, []);
 
   useEffect(() => {
@@ -549,7 +550,11 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
       : answers.customTreat
         ? { id: "custom-treat", emoji: "✍️", labelKey: "options.treats.custom" }
         : undefined,
-    answers.callName ? optionById(theme.callNames, answers.callName) : undefined,
+    answers.callName && answers.callName !== "by-name"
+      ? optionById(theme.callNames, answers.callName)
+      : answers.customCallName
+        ? { id: "custom-call", emoji: "✍️", labelKey: "options.callNames.byName" }
+        : undefined,
   ].filter((item): item is SeasonalOption => Boolean(item));
 
   const updateAnswers = (patch: Partial<PolaroidAnswers>, nextWhisper?: WhisperTrigger) => {
@@ -585,38 +590,35 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     setError(null);
   };
 
-  const setPhoto = (slot: PhotoSlot, file: File) => {
+  // One photo only: the generation pipeline uses a single reference photo.
+  const setPhoto = (file: File) => {
     const validation = validateSeasonalPolaroidPhoto(file);
     if (validation) {
       setPhotoError(photoErrorMessage(validation, t));
       return;
     }
-    const photo = { id: `${slot}-${Date.now()}-${Math.random().toString(16).slice(2)}`, file, url: URL.createObjectURL(file) };
-    if (slot === "primary") {
-      if (primaryPhoto) URL.revokeObjectURL(primaryPhoto.url);
-      setPrimaryPhoto(photo);
-    }
+    const photo = { id: `primary-${Date.now()}-${Math.random().toString(16).slice(2)}`, file, url: URL.createObjectURL(file) };
+    if (primaryPhoto) URL.revokeObjectURL(primaryPhoto.url);
+    setPrimaryPhoto(photo);
     setPhotoError(null);
     setError(null);
     setWhisperTrigger({ kind: "photo" });
   };
 
-  const removePhoto = (slot: PhotoSlot) => {
-    if (slot === "primary") {
-      if (primaryPhoto) URL.revokeObjectURL(primaryPhoto.url);
-      setPrimaryPhoto(null);
-    }
+  const removePhoto = () => {
+    if (primaryPhoto) URL.revokeObjectURL(primaryPhoto.url);
+    setPrimaryPhoto(null);
     setPhotoError(null);
     setWhisperTrigger({ kind: "default" });
   };
 
-  const openPhotoPicker = (slot: PhotoSlot) => {
-    if (slot === "primary") primaryInputRef.current?.click();
+  const openPhotoPicker = () => {
+    primaryInputRef.current?.click();
   };
 
-  const onPhotoInput = (slot: PhotoSlot, fileList: FileList | null) => {
+  const onPhotoInput = (fileList: FileList | null) => {
     const file = fileList?.[0];
-    if (file) setPhoto(slot, file);
+    if (file) setPhoto(file);
     if (primaryInputRef.current) primaryInputRef.current.value = "";
   };
 
@@ -940,39 +942,9 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     const node = polaroidRef.current;
     if (!node || !imageUrl || mockMode) return null;
     try {
-      if (document.fonts?.ready) await document.fonts.ready;
-      await Promise.all(Array.from(node.querySelectorAll("img")).map((image) => image.decode().catch(() => undefined)));
-      let rendered: HTMLCanvasElement;
-      try {
-        rendered = await toCanvas(node, {
-          // The generated image is a short-lived blob URL. html-to-image
-          // appends a query string when cacheBust is enabled, which turns
-          // that blob URL into an invalid resource while cloning the node.
-          cacheBust: false,
-          pixelRatio: 1,
-          backgroundColor: "#F2E8D7",
-          skipFonts: false,
-        });
-      } catch {
-        rendered = await toCanvas(node, {
-          cacheBust: false,
-          pixelRatio: 1,
-          backgroundColor: "#F2E8D7",
-          skipFonts: true,
-          fontEmbedCSS: "",
-        });
-      }
-      const output = document.createElement("canvas");
-      output.width = 1080;
-      // The supplied template is 2:3 (1024×1536). Preserve that ratio so the
-      // full decorative frame remains visible in the downloaded PNG.
-      output.height = 1620;
-      const context = output.getContext("2d");
-      if (!context) return null;
-      context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = "high";
-      context.drawImage(rendered, 0, 0, output.width, output.height);
-      return await new Promise<Blob | null>((resolve) => output.toBlob(resolve, "image/png"));
+      // Shared with the My Polaroids gallery, so the file matches the
+      // approved on-screen composition on every surface.
+      return await exportSeasonalPolaroidPng(node);
     } catch {
       return null;
     }
@@ -1223,8 +1195,8 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
 
               {step === 2 ? (
                 <div className="space-y-6">
-                  <input ref={primaryInputRef} type="file" accept={SEASONAL_POLAROID_PHOTO_ACCEPT} className="hidden" onChange={(event) => onPhotoInput("primary", event.target.files)} />
-                  <PhotoSlotView photo={primaryPhoto} label={t("seasonalPolaroid.flow.screen2.primaryLabel")} emptyLabel={t("seasonalPolaroid.flow.screen2.empty")} uploadLabel={t("seasonalPolaroid.flow.screen2.upload")} changeLabel={t("seasonalPolaroid.flow.screen2.change")} removeLabel={t("seasonalPolaroid.flow.screen2.remove")} onChoose={() => openPhotoPicker("primary")} onRemove={() => removePhoto("primary")} required bodyFont={bodyFont} />
+                  <input ref={primaryInputRef} type="file" accept={SEASONAL_POLAROID_PHOTO_ACCEPT} className="hidden" onChange={(event) => onPhotoInput(event.target.files)} />
+                  <PhotoSlotView photo={primaryPhoto} label={t("seasonalPolaroid.flow.screen2.primaryLabel")} emptyLabel={t("seasonalPolaroid.flow.screen2.empty")} uploadLabel={t("seasonalPolaroid.flow.screen2.upload")} changeLabel={t("seasonalPolaroid.flow.screen2.change")} removeLabel={t("seasonalPolaroid.flow.screen2.remove")} onChoose={openPhotoPicker} onRemove={removePhoto} required bodyFont={bodyFont} />
                   <div className="rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/[0.045] p-4">
                     <p className={`text-sm text-[#F3EAD8] ${bodyFont}`}>✦ {t("seasonalPolaroid.flow.screen2.tipsTitle")}</p>
                     <p className={`mt-2 text-xs leading-6 text-[#B6AA99] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen2.tips")}</p>
@@ -1310,7 +1282,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
                 <div className="pt-3 text-center text-[#4C3829]">
                   <p className="font-display-en text-[10px] uppercase tracking-[0.3em]">SOUL TRACE</p>
                   <p className={`mt-1 text-base font-medium ${lang === "ko" ? "font-ko" : "font-display-en !tracking-normal"}`}>{answers.petName || t("polaroid.previewLabel")}</p>
-                  <p className={`mt-1 text-xs ${lang === "ko" ? "font-ko" : "font-display-en !tracking-normal"}`}>{status === "passed" ? t("seasonalPolaroid.flow.options.status.passed") : t("seasonalPolaroid.flow.options.status.living")}</p>
+                  <p className={`mt-1 text-xs ${lang === "ko" ? "font-ko" : "font-display-en !tracking-normal"}`}>{status === "passed" ? t("seasonalPolaroid.flow.preview.statusPassed") : t("seasonalPolaroid.flow.preview.statusLiving")}</p>
                 </div>
               </div>
 
@@ -1612,30 +1584,17 @@ function PolaroidResultFrame({
   placeholder: boolean;
   mockMode: boolean;
 }) {
-  const bodyFont = lang === "ko" ? "font-ko break-keep" : "font-display-en !tracking-normal";
+  // One composition for the result page, the gallery, and the PNG export.
   return (
-    <div ref={polaroidRef} className="relative aspect-[2/3] w-full overflow-hidden rotate-[-1deg] rounded-[3px] bg-[#F2E8D7] text-[#49372A] shadow-[0_28px_60px_rgba(0,0,0,0.58)] transition-transform duration-700 hover:rotate-0 motion-reduce:transform-none">
-      <img src="/images/soul_trace_seasonal_polaroid_blank_caption_template.png" alt="" aria-hidden="true" className="absolute inset-0 z-0 h-full w-full object-fill" />
-      <div className="absolute left-[16.2%] top-[15.2%] z-10 h-[50.7%] w-[67.8%] overflow-hidden rounded-[4%] bg-[#E9E1D7] shadow-[inset_0_0_18px_rgba(53,38,26,0.18)]">
-        {imageUrl && !placeholder ? <img src={imageUrl} alt={t("polaroidPreviewAlt")} className="h-full w-full object-cover object-center" /> : null}
-        <div className={`absolute inset-0 flex flex-col items-center justify-center bg-[linear-gradient(145deg,rgba(30,12,38,0.42),rgba(117,43,20,0.42))] px-7 text-center transition-opacity duration-1000 ${placeholder ? "opacity-100" : "opacity-0"}`}>
-          <span className="text-4xl" aria-hidden="true">✦</span>
-          <p className={`mt-4 text-xs leading-6 text-[#F5D999] ${bodyFont}`}>{t("seasonalPolaroid.generation.developingPhoto")}</p>
-        </div>
-        <span className="absolute right-4 top-4 text-2xl text-[#F7D47D]" aria-hidden="true">✦</span>
-      </div>
-      <div className="absolute bottom-[18%] left-[22%] right-[22%] top-[71.5%] z-20 flex items-center justify-center overflow-hidden px-1 text-center [&>p:last-child]:hidden">
-        {showMemo ? (
-          <>
-            <div className={`max-w-full text-[clamp(0.42rem,1.55vw,0.68rem)] leading-[1.15] ${bodyFont}`}>
-              {memoLines.slice(0, 4).map((line, index) => <p key={`${index}-${line.slice(0, 8)}`} className="break-words">{line}</p>)}
-            </div>
-          </>
-        ) : (
-          <p className={`text-sm text-[#806A56]/75 ${bodyFont}`}>{t("seasonalPolaroid.generation.memoWaiting")}</p>
-        )}
-        <p className="mt-2 shrink-0 font-display-en text-[8px] uppercase tracking-[0.28em] text-[#806A56]">SOUL TRACE{mockMode ? " · MOCK" : ""}</p>
-      </div>
-    </div>
+    <SeasonalPolaroidFrame
+      polaroidRef={polaroidRef}
+      lang={lang}
+      t={t}
+      imageUrl={imageUrl}
+      memoLines={memoLines}
+      showMemo={showMemo}
+      placeholder={placeholder}
+      badge={mockMode ? "SOUL TRACE · MOCK" : null}
+    />
   );
 }

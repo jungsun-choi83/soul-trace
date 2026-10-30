@@ -314,7 +314,9 @@
         "label": "실시간 미리보기",
         "placeholder": "아이의 폴라로이드가 이곳에서 모습을 갖춰가요.",
         "whisperLabel": "아이의 작은 속삭임",
-        "selections": "내가 고른 것"
+        "selections": "내가 고른 것",
+        "statusLiving": "올해 할로윈도 함께하고 있어요",
+        "statusPassed": "마음속에 함께하는 할로윈이에요"
       },
       "options": {
         "species": {

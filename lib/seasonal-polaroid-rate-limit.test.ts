@@ -37,7 +37,10 @@ test("missing retry data is handled without exposing identifiers", () => {
 
 test("Seasonal questionnaire state and photos remain after a rejected admission", () => {
   assert.match(component, /setView\("questionnaire"\);[\s\S]{0,260}setGenerationError\(sessionExpired \? null : message\)/);
-  assert.doesNotMatch(component, /setPrimaryPhoto\(null\).*setSecondPhoto\(null\)/);
+  // The only place the photo is cleared is the explicit Remove button.
+  assert.equal(component.match(/setPrimaryPhoto\(null\)/g)?.length, 1);
+  assert.match(component, /const removePhoto = \(\) => \{\s*if \(primaryPhoto\) URL\.revokeObjectURL\(primaryPhoto\.url\);\s*setPrimaryPhoto\(null\);/);
+  assert.doesNotMatch(component, /secondPhoto|secondInputRef|secondLabel/);
 });
 
 test("expired Seasonal sessions reopen OTP instead of reusing a stale verification flag", () => {

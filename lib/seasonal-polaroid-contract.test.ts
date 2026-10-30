@@ -8,6 +8,7 @@ import {
   type SeasonalPolaroidQuestionnaire,
   type SeasonalPolaroidRequest,
 } from "./seasonal-polaroid-contract.ts";
+import { HALLOWEEN_POLAROID_THEME } from "./seasonal-polaroid.ts";
 
 function photo(name = "pet.jpg", type = "image/jpeg", size = 1024): File {
   return new File([new Uint8Array(size)], name, { type });
@@ -29,7 +30,9 @@ const BASE_ANSWERS: SeasonalPolaroidQuestionnaire = {
   personalDetail: "Always waits by the window.",
 };
 
-function request(answers: Partial<SeasonalPolaroidQuestionnaire> = {}): SeasonalPolaroidRequest {
+function request(
+  answers: Partial<SeasonalPolaroidQuestionnaire> = {},
+): SeasonalPolaroidRequest {
   return {
     answers: { ...BASE_ANSWERS, ...answers },
     primaryPhoto: photo(),
@@ -43,7 +46,7 @@ function issueFor(result: ReturnType<typeof validateSeasonalPolaroidRequest>, fi
 }
 
 test("accepts a complete English living request with one primary photo", () => {
-  const result = validateSeasonalPolaroidRequest(request());
+  const result = validateSeasonalPolaroidRequest(request({}));
   assert.equal(result.valid, true);
   if (result.valid) {
     assert.equal(result.answers.locale, "en");
@@ -90,12 +93,30 @@ test("rejects missing required answers", () => {
   assert.equal(issueFor(result, "primaryPhoto"), undefined);
 });
 
-test("requires the primary photo", () => {
+test("requires the primary photo and ignores any extra photo field", () => {
   const result = validateSeasonalPolaroidRequest({
     ...request(),
     primaryPhoto: undefined as unknown as File,
   });
   assert.equal(issueFor(result, "primaryPhoto")?.code, "photo_required");
+  // A stale client that still sends a second file does not change the outcome.
+  const withExtra = validateSeasonalPolaroidRequest({ ...request(), secondaryPhoto: photo("second.webp", "image/webp") } as SeasonalPolaroidRequest);
+  assert.equal(withExtra.valid, true);
+  assert.equal(JSON.stringify(withExtra).includes("secondaryPhoto"), false);
+});
+
+test("the retired 'Something else' call name is read as 'A name' with the typed name", () => {
+  const legacy = validateSeasonalPolaroidRequest(request({ callName: "custom", customCallName: "Grandma" }));
+  assert.equal(legacy.valid, true);
+  if (legacy.valid) {
+    assert.equal(legacy.answers.callName, "by-name");
+    assert.equal(legacy.answers.customCallName, "Grandma");
+  }
+  const legacyMissingName = validateSeasonalPolaroidRequest(request({ callName: "custom", customCallName: "" }));
+  assert.equal(issueFor(legacyMissingName, "customCallName")?.code, "required");
+  // It is no longer a selectable option.
+  assert.equal(HALLOWEEN_POLAROID_THEME.callNames.some((option) => option.id === "custom"), false);
+  assert.deepEqual(HALLOWEEN_POLAROID_THEME.callNames.map((option) => option.id), ["mom", "dad", "both", "sister", "brother", "by-name"]);
 });
 
 test("rejects living and passed option combinations that are restricted by the theme", () => {
@@ -167,8 +188,9 @@ test("rejects unsupported theme, locale, and image formats", () => {
   assert.equal(issueFor(unsupported, "primaryPhoto")?.code, "photo_type");
 });
 
-test("enforces the 15 MB limit for the primary photo", () => {
+test("enforces the 15 MB limit for the photo", () => {
   const result = validateSeasonalPolaroidRequest({
+    ...request(),
     primaryPhoto: photo("pet.jpg", "image/jpeg", 15 * 1024 * 1024 + 1),
     answers: { ...BASE_ANSWERS },
   });

@@ -12,8 +12,10 @@ import {
 import {
   buildSeasonalPolaroidImagePrompt,
   buildSeasonalPolaroidMemoMessages,
+  buildSeasonalPolaroidMemoVisionMessages,
   fallbackSeasonalPolaroidMemo,
   validateSeasonalPolaroidMemo,
+  type SeasonalPolaroidMemoImage,
   type SeasonalPolaroidPromptAnswers,
 } from "./seasonal-polaroid-prompts.ts";
 import type { SeasonalPolaroidMemo } from "./seasonal-polaroid-contract.ts";
@@ -24,26 +26,36 @@ export type SeasonalPolaroidImageInput = {
   primary: PetImageReference;
 };
 
-export type SeasonalPolaroidImageGenerationResult = VisualMemoryImageGenerationResult;
+export type SeasonalPolaroidImageGenerationResult = VisualMemoryImageGenerationResult & {
+  referenceCount: 1;
+};
 
+/** The Polaroid is generated from the single primary photo. */
 export async function generateSeasonalPolaroidImage({
   openai,
   answers,
   primary,
 }: SeasonalPolaroidImageInput): Promise<SeasonalPolaroidImageGenerationResult> {
+  const references = [primary];
   const result = await generatePetReferenceImage({
     openai,
-    references: [primary],
+    references,
     prompt: buildSeasonalPolaroidImagePrompt(answers, petIdentityPreservationPrompt()),
     size: "1024x1024",
     logLabel: "seasonal-polaroid",
   });
-  return result;
+  return { ...result, referenceCount: 1 };
 }
 
 export type SeasonalPolaroidMemoInput = {
   openai: OpenAI;
   answers: SeasonalPolaroidPromptAnswers;
+  /**
+   * The finished Polaroid photo. When present the caption request is
+   * multimodal so the words can match what is actually pictured. Omitted
+   * only when no image exists (tests, or a text-only recovery path).
+   */
+  image?: SeasonalPolaroidMemoImage;
 };
 
 export type SeasonalPolaroidMemoGenerationResult = {
@@ -51,6 +63,14 @@ export type SeasonalPolaroidMemoGenerationResult = {
   modelUsed: "gpt-4o-mini" | null;
   retried: boolean;
   fallback: boolean;
+  /** True when the accepted caption was written with the generated image attached. */
+  vision: boolean;
+  /** Model calls made (1 or 2). Fallback results still report the calls that preceded them. */
+  attempts: number;
+  /** True only when the very first model reply passed validation. */
+  firstAttemptValid: boolean;
+  /** Allow-listed failure codes per failed attempt, in order. Never contains model or user text. */
+  failureCodes: string[];
   usage: {
     promptTokens: number;
     completionTokens: number;
@@ -76,6 +96,8 @@ const SAFE_MEMO_VALIDATION_REASONS = new Set([
   "memo_not_first_person",
   "memo_disconnected_lines",
   "memo_letter_style",
+  "memo_owner_instruction",
+  "memo_incomplete",
   "memo_memorial_language",
 ]);
 
@@ -242,9 +264,11 @@ function seasonalMemoResponseFormat(locale: "en" | "ko") {
 export async function generateSeasonalPolaroidMemo({
   openai,
   answers,
+  image,
 }: SeasonalPolaroidMemoInput): Promise<SeasonalPolaroidMemoGenerationResult> {
   let lastUsage: SeasonalPolaroidMemoGenerationResult["usage"] = null;
   let lastFailureCode = "seasonal_memo_model_or_parse_error";
+  const failureCodes: string[] = [];
   for (let attempt = 0; attempt < 2; attempt += 1) {
     let executionStage: SeasonalMemoExecutionStage = "preparing_request";
     const markStage = (stage: SeasonalMemoExecutionStage) => {
@@ -255,11 +279,20 @@ export async function generateSeasonalPolaroidMemo({
       const request = {
         model: "gpt-4o-mini",
         temperature: 0.35,
+        // Four short lines never need more than this; the cap bounds cost if
+        // the model ignores the length rules.
+        max_completion_tokens: 220,
         response_format: seasonalMemoResponseFormat(answers.locale as "en" | "ko"),
-        messages: buildSeasonalPolaroidMemoMessages(
-          answers,
-          attempt > 0 && lastFailureCode === "memo_line_length" ? "memo_line_length" : undefined,
-        ),
+        messages: image
+          ? buildSeasonalPolaroidMemoVisionMessages(
+              answers,
+              image,
+              attempt > 0 && lastFailureCode === "memo_line_length" ? "memo_line_length" : undefined,
+            )
+          : buildSeasonalPolaroidMemoMessages(
+              answers,
+              attempt > 0 && lastFailureCode === "memo_line_length" ? "memo_line_length" : undefined,
+            ),
       };
       markStage("api_call");
       const completion = await openai.chat.completions.create(request, OPENAI_CHAT_OPTIONS);
@@ -277,7 +310,11 @@ export async function generateSeasonalPolaroidMemo({
       const memo = parseMemo(content, answers, markStage);
       console.info("[seasonal-polaroid] memo path", {
         path: "ai",
+        outcome: attempt > 0 ? "ai_retry" : "ai_first_try",
+        vision: Boolean(image),
         retried: attempt > 0,
+        attempts: attempt + 1,
+        failureCodes,
         ...(attempt > 0 ? { recoveredAfter: lastFailureCode } : {}),
       });
       return {
@@ -285,6 +322,10 @@ export async function generateSeasonalPolaroidMemo({
         modelUsed: "gpt-4o-mini",
         retried: attempt > 0,
         fallback: false,
+        vision: Boolean(image),
+        attempts: attempt + 1,
+        firstAttemptValid: attempt === 0,
+        failureCodes: [...failureCodes],
         usage: lastUsage,
       };
     } catch (error) {
@@ -296,8 +337,10 @@ export async function generateSeasonalPolaroidMemo({
       lastFailureCode = parsedFailureCode === "memo_model_error"
         ? diagnosticFailureCode(diagnostics)
         : parsedFailureCode;
+      failureCodes.push(lastFailureCode);
       console.warn("[seasonal-polaroid] memo request failed", {
         stage: executionStage,
+        vision: Boolean(image),
         ...diagnostics,
         validationReason,
         // TypeScript cannot infer mutation through markStage's closure, so
@@ -309,7 +352,11 @@ export async function generateSeasonalPolaroidMemo({
 
   console.warn("[seasonal-polaroid] memo path", {
     path: "fallback",
+    outcome: "fallback",
+    vision: Boolean(image),
     retried: true,
+    attempts: 2,
+    failureCodes,
     validationFailureReason: lastFailureCode,
   });
 
@@ -318,6 +365,10 @@ export async function generateSeasonalPolaroidMemo({
     modelUsed: null,
     retried: true,
     fallback: true,
+    vision: false,
+    attempts: 2,
+    firstAttemptValid: false,
+    failureCodes: [...failureCodes],
     usage: lastUsage,
   };
 }

@@ -241,7 +241,9 @@ export function validateSeasonalPolaroidRequest(
     if (favoriteTreat === "custom" && !String(answers.customTreat ?? "").trim()) addIssue(issues, "customTreat", "required");
   }
 
-  const callName = String(answers.callName ?? "");
+  // "Something else" ("custom") was retired from the questionnaire. Drafts and
+  // queued jobs that still carry it mean "A name" with the same typed name.
+  const callName = String(answers.callName ?? "") === "custom" ? "by-name" : String(answers.callName ?? "");
   if (!callName) addIssue(issues, "callName", "required");
   else if (!theme || !hasOption(theme.callNames, callName)) addIssue(issues, "callName", "unsupported");
   if (callName === "by-name" && !String(answers.customCallName ?? "").trim()) addIssue(issues, "customCallName", "required");
@@ -267,6 +269,7 @@ export function validateSeasonalPolaroidRequest(
       species,
       status,
       personalities: personalities.map(String),
+      callName,
       customHabit: String(answers.customHabit ?? "").trim(),
       customTreat: String(answers.customTreat ?? "").trim(),
       customCallName: String(answers.customCallName ?? "").trim(),

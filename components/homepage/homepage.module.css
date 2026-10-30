@@ -95,9 +95,10 @@
 .letterPaperEntrance.visible .letterPaperContent { opacity: 1; }
 .halloweenSection { position: relative; isolation: isolate; min-height: 46rem; overflow: hidden; padding: 6rem 0; background-color: #fbf4e8 !important; color: #2d1b11 !important; color-scheme: light; }
 .halloweenAmbient { position: absolute; z-index: 0; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(255, 252, 244, 0.58), transparent 72%); }
-.halloweenDecor { position: absolute; z-index: 0; bottom: 0; display: block; width: clamp(22rem, 28vw, 35.8rem); height: auto; max-width: none; pointer-events: none; }
-.halloweenDecorLeft { left: 0; }
-.halloweenDecorRight { right: 0; }
+/* The decor PNGs are opaque crops of the design banner with their own soft vignette, so their inner and top edges showed as lighter rectangles beside the cards. Fading those two edges hides the seam without touching the artwork at the bottom corners. */
+.halloweenDecor { position: absolute; z-index: 0; bottom: 0; display: block; width: clamp(22rem, 28vw, 35.8rem); height: auto; max-width: none; pointer-events: none; -webkit-mask-composite: source-in; mask-composite: intersect; }
+.halloweenDecorLeft { left: 0; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 7rem), transparent), linear-gradient(to bottom, transparent, #000 9rem); mask-image: linear-gradient(to right, #000 calc(100% - 7rem), transparent), linear-gradient(to bottom, transparent, #000 9rem); }
+.halloweenDecorRight { right: 0; -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 7rem), transparent), linear-gradient(to bottom, transparent, #000 9rem); mask-image: linear-gradient(to left, #000 calc(100% - 7rem), transparent), linear-gradient(to bottom, transparent, #000 9rem); }
 .halloweenContent { position: relative; z-index: 10; width: min(100% - 2.5rem, 75rem); margin: 0 auto; }
 .halloweenIntro { max-width: 52rem; margin: 0 auto; text-align: center; }
 .halloweenReveal { opacity: 1 !important; transform: none !important; transition: none !important; }
@@ -117,7 +118,8 @@
 .halloweenCardDescription { margin: 0.5rem 0 0; color: #6d5b4d !important; font-size: 0.78rem; line-height: 1.55; }
 .halloweenCardLabel { margin: auto 0 0; padding-top: 1rem; color: #c99538 !important; font-size: 0.62rem; font-weight: 500; letter-spacing: 0.16em; line-height: 1.35; text-transform: uppercase; }
 @media (max-width: 63.999rem) {
-  .halloweenGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 42rem; }
+  /* 2 × 2 with equal rows, so the second pair never ends up taller than the first. */
+  .halloweenGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; max-width: 42rem; }
   .halloweenDecor { width: min(32vw, 23rem); opacity: 0.34; }
 }
 @media (max-width: 39.999rem) {

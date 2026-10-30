@@ -30,19 +30,27 @@ test("Seasonal result offers Regenerate while Download remains wired", () => {
   assert.match(component, /seasonalPolaroid\.generation\.download/);
 });
 
-test("Seasonal export renders the approved 1080 by 1620 template canvas", () => {
-  assert.match(component, /toCanvas/);
-  assert.doesNotMatch(component, /cacheBust: true/);
-  assert.match(component, /cacheBust: false/);
-  assert.match(component, /output\.width = 1080/);
-  assert.match(component, /output\.height = 1620/);
-  assert.match(component, /output\.toBlob\(resolve, "image\/png"/);
+test("Seasonal export renders the approved 1080 by 1620 template canvas through the shared exporter", () => {
+  const exporter = readFileSync("lib/seasonal-polaroid-export.ts", "utf8");
+  assert.match(component, /exportSeasonalPolaroidPng\(node\)/);
+  assert.doesNotMatch(component, /toCanvas/);
+  assert.match(exporter, /toCanvas/);
+  assert.doesNotMatch(exporter, /cacheBust: true/);
+  assert.match(exporter, /cacheBust: false/);
+  assert.match(exporter, /SEASONAL_POLAROID_EXPORT_WIDTH = 1080/);
+  assert.match(exporter, /SEASONAL_POLAROID_EXPORT_HEIGHT = 1620/);
+  assert.match(exporter, /output\.toBlob\(resolve, "image\/png"/);
+  // The tilt and shadow are page decoration; the file is captured flat, at output resolution.
+  assert.match(exporter, /transform: "none"/);
+  assert.match(exporter, /rotate: "none"/);
+  assert.match(exporter, /boxShadow: "none"/);
+  assert.match(exporter, /pixelRatio = Math\.min\(4, Math\.max\(1, SEASONAL_POLAROID_EXPORT_WIDTH \/ displayedWidth\)\)/);
 });
 
 test("Seasonal preview uses the stable decorative frame and bounded caption window", () => {
   assert.match(frame, /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
   assert.match(frame, /aspect-\[2\/3\]/);
-  assert.match(frame, /bottom-\[18%\] left-\[22%\] right-\[22%\] top-\[71\.5%\]/);
+  assert.match(frame, /bottom-\[19%\] left-\[19%\] right-\[19%\] top-\[70\.6%\]/);
   assert.match(frame, /overflow-hidden/);
   assert.match(frame, /memoLines\.slice\(0, 4\)/);
   assert.match(component, /SOUL TRACE/);

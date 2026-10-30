@@ -162,10 +162,15 @@ test("successful status waits for the private image before leaving developing", 
 
 test("final Polaroid composition uses the stable decorative template and caption-only overlay", () => {
   assert.ok(existsSync("public/images/soul_trace_seasonal_polaroid_blank_caption_template.png"));
-  assert.match(component, /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
-  assert.match(component, /aspect-\[2\/3\]/);
-  assert.match(component, /memoLines\.slice\(0, 4\)/);
-  assert.match(component, /output\.width = 1080/);
-  assert.match(component, /output\.height = 1620/);
+  const frame = readFileSync("components/seasonal-polaroid-frame.tsx", "utf8");
+  const exporter = readFileSync("lib/seasonal-polaroid-export.ts", "utf8");
+  // The result page renders the shared frame; it no longer carries its own copy of the composition.
+  assert.match(component, /<SeasonalPolaroidFrame/);
+  assert.doesNotMatch(component, /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
+  assert.match(frame, /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
+  assert.match(frame, /aspect-\[2\/3\]/);
+  assert.match(frame, /memoLines\.slice\(0, 4\)/);
+  assert.match(exporter, /SEASONAL_POLAROID_EXPORT_WIDTH = 1080/);
+  assert.match(exporter, /SEASONAL_POLAROID_EXPORT_HEIGHT = 1620/);
   assert.doesNotMatch(component, /cardTitle/);
 });

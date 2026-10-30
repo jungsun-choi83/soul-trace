@@ -55,7 +55,7 @@ function extensionFormat(name: string): SeasonalPolaroidPhotoFormat | "heic" | "
 export function validateSeasonalPolaroidPhotoContent(
   file: Pick<File, "name" | "size" | "type">,
   bytes: Uint8Array,
-  field: "primaryPhoto" | "secondaryPhoto",
+  field: "primaryPhoto",
 ): SeasonalPolaroidValidationIssue | null {
   const basicError = validateSeasonalPolaroidPhoto(file as File);
   if (basicError === "empty") return { field, code: "photo_empty" };

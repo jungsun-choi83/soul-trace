@@ -314,7 +314,9 @@
         "label": "LIVE PREVIEW",
         "placeholder": "Your pet's Polaroid will take shape here.",
         "whisperLabel": "A little whisper",
-        "selections": "Your selections"
+        "selections": "Your selections",
+        "statusLiving": "Here with you this Halloween",
+        "statusPassed": "Remembered with love this Halloween"
       },
       "options": {
         "species": {

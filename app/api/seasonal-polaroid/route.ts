@@ -194,6 +194,7 @@ export async function POST(request: Request): Promise<Response> {
     generationNonce: optionalText(formData, "generationNonce", 128),
   };
 
+  // Only the primary photo is read; any extra file fields are ignored.
   const validation = validateSeasonalPolaroidRequest({ answers, primaryPhoto: primaryPhoto! });
   if (!validation.valid) return invalidRequest(validation.issues);
 

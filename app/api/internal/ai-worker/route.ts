@@ -159,6 +159,8 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
   }
 
   const bucket = storage.storage.from("ai-generation-inputs");
+  // Only the primary photo is used. A legacy job that still references a
+  // second upload is generated from its primary photo alone.
   const primaryDownload = await bucket.download(payload.inputPhotos.primary);
   if (primaryDownload.error || !primaryDownload.data) {
     await requeueSeasonalJob(job, "seasonal_primary_download_failed");
@@ -191,23 +193,16 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
   }
   const promptAnswers = validated.answers as SeasonalPolaroidPromptAnswers;
   const openai = new OpenAI({ apiKey });
-  // Image and memo generation use independent inputs. Start the memo while
-  // the image model is working, but keep the job incomplete until both have
-  // been validated and the image is safely stored.
-  const memoPromise = generateSeasonalPolaroidMemo({
-    openai,
-    answers: promptAnswers,
-  });
-  // An image failure can finish the worker before the memo promise settles;
-  // attach a rejection handler so bounded retry handling remains the only
-  // observable outcome.
-  void memoPromise.catch(() => undefined);
 
+  // Image first. The caption is written afterwards with the finished photo
+  // attached, so the words can match what is actually pictured. A stored
+  // image from an earlier attempt is reused, which means a caption retry
+  // never spends another image generation.
   const resultPath = payload.resultPath;
   const existingImage = await downloadSeasonalPolaroidResultImage({ storage, objectKey: resultPath });
   let imageBytes: ArrayBuffer;
   let imageModel = "stored-retry";
-  const imageReferenceCount: 1 = 1;
+  const imageReferenceCount = 1;
   if (existingImage) {
     imageBytes = await existingImage.arrayBuffer();
   } else {
@@ -234,7 +229,14 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
     }
   }
 
-  const memoResult = await memoPromise;
+  const memoResult = await generateSeasonalPolaroidMemo({
+    openai,
+    answers: promptAnswers,
+    image: { base64: Buffer.from(imageBytes).toString("base64"), mimeType: "image/jpeg" },
+  });
+  // The generator already validates (and falls back deterministically), so
+  // this is a last guard. The image is stored, so a requeue only retries the
+  // caption.
   if (!validateSeasonalPolaroidMemo(memoResult.memo, promptAnswers).valid) {
     await requeueSeasonalJob(job, "seasonal_memo_invalid");
     return;
@@ -258,6 +260,12 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
       generatedAt: new Date().toISOString(),
       referenceCount: imageReferenceCount,
       memoFallback: memoResult.fallback,
+      memoVision: memoResult.vision,
+      // Safe telemetry for first-attempt success tracking: counts and
+      // allow-listed codes only, never caption or questionnaire text.
+      memoAttempts: memoResult.attempts,
+      memoFirstAttemptValid: memoResult.firstAttemptValid,
+      memoFailureCodes: memoResult.failureCodes,
     },
     // Gallery persistence is completed atomically by the Seasonal completion
     // RPC; save/download proof remains separate from the existing Letter and

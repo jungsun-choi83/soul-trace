@@ -34,7 +34,9 @@ test("Seasonal client builds the backend multipart contract without photo data U
   assert.equal(form.get("personalities"), JSON.stringify(["foodie", "cuddleBug"]));
   assert.equal((form.get("primaryPhoto") as File).name, primary.name);
   assert.equal((form.get("primaryPhoto") as File).type, primary.type);
+  // The optional second photo was removed: only one file field is sent.
   assert.equal(form.has("secondaryPhoto"), false);
+  assert.equal(form.getAll("primaryPhoto").length, 1);
   assert.equal(form.has("photo"), false);
 });
 
