@@ -29,14 +29,10 @@ const BASE_ANSWERS: SeasonalPolaroidQuestionnaire = {
   personalDetail: "Always waits by the window.",
 };
 
-function request(
-  answers: Partial<SeasonalPolaroidQuestionnaire> = {},
-  secondaryPhoto?: File,
-): SeasonalPolaroidRequest {
+function request(answers: Partial<SeasonalPolaroidQuestionnaire> = {}): SeasonalPolaroidRequest {
   return {
     answers: { ...BASE_ANSWERS, ...answers },
     primaryPhoto: photo(),
-    ...(secondaryPhoto ? { secondaryPhoto } : {}),
   };
 }
 
@@ -46,8 +42,8 @@ function issueFor(result: ReturnType<typeof validateSeasonalPolaroidRequest>, fi
   return result.issues.find((issue) => issue.field === field);
 }
 
-test("accepts a complete English living request with an optional second photo", () => {
-  const result = validateSeasonalPolaroidRequest(request({}, photo("second.webp", "image/webp")));
+test("accepts a complete English living request with one primary photo", () => {
+  const result = validateSeasonalPolaroidRequest(request());
   assert.equal(result.valid, true);
   if (result.valid) {
     assert.equal(result.answers.locale, "en");
@@ -65,6 +61,13 @@ test("accepts a complete Korean passed request with memorial-only options", () =
     vibe: "gentle-warm",
   }));
   assert.equal(result.valid, true);
+});
+
+test("accepts a custom habit only when the user supplies its description", () => {
+  const accepted = validateSeasonalPolaroidRequest(request({ habit: "custom", customHabit: "carries socks around" }));
+  assert.equal(accepted.valid, true);
+  const missing = validateSeasonalPolaroidRequest(request({ habit: "custom", customHabit: "" }));
+  assert.equal(issueFor(missing, "customHabit")?.code, "required");
 });
 
 test("rejects missing required answers", () => {
@@ -87,7 +90,7 @@ test("rejects missing required answers", () => {
   assert.equal(issueFor(result, "primaryPhoto"), undefined);
 });
 
-test("requires the primary photo while allowing the secondary photo to be omitted", () => {
+test("requires the primary photo", () => {
   const result = validateSeasonalPolaroidRequest({
     ...request(),
     primaryPhoto: undefined as unknown as File,
@@ -138,7 +141,7 @@ test("enforces text length limits and custom field requirements", () => {
     petName: "This name is too long",
     favoriteTreat: "custom",
     customTreat: "",
-    callName: "custom",
+    callName: "by-name",
     customCallName: "",
     personalDetail: "x".repeat(61),
   }));
@@ -164,13 +167,12 @@ test("rejects unsupported theme, locale, and image formats", () => {
   assert.equal(issueFor(unsupported, "primaryPhoto")?.code, "photo_type");
 });
 
-test("enforces the 15 MB limit for both photos", () => {
+test("enforces the 15 MB limit for the primary photo", () => {
   const result = validateSeasonalPolaroidRequest({
-    ...request({}, photo("second.jpg", "image/jpeg", 15 * 1024 * 1024 + 1)),
     primaryPhoto: photo("pet.jpg", "image/jpeg", 15 * 1024 * 1024 + 1),
+    answers: { ...BASE_ANSWERS },
   });
   assert.equal(issueFor(result, "primaryPhoto")?.code, "photo_size");
-  assert.equal(issueFor(result, "secondaryPhoto")?.code, "photo_size");
 });
 
 test("validates exactly four memo lines and preserves locale", () => {

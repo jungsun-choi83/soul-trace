@@ -137,7 +137,7 @@
   },
   "seasonalPolaroid": {
     "flow": {
-      "back": "Back to choose",
+      "back": "Back",
       "stepOf": "STEP %STEP% OF 6",
       "steps": { "meet": "Meet", "photos": "Photos", "costume": "Costume", "scene": "Scene", "personality": "Personality", "details": "Details" },
       "next": "Next",
@@ -239,6 +239,7 @@
         "vibe": "Please choose a vibe.",
         "personality": "Choose one or two personality traits.",
         "habit": "Please choose one favorite habit.",
+        "habitCustom": "Please describe that habit briefly.",
         "treat": "Please choose or enter a favorite treat.",
         "callName": "Please choose what your pet calls you.",
         "callNameCustom": "Enter the name your pet calls you."
@@ -255,13 +256,12 @@
         "statusLabel": "Where are they in your story?"
       },
       "screen2": {
-        "kicker": "STEP 2 — PHOTOS",
+        "kicker": "STEP 2 — PHOTO",
         "title": "Let me see that face.",
         "titlePassed": "Let me see the face you remember.",
-        "intro": "One clear photo is all I need to recognize their little details. Add a second if you want.",
-        "introPassed": "One clear photo helps keep their familiar details close. A second is welcome too.",
+        "intro": "One clear photo is all I need to recognize their little details.",
+        "introPassed": "One clear photo helps keep their familiar details close.",
         "primaryLabel": "Main photo · required",
-        "secondLabel": "Second photo · optional",
         "upload": "Upload photo",
         "change": "Change",
         "remove": "Remove",
@@ -292,7 +292,8 @@
         "intro": "Choose one or two traits, then tell us about one tiny habit.",
         "introPassed": "Choose one or two traits, then hold onto one tiny habit.",
         "personalityLabel": "Pick one or two",
-        "habitLabel": "A habit only they have"
+        "habitLabel": "A habit only they have",
+        "habitCustomPlaceholder": "Describe it briefly, e.g. carries socks around"
       },
       "screen6": {
         "kicker": "STEP 6 — FINAL DETAILS",
@@ -369,7 +370,8 @@
           "rabbit": { "binky": "Does joyful binkies", "noseBoop": "Gives tiny nose boops", "hayRearranger": "Rearranges the hay", "happyFlop": "Flops when content" },
           "hamster": { "wheelRunner": "Runs the wheel at night", "cheekStuffer": "Fills both cheeks", "tinyBurrower": "Burrows into everything", "nightExplorer": "Explores after dark" },
           "bird": { "morningSinger": "Sings every morning", "headCock": "Cocks their head to listen", "shinyThief": "Steals shiny things", "shoulderPerch": "Finds a shoulder to perch on" },
-          "other": { "favoriteRoutine": "Has a favorite little routine", "curiousExplorer": "Investigates everything", "snackSeeker": "Always searches for snacks", "cozyCuddler": "Finds the coziest spot" }
+          "other": { "favoriteRoutine": "Has a favorite little routine", "curiousExplorer": "Investigates everything", "snackSeeker": "Always searches for snacks", "cozyCuddler": "Finds the coziest spot" },
+          "custom": "Something else"
         },
         "treats": {
           "dog": { "pumpkinBiscuit": "Pumpkin biscuit", "jerky": "Jerky", "cheese": "Cheese" },
@@ -380,7 +382,7 @@
           "other": { "favoriteSnack": "Their favorite snack", "specialBite": "A special little bite" },
           "custom": "Something else"
         },
-        "callNames": { "mom": "Mom", "dad": "Dad", "both": "Mom and Dad", "sister": "Sister", "brother": "Brother", "byName": "A name", "custom": "Something else" }
+        "callNames": { "mom": "Mom", "dad": "Dad", "both": "Mom and Dad", "sister": "Sister", "brother": "Brother", "byName": "A name" }
       },
       "whispers": {
         "default": "%NAME% is already imagining the perfect little Polaroid.",
@@ -1001,7 +1003,7 @@
     "keepForever": "Download Letter",
     "saveHint": "Verify your email to keep it in My Memories.",
     "checkingAccount": "Checking your account.",
-    "savedDownloadManually": "Saved to your memories.",
+    "savedDownloadManually": "Your full letter is ready. Tap Save to phone to keep it on your device.",
     "saveFailed": "This result could not be saved to My Memories. What you see on screen is still here.",
     "viewMemories": "View my memories",
     "downloadGate": {
@@ -1284,6 +1286,7 @@
     "saveImageGeneric": "Something went wrong while saving the image.",
     "blobFailed": "Couldn’t create the image.",
     "prepareShareFailed": "Something went wrong while preparing to share.",
+    "instagramStoryTooLong": "This letter is too long to fit legibly in one Instagram Story. Download the full letter instead.",
     "shareFailed": "Something went wrong while sharing.",
     "shareUnavailable": "This letter could not be prepared for sharing yet.",
     "shareAuthenticationRequired": "Please verify your email before sharing this letter."

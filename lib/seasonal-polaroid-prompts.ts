@@ -137,12 +137,26 @@ function assertPromptAnswers(answers: SeasonalPolaroidPromptAnswers): void {
   approvedOption("scenes", answers.scene, answers.status, answers.species);
   approvedOption("vibes", answers.vibe, answers.status, answers.species);
   answers.personalities.forEach((id) => approvedOption("personalities", id, answers.status, answers.species));
-  approvedOption("habits", answers.habit, answers.status, answers.species);
+  if (answers.habit === "custom") {
+    if (!answers.customHabit?.trim()) throw new Error("seasonal_custom_habit_missing");
+  } else {
+    approvedOption("habits", answers.habit, answers.status, answers.species);
+  }
   approvedOption("treats", answers.favoriteTreat, answers.status, answers.species);
   if (!optionById(HALLOWEEN_POLAROID_THEME.callNames, answers.callName)) throw new Error("seasonal_call_name_not_allowed");
-  if (["custom", "by-name"].includes(answers.callName) && !answers.customCallName?.trim()) {
+  if (answers.callName === "by-name" && !answers.customCallName?.trim()) {
     throw new Error("seasonal_custom_call_name_missing");
   }
+}
+
+function resolvedHabit(answers: SeasonalPolaroidPromptAnswers, locale: "en" | "ko"): string {
+  if (answers.habit === "custom") {
+    const custom = answers.customHabit?.trim();
+    if (!custom) throw new Error("seasonal_custom_habit_missing");
+    return custom;
+  }
+  approvedOption("habits", answers.habit, answers.status, answers.species);
+  return description(answers.habit, locale);
 }
 
 function resolvedTreat(answers: SeasonalPolaroidPromptAnswers, locale: "en" | "ko"): string {
@@ -154,7 +168,7 @@ function resolvedTreat(answers: SeasonalPolaroidPromptAnswers, locale: "en" | "k
 
 export function resolvedCallName(answers: SeasonalPolaroidPromptAnswers, locale: "en" | "ko"): string {
   assertPromptAnswers(answers);
-  if (["custom", "by-name"].includes(answers.callName)) {
+  if (answers.callName === "by-name") {
     const custom = answers.customCallName?.trim();
     if (!custom) throw new Error("seasonal_custom_call_name_missing");
     return custom;
@@ -436,13 +450,13 @@ function legacyFallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnswe
   const personality = locale === "en"
     ? ENGLISH_PERSONALITY_VOICE[answers.personalities[0]!] ?? personalityDescription
     : personalityDescription;
-  const habit = description(answers.habit, locale);
+  const habit = resolvedHabit(answers, locale);
   const treat = resolvedTreat(answers, locale);
   const personalDetail = answers.personalDetail?.trim().replace(/[.!?。！？]+$/u, "");
   if (locale === "ko") {
     const treatObject = `${treat}${particle(treat, "object")}`;
     const costumeObject = costume.endsWith("없이") ? costume : `${costume}${particle(costume, "object")}`;
-    const koreanHabit = KOREAN_HABIT_VOICE[answers.habit] ?? "내 방식대로 지내고";
+    const koreanHabit = KOREAN_HABIT_VOICE[answers.habit] ?? compactMemoValue(habit, 8);
     const habitLine = memoLineWithDetail(`나는 ${koreanHabit} ${treatObject} 기다려`, personalDetail, locale);
     return {
       locale,
@@ -482,7 +496,7 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
 
   if (locale === "ko") {
     const costume = KOREAN_COSTUME_VOICE[costumeId] ?? compactMemoValue(description(costumeId, locale), 8);
-    const habit = KOREAN_HABIT_VOICE[answers.habit] ?? "포근히 쉬며";
+    const habit = KOREAN_HABIT_VOICE[answers.habit] ?? compactMemoValue(resolvedHabit(answers, locale), 8);
     const treatShort = compactMemoValue(treat, 8);
     return {
       locale,
@@ -516,7 +530,7 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
     20,
   );
   const personality = ENGLISH_PERSONALITY_VOICE[answers.personalities[0]!] ?? "sweetly playful";
-  const habit = ENGLISH_HABIT_VOICE[answers.habit] ?? "stay close";
+  const habit = ENGLISH_HABIT_VOICE[answers.habit] ?? lowerFirst(compactMemoValue(resolvedHabit(answers, locale), 24));
   const treatShort = compactMemoValue(treat, 16);
   const bodyLine = variation === 0
     ? `and today I'm cozy in the ${scene}.`
@@ -560,7 +574,8 @@ export function buildSeasonalPolaroidMemoUserData(answers: SeasonalPolaroidPromp
     scene: description(answers.scene, locale),
     vibe: description(answers.vibe, locale),
     personalities: answers.personalities.map((id) => description(id, locale)),
-    habit: description(answers.habit, locale),
+    habit: resolvedHabit(answers, locale),
+    customHabit: answers.customHabit?.trim() || "",
     favoriteTreat: resolvedTreat(answers, locale),
     ownerCallName: resolvedCallName(answers, locale),
     personalDetail: answers.personalDetail?.trim() || "",
@@ -569,12 +584,13 @@ export function buildSeasonalPolaroidMemoUserData(answers: SeasonalPolaroidPromp
 
 export function buildSeasonalPolaroidMemoMessages(
   answers: SeasonalPolaroidPromptAnswers,
+  retryReason?: "memo_line_length",
 ): Array<{ role: "system" | "user"; content: string }> {
   assertPromptAnswers(answers);
   return [
     {
       role: "system",
-      content: buildSeasonalPolaroidMemoSystemPrompt(answers.locale as "en" | "ko", answers.status),
+      content: buildSeasonalPolaroidMemoSystemPrompt(answers.locale as "en" | "ko", answers.status, retryReason),
     },
     {
       role: "user",
@@ -586,7 +602,11 @@ export function buildSeasonalPolaroidMemoMessages(
   ];
 }
 
-export function buildSeasonalPolaroidMemoSystemPrompt(locale: "en" | "ko", status: PolaroidStatus): string {
+export function buildSeasonalPolaroidMemoSystemPrompt(
+  locale: "en" | "ko",
+  status: PolaroidStatus,
+  retryReason?: "memo_line_length",
+): string {
   const memorial = status === "passed";
   return [
     "You write four short caption lines for a seasonal pet Polaroid, not a letter.",
@@ -601,11 +621,14 @@ export function buildSeasonalPolaroidMemoSystemPrompt(locale: "en" | "ko", statu
     "Connectedness is mandatory: at least one break between lines 2-4 must carry the thought forward. In English, use an unfinished line ending such as a comma or begin the next line with a connector; in Korean, use a natural comma, connective ending, 그리고, 그래서, or -고. A memo where all three body lines are separate complete sentences is invalid.",
       "Write the four lines as one tiny connected Polaroid caption from the pet, not as a checklist, a letter, or instructions to the owner. Avoid repetitive constructions. Vary sentence openings, rhythm, punctuation, connective phrases, and which supplied details you emphasize; do not force every answer into the caption and never copy a stock template.",
     "Do not write letter-style phrases such as 'I'm sending you...', 'I'll always be...', 'keep my memory close', 'I hope you smile', 'dear...', or a sign-off. Do not give the owner an instruction, request, promise, or command. Keep the words anchored to the pictured moment.",
-    "Keep each line short for a handwritten Polaroid: aim for 24-36 characters in English or 12-20 characters in Korean. The greeting may be a little longer when names require it. If an optional detail does not fit naturally, choose one shorter detail or leave it out; never cram, clip, or split a word just to include more information.",
+    `Hard character contract: count every character, including spaces and punctuation. Line 1 must be ${MEMO_LINE_LIMITS[locale]} characters or fewer; lines 2-4 must each be ${MEMO_BODY_LINE_LIMITS[locale]} characters or fewer. Treat these as hard limits, not suggestions. Target 28-34 characters for each English body line or 14-18 characters for each Korean body line. If an optional detail does not fit naturally, choose a shorter wording or leave it out; never cram, clip, or split a word just to include more information.`,
     "Line 1 may be a short Halloween greeting with the supplied owner call name and pet name, like: Mom, happy Halloween from Tuli! Keep any greeting limited to line 1; lines 2-4 must be caption-style and must not address the owner.",
     "Prioritize details in this order when choosing what to keep: personal detail, habit or favorite treat, costume or personality, then scene or vibe. Lines 2-4 should weave in only one or two approved details; do not mechanically enumerate them and never invent facts.",
     "The final line should complete the pictured memory with a warm seasonal feeling. It must not address the owner, give an instruction, make an always-promise, or become a generic letter closing.",
-    `The greeting must be ${MEMO_LINE_LIMITS[locale]} characters or fewer; lines 2-4 must be ${MEMO_BODY_LINE_LIMITS[locale]} characters or fewer.`,
+    `The greeting must be ${MEMO_LINE_LIMITS[locale]} characters or fewer; lines 2-4 must each be ${MEMO_BODY_LINE_LIMITS[locale]} characters or fewer.`,
+    ...(retryReason === "memo_line_length"
+      ? ["Retry correction: the previous draft exceeded a character limit. Rewrite all four lines within the exact limits now. Preserve the selected factual questionnaire details and premium, natural pet voice, but shorten or omit any detail that does not fit. Do not explain the correction and do not repeat the overlong wording."]
+      : []),
     memorial
       ? "Memorial tone: gentle and grateful. Do not mention death, heaven, Rainbow Bridge, graves, angels, goodbye, being gone, or unsupported promises; do not imply physical presence."
       : "Living tone: playful, safe, present-tense, and affectionate; do not introduce distress or danger.",

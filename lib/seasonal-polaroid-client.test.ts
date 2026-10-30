@@ -10,7 +10,6 @@ const componentSource = readFileSync("components/polaroid-entry.tsx", "utf8");
 
 test("Seasonal client builds the backend multipart contract without photo data URLs", () => {
   const primary = new File([new Uint8Array([1, 2, 3])], "primary.webp", { type: "image/webp" });
-  const secondary = new File([new Uint8Array([4, 5, 6])], "second.webp", { type: "image/webp" });
   const form = buildSeasonalPolaroidFormData({
     themeId: "halloween",
     locale: "ko",
@@ -27,7 +26,7 @@ test("Seasonal client builds the backend multipart contract without photo data U
     callName: "mom",
     customCallName: "",
     personalDetail: "Loves the autumn leaves",
-  }, primary, secondary);
+  }, primary);
 
   assert.equal(form.get("themeId"), "halloween");
   assert.equal(form.get("locale"), "ko");
@@ -35,7 +34,7 @@ test("Seasonal client builds the backend multipart contract without photo data U
   assert.equal(form.get("personalities"), JSON.stringify(["foodie", "cuddleBug"]));
   assert.equal((form.get("primaryPhoto") as File).name, primary.name);
   assert.equal((form.get("primaryPhoto") as File).type, primary.type);
-  assert.equal((form.get("secondaryPhoto") as File).name, secondary.name);
+  assert.equal(form.has("secondaryPhoto"), false);
   assert.equal(form.has("photo"), false);
 });
 

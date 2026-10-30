@@ -35,12 +35,9 @@ import {
 } from "@/lib/service-channel";
 import { serviceChannelBackground } from "@/lib/service-channel-background";
 import { userFacingErrorMessage } from "@/lib/user-facing-error";
-import { clearPendingResultSave, readPendingResultSave, writePendingResultSave } from "@/lib/pending-result-save";
-import { resolvePendingContactEmail } from "@/lib/pending-contact-email";
 import { pickGenerationLoadingMessage } from "@/lib/generation-loading-messages";
 import { primeResultBgm, resolveResultBgmSrc, stopResultBgm } from "@/lib/result-bgm";
 import { normalizePersonalityTags } from "@/lib/normalize-personality-tags";
-import { pickEmotionalLetterSentence, pickRandomBestLetterSentence } from "@/lib/letter-emotional-line";
 import {
   createGeneratedLetterStructure,
   visibleStreamingBody,
@@ -100,7 +97,6 @@ import {
   type LetterTonePrefs,
 } from "@/lib/survey";
 import { toJpeg } from "html-to-image";
-import { flushSync } from "react-dom";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { FaFacebookF, FaInstagram, FaLine, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
@@ -340,13 +336,10 @@ export function SoulTraceFlow({
   const shareTrayRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadGateOpen, setDownloadGateOpen] = useState(false);
   const [generationGateOpen, setGenerationGateOpen] = useState(false);
-  const [letterSaved, setLetterSaved] = useState(false);
-  const [serverContactEmail, setServerContactEmail] = useState<string | null>(null);
   const [manualDownloadNotice, setManualDownloadNotice] = useState(false);
+  const [letterDownloadFile, setLetterDownloadFile] = useState<File | null>(null);
   const authSession = useAuthSession();
-  const letterSaveLock = useRef(false);
   const letterSubmissionPendingRef = useRef(false);
   const [shareableFile, setShareableFile] = useState<File | null>(null);
   const shareUrlRef = useRef<{ key: string; url: string } | null>(null);
@@ -365,8 +358,6 @@ export function SoulTraceFlow({
   const [error, setError] = useState<string | null>(null);
   /** 첫 생성 스트리밍 시에만 감성 로딩 한 줄 (언어 전환 시에는 null) */
   const [generationLoadingMessage, setGenerationLoadingMessage] = useState<string | null>(null);
-  /** 스토리 캡처 직전 무작위로 고른 한 줄(매 공유마다 갱신) */
-  const [storyShareLine, setStoryShareLine] = useState<string | null>(null);
   /**
    * 파트너 QR 의 코드(`?p=`). **partner_id 가 아니다** — 어느 파트너인지는
    * 서버가 코드를 조회해 정한다. 여기서는 그대로 실어 보내기만 한다.
@@ -590,6 +581,8 @@ export function SoulTraceFlow({
 
   const chooseLetterTheme = useCallback((id: LetterThemeId) => {
     setLetterThemeId(id);
+    setLetterDownloadFile(null);
+    setManualDownloadNotice(false);
     window.localStorage.setItem(LETTER_THEME_STORAGE_KEY, id);
   }, []);
 
@@ -763,7 +756,8 @@ export function SoulTraceFlow({
         }));
         setResultLocale(data.generationLocale ?? lang);
         setShareableFile(null);
-        setStoryShareLine(null);
+        setLetterDownloadFile(null);
+        setManualDownloadNotice(false);
       } catch (err) {
         const aborted =
           (err instanceof DOMException && err.name === "AbortError") ||
@@ -999,7 +993,8 @@ export function SoulTraceFlow({
 
     setError(null);
     setShareableFile(null);
-    setStoryShareLine(null);
+    setLetterDownloadFile(null);
+    setManualDownloadNotice(false);
     setGenerationLoadingMessage(pickGenerationLoadingMessage(lang, displayPetName));
     setAnimateFreshLetter(true);
     generationCreatedAtRef.current = new Date().toISOString();
@@ -1223,15 +1218,41 @@ export function SoulTraceFlow({
     }
   };
 
+  const waitForCaptureAssets = async (captureNode: HTMLElement) => {
+    await document.fonts.ready;
+    const images = Array.from(captureNode.querySelectorAll("img"));
+    await Promise.all(images.map(async (image) => {
+      if (!image.complete) {
+        await new Promise<void>((resolve) => {
+          image.addEventListener("load", () => resolve(), { once: true });
+          image.addEventListener("error", () => resolve(), { once: true });
+        });
+      }
+      if (typeof image.decode === "function") {
+        try {
+          await image.decode();
+        } catch {
+          // html-to-image can still use a loaded image when decode is unavailable.
+        }
+      }
+    }));
+  };
+
   const captureToJpegDataUrl = async (skipFonts: boolean) => {
     const captureNode = captureRef.current;
     if (!captureNode) return "";
-    await document.fonts.ready;
+    // A fresh result may still be finishing its handwritten reveal. Export the
+    // completed letter, not whichever partial frame happened to be visible.
+    if (animateFreshLetter) {
+      setAnimateFreshLetter(false);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    }
+    await waitForCaptureAssets(captureNode);
     return await toJpeg(captureNode, getSnapshotOptions(skipFonts));
   };
 
-  const handleDownloadImage = async () => {
-    if (!captureRef.current) return false;
+  const captureLetterFile = async (): Promise<File | null> => {
+    if (!captureRef.current) return null;
     try {
       setIsDownloading(true);
       setError(null);
@@ -1241,101 +1262,81 @@ export function SoulTraceFlow({
       } catch {
         dataUrl = await captureToJpegDataUrl(true);
       }
-      const anchor = document.createElement("a");
-      anchor.download = "soul-trace-letter.jpg";
-      anchor.href = dataUrl;
-      anchor.click();
-      return true;
+      const blob = await (await fetch(dataUrl)).blob();
+      return new File([blob], "soul-trace-letter.jpg", { type: "image/jpeg" });
     } catch (err) {
       setError(
         err instanceof Error
           ? `${t("errors.saveImageFailed")} ${err.message}`
           : t("errors.saveImageGeneric"),
       );
-      return false;
+      return null;
     } finally {
       setIsDownloading(false);
     }
   };
 
-  const saveCurrentLetter = async () => {
-    if (!result?.letterId || !result.saveProof) return "missing" as const;
-    const response = await fetch("/api/account-result/letter", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ letterId: result.letterId, proof: result.saveProof }),
-    });
-    if (response.status === 403) return "forbidden" as const;
-    if (!response.ok) return "failed" as const;
-    const payload = await response.json() as { status?: string };
-    return payload.status === "saved" || payload.status === "already_saved" ? "saved" as const : "failed" as const;
+  const isMobileBrowser = () => {
+    if (typeof navigator === "undefined") return false;
+    return /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   };
 
-  const saveAndDownloadLetter = async (): Promise<"saved" | "save_failed"> => {
-    if (letterSaveLock.current) return "saved";
-    letterSaveLock.current = true;
-    const pending = readPendingResultSave();
-    if (pending?.kind === "letter" && pending.resultId === result?.letterId) clearPendingResultSave();
+  const downloadLetterFile = (file: File) => {
+    const anchor = document.createElement("a");
+    anchor.download = file.name;
+    anchor.href = URL.createObjectURL(file);
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(anchor.href), 60_000);
+  };
+
+  const saveLetterToDevice = async () => {
+    if (!letterDownloadFile) return;
+    setIsDownloading(true);
+    setError(null);
     try {
-      const saved = await saveCurrentLetter();
-      if (saved !== "saved") {
-        setError(t("result.saveFailed"));
-        return "save_failed";
-      }
-      setLetterSaved(true);
-      const downloaded = await handleDownloadImage();
-      setManualDownloadNotice(!downloaded);
-      return "saved";
-    } finally {
-      letterSaveLock.current = false;
-    }
-  };
-
-  const startLetterSave = () => {
-    setShareTrayOpen(false);
-    if (authSession.status === "loading" || waitingForContact || !result) return;
-    if (result.letterId && result.saveProof) {
-      writePendingResultSave({ kind: "letter", resultId: result.letterId, proof: result.saveProof });
-    }
-    if (authSession.status === "authenticated") {
-      void saveAndDownloadLetter();
-      return;
-    }
-    setDownloadGateOpen(true);
-  };
-
-  useEffect(() => {
-    if (authSession.status !== "authenticated" || !result?.letterId) return;
-    const pending = readPendingResultSave();
-    if (!pending || pending.kind !== "letter" || pending.resultId !== result.letterId) return;
-    void saveAndDownloadLetter();
-  }, [authSession.status, result?.letterId]);
-
-  useEffect(() => {
-    if (!result?.letterId || !result.saveProof) return;
-    let cancelled = false;
-    void fetch("/api/account-result/letter/contact", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ letterId: result.letterId, proof: result.saveProof }),
-    }).then(async (response) => {
-      if (cancelled) return;
-      if (!response.ok) {
-        setServerContactEmail("");
+      const sharePayload: ShareData = {
+        files: [letterDownloadFile],
+        title: t("share.title"),
+        text: t("share.text"),
+      };
+      if (
+        typeof navigator !== "undefined" &&
+        "share" in navigator &&
+        "canShare" in navigator &&
+        navigator.canShare?.(sharePayload)
+      ) {
+        await navigator.share(sharePayload);
         return;
       }
-      const payload = await response.json() as { email?: unknown };
-      setServerContactEmail(typeof payload.email === "string" ? payload.email : "");
-    }).catch(() => {
-      if (!cancelled) setServerContactEmail("");
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [result?.letterId, result?.saveProof]);
+      downloadLetterFile(letterDownloadFile);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      if (err instanceof Error && err.name === "AbortError") return;
+      setError(err instanceof Error ? err.message : t("errors.saveImageGeneric"));
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
-  const pendingEmail = resolvePendingContactEmail(serverContactEmail, email);
-  const waitingForContact = Boolean(result?.letterId && result.saveProof && serverContactEmail === null && !pendingEmail);
+  const handleDownloadImage = async (): Promise<"downloaded" | "manual" | "failed"> => {
+    const file = await captureLetterFile();
+    if (!file) return "failed";
+    if (isMobileBrowser()) {
+      setLetterDownloadFile(file);
+      return "manual";
+    }
+    downloadLetterFile(file);
+    return "downloaded";
+  };
+
+  const startLetterDownload = () => {
+    setShareTrayOpen(false);
+    if (!result || isLoading) return;
+    void handleDownloadImage().then((downloadResult) => {
+      setManualDownloadNotice(downloadResult === "manual");
+    });
+  };
 
   const captureImage = async (): Promise<File | null> => {
     const source = instagramStoryRef.current;
@@ -1345,15 +1346,17 @@ export function SoulTraceFlow({
     setError(null);
 
     try {
-      const picked =
-        pickRandomBestLetterSentence(result.letter, lang) ||
-        pickEmotionalLetterSentence(result.letter, lang) ||
-        result.letter.trim().slice(0, 140);
-      flushSync(() => {
-        setStoryShareLine(picked);
-      });
+      // Share the completed letter, not a frame from the handwritten reveal.
+      if (animateFreshLetter) {
+        setAnimateFreshLetter(false);
+      }
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-      await document.fonts.ready;
+      await waitForCaptureAssets(source);
+      const storyBody = source.querySelector<HTMLElement>("[data-story-letter-body]");
+      if (storyBody && storyBody.scrollHeight > storyBody.clientHeight + 1) {
+        setError(t("errors.instagramStoryTooLong"));
+        return null;
+      }
       let dataUrl: string;
       try {
         dataUrl = await toJpeg(source, {
@@ -1530,13 +1533,14 @@ export function SoulTraceFlow({
   };
 
   const goBackFromResult = () => {
-    setDownloadGateOpen(false);
     setGenerationGateOpen(false);
     if (!initialResult) {
       setResult(null);
       setResultLocale(null);
       setAnimateFreshLetter(false);
       setShareableFile(null);
+      setLetterDownloadFile(null);
+      setManualDownloadNotice(false);
       setError(null);
       return;
     }
@@ -1564,27 +1568,14 @@ export function SoulTraceFlow({
     setResultLocale(null);
     setAnimateFreshLetter(false);
     setShareableFile(null);
+    setLetterDownloadFile(null);
+    setManualDownloadNotice(false);
     setError(null);
     setGenerationLoadingMessage(null);
-    setStoryShareLine(null);
     setShowValidationErrors(false);
-    setDownloadGateOpen(false);
     setGenerationGateOpen(false);
     stopResultBgm(bgmPrimeRef);
   };
-
-  const defaultStoryShareLine = useMemo(
-    () => (result ? pickEmotionalLetterSentence(result.letter, lang) : ""),
-    [result, lang],
-  );
-  const storyCardQuote = (storyShareLine ?? defaultStoryShareLine).trim();
-
-  const storyPetNameLead = useMemo(() => {
-    const template = t("result.instagramStory.petStoryNameLead");
-    const name =
-      (result?.savedPetName ?? displayPetName).trim() || t("result.benefitModal.nameFallback");
-    return template.replace(/%NAME%/g, name);
-  }, [result?.savedPetName, displayPetName, t]);
 
   const canCaptureArtwork = selectedThemeImageReady;
   const activeLetterStructure = result
@@ -1883,38 +1874,28 @@ export function SoulTraceFlow({
               <div className="flex flex-col gap-2">
               <button
                 type="button"
-                onClick={startLetterSave}
-                disabled={!canCaptureArtwork || isDownloading || isSharing || authSession.status === "loading" || waitingForContact}
+                onClick={letterDownloadFile ? () => void saveLetterToDevice() : startLetterDownload}
+                disabled={!canCaptureArtwork || isLoading || isDownloading || isSharing}
                 className={`flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#C7A43A] px-5 py-3 text-center text-sm font-medium text-[#0B0A08] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] transition hover:bg-[#D4B34A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E5C761] active:bg-[#B28F2E] disabled:cursor-not-allowed disabled:opacity-45 sm:text-base ${
                   lang === "ko" ? "font-ko tracking-normal" : "font-display-en"
                 }`}
               >
                 <span className="inline-flex items-center justify-center gap-2.5">
                   <DownloadIcon />
-                  <span>{isDownloading ? t("result.preparingImage") : authSession.status === "loading" || waitingForContact ? t("result.checkingAccount") : t("result.keepForever")}</span>
+                  <span>{isDownloading ? t("result.preparingImage") : letterDownloadFile ? t("result.saveImage") : t("result.keepForever")}</span>
                 </span>
               </button>
-              {authSession.status === "anonymous" ? (
-                <p className={`text-center text-xs leading-relaxed text-[#A39888] ${lang === "ko" ? "font-ko" : "font-display-en"}`}>
-                  {t("result.saveHint")}
-                </p>
-              ) : null}
               {manualDownloadNotice ? (
                 <p className={`text-center text-xs leading-relaxed text-[#E7DCC8] ${lang === "ko" ? "font-ko" : "font-display-en"}`}>
                   {t("result.savedDownloadManually")}
                 </p>
-              ) : null}
-              {letterSaved ? (
-                <a href="/life-archive" className={`text-center text-sm text-[#D8B84C] underline underline-offset-4 ${lang === "ko" ? "font-ko" : "font-display-en"}`}>
-                  {t("result.viewMemories")}
-                </a>
               ) : null}
               </div>
               <div ref={shareTrayRef} className="relative flex min-w-0 flex-col gap-2 sm:block">
                 <button
                   type="button"
                   onClick={() => setShareTrayOpen((open) => !open)}
-                  disabled={!canCaptureArtwork || isSharing || isDownloading}
+                  disabled={!canCaptureArtwork || isLoading || isSharing || isDownloading}
                   aria-expanded={shareTrayOpen}
                   aria-controls="letter-share-tray"
                   className={`flex min-h-[52px] w-full items-center justify-center rounded-xl border border-[#C7A43A]/75 bg-[#0C0B09] px-5 py-3 text-center text-sm font-medium text-[#D8B84C] transition hover:border-[#E0C15A] hover:bg-[#15120C] hover:text-[#E5C761] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D8B84C] disabled:cursor-not-allowed disabled:opacity-45 sm:text-base ${
@@ -2012,21 +1993,6 @@ export function SoulTraceFlow({
               </div>
             </div>
 
-            <LetterDownloadGate
-              open={downloadGateOpen}
-              purpose="letter"
-              pendingEmail={pendingEmail}
-              onClose={() => setDownloadGateOpen(false)}
-              onVerified={async () => {
-                const saved = await saveAndDownloadLetter();
-                if (saved === "saved") {
-                  setDownloadGateOpen(false);
-                  await authSession.refresh();
-                }
-                return saved;
-              }}
-            />
-
             <section
               aria-label={t("result.productCards.label")}
               className={`mx-auto mt-6 w-full max-w-2xl ${
@@ -2121,7 +2087,7 @@ export function SoulTraceFlow({
             {error ? <p className="text-center text-sm text-red-300">{error}</p> : null}
           </section>
           <div
-            className="pointer-events-none fixed top-0 -left-[9999px] z-[-1] opacity-0"
+            className="pointer-events-none fixed top-0 left-[-1200px] z-0"
             style={{ width: 1080, height: 1920 }}
             aria-hidden
           >
@@ -2131,12 +2097,16 @@ export function SoulTraceFlow({
               backgroundImageReady={
                 loadedThemeImages.has(letterTheme.id) && !selectedThemeImageMissing
               }
-              nameLead={storyPetNameLead}
-              personalityTitle={result.personalityType}
-              emotionalLine={storyCardQuote || result.letter.trim()}
-              footerTagline={t("result.instagramStory.footerTagline")}
+              letterOpening={letterOpening}
+              letterBody={letterBodyAfterOpening}
+              letterLanguage={letterLanguage}
+              signatureDate={signatureDate}
+              signatureName={signatureName}
+              photoUrl={petPhotoPreviewUrl && privacyConsent ? petPhotoPreviewUrl : null}
+              defaultStamp={resolveDefaultStampByPetType(petIntro.petType)}
+              bodyFontFamily={letterBodyFontFamily(letterLanguage, mode)}
+              openingFontFamily={letterOpeningFontFamily(letterLanguage, mode)}
               siteLine={t("result.instagramStory.siteLine")}
-              lang={lang}
             />
           </div>
           <ResultAmbientAudio active={!!result} audioRef={bgmPrimeRef} />

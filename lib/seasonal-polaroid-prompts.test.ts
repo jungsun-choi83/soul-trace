@@ -242,6 +242,51 @@ test("memo validation rejects long body lines that would wrap into the frame dec
   assert.deepEqual(result, { valid: false, reason: "memo_line_length" });
 });
 
+test("memo validation enforces exact greeting and body boundaries in both languages", () => {
+  const english = fallbackSeasonalPolaroidMemo(LIVING);
+  const englishBodyAtLimit = {
+    ...english,
+    lines: [english.lines[0], `and I ${"x".repeat(33)},`, english.lines[2], english.lines[3]],
+  };
+  assert.equal(englishBodyAtLimit.lines[1].length, 40);
+  assert.equal(validateSeasonalPolaroidMemo(englishBodyAtLimit, LIVING).valid, true);
+  assert.deepEqual(validateSeasonalPolaroidMemo({
+    ...englishBodyAtLimit,
+    lines: [english.lines[0], `and I ${"x".repeat(34)},`, english.lines[2], english.lines[3]],
+  }, LIVING), { valid: false, reason: "memo_line_length" });
+  assert.equal(validateSeasonalPolaroidMemo({
+    ...english,
+    lines: [english.lines[0].padEnd(64, "x"), ...english.lines.slice(1)],
+  }, LIVING).valid, true);
+  assert.deepEqual(validateSeasonalPolaroidMemo({
+    ...english,
+    lines: [english.lines[0].padEnd(65, "x"), ...english.lines.slice(1)],
+  }, LIVING), { valid: false, reason: "memo_line_length" });
+
+  const korean = fallbackSeasonalPolaroidMemo(PASSED);
+  const koreanBodyPrefix = korean.lines[1].replace(/[,!?]+$/u, "").slice(0, 21);
+  const koreanBodyAtLimitText = `${koreanBodyPrefix}${"가".repeat(21 - koreanBodyPrefix.length)},`;
+  const koreanBodyOverLimitText = `${koreanBodyPrefix}${"가".repeat(22 - koreanBodyPrefix.length)},`;
+  const koreanBodyAtLimit = {
+    ...korean,
+    lines: [korean.lines[0], koreanBodyAtLimitText, korean.lines[2], korean.lines[3]],
+  };
+  assert.equal(koreanBodyAtLimit.lines[1].length, 22);
+  assert.equal(validateSeasonalPolaroidMemo(koreanBodyAtLimit, PASSED).valid, true);
+  assert.deepEqual(validateSeasonalPolaroidMemo({
+    ...koreanBodyAtLimit,
+    lines: [korean.lines[0], koreanBodyOverLimitText, korean.lines[2], korean.lines[3]],
+  }, PASSED), { valid: false, reason: "memo_line_length" });
+  assert.equal(validateSeasonalPolaroidMemo({
+    ...korean,
+    lines: [korean.lines[0].padEnd(32, "媛"), ...korean.lines.slice(1)],
+  }, PASSED).valid, true);
+  assert.deepEqual(validateSeasonalPolaroidMemo({
+    ...korean,
+    lines: [korean.lines[0].padEnd(33, "媛"), ...korean.lines.slice(1)],
+  }, PASSED), { valid: false, reason: "memo_line_length" });
+});
+
 test("memo validation rejects missing call names, wrong locale, and memorial-sensitive wording", () => {
   const missingCallName = { ...fallbackSeasonalPolaroidMemo(LIVING), lines: ["Happy Halloween!", ...fallbackSeasonalPolaroidMemo(LIVING).lines.slice(1)] };
   assert.equal(validateSeasonalPolaroidMemo(missingCallName, LIVING).valid, false);
@@ -264,11 +309,21 @@ test("memo system prompt locks the four-line JSON and memorial rules", () => {
   assert.match(prompt, /not a letter/);
   assert.match(prompt, /Do not write letter-style phrases/);
   assert.match(prompt, /never cram, clip, or split a word/);
+  assert.match(prompt, /Hard character contract/);
+  assert.match(prompt, /Target 28-34 characters for each English body line/);
+  assert.match(prompt, /14-18 characters for each Korean body line/);
+  assert.match(prompt, /lines 2-4 must each be 22 characters or fewer/);
   assert.match(prompt, /never mention the pet's name again after line 1/);
   assert.match(prompt, /one tiny connected Polaroid caption/);
   assert.match(prompt, /never copy a stock template/);
   assert.match(prompt, /Avoid repetitive constructions/);
-  assert.match(prompt, /24-36 characters in English/);
+});
+
+test("memo retry prompt explicitly requests a compact rewrite", () => {
+  const messages = buildSeasonalPolaroidMemoSystemPrompt("en", "living", "memo_line_length");
+  assert.match(messages, /Retry correction/);
+  assert.match(messages, /within the exact limits/);
+  assert.match(messages, /Preserve the selected factual questionnaire details/);
 });
 
 test("memo user data preserves every supplied questionnaire answer", () => {
@@ -282,10 +337,17 @@ test("memo user data preserves every supplied questionnaire answer", () => {
     vibe: "cute, cozy, gentle warmth",
     personalities: ["a love of snacks", "a deep love of cuddles"],
     habit: "napping in every sunbeam",
+    customHabit: "",
     favoriteTreat: "tuna",
     ownerCallName: "Mom",
     personalDetail: "Waits by the window.",
   });
+});
+
+test("custom habit is passed to the memo prompt as user-provided detail", () => {
+  const data = buildSeasonalPolaroidMemoUserData({ ...LIVING, habit: "custom", customHabit: "carries socks around" });
+  assert.equal(data.habit, "carries socks around");
+  assert.equal(data.customHabit, "carries socks around");
 });
 
 test("memo request resolves surprise costumes before sending them to the AI", () => {
@@ -301,7 +363,7 @@ test("server generator reuses Visual Memory image fallback and chat safety utili
   assert.match(image, /isModelAccessError\(error\)/);
   assert.match(image, /OPENAI_IMAGE_OPTIONS/);
   assert.match(generator, /generatePetReferenceImage/);
-  assert.match(generator, /secondary \? \[primary, secondary\] : \[primary\]/);
+  assert.match(generator, /references: \[primary\]/);
   assert.match(generator, /size: "1024x1024"/);
   assert.match(generator, /OPENAI_CHAT_OPTIONS/);
   assert.match(generator, /response_format: seasonalMemoResponseFormat\(answers\.locale as "en" \| "ko"\)/);
