@@ -48,6 +48,7 @@ export type SeasonalPolaroidQueuePayload = {
     vibe: string;
     personalities: string[];
     habit: string;
+    customHabit: string;
     favoriteTreat: string;
     customTreat: string;
     callName: string;
@@ -77,6 +78,7 @@ function normalizedAnswers(answers: SeasonalPolaroidQuestionnaire) {
     vibe: String(answers.vibe).trim(),
     personalities: answers.personalities.map((value) => String(value).trim()),
     habit: String(answers.habit).trim(),
+    customHabit: String(answers.customHabit ?? "").trim(),
     favoriteTreat: String(answers.favoriteTreat).trim(),
     customTreat: String(answers.customTreat ?? "").trim(),
     callName: String(answers.callName).trim(),

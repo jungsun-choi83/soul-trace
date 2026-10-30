@@ -72,6 +72,7 @@ export function buildSeasonalPolaroidFormData(
   formData.append("vibe", answers.vibe);
   formData.append("personalities", JSON.stringify(answers.personalities));
   formData.append("habit", answers.habit);
+  formData.append("customHabit", answers.customHabit ?? "");
   formData.append("favoriteTreat", answers.favoriteTreat);
   formData.append("customTreat", answers.customTreat ?? "");
   formData.append("callName", answers.callName);

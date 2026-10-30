@@ -26,6 +26,7 @@ export type SeasonalPolaroidQuestionnaire = {
   vibe: string;
   personalities: string[];
   habit: string;
+  customHabit?: string;
   favoriteTreat: string;
   customTreat?: string;
   callName: string;
@@ -79,13 +80,17 @@ export type SeasonalPolaroidValidationField =
   | "vibe"
   | "personalities"
   | "habit"
+  | "customHabit"
   | "favoriteTreat"
   | "customTreat"
   | "callName"
   | "customCallName"
   | "personalDetail"
   | "generationNonce"
-  | "primaryPhoto";
+  | "primaryPhoto"
+  // Kept for validating/cleaning legacy queued attempts; new requests expose
+  // only the primary photo.
+  | "secondaryPhoto";
 
 export type SeasonalPolaroidValidationIssue = {
   field: SeasonalPolaroidValidationField;
@@ -118,6 +123,7 @@ const SPECIES: readonly PolaroidSpecies[] = ["dog", "cat", "rabbit", "hamster", 
 const STATUSES: readonly PolaroidStatus[] = ["living", "passed"];
 const MAX_NAME_LENGTH = 12;
 const MAX_CUSTOM_TREAT_LENGTH = 60;
+const MAX_CUSTOM_HABIT_LENGTH = 60;
 const MAX_CALL_NAME_LENGTH = 40;
 const MAX_PERSONAL_DETAIL_LENGTH = 60;
 const MAX_GENERATION_NONCE_LENGTH = 128;
@@ -144,14 +150,13 @@ function validatePhoto(
   value: unknown,
   field: "primaryPhoto",
   issues: SeasonalPolaroidValidationIssue[],
-  required: boolean,
 ) {
   if (value === undefined || value === null) {
-    if (required) addIssue(issues, field, "photo_required");
+    addIssue(issues, field, "photo_required");
     return;
   }
   if (typeof value !== "object" || value === null || !("size" in value) || !("type" in value) || !("name" in value)) {
-    addIssue(issues, field, required ? "photo_required" : "photo_type");
+    addIssue(issues, field, "photo_required");
     return;
   }
   const file = value as Pick<File, "name" | "size" | "type">;
@@ -162,7 +167,7 @@ function validatePhoto(
     !Number.isFinite(file.size) ||
     file.size < 0
   ) {
-    addIssue(issues, field, required ? "photo_required" : "photo_type");
+    addIssue(issues, field, "photo_required");
     return;
   }
   if (!file.size) {
@@ -187,7 +192,7 @@ export function validateSeasonalPolaroidRequest(
   const answers = request?.answers;
   if (!answers || typeof answers !== "object") {
     addIssue(issues, "themeId", "required");
-    validatePhoto(request?.primaryPhoto, "primaryPhoto", issues, true);
+    validatePhoto(request?.primaryPhoto, "primaryPhoto", issues);
     return { valid: false, issues };
   }
 
@@ -227,7 +232,8 @@ export function validateSeasonalPolaroidRequest(
     const speciesOptions = theme.habitsBySpecies[species as PolaroidSpecies];
     const habit = String(answers.habit ?? "");
     if (!habit) addIssue(issues, "habit", "required");
-    else if (!hasOption(speciesOptions, habit)) addIssue(issues, "habit", "unsupported");
+    else if (habit !== "custom" && !hasOption(speciesOptions, habit)) addIssue(issues, "habit", "unsupported");
+    if (habit === "custom" && !String(answers.customHabit ?? "").trim()) addIssue(issues, "customHabit", "required");
     const treatOptions = theme.treatsBySpecies[species as PolaroidSpecies];
     const favoriteTreat = String(answers.favoriteTreat ?? "");
     if (!favoriteTreat) addIssue(issues, "favoriteTreat", "required");
@@ -242,13 +248,14 @@ export function validateSeasonalPolaroidRequest(
   else if (!theme || !hasOption(theme.callNames, callName)) addIssue(issues, "callName", "unsupported");
   if (callName === "by-name" && !String(answers.customCallName ?? "").trim()) addIssue(issues, "customCallName", "required");
   if (String(answers.customTreat ?? "").length > MAX_CUSTOM_TREAT_LENGTH) addIssue(issues, "customTreat", "too_long");
+  if (String(answers.customHabit ?? "").length > MAX_CUSTOM_HABIT_LENGTH) addIssue(issues, "customHabit", "too_long");
   if (String(answers.customCallName ?? "").length > MAX_CALL_NAME_LENGTH) addIssue(issues, "customCallName", "too_long");
   if (String(answers.personalDetail ?? "").length > MAX_PERSONAL_DETAIL_LENGTH) addIssue(issues, "personalDetail", "too_long");
   if (String(answers.generationNonce ?? "").length > MAX_GENERATION_NONCE_LENGTH) {
     addIssue(issues, "generationNonce", "too_long");
   }
 
-  validatePhoto(request.primaryPhoto, "primaryPhoto", issues, true);
+  validatePhoto(request.primaryPhoto, "primaryPhoto", issues);
 
   if (issues.length > 0) return { valid: false, issues };
   return {
@@ -263,6 +270,7 @@ export function validateSeasonalPolaroidRequest(
       status,
       personalities: personalities.map(String),
       callName,
+      customHabit: String(answers.customHabit ?? "").trim(),
       customTreat: String(answers.customTreat ?? "").trim(),
       customCallName: String(answers.customCallName ?? "").trim(),
       personalDetail: String(answers.personalDetail ?? "").trim(),
