@@ -284,8 +284,15 @@ export async function generateSeasonalPolaroidMemo({
         max_completion_tokens: 220,
         response_format: seasonalMemoResponseFormat(answers.locale as "en" | "ko"),
         messages: image
-          ? buildSeasonalPolaroidMemoVisionMessages(answers, image)
-          : buildSeasonalPolaroidMemoMessages(answers),
+          ? buildSeasonalPolaroidMemoVisionMessages(
+              answers,
+              image,
+              attempt > 0 && lastFailureCode === "memo_line_length" ? "memo_line_length" : undefined,
+            )
+          : buildSeasonalPolaroidMemoMessages(
+              answers,
+              attempt > 0 && lastFailureCode === "memo_line_length" ? "memo_line_length" : undefined,
+            ),
       };
       markStage("api_call");
       const completion = await openai.chat.completions.create(request, OPENAI_CHAT_OPTIONS);

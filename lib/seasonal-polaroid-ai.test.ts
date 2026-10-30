@@ -3,7 +3,11 @@ import { register } from "node:module";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { buildSeasonalPolaroidMemoMessages, type SeasonalPolaroidPromptAnswers } from "./seasonal-polaroid-prompts.ts";
+import {
+  buildSeasonalPolaroidMemoMessages,
+  validateSeasonalPolaroidMemo,
+  type SeasonalPolaroidPromptAnswers,
+} from "./seasonal-polaroid-prompts.ts";
 
 // The production generator is server-only because it imports the shared
 // server guard. Stub those server-only modules here so these tests can run a
@@ -41,7 +45,7 @@ test("memo generation uses structured JSON and validates the requested locale", 
   assert.match(generator, /type: "json_schema"/);
   assert.match(generator, /required: \["locale", "lines"\]/);
   assert.match(generator, /validateSeasonalPolaroidMemo\(parsed, answers\)/);
-  assert.match(generator, /buildSeasonalPolaroidMemoMessages\(answers\)/);
+  assert.match(generator, /buildSeasonalPolaroidMemoMessages\(/);
   assert.match(generator, /model: "gpt-4o-mini"/);
   assert.match(generator, /path: "ai"/);
   assert.match(generator, /recoveredAfter/);
@@ -222,6 +226,21 @@ function mockedOpenAi(content: string, calls: { count: number }) {
   } as never;
 }
 
+function mockedOpenAiSequence(contents: string[], calls: { count: number }, requests: unknown[] = []) {
+  return {
+    chat: {
+      completions: {
+        create: async (request: unknown) => {
+          requests.push(request);
+          const content = contents[Math.min(calls.count, contents.length - 1)]!;
+          calls.count += 1;
+          return { choices: [{ message: { content } }], usage: null };
+        },
+      },
+    },
+  } as never;
+}
+
 test("valid English structured memo reaches the AI path without fallback", async () => {
   const calls = { count: 0 };
   const result = await generateSeasonalPolaroidMemo({
@@ -274,6 +293,78 @@ test("valid Korean structured memo reaches the AI path without fallback", async 
   assert.equal(result.modelUsed, "gpt-4o-mini");
   assert.equal(result.memo.locale, "ko");
   assert.equal(result.memo.lines.length, 4);
+});
+
+test("memo retries an overlong response with an explicit compact rewrite instruction", async () => {
+  const calls = { count: 0 };
+  const requests: unknown[] = [];
+  const result = await generateSeasonalPolaroidMemo({
+    openai: mockedOpenAiSequence([
+      JSON.stringify({
+        locale: "en",
+        lines: [
+          "Mom, happy Halloween from Mochi!",
+          `and I ${"x".repeat(40)},`,
+          "and my tiny purr fills the frame.",
+          "and I cuddle close tonight.",
+        ],
+      }),
+      JSON.stringify({
+        locale: "en",
+        lines: [
+          "Mom, happy Halloween from Mochi!",
+          "I see pumpkin lights,",
+          "and my whiskers dance while I nap.",
+          "and my tiny purr fills the frame.",
+        ],
+      }),
+    ], calls, requests),
+    answers: ANSWERS,
+  });
+
+  assert.equal(calls.count, 2);
+  assert.equal(result.fallback, false);
+  assert.equal(result.retried, true);
+  const retrySystemPrompt = ((requests[1] as { messages: Array<{ content: string }> }).messages[0]!).content;
+  assert.match(retrySystemPrompt, /Retry correction/);
+  assert.match(retrySystemPrompt, /Preserve the selected factual questionnaire details/);
+  assert.match(retrySystemPrompt, /lines 2-4 must each be 40 characters or fewer/);
+});
+
+test("line-length failures fall back to valid personalized captions in both languages", async () => {
+  for (const answers of [
+    { ...ANSWERS, personalDetail: "x".repeat(60) },
+    {
+      ...ANSWERS,
+      locale: "ko" as const,
+      petName: "紐⑥컡",
+      callName: "mom",
+      status: "passed" as const,
+      costume: "little-angel",
+      scene: "lantern-meadow",
+      vibe: "gentle-warm",
+      personalDetail: "x".repeat(60),
+    },
+  ]) {
+    const calls = { count: 0 };
+    const overlong = answers.locale === "ko"
+      ? "?꾨쭏, 紐⑥컡媛 ?댄뵾 ?좊줈??"
+      : "Mom, happy Halloween from Mochi!";
+    const invalidResponse = JSON.stringify({
+      locale: answers.locale,
+      lines: [overlong, answers.locale === "ko" ? `?섎뒗 ${"媛".repeat(30)},` : `and I ${"x".repeat(40)},`, "and I nap,", "and I purr."],
+    });
+    const result = await generateSeasonalPolaroidMemo({
+      openai: mockedOpenAi(invalidResponse, calls),
+      answers,
+    });
+
+    assert.equal(calls.count, 2);
+    assert.equal(result.fallback, true);
+    assert.equal(result.modelUsed, null);
+    assert.equal(validateSeasonalPolaroidMemo(result.memo, answers).valid, true);
+    assert.match(result.memo.lines[0], new RegExp(answers.petName));
+  }
 });
 
 test("missing or mismatched locale remains rejected and falls back safely", async () => {

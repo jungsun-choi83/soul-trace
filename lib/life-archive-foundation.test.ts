@@ -71,8 +71,9 @@ test("verification reuses the email stored behind letter_id", () => {
   assert.match(authConfirmation, /claim_soul_trace_legacy_records/);
 });
 
-test("the result connection does not collect the owner's email again", () => {
-  assert.match(resultFlow, /href="\/life-archive"/);
+test("the result download does not open or save to Life Archive", () => {
+  assert.doesNotMatch(resultFlow, /href="\/life-archive"/);
+  assert.doesNotMatch(resultFlow, /\/api\/account-result\/letter/);
   assert.doesNotMatch(resultFlow, /\/api\/life-archive\/access/);
   assert.doesNotMatch(resultFlow, /JSON\.stringify\(\{ letterId \}\)/);
   assert.match(archivePage, /requestHasEternalBeamAccess|verifyEternalBeamAccessSession/);

@@ -185,6 +185,7 @@ export async function POST(request: Request): Promise<Response> {
     vibe: text(formData, "vibe", 64),
     personalities: readPersonalities(formData),
     habit: text(formData, "habit", 64),
+    customHabit: optionalText(formData, "customHabit", 60),
     favoriteTreat: text(formData, "favoriteTreat", 64),
     customTreat: optionalText(formData, "customTreat", 60),
     callName: text(formData, "callName", 64),

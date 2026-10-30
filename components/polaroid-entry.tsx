@@ -60,6 +60,7 @@ type PolaroidAnswers = {
   vibe: string;
   personalities: string[];
   habit: string;
+  customHabit: string;
   favoriteTreat: string;
   customTreat: string;
   callName: string;
@@ -95,6 +96,7 @@ const EMPTY_ANSWERS: PolaroidAnswers = {
   vibe: "",
   personalities: [],
   habit: "",
+  customHabit: "",
   favoriteTreat: "",
   customTreat: "",
   callName: "",
@@ -111,6 +113,12 @@ const SPECIES_OPTIONS: readonly SeasonalOption[] = [
   { id: "bird", emoji: "🐦", labelKey: "options.species.bird" },
   { id: "other", emoji: "🐾", labelKey: "options.species.other" },
 ];
+
+const CUSTOM_HABIT_OPTION: SeasonalOption = {
+  id: "custom",
+  emoji: "✦",
+  labelKey: "options.habits.custom",
+};
 
 function fieldClass(lang: Locale, invalid = false) {
   return `w-full rounded-xl border bg-black/25 px-4 py-3.5 text-base font-extralight text-[#F3EAD8] outline-none transition placeholder:text-[#8F8578] focus:border-[#D4AF37] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37] ${
@@ -155,6 +163,7 @@ function restoreDraft(value: unknown): Partial<PolaroidAnswers> {
       ? draft.personalities.filter((item): item is string => typeof item === "string").slice(0, 2)
       : [],
     habit: typeof draft.habit === "string" ? draft.habit : "",
+    customHabit: typeof draft.customHabit === "string" ? draft.customHabit.slice(0, 60) : "",
     favoriteTreat: typeof draft.favoriteTreat === "string" ? draft.favoriteTreat : "",
     customTreat: typeof draft.customTreat === "string" ? draft.customTreat.slice(0, 60) : "",
     // "Something else" was retired; a draft that still carries it means "A name" with the same typed name.
@@ -171,11 +180,18 @@ function restoreDraft(value: unknown): Partial<PolaroidAnswers> {
   if (restored.species) {
     const habits = HALLOWEEN_POLAROID_THEME.habitsBySpecies[restored.species];
     const treats = HALLOWEEN_POLAROID_THEME.treatsBySpecies[restored.species];
-    if (restored.habit && !habits.some((item) => item.id === restored.habit)) restored.habit = "";
+    if (restored.habit && restored.habit !== "custom" && !habits.some((item) => item.id === restored.habit)) restored.habit = "";
+    if (restored.habit !== "custom") restored.customHabit = "";
     if (restored.favoriteTreat && !treats.some((item) => item.id === restored.favoriteTreat)) {
       restored.favoriteTreat = "";
       restored.customTreat = "";
     }
+  }
+  if (restored.callName && !HALLOWEEN_POLAROID_THEME.callNames.some((item) => item.id === restored.callName)) {
+    restored.callName = "";
+    restored.customCallName = "";
+  } else if (restored.callName !== "by-name") {
+    restored.customCallName = "";
   }
   return restored;
 }
@@ -498,6 +514,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   const availableVibes = optionsForStatus(theme.vibes, status);
   const availableHabits = answers.species ? theme.habitsBySpecies[answers.species] : [];
   const availableTreats = answers.species ? theme.treatsBySpecies[answers.species] : [];
+  const habitOptions = [...availableHabits, CUSTOM_HABIT_OPTION];
 
   const whisperRule = useMemo(() => {
     if (!status) return theme.whispers.default;
@@ -523,7 +540,11 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     answers.scene ? optionById(theme.scenes, answers.scene) : undefined,
     answers.vibe ? optionById(theme.vibes, answers.vibe) : undefined,
     ...answers.personalities.map((id) => optionById(theme.personalities, id)),
-    answers.habit ? optionById(availableHabits, answers.habit) : undefined,
+    answers.habit && answers.habit !== "custom"
+      ? optionById(availableHabits, answers.habit)
+      : answers.customHabit
+        ? CUSTOM_HABIT_OPTION
+        : undefined,
     answers.favoriteTreat && answers.favoriteTreat !== "custom"
       ? optionById(availableTreats, answers.favoriteTreat)
       : answers.customTreat
@@ -561,7 +582,8 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     setAnswers((current) => ({
       ...current,
       species: nextSpecies,
-      habit: nextHabits.some((item) => item.id === current.habit) ? current.habit : "",
+      habit: current.habit === "custom" || nextHabits.some((item) => item.id === current.habit) ? current.habit : "",
+      customHabit: current.habit === "custom" ? current.customHabit : "",
       favoriteTreat: nextTreats.some((item) => item.id === current.favoriteTreat) ? current.favoriteTreat : "",
       customTreat: current.favoriteTreat === "custom" && nextTreats.some((item) => item.id === "custom") ? current.customTreat : "",
     }));
@@ -616,6 +638,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     if (currentStep === 5) {
       if (answers.personalities.length < 1) return t("seasonalPolaroid.flow.validation.personality");
       if (!answers.habit) return t("seasonalPolaroid.flow.validation.habit");
+      if (answers.habit === "custom" && !answers.customHabit.trim()) return t("seasonalPolaroid.flow.validation.habitCustom");
     }
     if (currentStep === 6) {
       if (!answers.favoriteTreat || (answers.favoriteTreat === "custom" && !answers.customTreat.trim())) return t("seasonalPolaroid.flow.validation.treat");
@@ -771,6 +794,7 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
       vibe: answers.vibe,
       personalities: answers.personalities,
       habit: answers.habit,
+      customHabit: answers.customHabit.trim(),
       favoriteTreat: answers.favoriteTreat,
       customTreat: answers.customTreat.trim(),
       callName: answers.callName,
@@ -1205,7 +1229,8 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
                       }} bodyFont={bodyFont} multi />)}
                     </div>
                   </div>
-                  <OptionGroup label={t("seasonalPolaroid.flow.screen5.habitLabel")} options={availableHabits} selected={answers.habit} onSelect={(id) => updateAnswers({ habit: id }, { kind: "habit" })} bodyFont={bodyFont} />
+                  <OptionGroup label={t("seasonalPolaroid.flow.screen5.habitLabel")} options={habitOptions} selected={answers.habit} onSelect={(id) => updateAnswers({ habit: id, ...(id === "custom" ? {} : { customHabit: "" }) }, { kind: "habit" })} bodyFont={bodyFont} />
+                  {answers.habit === "custom" ? <input type="text" maxLength={60} value={answers.customHabit} onChange={(event) => updateAnswers({ customHabit: event.target.value.slice(0, 60) })} placeholder={t("seasonalPolaroid.flow.screen5.habitCustomPlaceholder")} className={fieldClass(lang)} /> : null}
                 </div>
               ) : null}
 

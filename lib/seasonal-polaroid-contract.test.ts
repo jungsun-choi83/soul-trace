@@ -45,7 +45,7 @@ function issueFor(result: ReturnType<typeof validateSeasonalPolaroidRequest>, fi
   return result.issues.find((issue) => issue.field === field);
 }
 
-test("accepts a complete English living request", () => {
+test("accepts a complete English living request with one primary photo", () => {
   const result = validateSeasonalPolaroidRequest(request({}));
   assert.equal(result.valid, true);
   if (result.valid) {
@@ -64,6 +64,13 @@ test("accepts a complete Korean passed request with memorial-only options", () =
     vibe: "gentle-warm",
   }));
   assert.equal(result.valid, true);
+});
+
+test("accepts a custom habit only when the user supplies its description", () => {
+  const accepted = validateSeasonalPolaroidRequest(request({ habit: "custom", customHabit: "carries socks around" }));
+  assert.equal(accepted.valid, true);
+  const missing = validateSeasonalPolaroidRequest(request({ habit: "custom", customHabit: "" }));
+  assert.equal(issueFor(missing, "customHabit")?.code, "required");
 });
 
 test("rejects missing required answers", () => {
@@ -185,6 +192,7 @@ test("enforces the 15 MB limit for the photo", () => {
   const result = validateSeasonalPolaroidRequest({
     ...request(),
     primaryPhoto: photo("pet.jpg", "image/jpeg", 15 * 1024 * 1024 + 1),
+    answers: { ...BASE_ANSWERS },
   });
   assert.equal(issueFor(result, "primaryPhoto")?.code, "photo_size");
 });

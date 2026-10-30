@@ -1,39 +1,51 @@
 "use client";
 
+import { LetterPostageStamp } from "@/components/letter-postage-stamp";
 import type { Locale } from "@/lib/i18n";
 import type { LetterTheme } from "@/lib/letter-themes";
+import type { DefaultStampType } from "@/lib/stamp";
 import { forwardRef } from "react";
 
 export type InstagramStoryCardProps = {
   theme: LetterTheme;
   backgroundImageReady: boolean;
-  /** 설문에 적은 이름 포함 맺음말 머리말 (예: "코코가 전하는 맺음말") */
-  nameLead: string;
-  personalityTitle: string;
-  emotionalLine: string;
-  footerTagline: string;
+  letterOpening: string;
+  letterBody: string;
+  letterLanguage: Locale;
+  signatureDate: string;
+  signatureName: string;
+  photoUrl: string | null;
+  defaultStamp: DefaultStampType;
+  bodyFontFamily: string;
+  openingFontFamily: string;
   siteLine: string;
-  lang: Locale;
 };
 
-/**
- * 인스타 스토리 9:16 바이럴 카드 — html-to-image 캡처 전용(화면 밖 배치).
- * 상단 일러스트 / 하단 고정 텍스트 패널(이름·인용·워터마크가 잘리지 않도록 분리).
- */
+/** Full-letter 9:16 artwork used only for Instagram capture. */
 export const InstagramStoryCard = forwardRef<HTMLDivElement, InstagramStoryCardProps>(
   function InstagramStoryCard(
     {
       theme,
       backgroundImageReady,
-      nameLead,
-      personalityTitle,
-      emotionalLine,
-      footerTagline,
+      letterOpening,
+      letterBody,
+      letterLanguage,
+      signatureDate,
+      signatureName,
+      photoUrl,
+      defaultStamp,
+      bodyFontFamily,
+      openingFontFamily,
       siteLine,
-      lang,
     },
     ref,
   ) {
+    const characterCount = `${letterOpening}\n${letterBody}`.length;
+    const bodyFontSize = characterCount > 2500 ? 27 : characterCount > 1800 ? 31 : 36;
+    const bodyLineHeight = characterCount > 2500 ? 1.5 : 1.62;
+    const openingFontSize = letterLanguage === "ko" ? 42 : 54;
+    const paragraphs = letterBody;
+
     return (
       <div
         ref={ref}
@@ -46,7 +58,7 @@ export const InstagramStoryCard = forwardRef<HTMLDivElement, InstagramStoryCardP
         aria-hidden
       >
         {backgroundImageReady ? (
-          // eslint-disable-next-line @next/next/no-img-element -- exact public theme asset in capture-only card
+          // eslint-disable-next-line @next/next/no-img-element -- exact public theme asset in capture-only artwork
           <img
             src={theme.backgroundImage}
             alt=""
@@ -54,38 +66,65 @@ export const InstagramStoryCard = forwardRef<HTMLDivElement, InstagramStoryCardP
           />
         ) : null}
 
-        <div className="relative z-[1] h-[760px] w-full shrink-0" />
-
-        <div
-          className="relative z-10 mx-12 mb-28 flex min-h-[1020px] flex-1 flex-col rounded-[42px] border px-12 pb-32 pt-14 text-center shadow-[0_30px_100px_rgba(0,0,0,0.3)] backdrop-blur-xl"
+        <article
+          className="relative z-10 mx-12 my-12 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[42px] border px-20 pb-24 pt-44 shadow-[0_24px_70px_rgba(8,10,20,0.34),inset_0_0_70px_rgba(130,91,35,0.06)]"
           style={{
-            backgroundColor: theme.overlayColor,
+            background: theme.cardBackground,
             borderColor: theme.panelBorderColor,
           }}
         >
-          <p className="text-[30px] font-semibold tracking-[0.2em]" style={{ color: theme.headingColor }}>
-            SOUL TRACE
-          </p>
+          <div
+            className="absolute inset-x-16 top-12 h-px"
+            style={{ background: `linear-gradient(to right, transparent, ${theme.dividerColor}, transparent)` }}
+          />
+          <LetterPostageStamp
+            photoUrl={photoUrl}
+            defaultStamp={defaultStamp}
+            accentColor={theme.stampAccentColor}
+            inkColor={theme.stampInkColor}
+          />
 
-          <p className="mt-8 text-[40px] font-semibold leading-[1.35] tracking-[0.02em]" style={{ color: theme.headingColor }}>
-            {nameLead}
-          </p>
-
-          <p
-            className={`instagram-story-quote-clamp mx-auto mt-10 max-w-[900px] text-[46px] font-normal leading-[1.5] tracking-normal ${
-              lang === "ko" ? "break-keep" : ""
-            }`}
+          <div
+            data-story-letter-body
+            className={`min-h-0 flex-1 whitespace-pre-line text-left tracking-[0.012em] ${letterLanguage === "ko" ? "break-keep" : ""}`}
+            style={{
+              fontFamily: bodyFontFamily,
+              fontSize: `${bodyFontSize}px`,
+              lineHeight: bodyLineHeight,
+            }}
           >
-            “{emotionalLine}”
-          </p>
+            {letterOpening ? (
+              <p
+                className="mb-7"
+                style={{
+                  color: theme.dropCapColor,
+                  fontFamily: openingFontFamily,
+                  fontSize: `${openingFontSize}px`,
+                  lineHeight: 1.25,
+                  textShadow: "0 1px 1px rgba(83,55,24,0.12)",
+                }}
+              >
+                {letterOpening}
+              </p>
+            ) : null}
+            <p>{paragraphs}</p>
+          </div>
 
-          <p className="mt-auto pt-10 text-[22px] font-semibold tracking-[0.1em] opacity-65">
-            {personalityTitle}
-          </p>
-          <p className="mt-4 text-[18px] font-normal leading-relaxed tracking-[0.08em] opacity-60">
-            {footerTagline}
-          </p>
-        </div>
+          {(signatureDate || signatureName) ? (
+            <div className="mt-8 shrink-0 self-end text-right" style={{ color: theme.endingColor }}>
+              {signatureDate ? (
+                <p className={`text-[21px] tracking-[0.04em] opacity-75 ${letterLanguage === "ko" ? "font-ko" : "font-display-en"}`}>
+                  {signatureDate}
+                </p>
+              ) : null}
+              {signatureName ? (
+                <p className="mt-3 text-[44px] leading-tight" style={{ fontFamily: openingFontFamily }}>
+                  {signatureName}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </article>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center px-10 pb-16 pt-8">
           <span className="rounded-full border border-white/18 bg-black/55 px-10 py-3.5 text-center text-[24px] font-semibold tracking-[0.18em] text-white/70 shadow-[0_2px_24px_rgba(0,0,0,0.65)]">
