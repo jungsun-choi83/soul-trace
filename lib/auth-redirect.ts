@@ -30,8 +30,9 @@ export function safeAuthReturnPath(
   return isAuthLoopPath(parsed.pathname) ? fallback : destination;
 }
 
-export function authEntryPath(returnTo: string): string {
+export function authEntryPath(returnTo: string, mode?: "signin" | "signup"): string {
   const params = new URLSearchParams({ returnTo: safeAuthReturnPath(returnTo) });
+  if (mode) params.set("mode", mode);
   return `/auth?${params.toString()}`;
 }
 
@@ -102,6 +103,35 @@ export function authCallbackUrl(origin: string, returnTo: string, locale: unknow
     `${errorReturn.pathname}${errorReturn.search}`,
   );
   return callback.toString();
+}
+
+function isLocalOnlyHostname(hostname: string): boolean {
+  const host = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (host === "localhost" || host === "0.0.0.0" || host === "::1" || host.endsWith(".local")) return true;
+  if (host.startsWith("127.")) return true;
+  const parts = host.split(".");
+  if (parts.length !== 4) return false;
+  const numbers = parts.map((part) => Number(part));
+  if (numbers.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+  const [first, second] = numbers;
+  return first === 10 || (first === 192 && second === 168) || (first === 172 && second >= 16 && second <= 31);
+}
+
+export function authEmailOrigin(browserOrigin: string, publicOrigin: string): string {
+  let browser: URL;
+  try {
+    browser = new URL(browserOrigin);
+  } catch {
+    return new URL(publicOrigin).origin;
+  }
+  if (!isLocalOnlyHostname(browser.hostname)) return browser.origin;
+  try {
+    const published = new URL(publicOrigin);
+    if (published.protocol === "https:" || published.protocol === "http:") return published.origin;
+  } catch {
+    return browser.origin;
+  }
+  return browser.origin;
 }
 
 export function passwordRecoveryCallbackUrl(origin: string, returnTo: string, locale: unknown): string {

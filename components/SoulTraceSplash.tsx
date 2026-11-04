@@ -1,6 +1,5 @@
 "use client";
 
-import { EternalBeamLogo } from "@/components/storybook/eternal-beam-logo";
 import { useLocale } from "@/components/locale-provider";
 import { SPLASH_ART_SRC } from "@/lib/splash-entry";
 import Image from "next/image";
@@ -35,19 +34,11 @@ export function SoulTraceSplash({
         sizes="100vw"
         className={styles.scene}
       />
-      <div className={styles.paperFade} aria-hidden="true" />
-      <div className={styles.identity}>
-        <EternalBeamLogo className={styles.mark} />
-        <div className={styles.wordmark}>SoulTrace</div>
-        <p className={styles.tagline}>
-          {t("splash.tagline").split("\n").map((line) => (
-            <span key={line} className="block">
-              {line}
-            </span>
-          ))}
-        </p>
-        <p className={styles.loading}>{t("splash.loading")}</p>
-      </div>
+      <p className={styles.visuallyHidden}>
+        SoulTrace
+        {t("splash.tagline")}
+        {t("splash.loading")}
+      </p>
       {onDismiss ? (
         <button className={styles.srOnly} onClick={onDismiss} type="button">
           {t("splash.skip")}

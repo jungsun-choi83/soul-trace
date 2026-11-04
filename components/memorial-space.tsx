@@ -144,7 +144,7 @@ export function MemorialSpace({ profile, today }: { profile: PetProfile; today: 
           <Link href={moodJournalHref(petId)} className="st-btn st-btn-sage mt-4 w-full">{copy.openMoodJournal}</Link>
         </section>
       </main>
-      <StoryTabbar current="context" {...storyTabProps(copy, petId, true, "memorial")} />
+      <StoryTabbar current="home" {...storyTabProps(copy, petId, true, "memorial")} />
     </div>
   );
 }

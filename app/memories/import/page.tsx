@@ -13,5 +13,5 @@ export default async function MemoryImportAlias({
 async function memoryTarget(params: ServerSearchParams, hash: string) {
   const raw = params.pet;
   const pet = Array.isArray(raw) ? raw[0] : raw;
-  return pet && isUuid(pet) ? `/my/pets/${pet}#${hash}` : "/life-archive";
+  return pet && isUuid(pet) ? `/memories?pet=${encodeURIComponent(pet)}#${hash}` : "/memories";
 }

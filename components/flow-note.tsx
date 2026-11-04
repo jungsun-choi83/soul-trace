@@ -14,13 +14,15 @@ export function FlowNote({
   lifeStatus = "unspecified",
   tab = "home",
   signedIn = false,
+  showTabs = true,
 }: {
   title: string;
   body: string;
   links: { href: string; label: string }[];
   lifeStatus?: LifeStatus;
-  tab?: "home" | "memories" | "create" | "context" | "pet";
+  tab?: "home" | "memories" | "create" | "pet";
   signedIn?: boolean;
+  showTabs?: boolean;
 }) {
   const { lang } = useLocale();
   const copy = petFirstCopy(lang);
@@ -37,7 +39,7 @@ export function FlowNote({
           ))}
         </div>
       </main>
-      <StoryTabbar current={tab} {...storyTabProps(copy, null, signedIn, lifeStatus)} />
+      {showTabs ? <StoryTabbar current={tab} {...storyTabProps(copy, null, signedIn, lifeStatus)} /> : null}
     </div>
   );
 }

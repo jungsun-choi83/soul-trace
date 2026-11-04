@@ -115,7 +115,8 @@ test("memorial home hides walk and collar prompts", () => {
   const memory = readFileSync("components/pet-first-memory.tsx", "utf8");
   assert.match(home, /!memorial \? \([\s\S]*walk-title/);
   assert.match(home, /!memorial \? \([\s\S]*collarCardTitle/);
-  assert.match(memory, /canOpenCollar\(status\)/);
-  assert.match(memory, /\/my\/device\?pet=/);
+  assert.match(readFileSync("components/pet-roster.tsx", "utf8"), /lifeStatus === "living"[\s\S]*\/my\/device\?pet=/);
+  assert.match(memory, /canOpenMemorialSpace\(status\)/);
+  assert.doesNotMatch(memory, /\/my\/device\?pet=/);
   assert.doesNotMatch(memory, /href=["']\/my\/collar["']/);
 });

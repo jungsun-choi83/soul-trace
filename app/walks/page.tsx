@@ -7,7 +7,7 @@ export default function WalkHistoryPage() {
   return (
     <FlowNote
       lifeStatus="living"
-      tab="context"
+      tab="pet"
       title="산책 기록"
       body="목걸이와 휴대폰이 연결된 뒤에 기록이 남습니다. 지금은 걸음 수와 거리를 만들지 않습니다."
       links={[

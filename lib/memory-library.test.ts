@@ -141,8 +141,10 @@ test("archive, memorial-space, device and beam pages stay behind the pet-first f
     assert.match(source, /authEntryPath/);
   }
   const memoryUi = readFileSync("components/pet-first-memory.tsx", "utf8");
-  assert.match(memoryUi, /canOpenCollar\(status\)/);
-  assert.match(memoryUi, /\/my\/device\?pet=/);
+  const roster = readFileSync("components/pet-roster.tsx", "utf8");
+  assert.match(memoryUi, /canOpenMemorialSpace\(status\)/);
+  assert.doesNotMatch(memoryUi, /\/my\/device\?pet=/);
+  assert.match(roster, /lifeStatus === "living"[\s\S]*\/my\/device\?pet=/);
   assert.doesNotMatch(memoryUi, /href=["']\/my\/collar["']/);
   const collar = readFileSync("components/collar-studio.tsx", "utf8");
   assert.match(collar, /connected \? "예시" : "--"/);

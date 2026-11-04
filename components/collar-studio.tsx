@@ -269,7 +269,7 @@ export function CollarStudio({ step }: { step: CollarStep }) {
         {step === "info" ? <InfoPanel t={t} labels={labels} nextHref={sendHref} /> : null}
         {step === "send" ? <SendPanel t={t} labels={labels} sendable={sendable} busy={busy} /> : null}
       </main>
-      <StoryTabbar current="context" {...storyTabProps(copy, collar.pet?.petId ?? null, true, "living")} />
+      <StoryTabbar current="pet" {...storyTabProps(copy, collar.pet?.petId ?? null, true, "living")} />
     </div>
   );
 }

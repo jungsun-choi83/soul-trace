@@ -10,5 +10,5 @@ export default async function MemoryReviewAlias({
   const params = await searchParams;
   const raw = params.pet;
   const pet = Array.isArray(raw) ? raw[0] : raw;
-  redirect(pet && isUuid(pet) ? `/my/pets/${pet}#monthly` : "/life-archive");
+  redirect(pet && isUuid(pet) ? `/memories?pet=${encodeURIComponent(pet)}#months` : "/memories");
 }

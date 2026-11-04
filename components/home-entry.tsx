@@ -32,15 +32,22 @@ export function HomeEntry({ children }: { children: ReactNode }) {
         // Showing splash still works if the query cannot be stripped.
       }
     }
+    const startedKey = "soultrace.splash.started";
+    let started = Number(window.sessionStorage.getItem(startedKey));
+    if (!Number.isFinite(started) || started <= 0) {
+      started = Date.now();
+      try {
+        window.sessionStorage.setItem(startedKey, String(started));
+      } catch {
+        // The timer still runs for this mount.
+      }
+    }
     setPhase("splash");
-  }, []);
-
-  useEffect(() => {
-    if (phase !== "pending" && phase !== "splash") return;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const id = window.setTimeout(finish, reducedMotion ? 280 : SPLASH_HOLD_MS);
+    const hold = reducedMotion ? 280 : SPLASH_HOLD_MS;
+    const id = window.setTimeout(finish, Math.max(0, hold - (Date.now() - started)));
     return () => window.clearTimeout(id);
-  }, [finish, phase]);
+  }, [finish]);
 
   useEffect(() => {
     if (phase !== "leaving") return;

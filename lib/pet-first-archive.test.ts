@@ -203,12 +203,12 @@ test("P1 customer home, profile, memories, and settings stay on existing auth an
   assert.match(dashboardPage, /redirect\("\/choose"\)/);
   assert.match(readFileSync("app/dashboard/living/page.tsx", "utf8"), /LivingHome/);
   assert.match(readFileSync("app/dashboard/memorial/page.tsx", "utf8"), /MemorialHome/);
-  assert.match(readFileSync("components/living-home.tsx", "utf8"), /\/living/);
+  assert.match(readFileSync("components/living-home.tsx", "utf8"), /\/create\?/);
   assert.match(readFileSync("components/living-home.tsx", "utf8"), /\/my\/device/);
   assert.doesNotMatch(readFileSync("components/living-home.tsx", "utf8"), /memorial-space|mood-journal/);
   assert.match(readFileSync("components/memorial-home.tsx", "utf8"), /memorial-space/);
-  assert.match(readFileSync("components/memorial-home.tsx", "utf8"), /mood-journal/);
-  assert.doesNotMatch(readFileSync("components/memorial-home.tsx", "utf8"), /\/my\/device|산책 시작/);
+  assert.match(readFileSync("components/memorial-space.tsx", "utf8"), /moodJournalHref/);
+  assert.doesNotMatch(readFileSync("components/memorial-home.tsx", "utf8"), /\/my\/device|산책 시작|mood-journal/);
   assert.match(dashboardUi, /letterPathForLifeStatus/);
   assert.match(dashboardUi, /copy\.walkTitle/);
   assert.match(dashboardUi, /memorialSpaceHref/);
@@ -245,7 +245,9 @@ test("P1 customer home, profile, memories, and settings stay on existing auth an
   assert.match(tabRoutes, /\/dashboard\/living\$\{petQuery\}/);
   assert.match(tabRoutes, /\/dashboard\/memorial\$\{petQuery\}/);
   assert.match(tabRoutes, /pet: "\/my\/pets"/);
-  assert.match(tabRoutes, /memories: petId \? `\/my\/pets\/\$\{petId\}` : "\/life-archive"/);
+  assert.match(tabRoutes, /memories: memoriesHref\(petId\)/);
+  assert.match(readFileSync("app/memories/page.tsx", "utf8"), /loadPetHome/);
+  assert.doesNotMatch(readFileSync("app/memories/page.tsx", "utf8"), /LifeArchiveAccessRequired|eternal-beam-access/);
   assert.match(petsPage, /PetRoster/);
   assert.doesNotMatch(petsPage, /PetFirstHome/);
   assert.match(readFileSync("components/pet-roster.tsx", "utf8"), /current="pet"/);

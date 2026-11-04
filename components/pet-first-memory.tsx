@@ -9,7 +9,6 @@ import { StoryTabbar } from "@/components/storybook/story-tabbar";
 import type { PetProfile } from "@/lib/pet-first-archive-data";
 import {
   beamSceneHref,
-  canOpenCollar,
   canOpenMemorialSpace,
   groupLibraryByMonthAndDay,
   isMoodJournalItem,
@@ -277,12 +276,6 @@ export function PetFirstMemory({ profile, today }: { profile: PetProfile; today:
               <Stat label={copy.statPhotos} value={loading ? "·" : String(photoCount)} />
               <Stat label={copy.statLetters} value={String(profile.letterCount)} />
             </dl>
-            {canOpenCollar(status) ? (
-              <Link href={`/my/device?pet=${encodeURIComponent(petId)}`} className="st-card mt-4 block px-5 py-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--st-focus)]">
-                <p className="st-headline text-lg">{copy.collarCardTitle}</p>
-                <p className="mt-1 text-sm text-[color:var(--st-text-soft)]">{copy.collarCardBody}</p>
-              </Link>
-            ) : null}
             {canOpenMemorialSpace(status) ? (
               <Link href={memorialSpaceHref(petId)} className="st-card mt-4 block px-5 py-4">
                 <p className="st-headline text-lg">{copy.openMemorialSpace}</p>

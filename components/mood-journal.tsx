@@ -109,7 +109,7 @@ export function MoodJournal({ profile }: { profile: PetProfile }) {
           </ul>
         </section>
       </main>
-      <StoryTabbar current="context" {...storyTabProps(copy, petId, true, "memorial")} />
+      <StoryTabbar current="home" {...storyTabProps(copy, petId, true, "memorial")} />
     </div>
   );
 }

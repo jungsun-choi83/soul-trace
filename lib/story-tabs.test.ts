@@ -13,30 +13,30 @@ const memorial = readFileSync("app/memorial/page.tsx", "utf8");
 const polaroid = readFileSync("app/polaroid/page.tsx", "utf8");
 const memorialSpace = readFileSync("app/memorial-space/page.tsx", "utf8");
 
-test("five tabs stay home, memories, create, status-gated fourth, and pet", () => {
+test("four tabs stay home, memories, create, and pet", () => {
   const livingTabs = storyTabHrefs("pet-1", true, "living");
   const memorialTabs = storyTabHrefs("pet-1", true, "memorial");
   const openTabs = storyTabHrefs(null, true, "unspecified");
   const labels = storyTabLabels(petFirstCopy("ko"), "living");
 
-  assert.deepEqual(Object.keys(livingTabs), ["home", "memories", "create", "context", "pet"]);
+  assert.deepEqual(Object.keys(livingTabs), ["home", "memories", "create", "pet"]);
   assert.equal(livingTabs.home, "/dashboard/living?pet=pet-1");
-  assert.equal(livingTabs.memories, "/my/pets/pet-1");
+  assert.equal(livingTabs.memories, "/memories?pet=pet-1");
   assert.equal(livingTabs.create, "/create?pet=pet-1&branch=living");
-  assert.equal(livingTabs.context, "/my/device?pet=pet-1");
   assert.equal(livingTabs.pet, "/my/pets");
   assert.equal(memorialTabs.home, "/dashboard/memorial?pet=pet-1");
   assert.equal(memorialTabs.create, "/create?pet=pet-1&branch=memorial");
-  assert.equal(memorialTabs.context, "/memorial-space?pet=pet-1");
-  assert.equal(openTabs.memories, "/life-archive");
-  assert.equal(openTabs.context, "/my/device");
-  assert.equal(storyTabHrefs("pet-1", true, "unspecified").context, "/my/device?pet=pet-1");
-  assert.notEqual(storyTabHrefs("pet-1", true, "unspecified").context, storyTabHrefs("pet-1", true, "unspecified").pet);
-  assert.equal(labels.context, "목걸이");
-  assert.equal(storyTabLabels(petFirstCopy("ko"), "memorial").context, "추모관");
-  assert.equal(storyTabLabels(petFirstCopy("ko"), "unspecified").context, "목걸이");
-  assert.doesNotMatch(JSON.stringify(livingTabs), /beam-scene|eternal-beam/);
-  assert.match(tabbar, /"home", "memories", "create", "context", "pet"/);
+  assert.equal(openTabs.memories, "/memories");
+  assert.doesNotMatch(readFileSync("app/memories/page.tsx", "utf8"), /LifeArchiveAccessRequired|eternal-beam-access/);
+  assert.match(readFileSync("app/life-archive/page.tsx", "utf8"), /LifeArchiveAccessRequired/);
+  assert.match(readFileSync("components/memories-archive.tsx", "utf8"), /아직 기록한 추억이 없어요/);
+  assert.equal(labels.home, "홈");
+  assert.equal(labels.pet, "내 아이");
+  assert.equal(Object.keys(labels).includes("context"), false);
+  assert.doesNotMatch(JSON.stringify(livingTabs), /beam-scene|eternal-beam|memorial-space|\/my\/device/);
+  assert.match(tabbar, /"home", "memories", "create", "pet"/);
+  assert.match(tabbar, /grid-cols-4/);
+  assert.doesNotMatch(tabbar, /"context"|grid-cols-5/);
   assert.doesNotMatch(tabbar, /"letter"|"polaroid"/);
 });
 

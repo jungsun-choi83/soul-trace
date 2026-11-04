@@ -1,13 +1,13 @@
 "use client";
 
 import { useLocale } from "@/components/locale-provider";
-import { EternalBeamLogo } from "@/components/storybook/eternal-beam-logo";
 import { PaperShell } from "@/components/storybook/paper-shell";
 import { UIUX_AUTH_ART } from "@/lib/uiux-art";
 import Image from "next/image";
 import { PrivacyConsentSheet } from "@/components/privacy-consent-sheet";
 import { PrivacyConsentTrigger } from "@/components/privacy-consent-trigger";
-import { authCallbackUrl, continueAfterAuth, passwordRecoveryCallbackUrl } from "@/lib/auth-redirect";
+import { authCallbackUrl, authEmailOrigin, continueAfterAuth, passwordRecoveryCallbackUrl } from "@/lib/auth-redirect";
+import { SITE_URL } from "@/lib/site-url";
 import { logAuthFailure } from "@/lib/auth-diagnostics";
 import { completePasswordSignupOnServer, createPasswordAccount, signInWithPassword, type PasswordAuthResult } from "@/lib/password-auth";
 import { normalizeAuthEmail, type AuthMode } from "@/lib/passwordless-auth";
@@ -108,7 +108,7 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
     setRecoveryStatus("sending");
     try {
       const client = createSupabaseBrowserAuthClient();
-      const result = await requestPasswordRecovery(client, { email, redirectTo: passwordRecoveryCallbackUrl(window.location.origin, returnTo, lang) });
+      const result = await requestPasswordRecovery(client, { email, redirectTo: passwordRecoveryCallbackUrl(authEmailOrigin(window.location.origin, SITE_URL), returnTo, lang) });
       setRecoveryStatus(result === "sent" ? "sent" : "request_failed");
     } catch {
       setRecoveryStatus("request_failed");
@@ -118,14 +118,15 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
   };
 
   const switchMode = () => {
-    setMode((current) => current === "signup" ? "signin" : "signup");
-    setPassword("");
+    const next = mode === "signup" ? "signin" : "signup";
+    setMode(next);
     setPasswordConfirmation("");
     setPasswordVisible(false);
     setPasswordConfirmationVisible(false);
     setShowErrors(false);
     setAuthError(null);
     setStatus("idle");
+    if (next === "signup") setPassword("");
   };
   const openRecovery = () => {
     setRecoveryOpen(true);
@@ -140,13 +141,8 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
   return (
     <PaperShell brand backHref="/" current="home" showTabs={false}>
       <main className="mx-auto w-full max-w-[430px] flex-1 px-5 pb-8">
-        <div className="relative mt-1 aspect-[16/9] overflow-hidden rounded-[22px] bg-[#f3e6cf]">
-          <Image src={UIUX_AUTH_ART} alt="" fill sizes="430px" className="object-cover object-[center_12%]" priority />
-        </div>
-        <div className="mt-5 flex flex-col items-center text-center">
-          <EternalBeamLogo className="h-auto w-32" />
-          <p className="mt-2 font-display-en text-3xl tracking-[0.04em] text-[#3a452f]">SoulTrace</p>
-          <p className={`mt-2 text-sm text-[#7a6c5c] ${bodyFont}`}>{t("splash.tagline")}</p>
+        <div className="mt-1 overflow-hidden rounded-[22px]">
+          <Image src={UIUX_AUTH_ART} alt="" width={846} height={456} sizes="430px" className="h-auto w-full" priority />
         </div>
         <h1 className={`st-headline mt-6 text-center text-[1.85rem] text-[#393129] ${lang === "ko" ? "break-keep" : "tracking-[0.01em]"}`}>
           {t(recoveryOpen ? "auth.recovery.requestTitle" : mode === "signup" ? "auth.signupTitle" : "auth.signinTitle")}
@@ -166,7 +162,7 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
             <button type="button" onClick={() => { setStatus("idle"); setMode("signin"); setAuthError(null); }} className={`st-btn st-btn-primary w-full ${bodyFont}`}>{t("auth.signInButton")}</button>
           </div>
         ) :
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
+        <form id="auth-form" className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
           <Field id="auth-email" label={t("form.emailLabel")} type="email" autoComplete="email" value={email} onChange={setEmail} className={inputClass} placeholder={t("auth.emailPlaceholder")} />
           {showErrors && !emailValid ? <p role="alert" className="text-xs text-[#b97064]">{t(email.trim() ? "form.validation.emailInvalid" : "form.validation.emailRequired")}</p> : null}
           <PasswordField id="auth-password" label={t("auth.password")} autoComplete={mode === "signup" ? "new-password" : "current-password"} value={password} onChange={setPassword} className={inputClass} visible={passwordVisible} onToggle={() => setPasswordVisible((current) => !current)} toggleLabel={t(passwordVisible ? "auth.hidePassword" : "auth.showPassword")} />
@@ -175,7 +171,7 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
           {mode === "signup" ? <div className="space-y-2"><PrivacyConsentTrigger agreed={privacyConsent} onOpen={() => setPrivacySheetOpen(true)} labelPath="form.privacyConsentLink" />{showErrors && !privacyConsent ? <p role="alert" className={`text-xs text-[#b97064] ${bodyFont}`}>{t("form.validation.privacyRequired")}</p> : null}</div> : null}
           <PrimaryButton disabled={status === "submitting"} className={bodyFont}>{t(status === "submitting" ? "auth.submitting" : mode === "signup" ? "auth.signUpButton" : "auth.signInButton")}</PrimaryButton>
           {mode === "signin" ? <button type="button" onClick={switchMode} className={`st-btn min-h-14 w-full rounded-full border-2 border-[#3a452f] bg-transparent px-5 py-4 text-base text-[#3a452f] ${bodyFont}`}>{t("auth.createAccount")}</button> : null}
-          {authError ? <div role="alert" className={`text-center text-xs font-light leading-6 text-[#b97064] ${bodyFont}`}><p>{t(`auth.errors.${authError}`)}</p></div> : null}
+          {authError ? <div role="alert" className={`text-center text-xs font-light leading-6 text-[#b97064] ${bodyFont}`}><p>{t(`auth.errors.${authError}`)}</p>{authError === "invalid_credentials" || authError === "already_registered" ? <button type="button" onClick={openRecovery} className="st-link mt-2">{t("auth.forgotPassword")}</button> : null}</div> : null}
         </form>}
         {!recoveryOpen && status !== "check_email" && mode === "signup" ? <div className={`mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm ${bodyFont}`}><span className="text-[#857666]">{t("auth.registered")}</span><button type="button" onClick={switchMode} className="st-link">{t("auth.signIn")}</button></div> : null}
         {mode === "signin" && !recoveryOpen && status !== "check_email" ? <div className={`mt-4 flex flex-wrap justify-center gap-x-4 gap-y-3 text-sm ${bodyFont}`}><button type="button" onClick={openRecovery} className="st-link">{t("auth.forgotPassword")}</button><span className="text-[#cbb58e]" aria-hidden="true">|</span><a href="/terms-of-service" className="st-link">{t("homepage.footer.termsOfService")}</a></div> : null}

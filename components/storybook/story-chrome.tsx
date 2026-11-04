@@ -40,7 +40,7 @@ export function StoryBrandHeader({
       {back}
       <Link href={homeHref} className="flex flex-col items-center text-[#6b4a2c]">
         <BrandMark className="h-8 w-8" />
-        <span className="font-display-en text-lg tracking-[0.06em]">SoulTrace</span>
+        <span className="font-display-en text-lg !tracking-[0.04em]">SoulTrace</span>
       </Link>
       <div className="flex items-center justify-end gap-1">
         {settingsHref ? (

@@ -48,6 +48,10 @@ export function isBeamPlace(value: unknown): value is BeamPlace {
   return typeof value === "string" && (BEAM_PLACES as readonly string[]).includes(value);
 }
 
+export function memoriesHref(petId?: string | null): string {
+  return petId ? `/memories?pet=${encodeURIComponent(petId)}` : "/memories";
+}
+
 export function memorialSpaceHref(petId: string): string {
   return `/memorial-space?pet=${encodeURIComponent(petId)}`;
 }

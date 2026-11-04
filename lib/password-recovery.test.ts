@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  authEmailOrigin,
   passwordRecoveryCallbackUrl,
   safeAuthConfirmationPath,
   safeRecoveryDestination,
@@ -38,6 +39,16 @@ test("invalid recovery email makes no request and failures remain generic", asyn
   assert.equal(await requestPasswordRecovery(client, { email: "bad", redirectTo: "https://example.test" }), "invalid_email");
   assert.equal(calls, 0);
   assert.equal(await requestPasswordRecovery(client, { email: "person@example.com", redirectTo: "https://example.test" }), "request_failed");
+});
+
+test("local recovery links use the public site so a phone can open the email", () => {
+  assert.equal(authEmailOrigin("http://127.0.0.1:3100", "https://soultrace.pet"), "https://soultrace.pet");
+  assert.equal(authEmailOrigin("http://localhost:3000", "https://soultrace.pet"), "https://soultrace.pet");
+  assert.equal(authEmailOrigin("http://192.168.0.104:3100", "https://soultrace.pet"), "https://soultrace.pet");
+  assert.equal(authEmailOrigin("https://soultrace.pet", "https://soultrace.example"), "https://soultrace.pet");
+  const callback = new URL(passwordRecoveryCallbackUrl(authEmailOrigin("http://127.0.0.1:3100", "https://soultrace.pet"), "/dashboard", "ko"));
+  assert.equal(callback.origin, "https://soultrace.pet");
+  assert.equal(callback.pathname, "/auth/confirm");
 });
 
 test("recovery callback preserves safe destination and permits only update-password", () => {
@@ -101,7 +112,7 @@ test("update page rejects unauthenticated access and passwords never enter stora
   assert.match(form, /autoComplete="new-password"/);
   assert.doesNotMatch(form, /localStorage|sessionStorage|indexedDB/);
   assert.doesNotMatch(form, /searchParams\.set\("password"|console\./);
-  assert.match(entry, /mode === "signin"[\s\S]*auth\.recovery\.open/);
+  assert.match(entry, /mode === "signin" && !recoveryOpen[\s\S]*onClick=\{openRecovery\}[\s\S]*auth\.forgotPassword/);
   assert.doesNotMatch(entry, /useEffect\([\s\S]*requestPasswordRecovery/);
   assert.match(entry, /handleRecoverySubmit[\s\S]*if \(requestPending\.current\) return/);
 });

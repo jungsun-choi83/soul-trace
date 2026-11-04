@@ -1809,6 +1809,12 @@ function PolaroidGenerationExperience({
             <Link href="/my-polaroids" className={`mt-5 inline-flex min-h-10 items-center justify-center text-sm text-[#D8B84C] underline underline-offset-4 transition hover:text-[#F5E6C8] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] ${bodyFont}`}>
               {t("seasonalPolaroid.generation.viewMyPolaroids")}
             </Link>
+            <Link href="/premium" className={`mt-3 block text-center text-sm text-[#857666] underline underline-offset-4 ${bodyFont}`}>
+              {lang === "ko" ? "다른 스타일로 더 만들기" : "Make another style"}
+            </Link>
+            <p className={`mt-2 text-center text-xs leading-5 text-[#857666] ${bodyFont}`}>
+              {lang === "ko" ? "이 결과는 결제 없이 저장할 수 있어요. 추가 제작은 판매 준비 중이에요." : "This result can be saved without paying. Extra styles are not for sale yet."}
+            </p>
           </div>
         ) : null}
 

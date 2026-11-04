@@ -31,7 +31,7 @@ export function LanguageToggle({ tone = "night", compact = false }: { tone?: "ni
   return (
     <div
       className={paper
-        ? `font-display-en inline-flex shrink-0 items-center rounded-full border border-[#7a5f48]/25 bg-[#fbf6ec]/90 ${compact ? "px-1" : "px-1.5 py-0.5"}`
+        ? `font-display-en !tracking-[0.04em] inline-flex shrink-0 items-center rounded-full border border-[#7a5f48]/25 bg-[#fbf6ec]/90 ${compact ? "px-1" : "px-1.5 py-0.5"}`
         : "font-display-en inline-flex shrink-0 items-center rounded-md border border-[#D4AF37]/55 bg-black/90 px-1 py-0.5 shadow-[inset_0_1px_0_rgba(212,175,55,0.12)] sm:px-1.5"}
       role="group"
       aria-label="Language"
