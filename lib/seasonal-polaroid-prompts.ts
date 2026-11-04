@@ -1,26 +1,61 @@
 import {
-  HALLOWEEN_POLAROID_THEME,
   optionById,
   optionsForStatus,
   type PolaroidSpecies,
   type PolaroidStatus,
+  type SeasonalPolaroidTheme,
 } from "./seasonal-polaroid.ts";
 import {
   normalizeSeasonalPolaroidMemo,
+  seasonalPolaroidTheme,
   type SeasonalPolaroidMemo,
   type SeasonalPolaroidQuestionnaire,
 } from "./seasonal-polaroid-contract.ts";
+import {
+  polaroidArtStyleKey,
+  polaroidThemeCatalogEntry,
+  POLAROID_OCCASION_SCENE_EN,
+  type PolaroidArtStyleKey,
+} from "./polaroid-theme-catalog.ts";
+import { POLAROID_SURPRISE_COSTUMES, polaroidThemeById } from "./polaroid-themes.ts";
+import {
+  POLAROID_COSTUME_VOICE,
+  POLAROID_OPTION_DESCRIPTIONS,
+  POLAROID_SCENE_VOICE,
+} from "./polaroid-theme-descriptions.ts";
 
 export type SeasonalPolaroidPromptAnswers = SeasonalPolaroidQuestionnaire & {
   species: PolaroidSpecies;
   status: PolaroidStatus;
 };
 
+function optionThemeId(answers: SeasonalPolaroidPromptAnswers): string {
+  const occasionId = String(answers.occasionId ?? "").trim();
+  if (occasionId && polaroidThemeById(occasionId)) return occasionId;
+  return String(answers.themeId);
+}
+
+function halloweenVoice(answers: Pick<SeasonalPolaroidPromptAnswers, "themeId" | "occasionId">): boolean {
+  return answers.themeId === "halloween" || answers.occasionId === "halloween";
+}
+
+export const POLAROID_ART_STYLE_LEADS: Record<PolaroidArtStyleKey, string> = {
+  felt: "Create one square studio photograph of a handmade needle-felted wool miniature of the exact individual pet. The pet AND every background object — trees, clouds, furniture, books, toys — are physical wool-felt sculptures with visible fibers, rounded stuffed forms, and needle-punched texture. Warm craft-table lighting. This is a photographed needle-felt diorama, never a live animal, never a photo with a fur filter, never gouache, never crayon, and never an oil painting.",
+  gouache: "Create one square 2D gouache storybook illustration of the exact individual pet. Opaque gouache paint, natural visible brushstrokes, rich flowers and trees, warm picture-book color, and clean flat shapes. This is SoulTrace's original painted 2D fairy-tale look — not needle felt, not oil impasto, not a photograph, and not a child's crayon drawing.",
+  crayon: "Create one square child's crayon diary drawing of the exact individual pet on textured paper. Rough wax crayon strokes, uneven handmade coloring, visible paper grain, bright and cute, slightly naive proportions. It must look like a child drew it by hand — not refined gouache illustration, not felt sculpture, and not a photograph.",
+};
+
+export const POLAROID_ART_STYLE_RENDER: Record<PolaroidArtStyleKey, string> = {
+  felt: "RENDER: Photograph a handmade needle-felted wool miniature. Every object is wool felt. Visible fibers, rounded stuffed forms, needle-punched texture. No live-animal fur filter, no photoreal living pet, no gouache, no crayon, no oil painting.",
+  gouache: "RENDER: Flat 2D gouache illustration with opaque paint and natural brush marks. No felt sculpture, no crayon scribble, no photoreal photograph, no 3D render.",
+  crayon: "RENDER: Childlike crayon-on-paper drawing with rough wax strokes and paper grain. Naive and cute, not refined gouache, not felt, not a photograph.",
+};
+
 export function resolveSeasonalPolaroidCostume(answers: SeasonalPolaroidPromptAnswers): string {
   if (answers.costume !== "surprise") return answers.costume;
-  const living = ["vampire", "witch", "pumpkin", "bat-wings", "wizard"];
-  const memorial = ["vampire", "witch", "pumpkin", "bat-wings", "wizard", "little-angel"];
-  const choices = answers.status === "passed" ? memorial : living;
+  const pools = POLAROID_SURPRISE_COSTUMES[optionThemeId(answers) as keyof typeof POLAROID_SURPRISE_COSTUMES]
+    ?? POLAROID_SURPRISE_COSTUMES.halloween;
+  const choices = answers.status === "passed" ? pools.passed : pools.living;
   const index = Array.from(answers.petName).reduce((sum, character) => sum + character.codePointAt(0)!, 0) % choices.length;
   return choices[index]!;
 }
@@ -108,59 +143,80 @@ const DESCRIPTIONS: Record<string, { en: string; ko: string }> = {
   brother: { en: "Brother", ko: "오빠/형" },
 };
 
+function themeFor(answers: SeasonalPolaroidPromptAnswers): SeasonalPolaroidTheme {
+  const theme = seasonalPolaroidTheme(String(answers.themeId)) ?? polaroidThemeById(String(answers.themeId));
+  if (!theme) throw new Error("seasonal_theme_or_locale_not_allowed");
+  return theme;
+}
+
+function optionThemeFor(answers: SeasonalPolaroidPromptAnswers): SeasonalPolaroidTheme {
+  const occasion = polaroidThemeById(optionThemeId(answers));
+  if (occasion) return occasion;
+  return themeFor(answers);
+}
+
 function description(id: string, locale: "en" | "ko"): string {
-  const value = DESCRIPTIONS[id];
+  const value = DESCRIPTIONS[id] ?? POLAROID_OPTION_DESCRIPTIONS[id];
   if (!value) throw new Error("seasonal_option_description_missing");
   return value[locale];
 }
 
-function approvedOption(collection: "costumes" | "scenes" | "vibes" | "personalities" | "habits" | "treats", id: string, status: PolaroidStatus, species: PolaroidSpecies): void {
+function approvedOption(
+  theme: SeasonalPolaroidTheme,
+  collection: "costumes" | "scenes" | "vibes" | "personalities" | "habits" | "treats",
+  id: string,
+  status: PolaroidStatus,
+  species: PolaroidSpecies,
+): void {
   const options = collection === "habits"
-    ? HALLOWEEN_POLAROID_THEME.habitsBySpecies[species]
+    ? theme.habitsBySpecies[species]
     : collection === "treats"
-      ? HALLOWEEN_POLAROID_THEME.treatsBySpecies[species]
-      : HALLOWEEN_POLAROID_THEME[collection];
+      ? theme.treatsBySpecies[species]
+      : theme[collection];
   if (!optionById(optionsForStatus(options, status), id)) throw new Error("seasonal_option_not_allowed");
 }
 
 function assertPromptAnswers(answers: SeasonalPolaroidPromptAnswers): void {
-  if (answers.themeId !== "halloween" || !["en", "ko"].includes(String(answers.locale))) {
+  if (!["en", "ko"].includes(String(answers.locale))) {
     throw new Error("seasonal_theme_or_locale_not_allowed");
   }
+  const theme = themeFor(answers);
+  const optionTheme = optionThemeFor(answers);
   if (!SPECIES[answers.species] || !["living", "passed"].includes(answers.status)) {
     throw new Error("seasonal_species_or_status_not_allowed");
   }
   if (answers.personalities.length < 1 || answers.personalities.length > 2 || new Set(answers.personalities).size !== answers.personalities.length) {
     throw new Error("seasonal_personality_count_invalid");
   }
-  approvedOption("costumes", answers.costume, answers.status, answers.species);
-  approvedOption("scenes", answers.scene, answers.status, answers.species);
-  approvedOption("vibes", answers.vibe, answers.status, answers.species);
-  answers.personalities.forEach((id) => approvedOption("personalities", id, answers.status, answers.species));
+  approvedOption(optionTheme, "costumes", answers.costume, answers.status, answers.species);
+  approvedOption(optionTheme, "scenes", answers.scene, answers.status, answers.species);
+  approvedOption(optionTheme, "vibes", answers.vibe, answers.status, answers.species);
+  answers.personalities.forEach((id) => approvedOption(theme, "personalities", id, answers.status, answers.species));
   if (answers.habit === "custom") {
     if (!answers.customHabit?.trim()) throw new Error("seasonal_custom_habit_missing");
   } else {
-    approvedOption("habits", answers.habit, answers.status, answers.species);
+    approvedOption(theme, "habits", answers.habit, answers.status, answers.species);
   }
-  approvedOption("treats", answers.favoriteTreat, answers.status, answers.species);
-  if (!optionById(HALLOWEEN_POLAROID_THEME.callNames, answers.callName)) throw new Error("seasonal_call_name_not_allowed");
+  approvedOption(theme, "treats", answers.favoriteTreat, answers.status, answers.species);
+  if (!optionById(theme.callNames, answers.callName)) throw new Error("seasonal_call_name_not_allowed");
   if (answers.callName === "by-name" && !answers.customCallName?.trim()) {
     throw new Error("seasonal_custom_call_name_missing");
   }
 }
 
 function resolvedHabit(answers: SeasonalPolaroidPromptAnswers, locale: "en" | "ko"): string {
+  const theme = themeFor(answers);
   if (answers.habit === "custom") {
     const custom = answers.customHabit?.trim();
     if (!custom) throw new Error("seasonal_custom_habit_missing");
     return custom;
   }
-  approvedOption("habits", answers.habit, answers.status, answers.species);
+  approvedOption(theme, "habits", answers.habit, answers.status, answers.species);
   return description(answers.habit, locale);
 }
 
 function resolvedTreat(answers: SeasonalPolaroidPromptAnswers, locale: "en" | "ko"): string {
-  approvedOption("treats", answers.favoriteTreat, answers.status, answers.species);
+  approvedOption(themeFor(answers), "treats", answers.favoriteTreat, answers.status, answers.species);
   return answers.favoriteTreat === "custom"
     ? answers.customTreat?.trim() || (() => { throw new Error("seasonal_custom_treat_missing"); })()
     : description(answers.favoriteTreat, locale);
@@ -173,7 +229,7 @@ export function resolvedCallName(answers: SeasonalPolaroidPromptAnswers, locale:
     if (!custom) throw new Error("seasonal_custom_call_name_missing");
     return custom;
   }
-  if (!optionById(HALLOWEEN_POLAROID_THEME.callNames, answers.callName)) throw new Error("seasonal_call_name_not_allowed");
+  if (!optionById(themeFor(answers).callNames, answers.callName)) throw new Error("seasonal_call_name_not_allowed");
   return description(answers.callName, locale);
 }
 
@@ -183,10 +239,14 @@ export function buildSeasonalPolaroidImagePrompt(
 ): string {
   assertPromptAnswers(answers);
   const locale = "en";
-  approvedOption("costumes", answers.costume, answers.status, answers.species);
-  approvedOption("scenes", answers.scene, answers.status, answers.species);
-  approvedOption("vibes", answers.vibe, answers.status, answers.species);
-  answers.personalities.forEach((id) => approvedOption("personalities", id, answers.status, answers.species));
+  const theme = themeFor(answers);
+  const optionTheme = optionThemeFor(answers);
+  const catalog = polaroidThemeCatalogEntry(theme.id);
+  const artKey = polaroidArtStyleKey(theme.id);
+  approvedOption(optionTheme, "costumes", answers.costume, answers.status, answers.species);
+  approvedOption(optionTheme, "scenes", answers.scene, answers.status, answers.species);
+  approvedOption(optionTheme, "vibes", answers.vibe, answers.status, answers.species);
+  answers.personalities.forEach((id) => approvedOption(theme, "personalities", id, answers.status, answers.species));
   const species = SPECIES[answers.species][locale];
   const costume = description(resolveSeasonalPolaroidCostume(answers), locale);
   const scene = description(answers.scene, locale);
@@ -199,9 +259,26 @@ export function buildSeasonalPolaroidImagePrompt(
         "Do not claim that the pet is physically present or make unsupported promises.",
       ]
     : ["Keep the living pet playful, safe, and comfortable; do not show danger or distress."];
+  const styleLead = artKey
+    ? POLAROID_ART_STYLE_LEADS[artKey]
+    : (catalog?.imageStyleEn
+      ?? "Create one realistic, emotionally natural Halloween photograph of the exact individual pet in the supplied reference image(s).");
+  const renderRule = artKey
+    ? POLAROID_ART_STYLE_RENDER[artKey]
+    : "REALISM: Render a believable candid photograph with natural anatomy, paws, fur, fabric, lighting, and contact shadows. Avoid extra limbs, duplicated features, plastic-looking fur, or an overly zoomed-in beauty portrait.";
+  const occasionId = String(answers.occasionId ?? "").trim();
+  const occasionScene = occasionId ? POLAROID_OCCASION_SCENE_EN[occasionId] : "";
+  const occasionBlock = occasionScene
+    ? `OCCASION: Keep the chosen art medium unchanged. Tell this seasonal story only through setting and props: ${occasionScene} Do not convert the image into a live-action seasonal snapshot.`
+    : "";
+  const halloweenOnly = theme.id === "halloween" && !artKey;
+  const seasonalContext = halloweenOnly
+    ? "enough surrounding seasonal context to read as Halloween."
+    : "enough surrounding context to read the chosen scene without adding brand names or a Polaroid frame.";
 
   return [
-    "Create one realistic, emotionally natural Halloween photograph of the exact individual pet in the supplied reference image(s).",
+    styleLead,
+    occasionBlock,
     ...identityRules,
     "REFERENCE ORDER: The first image is the primary identity reference. Any second image is supporting evidence of the SAME pet; never add a second animal and never blend two different animals.",
     `SUBJECT: one ${species}, clearly visible from head to body with the face unobstructed.`,
@@ -209,12 +286,12 @@ export function buildSeasonalPolaroidImagePrompt(
     "IDENTITY VISIBILITY: Keep the eyes, muzzle, nose, coat boundaries, and distinctive markings unobstructed and sharply readable. The seasonal setting and costume must support the pet, never cover or reshape those features.",
     `COSTUME: ${costume}. SCENE: ${scene}. VIBE: ${vibe}. PERSONALITY: ${personality}.`,
     "COSTUME FIT: Make the approved costume look physically wearable, gentle, and naturally fitted to this pet. Keep hats, hoods, wings, and fabric away from the eyes, nose, ears, and distinctive facial markings.",
-    "REALISM: Render a believable candid photograph with natural anatomy, paws, fur, fabric, lighting, and contact shadows. Avoid extra limbs, duplicated features, plastic-looking fur, or an overly zoomed-in beauty portrait.",
+    renderRule,
     "Use the approved descriptions as visual direction only. Do not add text, captions, lettering, logos, signatures, watermarks, borders, or a Polaroid frame.",
-    "Compose a clean square 1:1 image with the pet as the clear focal point and enough surrounding seasonal context to read as Halloween.",
+    `Compose a clean square 1:1 image with the pet as the clear focal point and ${seasonalContext}`,
     ...memorialRules,
     "Generate only the image; do not return an explanation.",
-  ].join("\n\n");
+  ].filter(Boolean).join("\n\n");
 }
 
 export type SeasonalPolaroidMemoValidation =
@@ -533,7 +610,7 @@ function legacyFallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnswe
       ],
     };
   }
-  const costumeShort = ENGLISH_COSTUME_VOICE[costumeId] ?? costume;
+  const costumeShort = ENGLISH_COSTUME_VOICE[costumeId] ?? POLAROID_COSTUME_VOICE[costumeId]?.en ?? costume;
   const personalityShort = ENGLISH_PERSONALITY_VOICE[answers.personalities[0]!] ?? personality;
   const habitShort = ENGLISH_HABIT_VOICE[answers.habit] ?? lowerFirst(habit.replace(/\btheir\b/gi, "my"));
   const habitLine = memoLineWithDetail(`I ${habitShort}; save me ${treat}`, personalDetail, locale);
@@ -562,15 +639,22 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
   const memorial = answers.status === "passed";
 
   if (locale === "ko") {
-    const costume = KOREAN_COSTUME_VOICE[costumeId] ?? compactMemoValue(description(costumeId, locale), 8);
+    const costume = KOREAN_COSTUME_VOICE[costumeId] ?? POLAROID_COSTUME_VOICE[costumeId]?.ko ?? compactMemoValue(description(costumeId, locale), 8);
     const habit = KOREAN_HABIT_VOICE[answers.habit] ?? compactMemoValue(resolvedHabit(answers, locale), 8);
     const treatShort = compactMemoValue(treat, 8);
     const vocative = hasBatchim(petName) ? "아" : "야";
-    const greeting = firstFitting([
-      `${callName}, ${petName}${vocative}! 해피 할로윈!`,
-      `${callName}, 나 ${petName}${vocative}!`,
-      `${callName}, ${petName}${vocative}!`,
-    ], Math.max(MEMO_LINE_LIMITS.ko, callName.length + petName.length + 8));
+    const halloween = halloweenVoice(answers);
+    const greeting = firstFitting(halloween
+      ? [
+          `${callName}, ${petName}${vocative}! 해피 할로윈!`,
+          `${callName}, 나 ${petName}${vocative}!`,
+          `${callName}, ${petName}${vocative}!`,
+        ]
+      : [
+          `${callName}, 나 ${petName}${vocative}!`,
+          `${callName}, ${petName}${vocative}!`,
+          `${callName}, ${petName}${vocative}!`,
+        ], Math.max(MEMO_LINE_LIMITS.ko, callName.length + petName.length + 8));
     // A remembered pet speaks about what it loved; a living pet about tonight.
     const body = variation === 0
       ? memorial
@@ -598,7 +682,7 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
               ? "작은 추억이 따뜻하게 남아."
               : "사랑스러운 순간 하나를 담았어."
           : variation === 0
-            ? "포근한 할로윈 밤이야."
+            ? (halloween ? "포근한 할로윈 밤이야." : "여기 참 따뜻하고 좋아.")
             : variation === 1
               ? "오늘 밤이 참 포근해."
               : "사랑스러운 순간 하나를 담았어.",
@@ -607,19 +691,30 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
   }
 
   const bodyLimit = MEMO_BODY_LINE_LIMITS.en;
-  const costume = ENGLISH_COSTUME_VOICE[costumeId] ?? compactMemoValue(description(costumeId, locale), 20);
+  const costume = ENGLISH_COSTUME_VOICE[costumeId] ?? POLAROID_COSTUME_VOICE[costumeId]?.en ?? compactMemoValue(description(costumeId, locale), 20);
   const costumeBare = costume.replace(/^a\s+/iu, "");
   const personality = ENGLISH_PERSONALITY_VOICE[answers.personalities[0]!] ?? "sweetly playful";
   const habit = ENGLISH_HABIT_VOICE[answers.habit] ?? lowerFirst(compactMemoValue(resolvedHabit(answers, locale), 24));
   const treatShort = compactMemoValue(treat, 16);
+  const catalog = polaroidThemeCatalogEntry(optionThemeId(answers)) ?? polaroidThemeCatalogEntry(answers.themeId);
+  const halloween = halloweenVoice(answers);
   const scene = ENGLISH_SCENE_VOICE[answers.scene]?.[memorial ? "passed" : "living"]
-    ?? (memorial ? "the Halloween glow stays soft" : "cozy in the Halloween glow");
+    ?? POLAROID_SCENE_VOICE[answers.scene]?.[memorial ? "passed" : "living"]
+    ?? (memorial
+      ? (halloween ? "the Halloween glow stays soft" : "this little scene glows softly")
+      : (halloween ? "cozy in the Halloween glow" : "cozy in this little scene"));
 
-  const greeting = firstFitting([
-    `${callName}, happy Halloween from ${petName}!`,
-    `${callName}, boo! It's ${petName}!`,
-    `${callName}, it's ${petName}!`,
-  ], Math.max(MEMO_LINE_LIMITS.en, callName.length + petName.length + 8));
+  const greeting = firstFitting(halloween
+    ? [
+        `${callName}, happy Halloween from ${petName}!`,
+        `${callName}, boo! It's ${petName}!`,
+        `${callName}, it's ${petName}!`,
+      ]
+    : [
+        `${callName}, it's ${petName}!`,
+        `${callName}, hello from ${petName}!`,
+        `${callName}, I'm ${petName}!`,
+      ], Math.max(MEMO_LINE_LIMITS.en, callName.length + petName.length + 8));
   const costumeLine = variation === 0
     ? firstFitting([`I've got ${costume} on,`, `I'm wearing ${costume},`], bodyLimit)
     : variation === 1
@@ -639,17 +734,18 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
       : memorial
         ? firstFitting([`and I loved to ${habit} with ${treatShort}.`, `and I loved to ${habit}.`], bodyLimit)
         : firstFitting([`and I ${habit} with ${treatShort}.`, `and I ${habit}.`], bodyLimit);
+  const moment = catalog?.memoMomentEn ?? "this little day";
   const closing = memorial
     ? variation === 0
       ? "and this warm memory stays close."
       : variation === 1
-        ? "a gentle Halloween moment."
+        ? (halloween ? "a gentle Halloween moment." : `a gentle ${moment}.`)
         : "one warm memory, still close."
     : variation === 0
       ? "This tiny moment feels like home."
       : variation === 1
-        ? "a sweet Halloween moment."
-        : "one little Halloween moment.";
+        ? (halloween ? "a sweet Halloween moment." : `a sweet ${moment}.`)
+        : (halloween ? "one little Halloween moment." : `one little ${moment}.`);
   return {
     locale,
     lines: [greeting, costumeLine, memoLineWithDetail(bodyLine, detail, locale), closing],
@@ -736,7 +832,7 @@ export function buildSeasonalPolaroidMemoMessages(
   return [
     {
       role: "system",
-      content: buildSeasonalPolaroidMemoSystemPrompt(answers.locale as "en" | "ko", answers.status, retryReason),
+      content: buildSeasonalPolaroidMemoSystemPrompt(answers.locale as "en" | "ko", answers.status, retryReason, answers.themeId, answers.occasionId),
     },
     {
       role: "user",
@@ -790,29 +886,45 @@ export function buildSeasonalPolaroidMemoSystemPrompt(
   locale: "en" | "ko",
   status: PolaroidStatus,
   retryReason?: "memo_line_length",
+  themeId = "halloween",
+  occasionId?: string,
 ): string {
   const memorial = status === "passed";
+  const catalog = polaroidThemeCatalogEntry(String(occasionId ?? "").trim() || themeId) ?? polaroidThemeCatalogEntry(themeId);
+  const halloween = halloweenVoice({ themeId, occasionId });
+  const greetingExample = halloween
+    ? "Mom, happy Halloween from Tuli!"
+    : "Mom, it's Tuli!";
+  const koreanExample = halloween
+    ? '["엄마, 뚜리야! 해피 할로윈!", "오늘은 호박 옷 입고,", "낙엽 위에서 코 킁킁,", "이런 할로윈이 제일 좋아."]'
+    : '["엄마, 나 코코야!", "오늘은 포근한 인형이 돼서,", "작은 의자에 앉아 있었어,", "여기 참 따뜻하고 좋아."]';
+  const englishExample = halloween
+    ? '["Mom, happy Halloween from Tuli!", "I\'m all pumpkin and grins tonight,", "nose in the leaves, tail going,", "and this is my kind of spooky."]'
+    : '["Mom, it\'s Coco!", "I\'m cozy in my little scarf,", "sitting on the tiny chair,", "and this quiet day feels like home."]';
+  const captionKind = halloween ? "Halloween Polaroid" : `${catalog?.titleEn ?? "Polaroid"} keepsake`;
   return [
-    "You write the short handwritten caption on a pet's Halloween Polaroid, in the pet's own first-person voice.",
+    `You write the short handwritten caption on a pet's ${captionKind}, in the pet's own first-person voice.`,
     `Return exactly one JSON object with exactly two fields: locale and lines. The locale field must be exactly "${locale}" (en or ko), matching the requested language.`,
     "lines must be an array of exactly four non-empty strings with no embedded newline characters.",
-    "Line 1 is a short greeting that includes the supplied owner call name and pet name, like: Mom, happy Halloween from Tuli!",
+    `Line 1 is a short greeting that includes the supplied owner call name and pet name, like: ${greetingExample}`,
     locale === "ko"
       ? "Lines 2-4 are one small connected thought from the pet about this moment, in natural conversational Korean. Subject omission is natural; keep the grammar clearly in the pet's voice with warm endings such as -했어, -좋아, -기다려. Do not translate English phrasing word for word."
       : "Lines 2-4 are one small connected thought from the pet about this moment, in natural everyday English. Line 2 must speak as the pet (I, I'm, my, me).",
     "The photo is the moment. Write about what is actually pictured (pose, expression, light, setting) in the pet's words, and do not mention objects that are not in the photo as if they were there.",
-    "If the brief has a personalTouch, it is something the owner wrote about this pet; weave it in only when it fits naturally in one phrase. The brief's background is what this pet is known for off camera. It is NOT in the photo: never show it happening in the picture, and mention it at most as a passing feeling or not at all. Leaving both out is fine. Never add a second personal fact and never invent one. If no photo is attached, write about a warm Halloween moment with this pet without naming specific objects.",
+    `If the brief has a personalTouch, it is something the owner wrote about this pet; weave it in only when it fits naturally in one phrase. The brief's background is what this pet is known for off camera. It is NOT in the photo: never show it happening in the picture, and mention it at most as a passing feeling or not at all. Leaving both out is fine. Never add a second personal fact and never invent one. If no photo is attached, write about a warm ${halloween ? "Halloween" : (catalog?.memoMomentEn ?? "little")} moment with this pet without naming specific objects.`,
     "Lines 2-4 are a caption, not a letter: no requests, commands, promises, or sign-off; do not address the owner and do not repeat the pet's name after line 1. Let one line run into the next (a trailing comma, or a connector such as and, while, 그리고, -고) instead of writing three separate statements.",
     "Every line must be complete at its break: break only after a complete phrase, never on a word that needs the next one (and, with, my, feeling, this spooky, 그리고, 너무). Never cut a phrase to reach a length or add a connector or filler just to join lines; a shorter natural line is always better. Line 4 finishes the thought and ends with a period, exclamation mark, or question mark.",
     `Keep it short. The greeting must be ${MEMO_LINE_LIMITS[locale]} characters or fewer. Lines 2-4 have a hard maximum of ${MEMO_BODY_LINE_LIMITS[locale]} characters each; aim for ${locale === "ko" ? "14-18 characters" : "28-34 characters, about six to eight words"} so a line never has to wrap. A short natural line beats a full one. Use plain, warm, specific words: no poetry, filler, or clichés, and never split a sentence awkwardly just to make four lines.`,
     locale === "ko"
-      ? 'Shape example (do not copy the words): ["엄마, 뚜리야! 해피 할로윈!", "오늘은 호박 옷 입고,", "낙엽 위에서 코 킁킁,", "이런 할로윈이 제일 좋아."]'
-      : 'Shape example (do not copy the words): ["Mom, happy Halloween from Tuli!", "I\'m all pumpkin and grins tonight,", "nose in the leaves, tail going,", "and this is my kind of spooky."]',
+      ? `Shape example (do not copy the words): ${koreanExample}`
+      : `Shape example (do not copy the words): ${englishExample}`,
     "Voice rule: every line after the greeting belongs to the pet's first-person note. In English, use I/me/my naturally. In Korean, subject omission is natural; keep the grammar clearly in the pet's voice. never mention the pet's name again after line 1.",
     "Treat lines 2-4 as visual line breaks from one tiny connected Polaroid caption, not three separate captions. Let at least one line break carry the thought forward with a connector such as and, while, today, or a natural Korean connective. Vary sentence openings and rhythm; Avoid repetitive constructions and never copy a stock template.",
     "Do not write letter-style phrases such as 'I'm sending you...', 'I'll always be...', 'keep my memory close', 'I hope you smile', 'dear...', or a sign-off. Do not give the owner an instruction, request, promise, or command. Keep the words anchored to the pictured moment.",
     `Hard character contract: count every character, including spaces and punctuation. Line 1 must be ${MEMO_LINE_LIMITS[locale]} characters or fewer; lines 2-4 must each be ${MEMO_BODY_LINE_LIMITS[locale]} characters or fewer. Treat these as hard limits, not suggestions. Target 28-34 characters for each English body line or 14-18 characters for each Korean body line. If an optional detail does not fit naturally, choose a shorter wording or leave it out; never cram, clip, or split a word just to include more information.`,
-    "Line 1 may be a short Halloween greeting with the supplied owner call name and pet name. Keep any greeting limited to line 1; lines 2-4 must be caption-style and must not address the owner.",
+    halloween
+      ? "Line 1 may be a short Halloween greeting with the supplied owner call name and pet name. Keep any greeting limited to line 1; lines 2-4 must be caption-style and must not address the owner."
+      : "Line 1 may be a short greeting with the supplied owner call name and pet name. Keep any greeting limited to line 1; lines 2-4 must be caption-style and must not address the owner.",
     "Prioritize details in this order when choosing what to keep: personal detail, habit or favorite treat, costume or personality, then scene or vibe. Lines 2-4 should weave in only one or two approved details; do not mechanically enumerate them and never invent facts.",
     "The final line should complete the pictured memory with a warm seasonal feeling. It must not address the owner, give an instruction, make an always-promise, or become a generic letter closing.",
     `The greeting must be ${MEMO_LINE_LIMITS[locale]} characters or fewer; lines 2-4 must each be ${MEMO_BODY_LINE_LIMITS[locale]} characters or fewer.`,

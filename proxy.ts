@@ -28,7 +28,20 @@ export async function proxy(request: NextRequest) {
     });
 
     // Validates and refreshes the cookie session when needed.
-    await supabase.auth.getClaims();
+    // A stalled auth host must not keep the next page from opening.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        supabase.auth.getClaims(),
+        new Promise((resolve) => {
+          timer = setTimeout(resolve, 2500);
+        }),
+      ]);
+    } catch {
+      // The page still opens. Session refresh can happen on a later request.
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 
   if (request.method === "GET") {

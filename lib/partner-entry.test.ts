@@ -11,8 +11,8 @@ const CODE = "partner_code_123";
 test("general entry keeps the normal Welcome to choose journey without active auth", () => {
   const page = readFileSync("app/page.tsx", "utf8");
   assert.match(page, /candidate !== undefined/);
-  assert.match(page, /hrefWithSearchParams\("\/choose", params\)/);
-  assert.match(page, /choiceHref=\{choiceHref\}/);
+  assert.match(page, /EntryChoice/);
+  assert.match(page, /partnerEntryDestination/);
   assert.doesNotMatch(page, /authEntryPath|auth\.getUser/);
   assert.doesNotMatch(page, /destination=.*pension/);
 });

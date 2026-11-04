@@ -9,6 +9,23 @@ const en = JSON.parse(readFileSync("locales/en.json", "utf8")) as Record<string,
 const ko = JSON.parse(readFileSync("locales/ko.json", "utf8")) as Record<string, unknown>;
 const at = (tree: Record<string, unknown>, path: string) => path.split(".").reduce<unknown>((node, key) => (node && typeof node === "object" ? (node as Record<string, unknown>)[key] : undefined), tree);
 
+test("the questionnaire keeps all six original screens in copy and now walks four steps", () => {
+  assert.match(component, /const STEP_IDS = \["meet", "scene", "personality", "preview"\]/);
+  assert.match(component, /yearRound\.createPolaroid/);
+  assert.match(component, /buildSeasonalPolaroidFormData\(questionnaire, primaryPhoto\.file\)/);
+  assert.match(component, /everydayPolaroidArtStyles/);
+  assert.match(component, /POLAROID_OCCASION_GROUPS/);
+  assert.match(component, /data-polaroid-art-count=\{artThemes\.length\}/);
+  assert.match(component, /data-polaroid-occasion-list=/);
+  assert.doesNotMatch(component, /setCategory|art-style", "seasonal"/);
+  assert.doesNotMatch(component, /미니어처 세상|별빛 유화|종이 콜라주/);
+  for (const locale of [en, ko]) {
+    assert.equal(typeof at(locale, "seasonalPolaroid.flow.screen1.title"), "string");
+    assert.equal(typeof at(locale, "seasonalPolaroid.flow.screen6.personalLabel"), "string");
+    assert.equal(typeof at(locale, "seasonalPolaroid.flow.yearRound.pageTitle"), "string");
+  }
+});
+
 test("the photo step has exactly one upload slot and sends only that photo", () => {
   assert.equal((component.match(/<PhotoSlotView\b/g) ?? []).length, 1);
   assert.equal((component.match(/type="file"/g) ?? []).length, 1);

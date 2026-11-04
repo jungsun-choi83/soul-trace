@@ -1,0 +1,15 @@
+---
+description: Always commit, push to GitHub, and deploy after finishing work
+alwaysApply: true
+---
+
+# Auto commit, push, and deploy
+
+After finishing a change in this repo, do not wait to be asked.
+
+1. Commit the relevant files to `master` with a concise message that explains why.
+2. Push to `origin/master` so GitHub is up to date.
+3. Confirm the Vercel production deploy for that commit. Pushing `master` usually starts it; if it does not, deploy production.
+4. Tell the user the commit and that production is updating.
+
+Do this even for small copy or line-break edits. Do not update git config. If author identity is missing, use the previous commit author via environment variables only.

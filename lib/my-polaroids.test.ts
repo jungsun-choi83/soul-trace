@@ -47,7 +47,7 @@ test("gallery images reuse the authenticated private result endpoint", () => {
 });
 
 test("gallery navigation is additive and does not alter generation actions", () => {
-  assert.match(choose, /href="\/my-polaroids"/);
+  assert.match(choose, /href=\{polaroidHref\}/);
   assert.match(result, /href="\/my-polaroids"/);
   assert.match(result, /onClick=\{onRegenerate\}/);
   assert.match(result, /onClick=\{onDownload\}/);

@@ -1,3 +1,4 @@
+import { isPetFirstArchiveEnabled } from "./pet-first-archive.ts";
 import type { ServerSearchParams } from "./search-params.ts";
 import { normalizeAuthLocale } from "./passwordless-auth.ts";
 
@@ -34,6 +35,14 @@ export function authEntryPath(returnTo: string): string {
   return `/auth?${params.toString()}`;
 }
 
+export function continueAfterAuth(returnTo: string): string {
+  const destination = safeAuthReturnPath(returnTo);
+  if (!isPetFirstArchiveEnabled()) return destination;
+  const path = new URL(destination, INTERNAL_ORIGIN).pathname;
+  if (path === "/" || path === "/choose") return "/dashboard";
+  return destination;
+}
+
 export function safeAuthErrorPath(
   value: string | null | undefined,
   fallback: string,
@@ -63,7 +72,7 @@ export function authenticatedAuthDestination(
   hasVerifiedIdentity: boolean,
   returnTo: string,
 ): string | null {
-  return hasVerifiedIdentity ? safeAuthReturnPath(returnTo) : null;
+  return hasVerifiedIdentity ? continueAfterAuth(returnTo) : null;
 }
 
 export function resolveAuthReturnPath(params: ServerSearchParams): string {
@@ -72,7 +81,7 @@ export function resolveAuthReturnPath(params: ServerSearchParams): string {
   const destination = new URL(safeAuthReturnPath(candidate), INTERNAL_ORIGIN);
 
   for (const [key, value] of Object.entries(params)) {
-    if (key === "returnTo" || key === "authError" || key === "passwordUpdated") continue;
+    if (key === "returnTo" || key === "authError" || key === "passwordUpdated" || key === "mode") continue;
     const values = Array.isArray(value) ? value : value === undefined ? [] : [value];
     for (const item of values) destination.searchParams.append(key, item);
   }
@@ -81,7 +90,7 @@ export function resolveAuthReturnPath(params: ServerSearchParams): string {
 }
 
 export function authCallbackUrl(origin: string, returnTo: string, locale: unknown): string {
-  const safeReturnTo = safeAuthReturnPath(returnTo);
+  const safeReturnTo = continueAfterAuth(returnTo);
   const callback = new URL("/auth/confirm", origin);
   callback.searchParams.set("next", safeReturnTo);
   callback.searchParams.set("locale", normalizeAuthLocale(locale));

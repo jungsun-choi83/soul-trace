@@ -33,12 +33,59 @@ function errorCode(error: AuthFailure): string {
     : "";
 }
 
+export type PasswordSignupProvision = (input: {
+  email: string;
+  password: string;
+  locale: unknown;
+}) => Promise<"created" | "already_registered" | "policy_failed" | "unavailable">;
+
+export async function completePasswordSignupOnServer(input: {
+  email: string;
+  password: string;
+  locale: unknown;
+}): Promise<"created" | "already_registered" | "policy_failed" | "unavailable"> {
+  try {
+    const response = await fetch("/api/auth/password-signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: input.email,
+        password: input.password,
+        locale: normalizeAuthLocale(input.locale),
+      }),
+    });
+    if (response.ok) return "created";
+    if (response.status === 409) return "already_registered";
+    if (response.status === 503) return "unavailable";
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    return payload?.error === "policy_failed" ? "policy_failed" : "unavailable";
+  } catch {
+    return "unavailable";
+  }
+}
+
 export async function createPasswordAccount(
   client: MainPasswordAuthClient,
-  input: { email: string; password: string; redirectTo: string; locale: unknown },
+  input: {
+    email: string;
+    password: string;
+    redirectTo: string;
+    locale: unknown;
+    provision?: PasswordSignupProvision;
+  },
 ): Promise<PasswordAuthResult> {
   const email = normalizeAuthEmail(input.email);
   if (!email) return "invalid_email";
+
+  if (input.provision) {
+    const provisioned = await input.provision({ email, password: input.password, locale: input.locale });
+    if (provisioned === "already_registered") return "already_registered";
+    if (provisioned === "policy_failed") return "policy_failed";
+    if (provisioned === "created") {
+      const signedIn = await signInWithPassword(client, { email, password: input.password });
+      return signedIn === "email_not_confirmed" ? "request_failed" : signedIn;
+    }
+  }
 
   const { data, error } = await client.auth.signUp({
     email,
@@ -56,7 +103,10 @@ export async function createPasswordAccount(
     }
     return code === "weak_password" ? "policy_failed" : "request_failed";
   }
-  return data.session ? "authenticated" : "check_email";
+  if (data.session) return "authenticated";
+
+  const signedIn = await signInWithPassword(client, { email, password: input.password });
+  return signedIn === "authenticated" ? "authenticated" : "check_email";
 }
 
 export async function signInWithPassword(

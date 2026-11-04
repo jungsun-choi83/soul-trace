@@ -7,6 +7,7 @@ import { aiGenerationIdentityHash, guardHttpResponse, sha256Hex } from "@/lib/ai
 import { validateSeasonalPolaroidRequest, type SeasonalPolaroidQuestionnaire } from "@/lib/seasonal-polaroid-contract";
 import { issueSeasonalPolaroidCapability, seasonalPolaroidCapabilityConfigured } from "@/lib/seasonal-polaroid-capability";
 import { isSeasonalPolaroidEnabled } from "@/lib/seasonal-polaroid-feature";
+import { isPolaroidOccasionAdmitted, isPolaroidThemeAdmitted } from "@/lib/polaroid-theme-catalog";
 import {
   seasonalPolaroidAccessAllowed,
   seasonalPolaroidDeveloperRequestAllowed,
@@ -176,6 +177,7 @@ export async function POST(request: Request): Promise<Response> {
   }
   const answers: SeasonalPolaroidQuestionnaire = {
     themeId: text(formData, "themeId", 32),
+    occasionId: optionalText(formData, "occasionId", 64),
     locale: text(formData, "locale", 8),
     petName: text(formData, "petName", 12),
     species: text(formData, "species", 32),
@@ -197,6 +199,12 @@ export async function POST(request: Request): Promise<Response> {
   // Only the primary photo is read; any extra file fields are ignored.
   const validation = validateSeasonalPolaroidRequest({ answers, primaryPhoto: primaryPhoto! });
   if (!validation.valid) return invalidRequest(validation.issues);
+  if (!isPolaroidThemeAdmitted(String(validation.answers.themeId))) {
+    return invalidRequest([{ field: "themeId", code: "unsupported" }]);
+  }
+  if (validation.answers.occasionId && !isPolaroidOccasionAdmitted(String(validation.answers.occasionId))) {
+    return invalidRequest([{ field: "occasionId", code: "unsupported" }]);
+  }
 
   let primaryBytes: Uint8Array;
   try {

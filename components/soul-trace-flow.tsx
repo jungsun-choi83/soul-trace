@@ -8,7 +8,10 @@ import { SurveyFlow } from "@/components/survey-flow";
 import { WarmRisingSparkles } from "@/components/warm-rising-sparkles";
 import { InstagramStoryCard } from "@/components/instagram-story-card";
 import { LanguageToggle } from "@/components/language-toggle";
-import { KickstarterPromo } from "@/components/homepage/kickstarter-promo";
+import { storyTabProps } from "@/components/pet-first-home";
+import { BrandMark } from "@/components/storybook/brand-mark";
+import { StoryTabbar } from "@/components/storybook/story-tabbar";
+import { petFirstCopy } from "@/lib/pet-first-archive";
 import { ResultAmbientAudio } from "@/components/result-ambient-audio";
 import { LetterPostageStamp } from "@/components/letter-postage-stamp";
 import { InkWordReveal } from "@/components/ink-word-reveal";
@@ -166,63 +169,6 @@ function KakaoTalkMark() {
     >
       TALK
     </span>
-  );
-}
-
-function AnnouncementIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="size-4 shrink-0"
-    >
-      <path d="M4 13.5v-3l11-4.5v12L4 13.5Z" />
-      <path d="M15 9.2c2 .7 3 1.6 3 2.8s-1 2.1-3 2.8M6.5 14.5l1.2 4h3.1l-1.8-3" />
-    </svg>
-  );
-}
-
-function KickstarterAnnouncement({ locale }: { locale: Locale }) {
-  const content = (
-    <>
-      <AnnouncementIcon />
-      <span className="truncate whitespace-nowrap">
-        {locale === "ko" ? "곧 Kickstarter에서 만나요" : "Launching soon on Kickstarter"}
-      </span>
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 16 16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="size-3.5 shrink-0"
-      >
-        <path d="m6 3.5 4.5 4.5L6 12.5" />
-      </svg>
-    </>
-  );
-  const className = `flex h-11 w-full items-center justify-center gap-2 overflow-hidden border-b border-[#143524] bg-[#070A08] px-4 text-center text-xs font-medium text-[#05CE78] sm:text-sm ${
-    locale === "ko" ? "font-ko" : "font-sans"
-  }`;
-
-  return (
-    <a
-      href="#kickstarter-promo"
-      onClick={(event) => {
-        event.preventDefault();
-        document.getElementById("kickstarter-promo")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }}
-      className={`${className} transition hover:bg-[#0A110D] hover:text-[#19E589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#05CE78]`}
-    >
-      {content}
-    </a>
   );
 }
 
@@ -1627,9 +1573,10 @@ export function SoulTraceFlow({
   const animateLetterWords = animateFreshLetter;
   const showChannelBackground =
     channelBackground !== null && (!result || generationLoadingMessage !== null);
+  const tabs = petFirstCopy(lang);
 
   if (!draftReady) {
-    return <main className="min-h-screen bg-black" aria-busy="true" aria-label="Restoring questionnaire" />;
+    return <main className="min-h-screen bg-[#fffaf0]" aria-busy="true" aria-label="Restoring questionnaire" />;
   }
 
   return (
@@ -1657,25 +1604,30 @@ export function SoulTraceFlow({
       ) : null}
       {result ? (
         <main
-          className={`relative z-[1] min-h-screen pb-10 ${
-            showChannelBackground ? "bg-transparent" : "bg-black"
+          className={`relative z-[1] min-h-screen pb-24 ${
+            showChannelBackground ? "bg-transparent" : "bg-[#fffaf0]"
           }`}
         >
-          <KickstarterAnnouncement locale={lang} />
           <WarmRisingSparkles />
-          <header className="relative z-[2] flex w-full items-center justify-between px-4 pt-6 sm:px-6">
+          <header className="relative z-[2] grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 pt-6 sm:px-6">
             <button
               type="button"
               onClick={goBackFromResult}
               aria-label={t("landing.navBack")}
-              className={`flex h-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-black/35 px-4 text-sm font-light text-[#EDE4D3]/80 transition hover:border-[#D4AF37]/40 hover:text-[#D4AF37] ${
+              className={`flex h-11 w-fit items-center justify-center gap-2 rounded-full border border-[#eadcc6] bg-[#fffbf3] px-4 text-sm font-light text-[#594b3c] transition hover:border-[#9e774c]/50 hover:text-[#9e774c] ${
                 lang === "ko" ? "font-ko" : "font-display-en"
               }`}
             >
               <span aria-hidden className="text-xl">←</span>
               <span>{t("landing.navBack")}</span>
             </button>
-            <LanguageToggle />
+            <div className="flex flex-col items-center text-[#6b4a2c]">
+              <BrandMark className="h-8 w-8" />
+              <p className="font-display-en text-sm tracking-[0.06em]">SoulTrace</p>
+            </div>
+            <div className="justify-self-end">
+              <LanguageToggle tone="paper" />
+            </div>
           </header>
           <section className="relative z-[2] mx-auto w-full max-w-3xl space-y-8 px-3 sm:px-6">
             {isLoading ? (
@@ -1692,7 +1644,7 @@ export function SoulTraceFlow({
               className="mx-auto min-w-0 w-full max-w-2xl"
             >
               <legend
-                className={`mb-3 text-xs font-light tracking-[0.14em] text-[#D9C6A4] ${
+                className={`mb-3 text-xs font-light tracking-[0.14em] text-[#9e774c] ${
                   lang === "ko" ? "font-ko" : "font-display-en"
                 }`}
               >
@@ -1710,8 +1662,8 @@ export function SoulTraceFlow({
                       onClick={() => chooseLetterTheme(theme.id)}
                       className={`relative flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-2.5 py-1.5 text-xs transition sm:text-sm ${
                         selected
-                          ? "border-[#D4AF37] bg-[#D4AF37]/15 text-[#F5E6C8]"
-                          : "border-white/15 bg-white/[0.03] text-[#D5CDC0] hover:border-[#D4AF37]/55 hover:text-[#F5E6C8]"
+                          ? "border-[#9e774c] bg-[#9e774c] text-[#fffaf2]"
+                          : "border-[#eadcc6] bg-[#fff8ec] text-[#594b3c] hover:border-[#9e774c]/55 hover:text-[#9e774c]"
                       }`}
                     >
                       <span
@@ -1739,7 +1691,7 @@ export function SoulTraceFlow({
                         </span>
                       ) : null}
                       {selected ? (
-                        <span className="text-[11px] font-bold text-[#D4AF37]" aria-hidden>
+                        <span className="text-[11px] font-bold text-[#fffaf2]" aria-hidden>
                           ✓
                         </span>
                       ) : null}
@@ -2058,8 +2010,7 @@ export function SoulTraceFlow({
 
             </div>
 
-            <div id="kickstarter-promo" className="mt-8 scroll-mt-4">
-              <KickstarterPromo fullBleed compact />
+            <div id="result-follow" className="mt-8 scroll-mt-4">
               <div className="mt-5 flex items-center justify-center gap-3 text-[#D8B84C]" aria-hidden="true">
                 <span className="h-px w-12 bg-[#D8B84C]/65 sm:w-20" />
                 <span className="font-display-en text-xs tracking-[0.2em] sm:text-sm">Follow our journey</span>
@@ -2110,12 +2061,13 @@ export function SoulTraceFlow({
             />
           </div>
           <ResultAmbientAudio active={!!result} audioRef={bgmPrimeRef} />
+          <StoryTabbar current="create" {...storyTabProps(tabs, null)} />
         </main>
       ) : (
       <main
         data-questionnaire-pet-theme={questionnairePetTheme.key}
-        className={`relative isolate z-[1] flex min-h-dvh flex-col overflow-x-hidden ${
-          showChannelBackground ? "bg-transparent" : "bg-black"
+        className={`relative isolate z-[1] flex min-h-dvh flex-col overflow-x-hidden pb-24 ${
+          showChannelBackground ? "bg-transparent" : "bg-[#fffaf0]"
         }`}
       >
         {questionnairePetTheme.background ? (
@@ -2129,36 +2081,41 @@ export function SoulTraceFlow({
               alt=""
               fill
               sizes="100vw"
-              className="object-cover object-[18%_top] opacity-80 brightness-[0.9] sm:object-[24%_top] sm:opacity-70 sm:brightness-[0.85] lg:object-center"
+              className="object-cover object-[18%_top] sm:object-[24%_top] lg:object-center"
             />
-            <div className="absolute inset-0 bg-black/40 sm:bg-black/45 lg:bg-black/50" />
-            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.02)_0%,rgba(0,0,0,0.26)_58%,rgba(0,0,0,0.62)_100%)] lg:bg-[linear-gradient(to_bottom,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.34)_58%,rgba(0,0,0,0.72)_100%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,transparent_42%,#fffaf0_78%,#fffaf0_100%)]" />
           </div>
         ) : null}
         <WarmRisingSparkles />
-        <header className="relative z-[2] flex w-full shrink-0 items-center justify-between px-5 pt-[calc(1.5rem+env(safe-area-inset-top))] md:px-8 md:pt-8">
+        <header className="relative z-[2] grid w-full shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 px-5 pt-[calc(1.5rem+env(safe-area-inset-top))] md:px-8 md:pt-8">
           {/* 갈래를 잘못 골랐을 때 되돌아갈 길 — 없으면 새로고침밖에 방법이 없다. */}
           <Link
             href="/choose"
-            className={`text-xs font-extralight text-[#EDE4D3]/60 transition hover:text-[#D4AF37] ${
+            className={`text-xs font-extralight text-[#594b3c] transition hover:text-[#9e774c] ${
               lang === "ko" ? "font-ko" : "font-display-en"
             }`}
           >
             {t("landing.back")}
           </Link>
-          <LanguageToggle />
+          <div className="flex flex-col items-center text-[#6b4a2c]">
+            <BrandMark className="h-8 w-8" />
+            <p className="font-display-en text-sm tracking-[0.06em]">SoulTrace</p>
+          </div>
+          <div className="justify-self-end">
+            <LanguageToggle tone="paper" />
+          </div>
         </header>
         <div className="relative z-[2] flex flex-1 items-center justify-center px-5 pb-14 pt-2 md:px-8 md:pb-16">
         <section className="w-full max-w-2xl">
           <div className="animate-fade-in mb-10 text-center">
-            <p className="font-display-en px-1 text-xs uppercase !tracking-[0.18em] text-[#D4AF37] sm:!tracking-[0.35em]">
+            <p className="font-display-en px-1 text-xs uppercase !tracking-[0.18em] text-[#9e774c] sm:!tracking-[0.35em]">
               {t("hero.eyebrow")}
             </p>
-            <h1 className="font-display-en mt-6 max-w-full px-1 text-[clamp(1.75rem,8.5vw,3rem)] !tracking-[0.08em] text-[#FFFFFF] sm:!tracking-[0.22em] md:text-5xl">
+            <h1 className="st-headline mt-6 max-w-full px-1 text-[clamp(1.75rem,8.5vw,3rem)] text-[#393129] sm:!tracking-[0.04em] md:text-5xl">
               {t("hero.title")}
             </h1>
             <div
-              className={`mx-auto mt-7 max-w-xl space-y-6 text-[#F3EAD8]/[0.94] ${
+              className={`mx-auto mt-7 max-w-xl space-y-6 text-[#857666] ${
                 lang === "ko"
                   ? "font-ko break-keep text-[15px] font-extralight leading-[1.85] tracking-[0.02em] sm:text-base sm:leading-[2.1] sm:tracking-[0.05em]"
                   : "font-display-en text-sm font-extralight leading-[1.85] tracking-[0.08em] sm:text-base sm:leading-[2.15] sm:tracking-[0.18em]"
@@ -2169,8 +2126,8 @@ export function SoulTraceFlow({
             </div>
           </div>
 
-          <article className="rounded-3xl border-[0.5px] border-[rgba(212,175,55,0.3)] bg-transparent p-6 md:p-10">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[#D4AF37]">
+          <article className="rounded-3xl border border-[#eadcc6] bg-[#fffbf3] p-6 shadow-[0_8px_28px_rgba(121,92,53,0.08)] md:p-10">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[#9e774c]">
               <span className="shrink-0 font-display-en uppercase">
                 {t("questionHeader.label")} {questionIndex + 1} {t("questionHeader.of")} {totalQuestionCount}
               </span>
@@ -2180,9 +2137,9 @@ export function SoulTraceFlow({
                   : <>{questionsLeft} {t("questionHeader.left")}</>}
               </span>
             </div>
-            <div className="mb-8 h-px overflow-hidden rounded-full bg-[rgba(243,234,216,0.12)]">
+            <div className="mb-8 h-1.5 overflow-hidden rounded-full bg-[#e3d5bf]">
               <div
-                className="h-full rounded-full bg-[#D4AF37] transition-all duration-700 ease-out"
+                className="h-full rounded-full bg-[#ad8b5f] transition-all duration-700 ease-out"
                 style={{ width: `${((questionIndex + 1) / totalQuestionCount) * 100}%` }}
               />
             </div>
@@ -2224,7 +2181,7 @@ export function SoulTraceFlow({
                 </div>
                 <div className="space-y-2">
                   {authSession.status === "authenticated" && authSession.email ? (
-                    <div className="rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-black/20 px-4 py-3 text-sm text-[#F3EAD8]">
+                    <div className="rounded-xl border border-[#eadcc6] bg-[#fff8ec] px-4 py-3 text-sm text-[#393129]">
                       {authSession.email}
                     </div>
                   ) : (
@@ -2243,10 +2200,10 @@ export function SoulTraceFlow({
                       placeholder={t("form.emailStep.placeholder")}
                       aria-invalid={showValidationErrors && authSession.status !== "authenticated" && !isValidQuestionnaireEmail(email)}
                       aria-describedby={showValidationErrors && authSession.status !== "authenticated" && !isValidQuestionnaireEmail(email) ? "questionnaire-email-error" : undefined}
-                      className={`w-full rounded-xl border-[0.5px] bg-transparent px-4 py-3 text-base font-extralight text-white outline-none transition placeholder:text-[#EDE4D3]/50 md:text-sm ${
+                      className={`w-full rounded-xl border bg-[#fffaf0] px-4 py-3 text-base font-extralight text-[#393129] outline-none transition placeholder:text-[#857666]/70 md:text-sm ${
                         showValidationErrors && authSession.status !== "authenticated" && !isValidQuestionnaireEmail(email)
                           ? "border-red-300/75 focus:border-red-300"
-                          : "border-[rgba(212,175,55,0.35)] focus:border-[#D4AF37]"
+                          : "border-[#dfceb6] focus:border-[#9e774c]"
                       }`}
                     />
                   )}
@@ -2264,7 +2221,7 @@ export function SoulTraceFlow({
                 type="button"
                 onClick={goPrev}
                 disabled={questionIndex === 0}
-                className="font-ko min-h-[44px] rounded-xl border-[0.5px] border-[rgba(212,175,55,0.45)] bg-transparent px-4 py-3 text-sm font-light text-[#FFFFFF] transition hover:bg-[rgba(212,175,55,0.06)] active:bg-[rgba(212,175,55,0.1)] disabled:cursor-not-allowed disabled:opacity-35"
+                className="font-ko min-h-[44px] rounded-xl border border-[#b7a38b] bg-transparent px-4 py-3 text-sm font-light text-[#393129] transition hover:bg-[#f1e5cf] disabled:cursor-not-allowed disabled:opacity-35"
               >
                 {t("buttons.prev")}
               </button>
@@ -2273,7 +2230,7 @@ export function SoulTraceFlow({
                   type="button"
                   onClick={() => void submitAnswers()}
                   disabled={isLoading}
-                  className="font-ko min-h-[44px] rounded-xl bg-[#b89a2e] px-4 py-3 text-sm font-light text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#a88928] active:bg-[#9a7f24] disabled:cursor-not-allowed disabled:opacity-45"
+                  className="font-ko min-h-[44px] rounded-xl bg-[#9e774c] px-4 py-3 text-sm font-light text-[#fffaf2] transition hover:bg-[#8d6a43] disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {isLoading
                     ? t("buttons.generating")
@@ -2285,7 +2242,7 @@ export function SoulTraceFlow({
                 <button
                   type="button"
                   onClick={() => void goNext()}
-                  className="font-ko min-h-[44px] rounded-xl border-[0.5px] border-[rgba(212,175,55,0.55)] bg-transparent px-4 py-3 text-sm font-light text-[#FFFFFF] transition hover:bg-[rgba(212,175,55,0.06)] active:bg-[rgba(212,175,55,0.1)] disabled:cursor-not-allowed disabled:opacity-45"
+                  className="font-ko min-h-[44px] rounded-xl bg-[#9e774c] px-4 py-3 text-sm font-light text-[#fffaf2] transition hover:bg-[#8d6a43] disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {t("buttons.next")}
                 </button>
@@ -2293,7 +2250,7 @@ export function SoulTraceFlow({
             </div>
             {isLoading ? (
               <p
-                className={`mt-4 text-center text-xs font-extralight leading-relaxed text-[#D4AF37]/85 ${
+                className={`mt-4 text-center text-xs font-extralight leading-relaxed text-[#9e774c] ${
                   lang === "ko" ? "font-ko" : "font-display-en"
                 }`}
               >
@@ -2322,9 +2279,10 @@ export function SoulTraceFlow({
               return "saved";
             }}
           />
-          {error ? <p className="mt-4 text-center text-sm text-red-300">{error}</p> : null}
+          {error ? <p className="mt-4 text-center text-sm text-[#b97064]">{error}</p> : null}
         </section>
         </div>
+        <StoryTabbar current="create" {...storyTabProps(tabs, null)} />
       </main>
       )}
     </>

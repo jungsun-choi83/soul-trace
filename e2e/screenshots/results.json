@@ -1,0 +1,176 @@
+[
+  {
+    "name": "A living home",
+    "width": 375,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/dashboard/living"
+  },
+  {
+    "name": "C living letter",
+    "width": 375,
+    "ok": true,
+    "detail": "지금 곁에 있는 아이, 오늘의 편지 | 소울트레이스"
+  },
+  {
+    "name": "E collar",
+    "width": 375,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/my/device"
+  },
+  {
+    "name": "G living beam",
+    "width": 375,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/beam-scene"
+  },
+  {
+    "name": "B memorial home",
+    "width": 375,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/dashboard/memorial tab=/memorial-space"
+  },
+  {
+    "name": "D memorial letter",
+    "width": 375,
+    "ok": true,
+    "detail": "무지개 다리 너머로 전하는 편지 | 소울트레이스"
+  },
+  {
+    "name": "F memorial hall",
+    "width": 375,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/memorial-space"
+  },
+  {
+    "name": "G memorial beam",
+    "width": 375,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/beam-scene"
+  },
+  {
+    "name": "A living home",
+    "width": 390,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/dashboard/living"
+  },
+  {
+    "name": "C living letter",
+    "width": 390,
+    "ok": true,
+    "detail": "지금 곁에 있는 아이, 오늘의 편지 | 소울트레이스"
+  },
+  {
+    "name": "E collar",
+    "width": 390,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/my/device"
+  },
+  {
+    "name": "G living beam",
+    "width": 390,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/beam-scene"
+  },
+  {
+    "name": "B memorial home",
+    "width": 390,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/dashboard/memorial tab=/memorial-space"
+  },
+  {
+    "name": "D memorial letter",
+    "width": 390,
+    "ok": true,
+    "detail": "무지개 다리 너머로 전하는 편지 | 소울트레이스"
+  },
+  {
+    "name": "F memorial hall",
+    "width": 390,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/memorial-space"
+  },
+  {
+    "name": "G memorial beam",
+    "width": 390,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/beam-scene"
+  },
+  {
+    "name": "A living home",
+    "width": 430,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/dashboard/living"
+  },
+  {
+    "name": "C living letter",
+    "width": 430,
+    "ok": true,
+    "detail": "지금 곁에 있는 아이, 오늘의 편지 | 소울트레이스"
+  },
+  {
+    "name": "E collar",
+    "width": 430,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/my/device"
+  },
+  {
+    "name": "G living beam",
+    "width": 430,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/beam-scene"
+  },
+  {
+    "name": "B memorial home",
+    "width": 430,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/dashboard/memorial tab=/memorial-space"
+  },
+  {
+    "name": "D memorial letter",
+    "width": 430,
+    "ok": true,
+    "detail": "무지개 다리 너머로 전하는 편지 | 소울트레이스"
+  },
+  {
+    "name": "F memorial hall",
+    "width": 430,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/memorial-space"
+  },
+  {
+    "name": "G memorial beam",
+    "width": 430,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/beam-scene"
+  },
+  {
+    "name": "H refresh living url",
+    "width": 390,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/dashboard/living?pet=61ee91b5-290b-4ed3-9a5a-62609efa80a1"
+  },
+  {
+    "name": "J bad partner code",
+    "width": 390,
+    "ok": true,
+    "detail": "http://127.0.0.1:3100/?p=not-a-code"
+  },
+  {
+    "name": "J service channel",
+    "width": 390,
+    "ok": true,
+    "detail": "/living?ch=pension"
+  },
+  {
+    "name": "J direct living letter",
+    "width": 390,
+    "ok": true,
+    "detail": "지금 곁에 있는 아이, 오늘의 편지 | 소울트레이스"
+  },
+  {
+    "name": "J polaroid",
+    "width": 390,
+    "ok": true,
+    "detail": "우리 아이의 특별한 한 장 | Soul Trace | 소울트레이스"
+  }
+]

@@ -167,7 +167,8 @@ test("final Polaroid composition uses the stable decorative template and caption
   // The result page renders the shared frame; it no longer carries its own copy of the composition.
   assert.match(component, /<SeasonalPolaroidFrame/);
   assert.doesNotMatch(component, /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
-  assert.match(frame, /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
+  assert.match(readFileSync("lib/polaroid-frames.ts", "utf8"), /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
+  assert.match(frame, /layout\.templateSrc/);
   assert.match(frame, /aspect-\[2\/3\]/);
   assert.match(frame, /memoLines\.slice\(0, 4\)/);
   assert.match(exporter, /SEASONAL_POLAROID_EXPORT_WIDTH = 1080/);

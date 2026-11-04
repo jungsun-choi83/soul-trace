@@ -39,6 +39,7 @@ export type SeasonalPolaroidQueuePayload = {
   locale: string;
   answers: {
     themeId: string;
+    occasionId?: string;
     locale: string;
     petName: string;
     species: string;
@@ -69,6 +70,7 @@ export type SeasonalPolaroidQueuePayload = {
 function normalizedAnswers(answers: SeasonalPolaroidQuestionnaire) {
   return {
     themeId: String(answers.themeId).trim(),
+    occasionId: String(answers.occasionId ?? "").trim(),
     locale: String(answers.locale).trim(),
     petName: answers.petName.trim(),
     species: String(answers.species).trim(),

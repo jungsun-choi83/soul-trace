@@ -1,6 +1,7 @@
 import { isLocale, type Locale } from "./i18n.ts";
+import { polaroidThemeById, POLAROID_THEME_IDS } from "./polaroid-themes.ts";
+import type { PolaroidThemeId } from "./polaroid-theme-catalog.ts";
 import {
-  HALLOWEEN_POLAROID_THEME,
   optionsForStatus,
   type PolaroidSpecies,
   type PolaroidStatus,
@@ -12,11 +13,12 @@ import {
   validateSeasonalPolaroidPhoto,
 } from "./seasonal-polaroid-photo.ts";
 
-export type SeasonalPolaroidThemeId = "halloween";
+export type SeasonalPolaroidThemeId = PolaroidThemeId;
 export type SeasonalPolaroidLocale = Locale;
 
 export type SeasonalPolaroidQuestionnaire = {
   themeId: SeasonalPolaroidThemeId | string;
+  occasionId?: string;
   locale: SeasonalPolaroidLocale | string;
   petName: string;
   species: PolaroidSpecies | string;
@@ -71,6 +73,7 @@ export type SeasonalPolaroidResult = {
 
 export type SeasonalPolaroidValidationField =
   | "themeId"
+  | "occasionId"
   | "locale"
   | "petName"
   | "species"
@@ -113,11 +116,11 @@ export type SeasonalPolaroidValidationResult =
   | { valid: true; theme: SeasonalPolaroidTheme; answers: SeasonalPolaroidQuestionnaire }
   | { valid: false; issues: SeasonalPolaroidValidationIssue[] };
 
-export const SEASONAL_POLAROID_THEME_IDS: readonly SeasonalPolaroidThemeId[] = ["halloween"];
+export const SEASONAL_POLAROID_THEME_IDS: readonly SeasonalPolaroidThemeId[] = POLAROID_THEME_IDS;
 
-const THEMES: Record<SeasonalPolaroidThemeId, SeasonalPolaroidTheme> = {
-  halloween: HALLOWEEN_POLAROID_THEME,
-};
+export function seasonalPolaroidTheme(themeId: string): SeasonalPolaroidTheme | undefined {
+  return polaroidThemeById(themeId);
+}
 
 const SPECIES: readonly PolaroidSpecies[] = ["dog", "cat", "rabbit", "hamster", "bird", "other"];
 const STATUSES: readonly PolaroidStatus[] = ["living", "passed"];
@@ -127,12 +130,6 @@ const MAX_CUSTOM_HABIT_LENGTH = 60;
 const MAX_CALL_NAME_LENGTH = 40;
 const MAX_PERSONAL_DETAIL_LENGTH = 60;
 const MAX_GENERATION_NONCE_LENGTH = 128;
-
-export function seasonalPolaroidTheme(themeId: string): SeasonalPolaroidTheme | undefined {
-  return Object.prototype.hasOwnProperty.call(THEMES, themeId)
-    ? THEMES[themeId as SeasonalPolaroidThemeId]
-    : undefined;
-}
 
 function hasOption(options: readonly SeasonalOption[], id: string): boolean {
   return options.some((item) => item.id === id);
@@ -198,6 +195,9 @@ export function validateSeasonalPolaroidRequest(
 
   const theme = seasonalPolaroidTheme(String(answers.themeId ?? ""));
   if (!theme) addIssue(issues, "themeId", "unsupported");
+  const occasionId = typeof answers.occasionId === "string" ? answers.occasionId.trim() : "";
+  const optionTheme = occasionId ? seasonalPolaroidTheme(occasionId) : theme;
+  if (occasionId && !optionTheme) addIssue(issues, "occasionId", "unsupported");
   if (!isLocale(String(answers.locale ?? ""))) addIssue(issues, "locale", "unsupported");
 
   const petName = typeof answers.petName === "string" ? answers.petName.trim() : "";
@@ -209,17 +209,17 @@ export function validateSeasonalPolaroidRequest(
   const status = String(answers.status ?? "");
   if (!STATUSES.includes(status as PolaroidStatus)) addIssue(issues, "status", "unsupported");
 
-  if (theme && STATUSES.includes(status as PolaroidStatus)) {
+  if (optionTheme && STATUSES.includes(status as PolaroidStatus)) {
     const typedStatus = status as PolaroidStatus;
     const costume = String(answers.costume ?? "");
     const scene = String(answers.scene ?? "");
     const vibe = String(answers.vibe ?? "");
     if (!costume) addIssue(issues, "costume", "required");
-    else if (!hasOption(optionsForStatus(theme.costumes, typedStatus), costume)) addIssue(issues, "costume", "restricted");
+    else if (!hasOption(optionsForStatus(optionTheme.costumes, typedStatus), costume)) addIssue(issues, "costume", "restricted");
     if (!scene) addIssue(issues, "scene", "required");
-    else if (!hasOption(optionsForStatus(theme.scenes, typedStatus), scene)) addIssue(issues, "scene", "restricted");
+    else if (!hasOption(optionsForStatus(optionTheme.scenes, typedStatus), scene)) addIssue(issues, "scene", "restricted");
     if (!vibe) addIssue(issues, "vibe", "required");
-    else if (!hasOption(optionsForStatus(theme.vibes, typedStatus), vibe)) addIssue(issues, "vibe", "restricted");
+    else if (!hasOption(optionsForStatus(optionTheme.vibes, typedStatus), vibe)) addIssue(issues, "vibe", "restricted");
   }
 
   const personalities = Array.isArray(answers.personalities) ? answers.personalities : [];
@@ -264,6 +264,7 @@ export function validateSeasonalPolaroidRequest(
     answers: {
       ...answers,
       themeId: answers.themeId,
+      occasionId,
       locale: answers.locale,
       petName,
       species,

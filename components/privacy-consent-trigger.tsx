@@ -16,27 +16,27 @@ export function PrivacyConsentTrigger({ agreed, onOpen, labelPath }: PrivacyCons
     <button
       type="button"
       onClick={onOpen}
-      className={`flex w-full items-center justify-between gap-3 rounded-xl border-[0.5px] border-[rgba(212,175,55,0.35)] bg-[rgba(212,175,55,0.04)] px-4 py-3.5 text-left transition hover:border-[rgba(212,175,55,0.55)] hover:bg-[rgba(212,175,55,0.08)] ${bodyFont}`}
+      className={`flex w-full items-center justify-between gap-3 rounded-xl border border-[#dfceb6] bg-[#fff8ec] px-4 py-3.5 text-left transition hover:border-[#9e774c]/55 hover:bg-[#f1e5cf] ${bodyFont}`}
     >
       <span className="flex min-w-0 items-start gap-3">
         <span
           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[11px] ${
             agreed
-              ? "border-[rgba(212,175,55,0.65)] bg-[rgba(212,175,55,0.2)] text-[#F5E6B8]"
-              : "border-[rgba(212,175,55,0.35)] bg-transparent text-transparent"
+              ? "border-[#9e774c] bg-[#9e774c] text-[#fffaf2]"
+              : "border-[#b7a38b] bg-[#fffaf0] text-transparent"
           }`}
           aria-hidden
         >
           ✓
         </span>
-        <span className="text-sm font-extralight leading-relaxed text-[#F3EAD8] sm:text-[15px]">
+        <span className="text-sm leading-relaxed text-[#393129] sm:text-[15px]">
           {t(labelPath)}
           {agreed ? (
-            <span className="mt-1 block text-xs text-[#D4AF37]/85">{t("form.privacyConsentAgreed")}</span>
+            <span className="mt-1 block text-xs text-[#9e774c]">{t("form.privacyConsentAgreed")}</span>
           ) : null}
         </span>
       </span>
-      <span className="shrink-0 text-xs font-light text-[#D4AF37]">{t("form.privacyConsentView")}</span>
+      <span className="shrink-0 text-xs font-medium text-[#9e774c]">{t("form.privacyConsentView")}</span>
     </button>
   );
 }

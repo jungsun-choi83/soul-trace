@@ -23,7 +23,8 @@ test("Living can be entered without an authentication redirect", () => {
 
 test("Memorial can be entered without an authentication redirect", () => {
   assert.doesNotMatch(memorial, /authEntryPath|redirect\([^)]*auth|auth\.getUser/);
-  assert.match(welcome, /choiceHref=\{choiceHref\}/);
+  assert.match(welcome, /EntryChoice/);
+  assert.doesNotMatch(welcome, /authEntryPath|auth\.getUser/);
 });
 
 test("partner entries also bypass auth in the active journey", () => {

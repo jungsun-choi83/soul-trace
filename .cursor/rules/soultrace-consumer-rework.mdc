@@ -1,0 +1,17 @@
+---
+description: SoulTrace consumer-first product redesign, archive safety, and project boundaries
+alwaysApply: true
+---
+
+# SoulTrace Cursor implementation rules
+
+- Work within the `soul-trace` repository only. Read `docs/SOULTRACE_CONSUMER_REWORK_SPEC.md` before changes.
+- Keep `eternal-beam-app` separate for hologram machine use. Do not merge backend, user database, device control, credits or source files. `soultrace-memory-shop` is explicitly out of scope.
+- Do not automatically commit, push, merge into master, deploy, migrate production DB, enable payments, or alter live user records without explicit user approval. Create and use a feature branch.
+- First audit existing routes, Supabase migrations, auth/RLS, life archive APIs, temporary browser storage, existing letters and handoffs. Report findings with concrete file paths.
+- Build pet-first archive onboarding: pet creation and memory upload must work without generating a letter. Keep existing letter routes backward compatible.
+- Reuse current UI design, bilingual copy, storage, favorites and media APIs. Make additive DB migrations with rollback and tests. Never delete existing data as part of setup.
+- Grief/memorial experiences must be optional and pressure-free. No claims to treat depression or literally communicate with a deceased pet. Grief reminders default OFF.
+- Treat pricing as unvalidated proposals. Never show a working checkout until a verified payment, refund, failed-job and privacy flow exists.
+- Integrations for Seeed collar and Eternal Beam are future consented data exchange contracts; no automatic access to entire archive. Never share raw GPS or private journals by default.
+- After each phase report code changes, tests, what works, what is only planned, and risks. Do not represent a static implementation as end-to-end tested.

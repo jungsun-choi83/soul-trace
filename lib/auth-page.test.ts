@@ -6,11 +6,13 @@ import {
   authenticatedAuthDestination,
   authCallbackUrl,
   authEntryPath,
+  continueAfterAuth,
   resolveAuthReturnPath,
   safeAuthErrorPath,
   safeAuthReturnPath,
   safeInternalPath,
 } from "./auth-redirect.ts";
+import { PET_FIRST_ARCHIVE_FLAG } from "./pet-first-archive.ts";
 import {
   normalizeAuthLocale,
   requestPasswordlessEmail,
@@ -72,7 +74,9 @@ test("auth page provides localized email, privacy, and signup/sign-in controls",
   assert.match(component, /type="email"/);
   assert.match(component, /PrivacyConsentTrigger/);
   assert.match(component, /PrivacyConsentSheet/);
-  assert.match(component, /LanguageToggle/);
+  assert.match(component, /if \(!formValid\) \{[\s\S]*setPrivacySheetOpen\(true\)/);
+  assert.match(component, /PaperShell/);
+  assert.match(readFileSync("components/storybook/paper-shell.tsx", "utf8"), /StoryBrandHeader/);
   assert.equal(en.auth.continueEmail, "Continue with Email");
   assert.equal(en.auth.registered, "Already registered?");
   assert.equal(ko.auth.eyebrow, "SOUL TRACE 시작하기");
@@ -84,6 +88,18 @@ test("auth page provides localized email, privacy, and signup/sign-in controls",
   assert.deepEqual(Object.keys(ko.auth).sort(), Object.keys(en.auth).sort());
   assert.match(component, /authCallbackUrl\(window\.location\.origin, returnTo, lang\)/);
   assert.match(component, /locale: lang/);
+});
+
+test("login screen 03 keeps email and password and never adds social OAuth", () => {
+  assert.match(component, /createPasswordAccount/);
+  assert.match(component, /signInWithPassword/);
+  assert.match(component, /auth\.signinTitle/);
+  assert.match(component, /UIUX_AUTH_ART/);
+  assert.doesNotMatch(component, /auth\.guestHint|welcomeGuestLetter|\/choose/);
+  assert.doesNotMatch(component, /Apple|Google|signInWithOAuth|OAuth|Continue with Apple|Continue with Google/);
+  assert.doesNotMatch(page, /signInWithOAuth|Apple|Google/);
+  assert.equal(ko.auth.saveHeader, "저장하고 이어보기");
+  assert.match(ko.auth.saveTitle, /잃어버리지 않도록/);
 });
 
 test("password fields provide independent localized visibility controls", () => {
@@ -157,8 +173,10 @@ test("p, ch, and additional parameters survive the callback round trip", () => {
     returnTo: "/living?ch=pension",
     p: "partner-code",
     campaign: "autumn",
+    mode: "signin",
   });
   assert.equal(returnTo, "/living?ch=pension&p=partner-code&campaign=autumn");
+  assert.equal(resolveAuthReturnPath({ returnTo: "/dashboard", mode: "signin" }), "/dashboard");
   const callback = new URL(authCallbackUrl("https://soultrace.example", returnTo, "ko"));
   assert.equal(callback.searchParams.get("next"), returnTo);
   assert.equal(callback.searchParams.get("locale"), "ko");
@@ -175,6 +193,21 @@ test("unsafe return destinations are rejected", () => {
   assert.equal(safeAuthReturnPath("/auth/confirm?code=ignored"), "/choose");
   assert.equal(safeAuthErrorPath("/auth/confirm", "/living"), "/living");
   assert.equal(safeAuthErrorPath("/auth?returnTo=/living", "/living"), "/auth?returnTo=/living");
+});
+
+test("signed-in visitors enter the customer home when the archive is on", () => {
+  const previous = process.env[PET_FIRST_ARCHIVE_FLAG];
+  try {
+    delete process.env[PET_FIRST_ARCHIVE_FLAG];
+    assert.equal(continueAfterAuth("/choose"), "/choose");
+    process.env[PET_FIRST_ARCHIVE_FLAG] = "1";
+    assert.equal(continueAfterAuth("/choose"), "/dashboard");
+    assert.equal(continueAfterAuth("/"), "/dashboard");
+    assert.equal(continueAfterAuth("/living?ch=pension"), "/living?ch=pension");
+  } finally {
+    if (previous === undefined) delete process.env[PET_FIRST_ARCHIVE_FLAG];
+    else process.env[PET_FIRST_ARCHIVE_FLAG] = previous;
+  }
 });
 
 test("normal auth and unsafe or looping destinations safely fall back to choose", () => {
@@ -274,7 +307,8 @@ test("pending state blocks duplicate requests and language switching has no auth
   assert.match(component, /if \(requestPending\.current\) return/);
   assert.match(component, /disabled=\{status === "submitting"\}/);
   assert.doesNotMatch(component, /setLang[\s\S]*(?:createPasswordAccount|signInWithPassword)/);
-  assert.match(component, /status === "check_email"[\s\S]*auth\.checkEmailTitle/);
+  assert.match(component, /status === "check_email"/);
+  assert.doesNotMatch(component, /auth\.guestHint|welcomeGuestLetter/);
   assert.match(component, /mode === "signin" \|\| privacyConsent/);
   assert.doesNotMatch(component, /useEffect\([\s\S]*(?:createPasswordAccount|signInWithPassword)/);
 });

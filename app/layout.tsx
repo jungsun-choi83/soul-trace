@@ -5,6 +5,8 @@ import {
   Inter,
   Marcellus,
   Nanum_Myeongjo,
+  Nanum_Pen_Script,
+  Noto_Sans_KR,
   Noto_Serif_KR,
   Playfair_Display,
 } from "next/font/google";
@@ -50,6 +52,20 @@ const notoSerifKr = Noto_Serif_KR({
 const nanumMyeongjo = Nanum_Myeongjo({
   variable: "--font-nanum-myeongjo",
   weight: ["400", "700"],
+  display: "swap",
+  preload: false,
+});
+
+const notoSansKr = Noto_Sans_KR({
+  variable: "--font-noto-sans-kr",
+  weight: ["400", "500"],
+  display: "swap",
+  preload: false,
+});
+
+const nanumPen = Nanum_Pen_Script({
+  variable: "--font-pen",
+  weight: "400",
   display: "swap",
   preload: false,
 });
@@ -147,7 +163,7 @@ export default function RootLayout({
       lang="ko"
       translate="no"
       suppressHydrationWarning
-      className={`${marcellus.variable} ${playfair.variable} ${cormorant.variable} ${inter.variable} ${courierPrime.variable} ${notoSerifKr.variable} ${nanumMyeongjo.variable} notranslate h-full antialiased [text-size-adjust:100%]`}
+      className={`${marcellus.variable} ${playfair.variable} ${cormorant.variable} ${inter.variable} ${courierPrime.variable} ${notoSerifKr.variable} ${nanumMyeongjo.variable} ${notoSansKr.variable} ${nanumPen.variable} notranslate h-full antialiased [text-size-adjust:100%]`}
     >
       <body className="font-ko min-h-full flex flex-col bg-black text-[#FFFFFF]">
         <script

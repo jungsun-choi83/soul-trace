@@ -37,8 +37,8 @@ function chipClass(selected: boolean, lang: Locale) {
     lang === "ko" ? "font-ko" : "font-display-en"
   } ${
     selected
-      ? "border-[rgba(212,175,55,0.65)] bg-[rgba(212,175,55,0.14)] text-[#F5E6B8]"
-      : "border-[rgba(212,175,55,0.28)] bg-transparent text-[#EDE4D3]/88 hover:border-[rgba(212,175,55,0.45)] hover:bg-[rgba(212,175,55,0.06)]"
+      ? "border-[#9e774c] bg-[#9e774c] text-[#fffaf2]"
+      : "border-[#eadcc6] bg-[#fff8ec] text-[#393129] hover:border-[#9e774c]/55 hover:bg-[#f1e5cf]"
   }`;
 }
 
@@ -99,7 +99,7 @@ export function SurveyFlow({
 
       {isPhoto ? (
         <div className="mt-4 space-y-4">
-          <p className="survey-hint font-extralight text-[#D4AF37]/85">{t("survey.stampPhoto.helper")}</p>
+          <p className="survey-hint font-extralight text-[#9e774c]">{t("survey.stampPhoto.helper")}</p>
           <PetPhotoUpload
             petDisplayName={petDisplayName}
             previewUrl={petPhotoPreviewUrl}
@@ -110,7 +110,7 @@ export function SurveyFlow({
           <button
             type="button"
             onClick={onSkipPhoto}
-            className={`w-full rounded-xl border border-dashed border-[rgba(212,175,55,0.35)] px-4 py-3 text-sm font-light text-[#D4AF37]/90 transition hover:border-[rgba(212,175,55,0.55)] hover:bg-[rgba(212,175,55,0.06)] ${bodyFont}`}
+            className={`w-full rounded-xl border border-dashed border-[#dfceb6] px-4 py-3 text-sm font-light text-[#9e774c] transition hover:border-[#9e774c]/55 hover:bg-[#f1e5cf] ${bodyFont}`}
           >
             {t("survey.video.photoSkip")}
           </button>
@@ -119,10 +119,10 @@ export function SurveyFlow({
 
       {isMemory && memoryItem ? (
         <div className="mt-4 space-y-4">
-          <p className="text-xl font-extralight leading-relaxed text-[#FFFFFF] md:text-2xl">
+          <p className="text-xl font-extralight leading-relaxed text-[#393129] md:text-2xl">
             {formatSurveyName(memoryItem.promptText, petDisplayName)}
           </p>
-          <p className="survey-hint whitespace-pre-line font-extralight leading-relaxed text-[#D4AF37]/90">
+          <p className="survey-hint whitespace-pre-line font-extralight leading-relaxed text-[#9e774c]">
             {memoryItem.helper ??
               t("survey.focusHint").replace("%NAME%", petDisplayName.trim() || (lang === "ko" ? "아이" : "your pet"))}
           </p>
@@ -141,13 +141,13 @@ export function SurveyFlow({
             onChange={(e) => onMemoryChange(step, e.target.value)}
             placeholder={memoryItem.placeholder}
             rows={5}
-            className="font-ko w-full resize-none rounded-2xl border-[0.5px] border-[rgba(212,175,55,0.28)] bg-transparent p-4 text-base font-extralight leading-7 text-[#FFFFFF] outline-none transition placeholder:text-[#EDE4D3]/45 focus:border-[#D4AF37] md:text-base"
+            className="font-ko w-full resize-none rounded-2xl border border-[#dfceb6] bg-[#fffaf0] p-4 text-base font-extralight leading-7 text-[#393129] outline-none transition placeholder:text-[#857666]/70 focus:border-[#9e774c] md:text-base"
           />
           {memoryItem.optional ? (
             <button
               type="button"
               onClick={onSkipOptional}
-              className={`w-full rounded-xl border border-dashed border-[rgba(212,175,55,0.35)] px-4 py-3 text-sm font-light text-[#D4AF37]/90 transition hover:border-[rgba(212,175,55,0.55)] hover:bg-[rgba(212,175,55,0.06)] ${bodyFont}`}
+              className={`w-full rounded-xl border border-dashed border-[#dfceb6] px-4 py-3 text-sm font-light text-[#9e774c] transition hover:border-[#9e774c]/55 hover:bg-[#f1e5cf] ${bodyFont}`}
             >
               {memoryItem.skipLabel}
             </button>
@@ -157,7 +157,7 @@ export function SurveyFlow({
 
       {!isMemory && !isPhoto && toneItem ? (
         <div className="mt-4 space-y-4">
-          <p className="text-xl font-extralight leading-relaxed text-[#FFFFFF] md:text-2xl">
+          <p className="text-xl font-extralight leading-relaxed text-[#393129] md:text-2xl">
             {toneItem.id === "q10"
               ? t("survey.letterToneTitle")
               : toneItem.promptText.replace(/^Q\d+\.\s*/, "")}
@@ -191,7 +191,7 @@ export function SurveyFlow({
         </div>
       ) : null}
       {validationMessage ? (
-        <p className="mt-4 text-xs font-extralight leading-relaxed text-red-200" role="alert">
+        <p className="mt-4 text-xs font-extralight leading-relaxed text-[#b97064]" role="alert">
           {validationMessage}
         </p>
       ) : null}

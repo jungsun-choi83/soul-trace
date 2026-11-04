@@ -29,6 +29,7 @@ test("Seasonal client builds the backend multipart contract without photo data U
   }, primary);
 
   assert.equal(form.get("themeId"), "halloween");
+  assert.equal(form.has("occasionId"), false);
   assert.equal(form.get("locale"), "ko");
   assert.equal(form.get("petName"), "Mandu");
   assert.equal(form.get("personalities"), JSON.stringify(["foodie", "cuddleBug"]));
@@ -38,6 +39,30 @@ test("Seasonal client builds the backend multipart contract without photo data U
   assert.equal(form.has("secondaryPhoto"), false);
   assert.equal(form.getAll("primaryPhoto").length, 1);
   assert.equal(form.has("photo"), false);
+});
+
+test("Seasonal client forwards an optional special-day occasion", () => {
+  const primary = new File([new Uint8Array([1, 2, 3])], "primary.webp", { type: "image/webp" });
+  const form = buildSeasonalPolaroidFormData({
+    themeId: "felt-doll",
+    occasionId: "christmas-little-ghost",
+    locale: "ko",
+    petName: "Coco",
+    species: "dog",
+    status: "living",
+    costume: "tiny-bell-collar",
+    scene: "candle-window",
+    vibe: "christmas-cozy",
+    personalities: ["cuddle-bug"],
+    habit: "toy-carrier",
+    favoriteTreat: "cheese",
+    customTreat: "",
+    callName: "mom",
+    customCallName: "",
+    personalDetail: "",
+  }, primary);
+  assert.equal(form.get("themeId"), "felt-doll");
+  assert.equal(form.get("occasionId"), "christmas-little-ghost");
 });
 
 test("Seasonal status capability is transported in a request header, not the query string", () => {

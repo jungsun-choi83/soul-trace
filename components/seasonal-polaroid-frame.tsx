@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- private result images and the stable template are rasterized in-browser. */
 
 import type { Locale } from "@/lib/i18n";
+import { polaroidFrameLayout } from "@/lib/polaroid-frames";
 import { useLayoutEffect, useRef, useState, type RefObject, type ReactNode } from "react";
 
 /**
@@ -95,6 +96,8 @@ type SeasonalPolaroidFrameProps = {
   imageFallback?: ReactNode;
   /** Small label under the caption window (development mock only). */
   badge?: ReactNode;
+  /** Everyday art style or Halloween. Chooses the decorative frame. */
+  themeId?: string | null;
 };
 
 /**
@@ -124,7 +127,9 @@ export function SeasonalPolaroidFrame({
   className,
   imageFallback,
   badge,
+  themeId,
 }: SeasonalPolaroidFrameProps) {
+  const layout = polaroidFrameLayout(themeId);
   const bodyFont = lang === "ko" ? "font-ko break-keep" : "font-display-en !tracking-normal";
   const frameClassName = className ?? `${SEASONAL_POLAROID_FRAME_BASE_CLASS} ${SEASONAL_POLAROID_FRAME_TILT_CLASS}`;
   const memoRef = useRef<HTMLDivElement>(null);
@@ -149,20 +154,43 @@ export function SeasonalPolaroidFrame({
 
   return (
     <div ref={polaroidRef} className={`@container ${frameClassName}`}>
-      <img data-seasonal-polaroid="template" src="/images/soul_trace_seasonal_polaroid_blank_caption_template.png" alt="" aria-hidden="true" className="absolute inset-0 z-0 h-full w-full object-fill" />
-      <div data-seasonal-polaroid="photo-window" className="absolute left-[16.2%] top-[15.2%] z-10 h-[50.7%] w-[67.8%] overflow-hidden rounded-[4%] bg-[#E9E1D7] shadow-[inset_0_0_18px_rgba(53,38,26,0.18)]">
+      <img data-seasonal-polaroid="template" src={layout.templateSrc} alt="" aria-hidden="true" className="absolute inset-0 z-0 h-full w-full object-fill" />
+      <div
+        data-seasonal-polaroid="photo-window"
+        className={layout.halloweenDecor
+          ? "absolute left-[16.2%] top-[15.2%] z-10 h-[50.7%] w-[67.8%] overflow-hidden rounded-[4%] bg-[#E9E1D7] shadow-[inset_0_0_18px_rgba(53,38,26,0.18)]"
+          : "absolute z-10 overflow-hidden bg-[#E9E1D7]"}
+        style={layout.halloweenDecor ? undefined : {
+          left: layout.photo.left,
+          top: layout.photo.top,
+          width: layout.photo.width,
+          height: layout.photo.height,
+          borderRadius: layout.photoRadius,
+        }}
+      >
         {imageUrl && !placeholder ? <img data-seasonal-polaroid="photo" src={imageUrl} alt={imageAlt ?? t("polaroidPreviewAlt")} onError={onImageError} className="h-full w-full object-cover object-center" /> : imageFallback ?? null}
-        <div className={`absolute inset-0 flex flex-col items-center justify-center bg-[linear-gradient(145deg,rgba(30,12,38,0.42),rgba(117,43,20,0.42))] px-7 text-center transition-opacity duration-1000 ${placeholder ? "opacity-100" : "opacity-0"}`}>
-          <span className="text-4xl" aria-hidden="true">🎃</span>
-          <p className={`mt-4 text-xs leading-6 text-[#F5D999] ${bodyFont}`}>{t("seasonalPolaroid.generation.developingPhoto")}</p>
+        <div className={`absolute inset-0 flex flex-col items-center justify-center px-7 text-center transition-opacity duration-1000 ${placeholder ? "opacity-100" : "opacity-0"} ${layout.halloweenDecor ? "bg-[linear-gradient(145deg,rgba(30,12,38,0.42),rgba(117,43,20,0.42))]" : "bg-[#E9E1D7]/80"}`}>
+          {layout.halloweenDecor ? <span className="text-4xl" aria-hidden="true">🎃</span> : null}
+          <p className={`text-xs leading-6 ${layout.halloweenDecor ? "mt-4 text-[#F5D999]" : "text-[#806A56]"} ${bodyFont}`}>{t("seasonalPolaroid.generation.developingPhoto")}</p>
         </div>
-        <span className="absolute right-4 top-4 text-2xl text-[#F7D47D]" aria-hidden="true">✦</span>
+        {layout.halloweenDecor ? <span className="absolute right-4 top-4 text-2xl text-[#F7D47D]" aria-hidden="true">✦</span> : null}
       </div>
-      <div data-seasonal-polaroid="caption" className="absolute bottom-[19%] left-[19%] right-[19%] top-[70.6%] z-20 overflow-hidden text-center">
+      <div
+        data-seasonal-polaroid="caption"
+        className={layout.flowers
+          ? "absolute bottom-[19%] left-[19%] right-[19%] top-[70.6%] z-20 overflow-hidden text-center"
+          : "absolute z-20 overflow-hidden text-center"}
+        style={layout.flowers ? undefined : {
+          left: layout.caption.left,
+          right: layout.caption.right,
+          top: layout.caption.top,
+          bottom: layout.caption.bottom,
+        }}
+      >
         {showMemo ? (
           <>
-            <span aria-hidden="true" className={`float-left h-full w-[18%] ${CAPTION_LEFT_FLOWER_SHAPE}`} />
-            <span aria-hidden="true" className={`float-right h-full w-[18%] ${CAPTION_RIGHT_FLOWER_SHAPE}`} />
+            {layout.flowers ? <span aria-hidden="true" className={`float-left h-full w-[18%] ${CAPTION_LEFT_FLOWER_SHAPE}`} /> : null}
+            {layout.flowers ? <span aria-hidden="true" className={`float-right h-full w-[18%] ${CAPTION_RIGHT_FLOWER_SHAPE}`} /> : null}
             <div ref={memoRef} className={`text-[2.5cqw] leading-[1.1] ${bodyFont}`}>
               {displayLines.map((line, index) => <p key={`${index}-${line.slice(0, 8)}`} className="break-words">{line}</p>)}
             </div>
@@ -171,7 +199,7 @@ export function SeasonalPolaroidFrame({
           <p className={`flex h-full items-center justify-center text-sm text-[#806A56]/75 ${bodyFont}`}>{t("seasonalPolaroid.generation.memoWaiting")}</p>
         )}
       </div>
-      {badge ? <p className="absolute bottom-[14%] left-0 right-0 z-20 text-center font-display-en text-[8px] uppercase tracking-[0.28em] text-[#806A56]">{badge}</p> : null}
+      {badge ? <p className={`absolute left-0 right-0 z-20 text-center font-display-en text-[8px] uppercase tracking-[0.28em] text-[#806A56] ${layout.halloweenDecor ? "bottom-[14%]" : "bottom-[3%]"}`}>{badge}</p> : null}
     </div>
   );
 }

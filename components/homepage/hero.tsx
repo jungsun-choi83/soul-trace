@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale } from "@/components/locale-provider";
+import { isPetFirstArchiveEnabled, petFirstCopy } from "@/lib/pet-first-archive";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRightIcon } from "./icons";
@@ -9,6 +10,10 @@ import styles from "./homepage.module.css";
 
 export function Hero({ choiceHref }: { choiceHref: string }) {
   const { lang, t } = useLocale();
+  const petFirst = isPetFirstArchiveEnabled();
+  const recordCopy = petFirstCopy(lang);
+  const recordHref = "/my/pets";
+  const lookBackHref = "/memorial";
   const display =
     lang === "ko"
       ? "font-ko break-keep"
@@ -64,26 +69,34 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
             <h1
               className={`${display} text-[clamp(1.4rem,6.6vw,2.2rem)] font-light leading-[1.15] sm:text-5xl lg:text-7xl`}
             >
-              <span className="block">
-                {t("homepage.hero.title1").split("\n").map((line) => (
-                  <span key={line} className="block">
-                    {line.endsWith("만나세요") ? (
-                      <>
-                        {line.replace(/만나세요$/u, "")}
-                        <br className="sm:hidden" />
-                        만나세요
-                      </>
-                    ) : (
-                      line
-                    )}
+              {petFirst ? (
+                recordCopy.heroTitle.split("\n").map((line) => (
+                  <span key={line} className="block">{line}</span>
+                ))
+              ) : (
+                <>
+                  <span className="block">
+                    {t("homepage.hero.title1").split("\n").map((line) => (
+                      <span key={line} className="block">
+                        {line.endsWith("만나세요") ? (
+                          <>
+                            {line.replace(/만나세요$/u, "")}
+                            <br className="sm:hidden" />
+                            만나세요
+                          </>
+                        ) : (
+                          line
+                        )}
+                      </span>
+                    ))}
                   </span>
-                ))}
-              </span>
-              {t("homepage.hero.title2") ? (
-                <span className="mt-[clamp(0.375rem,1.5vw,0.5rem)] block text-[#ecd7a6]">
-                  {t("homepage.hero.title2")}
-                </span>
-              ) : null}
+                  {t("homepage.hero.title2") ? (
+                    <span className="mt-[clamp(0.375rem,1.5vw,0.5rem)] block text-[#ecd7a6]">
+                      {t("homepage.hero.title2")}
+                    </span>
+                  ) : null}
+                </>
+              )}
             </h1>
           </Reveal>
           <Reveal className={styles.heroDescriptionEntrance} delay={750}>
@@ -99,19 +112,39 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
           </Reveal>
           <Reveal className={styles.heroButtonsEntrance} delay={1000}>
             <div className="mt-[clamp(1.25rem,5vw,2.25rem)] flex flex-col items-start gap-2.5 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap lg:gap-3">
+              {petFirst ? (
+                <Link
+                  href={recordHref}
+                  className={`${styles.heroPrimaryCta} group inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-4 py-3 text-center text-xs font-medium leading-tight text-[#0b0a09] transition hover:bg-[#d8b463] sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${body}`}
+                >
+                  {recordCopy.recordCta}
+                  <ArrowRightIcon className="size-3.5 shrink-0 transition-transform group-hover:translate-x-1 lg:size-4" />
+                </Link>
+              ) : null}
               <Link
                 href={choiceHref}
-                className={`${styles.heroPrimaryCta} group inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-4 py-3 text-center text-xs font-medium leading-tight text-[#0b0a09] transition hover:bg-[#d8b463] sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${body}`}
+                className={petFirst
+                  ? `inline-flex min-h-11 items-center justify-center rounded-full px-4 py-3 text-center text-xs leading-tight sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${styles.heroSecondaryCta} ${body}`
+                  : `${styles.heroPrimaryCta} group inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-4 py-3 text-center text-xs font-medium leading-tight text-[#0b0a09] transition hover:bg-[#d8b463] sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${body}`}
               >
-                {t("homepage.hero.primary")}
-                <ArrowRightIcon className="size-3.5 shrink-0 transition-transform group-hover:translate-x-1 lg:size-4" />
+                {petFirst ? recordCopy.letterCta : t("homepage.hero.primary")}
+                {petFirst ? null : <ArrowRightIcon className="size-3.5 shrink-0 transition-transform group-hover:translate-x-1 lg:size-4" />}
               </Link>
-              <a
-                href="#eternal-beam"
-                className={`inline-flex min-h-11 items-center justify-center rounded-full px-4 py-3 text-center text-xs leading-tight sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${styles.heroSecondaryCta} ${body}`}
-              >
-                {t("homepage.hero.secondary")}
-              </a>
+              {petFirst ? (
+                <Link
+                  href={lookBackHref}
+                  className={`inline-flex min-h-11 items-center justify-center rounded-full px-4 py-3 text-center text-xs leading-tight sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${styles.heroSecondaryCta} ${body}`}
+                >
+                  {recordCopy.lookBackCta}
+                </Link>
+              ) : (
+                <a
+                  href="#eternal-beam"
+                  className={`inline-flex min-h-11 items-center justify-center rounded-full px-4 py-3 text-center text-xs leading-tight sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${styles.heroSecondaryCta} ${body}`}
+                >
+                  {t("homepage.hero.secondary")}
+                </a>
+              )}
             </div>
           </Reveal>
         </div>

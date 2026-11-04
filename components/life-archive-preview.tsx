@@ -211,7 +211,7 @@ export function LifeArchivePreview({
   };
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-black text-[#F3EAD8]">
+    <main className="st-night st-grain relative min-h-screen overflow-x-hidden text-[#F3EAD8]">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[68rem] select-none opacity-[0.17] sm:opacity-[0.27]"
@@ -266,7 +266,7 @@ export function LifeArchivePreview({
 
             <div className="space-y-8 sm:space-y-10">
               {storageMode === "secure" && accountPets.length ? (
-                <nav aria-label={isKorean ? "내 반려동물과 편지" : "My pets and letters"} className="rounded-3xl border border-[#D4AF37]/25 bg-[#12100E]/80 p-5 sm:p-7">
+                <nav aria-label={isKorean ? "내 반려동물과 편지" : "My pets and letters"} className="rounded-3xl border border-[#D4AF37]/25 bg-[#2e2823]/85 p-5 sm:p-7">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <SectionLabel>{isKorean ? "내 반려동물" : "My Pets"}</SectionLabel>
                     {selectedPetId ? <a href={`/choose?petId=${encodeURIComponent(selectedPetId)}`} className="text-sm text-[#D4AF37] underline underline-offset-4">{isKorean ? "이 반려동물의 새 편지" : "New letter for this pet"}</a> : null}
@@ -279,7 +279,7 @@ export function LifeArchivePreview({
                   </div>
                 </nav>
               ) : null}
-              <section className={`rounded-3xl border border-[#D4AF37]/25 bg-[#12100E]/80 p-6 shadow-[0_0_50px_rgba(212,175,55,0.06)] sm:p-8 ${isKorean ? "font-ko" : "font-display-en"}`}>
+              <section className={`rounded-3xl border border-[#D4AF37]/25 bg-[#2e2823]/85 p-6 shadow-[0_0_50px_rgba(212,175,55,0.06)] sm:p-8 ${isKorean ? "font-ko" : "font-display-en"}`}>
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <SectionLabel>{t("lifeArchive.archive.title")}</SectionLabel>
                   <p className="text-sm font-light text-[#D9C6A4]">
@@ -311,7 +311,7 @@ export function LifeArchivePreview({
                 </>
               ) : null}
 
-              <section className="grid gap-6 rounded-3xl border border-[#D4AF37]/25 bg-[#12100E]/80 p-6 shadow-[0_0_50px_rgba(212,175,55,0.06)] sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-8">
+              <section className="grid gap-6 rounded-3xl border border-[#D4AF37]/25 bg-[#2e2823]/85 p-6 shadow-[0_0_50px_rgba(212,175,55,0.06)] sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-8">
                 <div className="lg:border-r lg:border-[#D4AF37]/25 lg:pr-8">
                   <SectionLabel>{t("lifeArchive.origin.label")}</SectionLabel>
                   <h2 className="mt-5 text-xl text-[#F5E6C8]">{t("lifeArchive.letter.title")}</h2>
@@ -470,7 +470,7 @@ function ArchiveUnavailable({ status, isKorean }: { status: ArchiveStatus; isKor
   }
   const key = status === "authentication-required" ? "authenticationRequired" : status === "selection-required" ? "selectionRequired" : "error";
   return (
-    <section role="alert" className={`mx-auto mt-24 max-w-2xl rounded-3xl border border-[#D4AF37]/20 bg-[#12100E]/80 px-6 py-14 text-center ${isKorean ? "font-ko" : "font-display-en"}`}>
+    <section role="alert" className={`mx-auto mt-24 max-w-2xl rounded-3xl border border-[#D4AF37]/20 bg-[#2e2823]/85 px-6 py-14 text-center ${isKorean ? "font-ko" : "font-display-en"}`}>
       <h1 className="text-2xl font-light text-[#F3EAD8]">{t(`lifeArchive.${key}.title`)}</h1>
       <p className="mt-4 whitespace-pre-line text-sm font-extralight leading-[1.9] text-[#AFA598] sm:text-base">{t(`lifeArchive.${key}.body`)}</p>
     </section>

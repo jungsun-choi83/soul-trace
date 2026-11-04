@@ -7,25 +7,6 @@ import { useEffect, useRef, useState } from "react";
 import { CloseIcon, MenuIcon } from "./icons";
 import { createPortal } from "react-dom";
 
-const KICKSTARTER_URL = process.env.NEXT_PUBLIC_KICKSTARTER_URL?.trim() || null;
-
-function KickstarterNavLink({ mobile = false }: { mobile?: boolean }) {
-  const className = mobile
-    ? "mt-8 flex min-h-14 items-center justify-center gap-3 rounded-xl border border-[#05CE78]/55 bg-[#05CE78]/10 px-5 py-4 text-center text-base font-medium text-[#19E589] transition hover:border-[#19E589] hover:bg-[#05CE78]/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#19E589]"
-    : "inline-flex min-h-10 items-center gap-1 whitespace-nowrap rounded-full border border-[#05CE78]/50 bg-[#05CE78]/10 px-3 py-2 text-xs font-medium text-[#19E589] transition hover:border-[#19E589] hover:bg-[#05CE78]/16 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#19E589]";
-  const content = <><span aria-hidden="true" className="shrink-0 text-base leading-none">🚀</span><span>Launching soon on Kickstarter</span></>;
-
-  return KICKSTARTER_URL ? (
-    <a href={KICKSTARTER_URL} target="_blank" rel="noopener noreferrer" className={className}>
-      {content}
-    </a>
-  ) : (
-    <button type="button" className={`${className} cursor-pointer`}>
-      {content}
-    </button>
-  );
-}
-
 export function HomepageHeader({ choiceHref }: { choiceHref: string }) {
   const { lang, t } = useLocale();
   const [scrolled, setScrolled] = useState(false);
@@ -77,7 +58,6 @@ export function HomepageHeader({ choiceHref }: { choiceHref: string }) {
       </div>
       <nav className="flex flex-col gap-1 px-6 pb-10 pt-8" aria-label={t("homepage.accessibility.mobileNav")}>
         {links.map(([label, href]) => <a key={href} href={href} onClick={() => setOpen(false)} className={`border-b border-white/10 py-5 text-3xl text-[#f8f2e7]/90 hover:text-[#c8a24a] ${displayFont}`}>{label}</a>)}
-        <KickstarterNavLink mobile />
         <Link href={choiceHref} onClick={() => setOpen(false)} className={`mt-8 rounded-full bg-[#c8a24a] px-6 py-4 text-center text-base font-medium text-[#0b0a09] ${displayFont}`}>{t("homepage.nav.createLetter")}</Link>
       </nav>
     </div>
@@ -95,7 +75,6 @@ export function HomepageHeader({ choiceHref }: { choiceHref: string }) {
           {links.map(([label, href]) => <a key={href} href={href} className={`whitespace-nowrap text-sm text-[#f8f2e7]/70 transition-colors hover:text-[#f8f2e7] ${displayFont}`}>{label}</a>)}
         </nav>
         <div className="ml-auto hidden items-center gap-5 xl:flex">
-          <KickstarterNavLink />
           <LanguageToggle />
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2 xl:hidden">

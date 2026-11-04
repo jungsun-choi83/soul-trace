@@ -16,6 +16,9 @@
 # next.js
 /.next/
 /out/
+/tmp-38pages/
+.tmp-uiux-38/
+.tmp-uiux-38-final/
 
 # production
 /build

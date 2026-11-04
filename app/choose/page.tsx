@@ -1,3 +1,4 @@
+import { EntryChoice } from "@/components/entry-choice";
 import { ModeChoice } from "@/components/mode-choice";
 import {
   PARTNER_CODE_PARAM,
@@ -6,6 +7,8 @@ import {
 } from "@/lib/partner";
 import type { ServerSearchParams } from "@/lib/search-params";
 import { partnerEntryDestination } from "@/lib/partner-entry";
+import { isUuid } from "@/lib/pet-first-archive";
+import { parseServiceChannel } from "@/lib/service-channel";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
@@ -38,6 +41,12 @@ export default async function ModeChoicePage({
   if (code) preservedParams.set(PARTNER_CODE_PARAM, code);
   const preservedQuery = preservedParams.toString();
 
+  const channelRaw = params.ch;
+  const channel = parseServiceChannel(Array.isArray(channelRaw) ? channelRaw[0] : channelRaw);
+  const petRaw = params.pet ?? params.petId;
+  const petValue = Array.isArray(petRaw) ? petRaw[0] : petRaw;
+  const petId = petValue && isUuid(petValue) ? petValue : null;
+  if (!code && !channel) return <EntryChoice petId={petId} />;
   if (!code) return <ModeChoice partnerCode={null} preservedQuery={preservedQuery} />;
 
   const supabase = createSupabaseServerClient();

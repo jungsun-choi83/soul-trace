@@ -1,0 +1,363 @@
+/* SoulTrace storybook design system.
+   Two surfaces of one system: "paper" (cream album) and "night" (warm charcoal + gold).
+   Components opt in with .st-paper or .st-night on a wrapper. */
+
+:root {
+  --st-ivory: #fffaf0;
+  --st-cream: #f8f2e5;
+  --st-beige: #eadcc6;
+  --st-sage: #778469;
+  --st-sage-deep: #5f6f58;
+  --st-rose: #b97064;
+  --st-rose-soft: #ead2cc;
+  --st-charcoal: #2b2622;
+  --st-charcoal-deep: #1d1916;
+  --st-brown: #9e774c;
+  --st-gold: #9e774c;
+  --st-gold-soft: #ad8655;
+  --st-ink: #393129;
+  --st-ink-soft: #857666;
+  --st-radius-card: 1.5rem;
+  --st-radius-soft: 1rem;
+  --st-shadow-paper: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 14px 34px -18px rgba(74, 52, 30, 0.38);
+  --st-shadow-night: 0 1px 0 rgba(255, 244, 220, 0.05) inset, 0 22px 50px -24px rgba(0, 0, 0, 0.7);
+  --st-tabbar-height: 4.75rem;
+}
+
+.st-paper {
+  --st-surface: var(--st-ivory);
+  --st-card: #fbf6ec;
+  --st-card-edge: rgba(122, 95, 72, 0.16);
+  --st-text: var(--st-ink);
+  --st-text-soft: var(--st-ink-soft);
+  --st-accent: var(--st-brown);
+  --st-field: #fffaf1;
+  --st-field-edge: rgba(122, 95, 72, 0.22);
+  --st-focus: var(--st-sage-deep);
+  color: var(--st-text);
+  background-color: var(--st-surface);
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(216, 191, 138, 0.22), transparent 38%),
+    radial-gradient(circle at 92% 30%, rgba(201, 154, 148, 0.14), transparent 34%),
+    radial-gradient(circle at 30% 96%, rgba(143, 159, 134, 0.16), transparent 40%);
+}
+
+.st-night {
+  --st-surface: var(--st-charcoal-deep);
+  --st-card: rgba(46, 40, 35, 0.86);
+  --st-card-edge: rgba(216, 191, 138, 0.2);
+  --st-text: #f3e9d8;
+  --st-text-soft: #c9bba6;
+  --st-accent: var(--st-gold-soft);
+  --st-field: rgba(29, 25, 22, 0.75);
+  --st-field-edge: rgba(216, 191, 138, 0.28);
+  --st-focus: var(--st-gold-soft);
+  color: var(--st-text);
+  background-color: var(--st-surface);
+  background-image:
+    radial-gradient(circle at 50% -10%, rgba(216, 191, 138, 0.16), transparent 45%),
+    radial-gradient(circle at 8% 90%, rgba(143, 159, 134, 0.1), transparent 36%);
+}
+
+/* Paper grain. Pure CSS so it never blocks layout when images fail. */
+.st-grain {
+  position: relative;
+  isolation: isolate;
+}
+
+.st-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    repeating-radial-gradient(circle at 17% 23%, rgba(122, 95, 72, 0.05) 0 1px, transparent 1px 3px),
+    repeating-radial-gradient(circle at 71% 64%, rgba(122, 95, 72, 0.04) 0 1px, transparent 1px 4px);
+}
+
+.st-night.st-grain::before {
+  opacity: 0.18;
+}
+
+.st-headline {
+  font-family: var(--font-noto-serif-kr), var(--font-cormorant), serif;
+  font-weight: 300;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.st-body {
+  font-family: var(--font-noto-sans-kr), var(--font-inter), system-ui, sans-serif;
+  font-weight: 400;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.st-pen {
+  font-family: var(--font-pen), var(--font-noto-serif-kr), cursive;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.st-eyebrow {
+  font-family: var(--font-noto-sans-kr), var(--font-inter), sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--st-accent);
+}
+
+.st-card {
+  border-radius: var(--st-radius-card);
+  border: 1px solid var(--st-card-edge);
+  background: var(--st-card);
+  box-shadow: var(--st-shadow-paper);
+}
+
+.st-night .st-card {
+  box-shadow: var(--st-shadow-night);
+}
+
+.st-polaroid {
+  border-radius: 0.75rem;
+  background: #fffaf1;
+  padding: 0.5rem 0.5rem 1.75rem;
+  box-shadow: 0 10px 24px -14px rgba(74, 52, 30, 0.5);
+}
+
+.st-btn {
+  display: inline-flex;
+  min-height: 2.875rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 13px;
+  padding: 0.7rem 1.35rem;
+  font-family: var(--font-noto-sans-kr), var(--font-inter), sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
+  word-break: keep-all;
+}
+
+.st-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.st-btn:focus-visible,
+.st-link:focus-visible,
+.st-field:focus-visible,
+.st-tab:focus-visible {
+  outline: 2px solid var(--st-focus);
+  outline-offset: 3px;
+}
+
+.st-btn-primary {
+  background: #9e774c;
+  color: #fffaf2;
+  box-shadow: 0 8px 18px -10px rgba(122, 86, 40, 0.35);
+}
+
+.st-btn-primary:hover:not(:disabled) {
+  background: #8d6a43;
+}
+
+.st-btn-forest {
+  background: #3a452f;
+  color: #fff5dc;
+  box-shadow: 0 10px 20px -12px rgba(58, 69, 47, 0.55);
+}
+
+.st-btn-forest:hover:not(:disabled) {
+  background: #4a563c;
+}
+
+.st-btn-sage {
+  background: var(--st-sage);
+  color: #1f251c;
+}
+
+.st-btn-sage:hover:not(:disabled) {
+  background: #9cab93;
+}
+
+.st-btn-quiet {
+  border: 1px solid var(--st-card-edge);
+  background: transparent;
+  color: var(--st-text);
+}
+
+.st-btn-quiet:hover:not(:disabled) {
+  border-color: var(--st-accent);
+}
+
+.st-link {
+  border-radius: 0.25rem;
+  color: var(--st-accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--st-accent) 40%, transparent);
+  text-underline-offset: 4px;
+}
+
+.st-field {
+  width: 100%;
+  border-radius: var(--st-radius-soft);
+  border: 1px solid var(--st-field-edge);
+  background: var(--st-field);
+  padding: 0.8rem 1rem;
+  color: var(--st-text);
+  font-family: var(--font-noto-sans-kr), var(--font-inter), sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.st-field::placeholder {
+  color: color-mix(in srgb, var(--st-text-soft) 75%, transparent);
+}
+
+textarea.st-field {
+  min-height: 7.5rem;
+  resize: vertical;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(1.6em + 0.15rem),
+    color-mix(in srgb, var(--st-field-edge) 70%, transparent) calc(1.6em + 0.15rem),
+    color-mix(in srgb, var(--st-field-edge) 70%, transparent) calc(1.6em + 0.2rem)
+  );
+  background-attachment: local;
+}
+
+.st-file {
+  display: flex;
+  min-height: 7rem;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: var(--st-radius-card);
+  border: 1.5px dashed color-mix(in srgb, var(--st-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--st-field) 80%, transparent);
+  padding: 1rem;
+  text-align: center;
+}
+
+.st-file:focus-within {
+  outline: 2px solid var(--st-focus);
+  outline-offset: 3px;
+}
+
+.st-scene {
+  position: relative;
+  overflow: visible;
+  background: #f8f2e5;
+}
+
+.st-card > .st-scene {
+  clip-path: none;
+}
+
+.st-night .st-scene {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(216, 191, 138, 0.25), transparent 55%),
+    linear-gradient(160deg, #3b322a 0%, #2a241f 60%, #1d1916 100%);
+}
+
+.st-scene-fade {
+  position: absolute;
+  inset: 40% 0 0;
+  pointer-events: none;
+  background: linear-gradient(transparent, #362f2260);
+}
+
+.st-tabbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+  margin-top: auto;
+  min-height: var(--st-tabbar-height);
+  padding: 6px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  border-top: 1px solid #dfcfb6;
+  background: #f9f1e4;
+}
+
+.st-tab {
+  display: flex;
+  min-width: 0;
+  min-height: 3.5rem;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  border-radius: 1.1rem;
+  color: #685443;
+  font-family: var(--font-noto-sans-kr), var(--font-inter), sans-serif;
+  font-size: 0.75rem;
+  line-height: 1.1;
+}
+
+.st-tab span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.st-tab[aria-current="page"] {
+  color: #2c3928;
+  background: #e8d7ac;
+  font-weight: 700;
+}
+
+@media (max-width: 360px) {
+  .st-tab {
+    font-size: 0.6875rem;
+  }
+}
+
+@keyframes st-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.st-rise {
+  animation: st-rise 520ms ease both;
+}
+
+@keyframes st-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.st-breathe {
+  animation: st-breathe 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-rise,
+  .st-breathe {
+    animation: none;
+  }
+
+  .st-btn {
+    transition: none;
+  }
+}

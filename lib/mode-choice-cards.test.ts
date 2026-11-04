@@ -4,31 +4,39 @@ import test from "node:test";
 
 import en from "../locales/en.json" with { type: "json" };
 import ko from "../locales/ko.json" with { type: "json" };
+import { CLEAN_ART, COMPOSITE_UI_ART } from "./design-art.ts";
 
 const component = readFileSync("components/mode-choice.tsx", "utf8");
 const page = readFileSync("app/choose/page.tsx", "utf8");
-const styles = readFileSync("components/mode-choice.module.css", "utf8");
+const scene = readFileSync("components/storybook/story-scene.tsx", "utf8");
 
-test("mode choices use the three localized photographic cards", () => {
-  assert.ok(existsSync("public/images/choice-living.jpg"));
-  assert.ok(existsSync("public/images/choice-memorial.jpg"));
-  assert.ok(existsSync("public/images/Cozy Halloween Night Polaroid.png"));
-  assert.match(component, /\/images\/choice-living\.jpg/);
-  assert.match(component, /\/images\/choice-memorial\.jpg/);
-  assert.match(component, /\/images\/Cozy Halloween Night Polaroid\.png/);
-  assert.doesNotMatch(component, /Soul_Trace_Photo_Cards_Preview/);
-  assert.equal(en.modes.living.landingCta, "A companion still beside me");
-  assert.equal(en.modes.memorial.landingCta, "A companion who crossed the rainbow bridge");
-  assert.equal(en.landing.livingTitle, "Still By My Side");
-  assert.equal(en.landing.memorialTitle, "Forever In My Heart");
-  assert.equal(en.landing.polaroidTitle, "A Moment to Keep");
-  assert.ok(en.landing.subtitle.includes("Every bond"));
-  assert.ok(ko.landing.livingTitle.length > 0);
-  assert.ok(ko.landing.memorialTitle.length > 0);
-  assert.ok(ko.landing.polaroidTitle.length > 0);
+test("letter entry uses clean illustrations, not phone screenshots or composited UI cards", () => {
+  assert.equal(existsSync("public/images/soultrace-splash-background.png"), true);
+  assert.equal(existsSync("public/images/soultrace-night-window.png"), true);
+  assert.match(component, /UIUX_GARDEN_HERO/);
+  assert.match(component, /UIUX_ROOM_ART/);
+  assert.equal(CLEAN_ART.livingHero, "/images/soultrace-splash-background.png");
+  assert.equal(CLEAN_ART.memorialHero, "/images/soultrace-night-window.png");
+  assert.equal(CLEAN_ART.nightWindow, "/images/soultrace-night-window.png");
+  for (const banned of COMPOSITE_UI_ART) {
+    assert.doesNotMatch(component, new RegExp(banned.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.doesNotMatch(component, /screens_live|9:41|LetterHero|text-shadow/);
+  assert.doesNotMatch(scene, /sunroom\.jpg|memorial-night\.jpg|letter-scene\.jpg|dog-portrait\.jpg/);
 });
 
-test("all three cards keep their existing destinations", () => {
+test("letter titles stay in HTML once and are not painted on the illustration", () => {
+  assert.match(component, /copy\.letterLivingTitle/);
+  assert.match(component, /copy\.letterMemorialTitle/);
+  assert.doesNotMatch(component, /title=\{copy\.letterLivingHero\}|title=\{copy\.letterMemorialHero\}/);
+  assert.doesNotMatch(component, /linear-gradient\(transparent,#362f2260\)/);
+  assert.equal(en.landing.livingTitle, "Still By My Side");
+  assert.equal(en.landing.memorialTitle, "Forever In My Heart");
+  assert.ok(ko.landing.livingTitle.length > 0);
+  assert.ok(ko.landing.memorialTitle.length > 0);
+});
+
+test("living and memorial letter destinations stay, with polaroid as a secondary action", () => {
   assert.match(component, /hrefFor\("living"\)/);
   assert.match(component, /hrefFor\("memorial"\)/);
   assert.match(component, /href=\{polaroidHref\}/);
@@ -41,21 +49,15 @@ test("back and card destinations preserve validated query parameters", () => {
   assert.match(page, /preservedParams\.append\(key, item\)/);
   assert.match(page, /preservedParams\.append\(key, value\)/);
   assert.match(page, /preservedParams\.set\(PARTNER_CODE_PARAM, code\)/);
-  assert.match(component, /href=\{`\/\$\{querySuffix\}`\}/);
+  assert.match(component, /backHref=\{`\/\$\{querySuffix\}` \|\| "\/"\}/);
   assert.match(component, /new URLSearchParams\(preservedQuery\)/);
 });
 
-test("cards have responsive, accessible, reduced-motion presentation", () => {
-  assert.match(component, /min-h-\[100svh\] overflow-x-hidden/);
-  assert.match(component, /styles\.choiceGrid/);
-  assert.match(component, /styles\.card/);
-  assert.match(component, /styles\.brandRule/);
-  assert.match(component, /focus-visible:outline-2/);
-  assert.match(component, /object-cover object-center/);
-  assert.match(styles, /grid-template-columns: repeat\(3/);
-  assert.match(styles, /prefers-reduced-motion: reduce/);
-  assert.match(styles, /\.seasonalFrame/);
-  assert.match(styles, /\.seasonalFrame\s*\{[\s\S]*inset: 0;/);
-  assert.match(component, /aspect-\[1\.32\/1\]/);
-  assert.match(styles, /\.choiceGrid\s*>\s*\.seasonalCard\s*\{[\s\S]*justify-self:\s*stretch;/);
+test("letter entry keeps cream paper chrome and accessible controls", () => {
+  assert.match(component, /min-h-\[100svh\]/);
+  assert.match(component, /overflow-x-hidden/);
+  assert.match(component, /bg-\[#fffaf0\]/);
+  assert.match(component, /rounded-\[13px\]/);
+  assert.match(component, /current="create"/);
+  assert.match(component, /StoryTabbar/);
 });

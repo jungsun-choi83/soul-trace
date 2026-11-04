@@ -49,16 +49,16 @@ describe("편지 미리보기 테마", () => {
     assert.equal(source.match(/data-letter-preview-theme=/g)?.length, 1);
     assert.match(
       source,
-      /relative z-\[1\] min-h-screen pb-10[\s\S]*?showChannelBackground \? "bg-transparent" : "bg-black"/,
+      /relative z-\[1\] min-h-screen pb-24[\s\S]*?showChannelBackground \? "bg-transparent" : "bg-\[#fffaf0\]"/,
     );
     assert.match(source, /data-letter-style-selector[\s\S]*?overflow-x-auto/);
     assert.doesNotMatch(source, /max-h-\[860px\]/);
     assert.doesNotMatch(source, /data-letter-scroll[\s\S]*?overflow-y-auto/);
   });
 
-  it("앱의 기존 배경 토큰은 정확히 #000000 이다", () => {
+  it("앱의 기존 배경 토큰은 시안 크림 #fffaf0 이다", () => {
     const css = readFileSync("app/globals.css", "utf8");
-    assert.match(css, /--background:\s*#000000;/);
+    assert.match(css, /--background:\s*#fffaf0;/);
     assert.match(css, /body\s*\{[\s\S]*?background:\s*var\(--background\)/);
   });
 });

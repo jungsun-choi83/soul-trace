@@ -6,8 +6,9 @@ import type { Locale } from "@/lib/i18n";
 /**
  * KO | EN 전환. 활성 #D4AF37, 비활성 그레이. 부모에서 우측 정렬(flex justify-end)로 둡니다.
  */
-export function LanguageToggle() {
+export function LanguageToggle({ tone = "night" }: { tone?: "night" | "paper" }) {
   const { lang, setLang } = useLocale();
+  const paper = tone === "paper";
 
   const segment = (value: Locale, label: string) => {
     const active = lang === value;
@@ -16,8 +17,10 @@ export function LanguageToggle() {
         type="button"
         onClick={() => setLang(value)}
         aria-pressed={active}
-        className={`px-2 py-1 text-[13px] font-medium tracking-wide transition sm:text-[14px] ${
-          active ? "text-[#D4AF37]" : "text-[#6b6b6b] hover:text-[#a3a3a3]"
+        className={`min-h-9 px-2 py-1 text-[13px] font-medium tracking-wide transition sm:text-[14px] ${
+          paper
+            ? active ? "text-[#7a5f48]" : "text-[#9a8b7c] hover:text-[#6b5d50]"
+            : active ? "text-[#D4AF37]" : "text-[#6b6b6b] hover:text-[#a3a3a3]"
         } `}
       >
         {label}
@@ -27,7 +30,9 @@ export function LanguageToggle() {
 
   return (
     <div
-      className="font-display-en inline-flex shrink-0 items-center rounded-md border border-[#D4AF37]/55 bg-black/90 px-1 py-0.5 shadow-[inset_0_1px_0_rgba(212,175,55,0.12)] sm:px-1.5"
+      className={paper
+        ? "font-display-en inline-flex shrink-0 items-center rounded-full border border-[#7a5f48]/25 bg-[#fbf6ec]/90 px-1.5 py-0.5"
+        : "font-display-en inline-flex shrink-0 items-center rounded-md border border-[#D4AF37]/55 bg-black/90 px-1 py-0.5 shadow-[inset_0_1px_0_rgba(212,175,55,0.12)] sm:px-1.5"}
       role="group"
       aria-label="Language"
     >

@@ -6,6 +6,7 @@ import { SEASONAL_POLAROID_FRAME_BASE_CLASS, SeasonalPolaroidFrame } from "@/com
 import { useAuthSession } from "@/components/use-auth-session";
 import { useLocale } from "@/components/locale-provider";
 import { fetchMyPolaroids, myPolaroidImageUrl, type SavedSeasonalPolaroid } from "@/lib/my-polaroids-client";
+import { polaroidThemeTitle } from "@/lib/polaroid-theme-catalog";
 import { exportSeasonalPolaroidPng } from "@/lib/seasonal-polaroid-export";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -60,6 +61,7 @@ function SavedPolaroidCard({ item, lang, t }: {
         polaroidRef={frameRef}
         lang={lang}
         t={t}
+        themeId={item.themeId}
         imageUrl={imageError ? null : imageUrl}
         imageAlt={t("myPolaroids.petImageAlt").replace("%NAME%", item.petName)}
         onImageError={() => setImageError(true)}
@@ -72,7 +74,7 @@ function SavedPolaroidCard({ item, lang, t }: {
       <div className={`mt-4 flex items-start justify-between gap-3 ${bodyFont}`}>
         <div className="min-w-0">
           <h2 className="truncate text-lg text-[#F3EAD8]">{item.petName}</h2>
-          <p className="mt-1 text-xs text-[#B6AA99]">{item.themeId === "halloween" ? t("myPolaroids.halloween") : item.themeId} · {displayDate(item.createdAt, lang)}</p>
+          <p className="mt-1 text-xs text-[#B6AA99]">{item.themeId === "halloween" ? t("myPolaroids.halloween") : polaroidThemeTitle(item.themeId, lang) || item.themeId} · {displayDate(item.createdAt, lang)}</p>
         </div>
         <button type="button" onClick={download} disabled={downloading || imageError} className={`shrink-0 rounded-xl bg-[#B89A2E] px-3 py-2 text-xs font-medium text-black transition hover:bg-[#D0AE3D] disabled:cursor-not-allowed disabled:opacity-50 ${bodyFont}`}>
           {downloading ? t("myPolaroids.downloading") : t("myPolaroids.download")}

@@ -63,6 +63,7 @@ export function buildSeasonalPolaroidFormData(
   formData.append("primaryPhoto", primaryPhoto, primaryPhoto.name);
 
   formData.append("themeId", String(answers.themeId));
+  if (answers.occasionId) formData.append("occasionId", String(answers.occasionId));
   formData.append("locale", String(answers.locale));
   formData.append("petName", answers.petName);
   formData.append("species", answers.species);

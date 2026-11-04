@@ -172,9 +172,46 @@ test("enforces text length limits and custom field requirements", () => {
   assert.equal(issueFor(result, "personalDetail")?.code, "too_long");
 });
 
+test("accepts a year-round felt-doll request with matching props", () => {
+  const result = validateSeasonalPolaroidRequest(request({
+    themeId: "felt-doll",
+    costume: "knit-scarf",
+    scene: "tiny-armchair",
+    vibe: "cute-cozy",
+  }));
+  assert.equal(result.valid, true);
+  if (result.valid) assert.equal(result.theme.id, "felt-doll");
+});
+
+test("accepts an art style plus an implemented special-day occasion", () => {
+  const result = validateSeasonalPolaroidRequest(request({
+    themeId: "gouache-story",
+    occasionId: "halloween",
+    costume: "pumpkin",
+    scene: "pumpkin-patch",
+    vibe: "cute-cozy",
+  }));
+  assert.equal(result.valid, true);
+  if (result.valid) {
+    assert.equal(result.theme.id, "gouache-story");
+    assert.equal(result.answers.occasionId, "halloween");
+  }
+});
+
+test("rejects a planned special-day occasion that cannot generate", () => {
+  const result = validateSeasonalPolaroidRequest(request({
+    themeId: "felt-doll",
+    occasionId: "newyear-blessing",
+    costume: "knit-scarf",
+    scene: "tiny-armchair",
+    vibe: "cute-cozy",
+  }));
+  assert.equal(issueFor(result, "occasionId")?.code, "unsupported");
+});
+
 test("rejects unsupported theme, locale, and image formats", () => {
   const result = validateSeasonalPolaroidRequest({
-    ...request({ themeId: "christmas", locale: "ja" }),
+    ...request({ themeId: "unknown-theme", locale: "ja" }),
     primaryPhoto: photo("pet.heic", "image/heic"),
   });
   assert.equal(issueFor(result, "themeId")?.code, "unsupported");

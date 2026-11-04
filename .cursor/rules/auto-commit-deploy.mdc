@@ -1,15 +1,15 @@
 ---
-description: Always commit, push to GitHub, and deploy after finishing work
+description: Safe development workflow for SoulTrace; explicit approval required for deployment
 alwaysApply: true
 ---
 
-# Auto commit, push, and deploy
+# Manual approval for commit, push, production deploy
 
-After finishing a change in this repo, do not wait to be asked.
+The old rule automatically committed, pushed to `origin/master`, and deployed to Vercel production after every change. That behavior is NOT allowed for the current SoulTrace redesign.
 
-1. Commit the relevant files to `master` with a concise message that explains why.
-2. Push to `origin/master` so GitHub is up to date.
-3. Confirm the Vercel production deploy for that commit. Pushing `master` usually starts it; if it does not, deploy production.
-4. Tell the user the commit and that production is updating.
-
-Do this even for small copy or line-break edits. Do not update git config. If author identity is missing, use the previous commit author via environment variables only.
+1. Never automatically push to master or deploy to production.
+2. Do not create, modify, migrate, delete or import data in the live Supabase environment without explicit approval.
+3. Work on a separate feature branch, do local/staging tests first, and keep existing accounts, letters, images and data intact.
+4. Commits or pushes to a feature branch require the user's approval unless the user explicitly authorizes those actions for that branch.
+5. Show the user a diff, test results, migration plan and deployment/rollback instructions before asking to merge or deploy.
+6. Do not silently deploy after small UI/copy edits. Explicit approval is required each time for production deployment.

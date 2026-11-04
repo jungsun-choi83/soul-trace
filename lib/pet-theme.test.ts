@@ -63,8 +63,10 @@ test("questionnaire background wiring reuses petIntro state and centralized path
   assert.match(flow, /src=\{questionnairePetTheme\.background\}/);
   assert.match(flow, /data-questionnaire-pet-background/);
   assert.match(flow, /object-cover object-\[18%_top\][\s\S]*sm:object-\[24%_top\][\s\S]*lg:object-center/);
-  assert.match(flow, /opacity-80 brightness-\[0\.9\][\s\S]*sm:opacity-70 sm:brightness-\[0\.85\]/);
-  assert.match(flow, /bg-black\/40 sm:bg-black\/45 lg:bg-black\/50/);
+  assert.match(flow, /transparent_0%,transparent_42%,#fffaf0_78%,#fffaf0_100%/);
+  assert.doesNotMatch(flow, /opacity-80 brightness-\[0\.9\]|sm:opacity-70 sm:brightness-\[0\.85\]/);
+  assert.doesNotMatch(flow, /bg-\[#fffaf0\]\/70 sm:bg-\[#fffaf0\]\/76 lg:bg-\[#fffaf0\]\/82/);
+  assert.doesNotMatch(flow, /linear-gradient\(to_bottom,rgba\(0,0,0/);
   assert.doesNotMatch(flow, /backgrounds\/pets\/(?:dog|cat|rabbit|hamster|bird)-bg/);
 });
 

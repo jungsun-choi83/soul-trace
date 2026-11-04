@@ -48,7 +48,8 @@ test("Seasonal export renders the approved 1080 by 1620 template canvas through 
 });
 
 test("Seasonal preview uses the stable decorative frame and bounded caption window", () => {
-  assert.match(frame, /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
+  assert.match(readFileSync("lib/polaroid-frames.ts", "utf8"), /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
+  assert.match(frame, /layout\.templateSrc/);
   assert.match(frame, /aspect-\[2\/3\]/);
   assert.match(frame, /bottom-\[19%\] left-\[19%\] right-\[19%\] top-\[70\.6%\]/);
   assert.match(frame, /overflow-hidden/);

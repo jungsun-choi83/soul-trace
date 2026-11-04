@@ -97,6 +97,7 @@ test("an over-long greeting splits after the call name, otherwise at the middle 
   const source = sharedFrame
     .replace(/^"use client";/m, "")
     .replace(/import type \{ Locale \} from "@\/lib\/i18n";/, "")
+    .replace(/import \{ polaroidFrameLayout \} from "@\/lib\/polaroid-frames";/, "")
     .replace(/import \{[^}]*\} from "react";/, "")
     .replace(/export function SeasonalPolaroidFrame[\s\S]*$/m, "");
   const { stripTypeScriptTypes } = await import("node:module") as unknown as { stripTypeScriptTypes: (code: string, options: { mode: "strip" }) => string };

@@ -32,13 +32,30 @@ test("password signup normalizes email, sends validated locale and safe callback
       password: "password-8",
       options: { emailRedirectTo: callback, data: { locale: expected } },
     }]);
-    assert.equal(mock.signinCalls.length, 0);
+    assert.equal(mock.signinCalls.length, 1);
   }
 });
 
 test("signup check-email and immediate-session responses are handled separately", async () => {
   assert.equal(await createPasswordAccount(mockClient().client, { email: "a@b.co", password: "password", redirectTo: "https://example.test/auth/confirm", locale: "en" }), "check_email");
   assert.equal(await createPasswordAccount(mockClient({ signupSession: {} }).client, { email: "a@b.co", password: "password", redirectTo: "https://example.test/auth/confirm", locale: "en" }), "authenticated");
+  assert.equal(await createPasswordAccount(mockClient({ signinSession: {} }).client, { email: "a@b.co", password: "password", redirectTo: "https://example.test/auth/confirm", locale: "en" }), "authenticated");
+});
+
+test("confirmed server provision signs the visitor in without an email link", async () => {
+  const mock = mockClient({ signinSession: {} });
+  assert.equal(
+    await createPasswordAccount(mock.client, {
+      email: "a@b.co",
+      password: "password-8",
+      redirectTo: "https://example.test/auth/confirm",
+      locale: "en",
+      provision: async () => "created",
+    }),
+    "authenticated",
+  );
+  assert.equal(mock.signupCalls.length, 0);
+  assert.deepEqual(mock.signinCalls, [{ email: "a@b.co", password: "password-8" }]);
 });
 
 test("signup recognizes an existing account and directs the user to sign in", async () => {
@@ -78,6 +95,7 @@ test("main auth UI has credential fields, consent, recovery actions, and clears 
   assert.match(component, /createPasswordAccount/);
   assert.match(component, /signInWithPassword/);
   assert.doesNotMatch(component, /requestPasswordlessEmail|signInWithOtp/);
+  assert.doesNotMatch(component, /Apple|Google|signInWithOAuth|OAuth/);
   assert.match(component, /useState\(false\)/);
   assert.match(component, /type=\{visible \? "text" : "password"\}/);
   assert.match(component, /new-password/);

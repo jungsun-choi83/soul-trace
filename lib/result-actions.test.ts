@@ -12,7 +12,6 @@ describe("result download and Instagram actions", () => {
   });
 
   const source = readFileSync("components/soul-trace-flow.tsx", "utf8");
-  const kickstarterPromo = readFileSync("components/homepage/kickstarter-promo.tsx", "utf8");
 
   it("places download and share directly below the letter before lower result sections", () => {
     const letter = source.indexOf('id="share-card"');
@@ -121,19 +120,14 @@ describe("result download and Instagram actions", () => {
     assert.deepEqual(Object.keys(ko.homepage.nav), ["soulTrace", "howItWorks", "eternalBeam", "about", "createLetter", "menu", "close"]);
   });
 
-  it("keeps the responsive Kickstarter artwork near the end of the result flow", () => {
+  it("keeps social follow near the end of the result flow without Kickstarter", () => {
     const productCards = source.indexOf('aria-label={t("result.productCards.label")}');
-    const banner = source.indexOf("<KickstarterPromo fullBleed compact />");
+    const follow = source.indexOf('id="result-follow"');
     const retry = source.indexOf("onClick={resetTest}");
 
-    assert.ok(productCards >= 0 && productCards < banner);
-    assert.ok(banner < retry);
-    assert.match(kickstarterPromo, /comingsoon-ko-small\.png/);
-    assert.match(kickstarterPromo, /comingsoon-small\.png/);
-    assert.match(kickstarterPromo, /fetch\("\/api\/kickstarter-waitlist"/);
-    assert.match(kickstarterPromo, /homepage\.kickstarter\.success/);
-    assert.match(kickstarterPromo, /KICKSTARTER_URL \? \([\s\S]*?href=\{KICKSTARTER_URL\}[\s\S]*?\) : \([\s\S]*?<button/);
-    assert.match(kickstarterPromo, /w-screen \[margin-inline:calc\(50%_-_50vw\)\]/);
+    assert.ok(productCards >= 0 && productCards < follow);
+    assert.ok(follow < retry);
+    assert.doesNotMatch(source, /Kickstarter|KICKSTARTER|kickstarter-promo/);
     assert.match(source, /aria-label="Follow Eternal Beam on Instagram"/);
     assert.match(source, /aria-label="Follow Eternal Beam on Facebook"/);
     assert.match(source, /aria-label="Follow Eternal Beam on YouTube"/);

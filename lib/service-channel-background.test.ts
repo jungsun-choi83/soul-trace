@@ -36,6 +36,6 @@ test("flow keeps one fixed non-interactive layer through loading and excludes re
   assert.match(flow, /data-service-channel-background=\{serviceChannel\}/);
   assert.match(flow, /pointer-events-none fixed inset-0 z-0 bg-cover bg-no-repeat/);
   assert.match(flow, /backgroundPosition: "center top"/);
-  assert.match(flow, /showChannelBackground \? "bg-transparent" : "bg-black"/);
+  assert.match(flow, /showChannelBackground \? "bg-transparent" : "bg-\[#fffaf0\]"/);
   assert.doesNotMatch(flow, /background-attachment|window\.location\.search.*channel/);
 });

@@ -18,10 +18,10 @@ test("the frame tags the parts the exporter draws natively, once each", () => {
     assert.equal(matches.length, 1, `${name} must be tagged exactly once`);
   }
   // The tags sit on the elements the exporter expects.
-  assert.match(frame, /<img data-seasonal-polaroid="template" src="\/images\/soul_trace_seasonal_polaroid_blank_caption_template\.png"/);
-  assert.match(frame, /<div data-seasonal-polaroid="photo-window" className="absolute left-\[16\.2%\] top-\[15\.2%\][^"]*rounded-\[4%\] bg-\[#E9E1D7\]/);
+  assert.match(frame, /<img data-seasonal-polaroid="template" src=\{layout\.templateSrc\}/);
+  assert.match(frame, /left-\[16\.2%\] top-\[15\.2%\] z-10 h-\[50\.7%\] w-\[67\.8%\] overflow-hidden rounded-\[4%\] bg-\[#E9E1D7\]/);
   assert.match(frame, /<img data-seasonal-polaroid="photo" src=\{imageUrl\}[^>]*className="h-full w-full object-cover object-center"/);
-  assert.match(frame, /<div data-seasonal-polaroid="caption" className="absolute bottom-\[19%\] left-\[19%\] right-\[19%\] top-\[70\.6%\]/);
+  assert.match(frame, /bottom-\[19%\] left-\[19%\] right-\[19%\] top-\[70\.6%\]/);
 });
 
 test("the template and the photo bypass html-to-image, which WebKit paints before their data loads", () => {

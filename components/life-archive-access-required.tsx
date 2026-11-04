@@ -17,6 +17,9 @@ export function LifeArchiveAccessRequired() {
         <Link href="/choose" className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl border border-[#D4AF37]/50 px-6 py-3 text-sm font-light text-[#F5E6C8] transition hover:bg-[#D4AF37]/10">
           {t("lifeArchive.accessRequired.back")}
         </Link>
+        <Link href="/beam-scene" className="mt-3 inline-flex min-h-12 items-center justify-center px-6 py-3 text-sm font-light text-[#F5E6C8] underline-offset-4 hover:underline">
+          {lang === "en" ? "Make an Eternal Beam scene" : "Eternal Beam 장면 만들기"}
+        </Link>
       </section>
     </main>
   );

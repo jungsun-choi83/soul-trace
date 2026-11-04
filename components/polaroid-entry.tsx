@@ -3,6 +3,10 @@
 /* eslint-disable @next/next/no-img-element -- Phase 2 previews use local blob URLs and stay client-side. */
 
 import { LanguageToggle } from "@/components/language-toggle";
+import { storyTabProps } from "@/components/pet-first-home";
+import { BrandMark } from "@/components/storybook/brand-mark";
+import { StoryTabbar } from "@/components/storybook/story-tabbar";
+import { petFirstCopy } from "@/lib/pet-first-archive";
 import { LetterDownloadGate } from "@/components/letter-download-gate";
 import { useLocale } from "@/components/locale-provider";
 import { useAuthSession } from "@/components/use-auth-session";
@@ -11,7 +15,6 @@ import { requestLetterDownloadCode, verifyLetterDownloadCode } from "@/lib/lette
 import { normalizeAuthEmail } from "@/lib/passwordless-auth";
 import { createSupabaseBrowserAuthClient } from "@/lib/supabase-auth-browser";
 import {
-  HALLOWEEN_POLAROID_THEME,
   optionById,
   optionsForStatus,
   whisperFor,
@@ -19,6 +22,17 @@ import {
   type PolaroidStatus,
   type SeasonalOption,
 } from "@/lib/seasonal-polaroid";
+import {
+  everydayPolaroidArtStyles,
+  isEverydayPolaroidArtStyle,
+  isPolaroidOccasionAdmitted,
+  polaroidOccasionItem,
+  polaroidThemeCatalogEntry,
+  polaroidThemeTitle,
+  POLAROID_OCCASION_GROUPS,
+  type PolaroidThemeCatalogEntry,
+} from "@/lib/polaroid-theme-catalog";
+import { polaroidThemeById } from "@/lib/polaroid-themes";
 import {
   SEASONAL_POLAROID_PHOTO_ACCEPT,
   validateSeasonalPolaroidPhoto,
@@ -40,18 +54,20 @@ import {
 } from "@/lib/seasonal-polaroid-client";
 import type { SeasonalPolaroidQuestionnaire, SeasonalPolaroidResult } from "@/lib/seasonal-polaroid-contract";
 import { clearPendingResultSave, readPendingResultSave, writePendingResultSave } from "@/lib/pending-result-save";
-import { SeasonalPolaroidFrame } from "@/components/seasonal-polaroid-frame";
+import { SEASONAL_POLAROID_FRAME_BASE_CLASS, SeasonalPolaroidFrame } from "@/components/seasonal-polaroid-frame";
 import { exportSeasonalPolaroidPng } from "@/lib/seasonal-polaroid-export";
 import { LuRefreshCw } from "react-icons/lu";
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import Link from "next/link";
 
-type Step = 1 | 2 | 3 | 4 | 5 | 6;
+type Step = 1 | 2 | 3 | 4;
 type WhisperTrigger =
   | { kind: "default" | "photo" | "habit" | "treat" | "callName" }
   | { kind: "costume" | "scene" | "vibe" | "personality"; id: string };
 
 type PolaroidAnswers = {
+  themeId: string;
+  occasionId: string;
   petName: string;
   species: PolaroidSpecies | "";
   status: PolaroidStatus | "";
@@ -84,10 +100,16 @@ const OTP_RESEND_COOLDOWN_MS = 30_000;
 type PolaroidEntryProps = {
   /** Server-derived flag. It intentionally defaults to false. */
   generationEnabled?: boolean;
+  yearRoundEnabled?: boolean;
+  christmasEnabled?: boolean;
+  artAllEnabled?: boolean;
+  initialPetId?: string | null;
 };
 
 const DRAFT_STORAGE_KEY = "soul-trace-seasonal-polaroid-draft";
 const EMPTY_ANSWERS: PolaroidAnswers = {
+  themeId: "",
+  occasionId: "",
   petName: "",
   species: "",
   status: "",
@@ -104,7 +126,7 @@ const EMPTY_ANSWERS: PolaroidAnswers = {
   personalDetail: "",
 };
 
-const STEP_IDS = ["meet", "photos", "costume", "scene", "personality", "details"] as const;
+const STEP_IDS = ["meet", "scene", "personality", "preview"] as const;
 const SPECIES_OPTIONS: readonly SeasonalOption[] = [
   { id: "dog", emoji: "🐶", labelKey: "options.species.dog" },
   { id: "cat", emoji: "🐱", labelKey: "options.species.cat" },
@@ -121,8 +143,8 @@ const CUSTOM_HABIT_OPTION: SeasonalOption = {
 };
 
 function fieldClass(lang: Locale, invalid = false) {
-  return `w-full rounded-xl border bg-black/25 px-4 py-3.5 text-base font-extralight text-[#F3EAD8] outline-none transition placeholder:text-[#8F8578] focus:border-[#D4AF37] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37] ${
-    invalid ? "border-red-300/80" : "border-[#D4AF37]/35"
+  return `w-full rounded-xl border bg-[#fffaf0] px-4 py-3.5 text-base font-extralight text-[#393129] outline-none transition placeholder:text-[#857666] focus:border-[#9e774c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9e774c] ${
+    invalid ? "border-red-300/80" : "border-[#dfceb6]"
   } ${lang === "ko" ? "font-ko" : "font-display-en !tracking-normal"}`;
 }
 
@@ -141,6 +163,16 @@ function koreanSubject(name: string): string {
   return `${trimmed}${hasFinalConsonant ? "이" : "가"}`;
 }
 
+function sceneDefaults(themeId: string, status: PolaroidStatus | "") {
+  const theme = polaroidThemeById(themeId) ?? polaroidThemeById("halloween")!;
+  const typedStatus = status || "living";
+  return {
+    costume: optionsForStatus(theme.costumes, typedStatus)[0]?.id ?? "",
+    scene: optionsForStatus(theme.scenes, typedStatus)[0]?.id ?? "",
+    vibe: optionsForStatus(theme.vibes, typedStatus)[0]?.id ?? "",
+  };
+}
+
 function interpolateWhisper(text: string, name: string, lang: Locale): string {
   return text
     .replaceAll("%NAME%", name.trim())
@@ -151,6 +183,8 @@ function restoreDraft(value: unknown): Partial<PolaroidAnswers> {
   if (!value || typeof value !== "object") return {};
   const draft = value as Partial<PolaroidAnswers>;
   const restored: Partial<PolaroidAnswers> = {
+    themeId: typeof draft.themeId === "string" && (isEverydayPolaroidArtStyle(draft.themeId) || draft.themeId === "halloween") && polaroidThemeById(draft.themeId) ? draft.themeId : "",
+    occasionId: typeof draft.occasionId === "string" && polaroidOccasionItem(draft.occasionId) ? draft.occasionId : "",
     petName: typeof draft.petName === "string" ? draft.petName.slice(0, 12) : "",
     species: ["dog", "cat", "rabbit", "hamster", "bird", "other"].includes(String(draft.species))
       ? draft.species as PolaroidSpecies
@@ -172,14 +206,15 @@ function restoreDraft(value: unknown): Partial<PolaroidAnswers> {
     personalDetail: typeof draft.personalDetail === "string" ? draft.personalDetail.slice(0, 60) : "",
   };
 
+  const restoredTheme = polaroidThemeById(restored.occasionId || restored.themeId || "halloween") ?? polaroidThemeById("halloween")!;
   if (restored.status) {
-    if (restored.costume && !optionsForStatus(HALLOWEEN_POLAROID_THEME.costumes, restored.status).some((item) => item.id === restored.costume)) restored.costume = "";
-    if (restored.scene && !optionsForStatus(HALLOWEEN_POLAROID_THEME.scenes, restored.status).some((item) => item.id === restored.scene)) restored.scene = "";
-    if (restored.vibe && !optionsForStatus(HALLOWEEN_POLAROID_THEME.vibes, restored.status).some((item) => item.id === restored.vibe)) restored.vibe = "";
+    if (restored.costume && !optionsForStatus(restoredTheme.costumes, restored.status).some((item) => item.id === restored.costume)) restored.costume = "";
+    if (restored.scene && !optionsForStatus(restoredTheme.scenes, restored.status).some((item) => item.id === restored.scene)) restored.scene = "";
+    if (restored.vibe && !optionsForStatus(restoredTheme.vibes, restored.status).some((item) => item.id === restored.vibe)) restored.vibe = "";
   }
   if (restored.species) {
-    const habits = HALLOWEEN_POLAROID_THEME.habitsBySpecies[restored.species];
-    const treats = HALLOWEEN_POLAROID_THEME.treatsBySpecies[restored.species];
+    const habits = restoredTheme.habitsBySpecies[restored.species];
+    const treats = restoredTheme.treatsBySpecies[restored.species];
     if (restored.habit && restored.habit !== "custom" && !habits.some((item) => item.id === restored.habit)) restored.habit = "";
     if (restored.habit !== "custom") restored.customHabit = "";
     if (restored.favoriteTreat && !treats.some((item) => item.id === restored.favoriteTreat)) {
@@ -187,7 +222,7 @@ function restoreDraft(value: unknown): Partial<PolaroidAnswers> {
       restored.customTreat = "";
     }
   }
-  if (restored.callName && !HALLOWEEN_POLAROID_THEME.callNames.some((item) => item.id === restored.callName)) {
+  if (restored.callName && !restoredTheme.callNames.some((item) => item.id === restored.callName)) {
     restored.callName = "";
     restored.customCallName = "";
   } else if (restored.callName !== "by-name") {
@@ -258,8 +293,8 @@ function ChoiceButton({
       onClick={onClick}
       className={`flex h-full min-w-0 w-full min-h-14 items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-light transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37] ${bodyFont} ${
         selected
-          ? "border-[#D4AF37] bg-[#D4AF37]/15 text-[#F8EAC8] shadow-[0_0_22px_rgba(212,175,55,0.1)]"
-          : "border-[#D4AF37]/25 bg-black/20 text-[#EDE4D3]/85 hover:border-[#D4AF37]/60 hover:bg-[#D4AF37]/[0.06]"
+          ? "border-[#9e774c] bg-[#9e774c] text-[#fffaf2]"
+          : "border-[#eadcc6] bg-[#fff8ec] text-[#393129] hover:border-[#9e774c]/60 hover:bg-[#f1e5cf]"
       }`}
     >
       <span className="shrink-0 text-xl leading-none" aria-hidden="true">{option.emoji}</span>
@@ -269,7 +304,13 @@ function ChoiceButton({
   );
 }
 
-export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps) {
+export function PolaroidEntry({
+  generationEnabled = false,
+  yearRoundEnabled = false,
+  christmasEnabled = false,
+  artAllEnabled = false,
+  initialPetId = null,
+}: PolaroidEntryProps) {
   const { lang, t: translate } = useLocale();
   // Seasonal generation copy lives under the flow namespace in both locale
   // files. Normalize legacy call sites in this component so a missing path can
@@ -279,10 +320,28 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     "seasonalPolaroid.flow.generation.",
   )), [translate]);
   const authSession = useAuthSession();
-  const bodyFont = lang === "ko" ? "font-ko break-keep" : "font-display-en";
-  const theme = HALLOWEEN_POLAROID_THEME;
+  const bodyFont = lang === "ko" ? "font-ko break-keep font-normal tracking-normal" : "font-display-en";
+  const themeFlags = useMemo(() => ({
+    yearRound: yearRoundEnabled,
+    christmas: christmasEnabled,
+    artAll: artAllEnabled,
+  }), [artAllEnabled, christmasEnabled, yearRoundEnabled]);
+  const [savedPets, setSavedPets] = useState<Array<{ petId: string; petName: string; species: string | null; lifeStatus: string }>>([]);
+  const artThemes = useMemo(
+    () => everydayPolaroidArtStyles(themeFlags),
+    [themeFlags],
+  );
   const [step, setStep] = useState<Step>(1);
-  const [answers, setAnswers] = useState<PolaroidAnswers>(EMPTY_ANSWERS);
+  const [answers, setAnswers] = useState<PolaroidAnswers>(() => ({
+    ...EMPTY_ANSWERS,
+    themeId: yearRoundEnabled ? "" : "halloween",
+    ...(!yearRoundEnabled ? sceneDefaults("halloween", "") : {}),
+  }));
+  const theme = polaroidThemeById(answers.themeId) ?? polaroidThemeById("halloween")!;
+  const optionTheme = polaroidThemeById(answers.occasionId) ?? theme;
+  const selectedTheme = polaroidThemeCatalogEntry(answers.themeId);
+  const selectedOccasion = polaroidOccasionItem(answers.occasionId);
+  const occasionReady = !answers.occasionId || isPolaroidOccasionAdmitted(answers.occasionId, themeFlags);
   const [primaryPhoto, setPrimaryPhoto] = useState<LocalPhoto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -389,6 +448,30 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     }, 1000);
     return () => window.clearInterval(timer);
   }, [codeExpiresAt, emailStep]);
+
+  useEffect(() => {
+    if (!hydrated || authSession.status !== "authenticated") return;
+    const controller = new AbortController();
+    void fetch("/api/my/pets", { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body) => {
+        if (!body || !Array.isArray(body.pets)) return;
+        setSavedPets(body.pets.map((pet: { petId: string; petName: string; species?: string | null; lifeStatus?: string }) => ({
+          petId: pet.petId,
+          petName: pet.petName,
+          species: pet.species ?? null,
+          lifeStatus: pet.lifeStatus ?? "unspecified",
+        })));
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [authSession.status, hydrated]);
+
+  useEffect(() => {
+    if (!initialPetId || !savedPets.length) return;
+    const pet = savedPets.find((item) => item.petId === initialPetId);
+    if (pet) applySavedPet(pet);
+  }, [initialPetId, savedPets]);
 
   useEffect(() => {
     if (!hydrated || !generationEnabled) return;
@@ -509,9 +592,6 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
 
   const label = (option: SeasonalOption) => t(optionPath(option));
   const status = answers.status;
-  const availableCostumes = optionsForStatus(theme.costumes, status);
-  const availableScenes = optionsForStatus(theme.scenes, status);
-  const availableVibes = optionsForStatus(theme.vibes, status);
   const availableHabits = answers.species ? theme.habitsBySpecies[answers.species] : [];
   const availableTreats = answers.species ? theme.treatsBySpecies[answers.species] : [];
   const habitOptions = [...availableHabits, CUSTOM_HABIT_OPTION];
@@ -536,9 +616,9 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   const whisperText = interpolateWhisper(t(whisperPath), answers.petName, lang);
 
   const selectedChips = [
-    answers.costume ? optionById(theme.costumes, answers.costume) : undefined,
-    answers.scene ? optionById(theme.scenes, answers.scene) : undefined,
-    answers.vibe ? optionById(theme.vibes, answers.vibe) : undefined,
+    answers.costume ? optionById(optionTheme.costumes, answers.costume) : undefined,
+    answers.scene ? optionById(optionTheme.scenes, answers.scene) : undefined,
+    answers.vibe ? optionById(optionTheme.vibes, answers.vibe) : undefined,
     ...answers.personalities.map((id) => optionById(theme.personalities, id)),
     answers.habit && answers.habit !== "custom"
       ? optionById(availableHabits, answers.habit)
@@ -565,15 +645,55 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   };
 
   const updateStatus = (nextStatus: PolaroidStatus) => {
-    setAnswers((current) => ({
-      ...current,
-      status: nextStatus,
-      costume: optionsForStatus(theme.costumes, nextStatus).some((item) => item.id === current.costume) ? current.costume : "",
-      scene: optionsForStatus(theme.scenes, nextStatus).some((item) => item.id === current.scene) ? current.scene : "",
-      vibe: optionsForStatus(theme.vibes, nextStatus).some((item) => item.id === current.vibe) ? current.vibe : "",
-    }));
+    setAnswers((current) => {
+      const nextOption = polaroidThemeById(current.occasionId) ?? polaroidThemeById(current.themeId) ?? polaroidThemeById("halloween")!;
+      return {
+        ...current,
+        status: nextStatus,
+        ...sceneDefaults(nextOption.id, nextStatus),
+      };
+    });
     setError(null);
     setWhisperTrigger({ kind: "default" });
+  };
+
+  const updateTheme = (nextThemeId: string) => {
+    const nextTheme = polaroidThemeById(nextThemeId);
+    if (!nextTheme) return;
+    setAnswers((current) => {
+      const optionId = polaroidThemeById(current.occasionId) ? current.occasionId : nextThemeId;
+      return {
+        ...current,
+        themeId: nextThemeId,
+        ...sceneDefaults(optionId, current.status),
+      };
+    });
+    setError(null);
+    setWhisperTrigger({ kind: "default" });
+  };
+
+  const updateOccasion = (nextOccasionId: string) => {
+    setAnswers((current) => {
+      const cleared = current.occasionId === nextOccasionId;
+      const occasionId = cleared ? "" : nextOccasionId;
+      const optionId = polaroidThemeById(occasionId)?.id || current.themeId || "halloween";
+      return {
+        ...current,
+        occasionId,
+        ...sceneDefaults(optionId, current.status),
+      };
+    });
+    setError(null);
+    setWhisperTrigger({ kind: "default" });
+  };
+
+  const applySavedPet = (pet: { petName: string; species: string | null; lifeStatus: string }) => {
+    const speciesId = SPECIES_OPTIONS.find((item) => item.id === pet.species)?.id as PolaroidSpecies | undefined;
+    updateAnswers({
+      petName: pet.petName.slice(0, 12),
+      ...(speciesId ? { species: speciesId } : {}),
+    }, { kind: "default" });
+    void pet.lifeStatus;
   };
 
   const updateSpecies = (nextSpecies: PolaroidSpecies) => {
@@ -628,19 +748,20 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
       if (answers.petName.trim().length > 12) return t("seasonalPolaroid.flow.validation.nameLength");
       if (!answers.species) return t("seasonalPolaroid.flow.validation.species");
       if (!answers.status) return t("seasonalPolaroid.flow.validation.status");
+      if (!primaryPhoto) return t("seasonalPolaroid.flow.validation.photo");
     }
-    if (currentStep === 2 && !primaryPhoto) return t("seasonalPolaroid.flow.validation.photo");
-    if (currentStep === 3 && !answers.costume) return t("seasonalPolaroid.flow.validation.costume");
-    if (currentStep === 4) {
-      if (!answers.scene) return t("seasonalPolaroid.flow.validation.scene");
-      if (!answers.vibe) return t("seasonalPolaroid.flow.validation.vibe");
+    if (currentStep === 2) {
+      if (!answers.themeId || !polaroidThemeById(answers.themeId)) return t("seasonalPolaroid.flow.yearRound.themeRequired");
+      if (yearRoundEnabled && !isEverydayPolaroidArtStyle(answers.themeId)) return t("seasonalPolaroid.flow.yearRound.themeRequired");
+      if (!answers.costume || !answers.scene || !answers.vibe) {
+        const optionId = polaroidThemeById(answers.occasionId)?.id || answers.themeId;
+        updateAnswers(sceneDefaults(optionId, answers.status));
+      }
     }
-    if (currentStep === 5) {
+    if (currentStep === 3) {
       if (answers.personalities.length < 1) return t("seasonalPolaroid.flow.validation.personality");
       if (!answers.habit) return t("seasonalPolaroid.flow.validation.habit");
       if (answers.habit === "custom" && !answers.customHabit.trim()) return t("seasonalPolaroid.flow.validation.habitCustom");
-    }
-    if (currentStep === 6) {
       if (!answers.favoriteTreat || (answers.favoriteTreat === "custom" && !answers.customTreat.trim())) return t("seasonalPolaroid.flow.validation.treat");
       if (!answers.callName) return t("seasonalPolaroid.flow.validation.callName");
       if (answers.callName === "by-name" && !answers.customCallName.trim()) return t("seasonalPolaroid.flow.validation.callNameCustom");
@@ -743,14 +864,14 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
 
   const startGeneration = () => {
     if (view !== "questionnaire") return;
-    const validation = validateStep(6);
+    const validation = validateStep(1) || validateStep(2) || validateStep(3);
     if (validation) {
       setError(validation);
       return;
     }
     if (!primaryPhoto) {
       setError(t("seasonalPolaroid.flow.validation.photo"));
-      setStep(2);
+      setStep(1);
       return;
     }
     setError(null);
@@ -768,14 +889,14 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
 
   const runGeneration = async (allowFromResult = false) => {
     if (view !== "questionnaire" && !allowFromResult) return;
-    const validation = validateStep(6);
+    const validation = validateStep(1) || validateStep(2) || validateStep(3);
     if (validation) {
       setError(validation);
       return;
     }
     if (!primaryPhoto) {
       setError(t("seasonalPolaroid.flow.validation.photo"));
-      setStep(2);
+      setStep(1);
       return;
     }
     if (!generationEnabled) {
@@ -783,8 +904,14 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
       return;
     }
 
+    if (!occasionReady) {
+      setError(t("seasonalPolaroid.flow.yearRound.occasionNotReady"));
+      return;
+    }
+
     const questionnaire: SeasonalPolaroidQuestionnaire = {
-      themeId: "halloween",
+      themeId: answers.themeId || "halloween",
+      occasionId: answers.occasionId && isPolaroidOccasionAdmitted(answers.occasionId, themeFlags) ? answers.occasionId : "",
       locale: lang,
       petName: answers.petName.trim(),
       species: answers.species,
@@ -889,21 +1016,21 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
         locale: lang,
         lines: lang === "ko"
           ? [
-              `${answers.customCallName || t("seasonalPolaroid.generation.mockOwner")}, 오늘도 함께라서 좋아요.`,
-              `${answers.petName || "우리 아이"}의 ${answers.costume || "할로윈"} 모습이 정말 사랑스러워요.`,
-              `${answers.habit ? "작은 습관 하나까지" : "소중한 순간 하나까지"} 꼭 담아두었어요.`,
-              "따뜻한 할로윈 밤, 마음 가까이에 있을게요.",
+              `${answers.customCallName || t("seasonalPolaroid.generation.mockOwner")}, 나 ${answers.petName || "아이"}야!`,
+              "오늘은 포근한 한 장을 담았어,",
+              `${answers.habit ? "작은 습관까지" : "소중한 순간까지"} 마음에 두고,`,
+              "여기 참 따뜻하고 좋아.",
             ] as [string, string, string, string]
           : [
-              `A little Halloween hello for ${answers.customCallName || t("seasonalPolaroid.generation.mockOwner")}.`,
-              `${answers.petName || "Your companion"} looks darling in a ${answers.costume || "Halloween"} look.`,
-              `Even ${answers.habit ? "the tiniest habit" : "the smallest moment"} belongs in this keepsake.`,
-              "Keeping this warm little memory close tonight.",
+              `${answers.customCallName || t("seasonalPolaroid.generation.mockOwner")}, it's ${answers.petName || "me"}!`,
+              "I'm cozy in this little scene,",
+              `${answers.habit ? "keeping my tiny habit close," : "holding this small moment,"}`,
+              "and this quiet day feels like home.",
             ] as [string, string, string, string],
       },
-      themeId: "halloween",
+      themeId: (answers.themeId || "halloween") as SeasonalPolaroidResult["themeId"],
       costumeId: answers.costume || "surprise",
-      generation: { themeId: "halloween", imageModel: "development-mock", textModel: "development-mock", generatedAt: new Date().toISOString() },
+      generation: { themeId: (answers.themeId || "halloween") as SeasonalPolaroidResult["themeId"], imageModel: "development-mock", textModel: "development-mock", generatedAt: new Date().toISOString() },
       saveProof: null,
     };
     setMockMode(true);
@@ -1063,10 +1190,14 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
     const validation = validateStep(step);
     if (validation) {
       setError(validation);
+      const target = !answers.status ? "polaroid-status" : "polaroid-question-error";
+      requestAnimationFrame(() => {
+        document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       return;
     }
     setError(null);
-    if (step < 6) setStep((current) => (current + 1) as Step);
+    if (step < 4) setStep((current) => (current + 1) as Step);
     else void startGeneration();
   };
 
@@ -1077,11 +1208,11 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   };
 
   const currentTitle = status === "passed"
-    ? t(`seasonalPolaroid.flow.screen${step}.titlePassed`)
-    : t(`seasonalPolaroid.flow.screen${step}.title`);
+    ? t(`seasonalPolaroid.flow.yearRound.screen${step}TitlePassed`)
+    : t(`seasonalPolaroid.flow.yearRound.screen${step}Title`);
   const currentIntro = status === "passed"
-    ? t(`seasonalPolaroid.flow.screen${step}.introPassed`)
-    : t(`seasonalPolaroid.flow.screen${step}.intro`);
+    ? t(`seasonalPolaroid.flow.yearRound.screen${step}IntroPassed`)
+    : t(`seasonalPolaroid.flow.yearRound.screen${step}Intro`);
 
   if (view !== "questionnaire") {
     return (
@@ -1106,6 +1237,24 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
           authStatus={authSession.status}
           generationEnabled={generationEnabled}
           onDownload={() => requestSeasonalAction("download")}
+          onSave={() => requestSeasonalAction("save")}
+          onShare={async () => {
+            try {
+              const blob = await exportSeasonalPolaroid();
+              if (!blob) {
+                setSaveError(t("seasonalPolaroid.flow.yearRound.shareError"));
+                return;
+              }
+              const file = new File([blob], "soultrace-polaroid.png", { type: "image/png" });
+              if (navigator.share && navigator.canShare?.({ files: [file] })) {
+                await navigator.share({ files: [file], title: answers.petName });
+                return;
+              }
+              setSaveError(t("seasonalPolaroid.flow.yearRound.shareError"));
+            } catch {
+              setSaveError(t("seasonalPolaroid.flow.yearRound.shareError"));
+            }
+          }}
           onRegenerate={regenerate}
           onStartOver={startOver}
           onRetry={() => {
@@ -1130,23 +1279,26 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
   }
 
   return (
-    <main className="min-h-[100svh] overflow-x-hidden bg-black text-[#F3EAD8]" data-polaroid-flow="halloween">
+    <main className="flex min-h-[100svh] flex-col overflow-x-hidden bg-[#fffaf0] text-[#393129]" data-polaroid-flow={answers.themeId || "halloween"}>
       <header className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-4 sm:px-7 md:px-10 md:py-5">
-        <Link href="/choose" className={`inline-flex min-h-11 w-fit items-center gap-2 rounded-md text-sm text-[#E8D6B4] transition hover:text-[#FFF4DE] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] sm:text-base ${bodyFont}`}>
+        <Link href="/choose" className={`inline-flex min-h-11 w-fit items-center gap-2 rounded-md text-sm text-[#594b3c] transition hover:text-[#9e774c] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9e774c] sm:text-base ${bodyFont}`}>
           <span aria-hidden="true" className="text-xl leading-none">←</span>
           <span>{t("seasonalPolaroid.flow.back")}</span>
         </Link>
-        <p className="font-display-en text-center text-xs tracking-[0.34em] text-[#E8D6B4] sm:text-sm">SOUL TRACE</p>
-        <div className="justify-self-end"><LanguageToggle /></div>
+        <div className="flex flex-col items-center text-[#6b4a2c]">
+          <BrandMark className="h-8 w-8" />
+          <p className="font-display-en text-center text-sm tracking-[0.06em]">SoulTrace</p>
+        </div>
+        <div className="justify-self-end"><LanguageToggle tone="paper" /></div>
       </header>
 
       <section className="mx-auto w-full max-w-[1240px] px-4 pb-14 pt-3 sm:px-7 md:px-10 md:pt-6">
         <div className="mx-auto max-w-[960px]">
           <div className="flex items-center justify-between gap-3">
-            <p className="font-display-en text-[10px] uppercase tracking-[0.28em] text-[#D4AF37] sm:text-xs">{t("polaroid.eyebrow")}</p>
+            <p className="font-display-en text-[10px] uppercase tracking-[0.28em] text-[#9e774c] sm:text-xs">{t("seasonalPolaroid.flow.yearRound.pageTitle")}</p>
             <div className="flex items-center gap-3">
               {generationEnabled ? (
-                <p className={`text-xs text-[#D4AF37] ${bodyFont}`} aria-live="polite">
+                <p className={`text-xs text-[#9e774c] ${bodyFont}`} aria-live="polite">
                   {developerTesting
                     ? t("seasonalPolaroid.flow.generation.developerUnlimited")
                     : trialRemaining === 0
@@ -1154,19 +1306,20 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
                     : t("seasonalPolaroid.flow.generation.freeRemaining").replace("%COUNT%", String(trialRemaining))}
                 </p>
               ) : null}
-              <p className={`text-xs text-[#AFA598] ${bodyFont}`}>{t("seasonalPolaroid.flow.stepOf").replace("%STEP%", String(step))}</p>
+              <p className={`text-xs text-[#857666] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.stepOf").replace("%STEP%", String(step))}</p>
             </div>
           </div>
-          <ol className="mt-4 grid grid-cols-6 gap-1.5 sm:gap-2" aria-label={t("seasonalPolaroid.flow.stepOf").replace("%STEP%", String(step))}>
+          <p className={`mt-3 text-sm leading-6 text-[#594b3c] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.pageIntro")}</p>
+          <ol className="mt-4 grid grid-cols-4 gap-1.5 sm:gap-2" aria-label={t("seasonalPolaroid.flow.yearRound.stepOf").replace("%STEP%", String(step))}>
             {STEP_IDS.map((id, index) => {
               const stepNumber = index + 1;
               const complete = stepNumber < step;
               const active = stepNumber === step;
               return (
                 <li key={id} className="min-w-0">
-                  <div className={`h-1 rounded-full transition-colors ${complete || active ? "bg-[#D4AF37]" : "bg-[#D4AF37]/20"}`} />
-                  <span className={`mt-2 block truncate text-[9px] uppercase tracking-[0.12em] sm:text-[10px] ${active ? "text-[#F4D37D]" : "text-[#887D6F]"} ${lang === "ko" ? "font-ko" : "font-display-en"}`}>
-                    {t(`seasonalPolaroid.flow.steps.${id}`)}
+                  <div className={`h-1 rounded-full transition-colors ${complete || active ? "bg-[#9e774c]" : "bg-[#dfceb6]"}`} />
+                  <span className={`mt-2 block truncate text-[9px] uppercase tracking-[0.12em] sm:text-[10px] ${active ? "text-[#9e774c]" : "text-[#887D6F]"} ${lang === "ko" ? "font-ko" : "font-display-en"}`}>
+                    {t(`seasonalPolaroid.flow.yearRound.steps.${id}`)}
                   </span>
                 </li>
               );
@@ -1175,51 +1328,91 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
         </div>
 
         <div className="mx-auto mt-7 grid max-w-[1120px] gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.74fr)] lg:items-start lg:gap-8">
-          <section className="order-2 min-w-0 rounded-[24px] border border-[#D4AF37]/28 bg-[#11100E]/90 p-5 shadow-[0_22px_70px_rgba(0,0,0,0.32)] sm:p-7 lg:order-1" aria-labelledby="polaroid-question-title">
-            <p className={`text-[10px] uppercase tracking-[0.25em] text-[#D4AF37]/85 sm:text-xs ${lang === "ko" ? "font-ko" : "font-display-en"}`}>{t(`seasonalPolaroid.flow.screen${step}.kicker`)}</p>
-            <h1 id="polaroid-question-title" className={`mt-4 text-[1.65rem] font-light leading-tight text-[#F8EAD1] sm:text-3xl ${bodyFont}`}>{currentTitle}</h1>
-            <p className={`mt-3 max-w-2xl whitespace-pre-line text-sm font-extralight leading-7 text-[#CFC5B6] sm:text-base ${bodyFont}`}>{currentIntro}</p>
+          <section className="order-2 min-w-0 rounded-[24px] border border-[#eadcc6] bg-[#fffbf3] p-5 shadow-[0_8px_28px_rgba(121,92,53,0.08)] sm:p-7 lg:order-1" aria-labelledby="polaroid-question-title">
+            <p className={`text-[10px] uppercase tracking-[0.25em] text-[#9e774c] sm:text-xs ${lang === "ko" ? "font-ko" : "font-display-en"}`}>{t(`seasonalPolaroid.flow.yearRound.screen${step}Kicker`)}</p>
+            <h1 id="polaroid-question-title" className={`mt-4 text-[1.65rem] font-light leading-tight text-[#393129] sm:text-3xl ${bodyFont}`}>{currentTitle}</h1>
+            <p className={`mt-3 max-w-2xl whitespace-pre-line text-sm font-extralight leading-7 text-[#594b3c] sm:text-base ${bodyFont}`}>{currentIntro}</p>
 
             <div className="mt-7">
               {step === 1 ? (
                 <div className="space-y-7">
+                  {savedPets.length ? (
+                    <div className="space-y-2">
+                      <p className={`text-sm text-[#393129] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.useSavedPet")}</p>
+                      <p className={`text-xs leading-5 text-[#857666] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.savedPetHint")}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {savedPets.map((pet) => (
+                          <button key={pet.petId} type="button" onClick={() => applySavedPet(pet)} className={`min-h-10 rounded-full border border-[#eadcc6] bg-[#fff8ec] px-3 py-2 text-xs text-[#393129] transition hover:border-[#9e774c] ${bodyFont}`}>
+                            {pet.petName}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="space-y-2">
-                    <label htmlFor="seasonal-pet-name" className={`text-sm text-[#F3EAD8] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen1.nameLabel")}</label>
+                    <label htmlFor="seasonal-pet-name" className={`text-sm text-[#393129] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen1.nameLabel")}</label>
                     <input id="seasonal-pet-name" type="text" maxLength={12} value={answers.petName} onChange={(event) => updateAnswers({ petName: event.target.value.slice(0, 12) }, { kind: "default" })} placeholder={t("seasonalPolaroid.flow.screen1.namePlaceholder")} className={fieldClass(lang, Boolean(error && !answers.petName.trim()))} />
                     <p className={`text-right text-xs text-[#8F8578] ${bodyFont}`}>{answers.petName.length} / 12</p>
                   </div>
                   <OptionGroup label={t("seasonalPolaroid.flow.screen1.speciesLabel")} options={SPECIES_OPTIONS} selected={answers.species} onSelect={(id) => updateSpecies(id as PolaroidSpecies)} bodyFont={bodyFont} />
-                  <OptionGroup label={t("seasonalPolaroid.flow.screen1.statusLabel")} options={[{ id: "living", emoji: "✨", labelKey: "options.status.living" }, { id: "passed", emoji: "🕯️", labelKey: "options.status.passed" }]} selected={answers.status} onSelect={(id) => updateStatus(id as PolaroidStatus)} bodyFont={bodyFont} />
+                  <div id="polaroid-status">
+                    <OptionGroup label={t("seasonalPolaroid.flow.screen1.statusLabel")} options={[{ id: "living", emoji: "✦", labelKey: "options.status.living" }, { id: "passed", emoji: "✦", labelKey: "options.status.passed" }]} selected={answers.status} onSelect={(id) => updateStatus(id as PolaroidStatus)} bodyFont={bodyFont} />
+                  </div>
+                  <input ref={primaryInputRef} type="file" accept={SEASONAL_POLAROID_PHOTO_ACCEPT} className="hidden" onChange={(event) => onPhotoInput(event.target.files)} />
+                  <PhotoSlotView photo={primaryPhoto} label={t("seasonalPolaroid.flow.screen2.primaryLabel")} emptyLabel={t("seasonalPolaroid.flow.screen2.empty")} uploadLabel={t("seasonalPolaroid.flow.screen2.upload")} changeLabel={t("seasonalPolaroid.flow.screen2.change")} removeLabel={t("seasonalPolaroid.flow.screen2.remove")} onChoose={openPhotoPicker} onRemove={removePhoto} required bodyFont={bodyFont} />
+                  <div className="rounded-2xl border border-[#eadcc6] bg-[#fff8ec] p-4">
+                    <p className={`text-sm text-[#393129] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen2.tipsTitle")}</p>
+                    <p className={`mt-2 text-xs leading-6 text-[#857666] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen2.tips")}</p>
+                    <p className={`mt-3 text-[11px] text-[#8F8578] ${bodyFont}`}>{t("seasonalPolaroid.flow.photoLimit")}</p>
+                    <p className={`mt-1 text-[11px] leading-5 text-[#8F8578] ${bodyFont}`}>{t("seasonalPolaroid.flow.photoHeic")}</p>
+                  </div>
+                  {photoError ? <p role="alert" className={`text-sm leading-6 text-red-700 ${bodyFont}`}>{photoError}</p> : null}
                 </div>
               ) : null}
 
               {step === 2 ? (
-                <div className="space-y-6">
-                  <input ref={primaryInputRef} type="file" accept={SEASONAL_POLAROID_PHOTO_ACCEPT} className="hidden" onChange={(event) => onPhotoInput(event.target.files)} />
-                  <PhotoSlotView photo={primaryPhoto} label={t("seasonalPolaroid.flow.screen2.primaryLabel")} emptyLabel={t("seasonalPolaroid.flow.screen2.empty")} uploadLabel={t("seasonalPolaroid.flow.screen2.upload")} changeLabel={t("seasonalPolaroid.flow.screen2.change")} removeLabel={t("seasonalPolaroid.flow.screen2.remove")} onChoose={openPhotoPicker} onRemove={removePhoto} required bodyFont={bodyFont} />
-                  <div className="rounded-2xl border border-[#D4AF37]/20 bg-[#D4AF37]/[0.045] p-4">
-                    <p className={`text-sm text-[#F3EAD8] ${bodyFont}`}>✦ {t("seasonalPolaroid.flow.screen2.tipsTitle")}</p>
-                    <p className={`mt-2 text-xs leading-6 text-[#B6AA99] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen2.tips")}</p>
-                    <p className={`mt-3 text-[11px] text-[#8F8578] ${bodyFont}`}>{t("seasonalPolaroid.flow.photoLimit")}</p>
-                    <p className={`mt-1 text-[11px] leading-5 text-[#8F8578] ${bodyFont}`}>{t("seasonalPolaroid.flow.photoHeic")}</p>
-                  </div>
-                  {photoError ? <p role="alert" className={`text-sm leading-6 text-red-200 ${bodyFont}`}>{photoError}</p> : null}
+                <div className="space-y-10">
+                  {yearRoundEnabled ? (
+                    <section className="space-y-3">
+                      <h2 className={`text-sm text-[#393129] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.artCategory")}</h2>
+                      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3" data-polaroid-art-count={artThemes.length}>
+                        {artThemes.map((item) => (
+                          <ThemeCard key={item.id} entry={item} selected={answers.themeId === item.id} locale={lang} onSelect={() => updateTheme(item.id)} />
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+                  <section className="space-y-3" data-polaroid-occasion-list="">
+                    <div className="space-y-2">
+                      <h2 className={`text-center text-sm tracking-[0.12em] text-[#393129] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.seasonalCategory")}</h2>
+                      <p className={`text-sm leading-6 text-[#594b3c] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.occasionHint")}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {POLAROID_OCCASION_GROUPS.flatMap((group) => group.items).map((item) => {
+                        const ready = item.implemented && isPolaroidOccasionAdmitted(item.id, themeFlags);
+                        const selected = answers.occasionId === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            aria-pressed={selected}
+                            aria-label={`${lang === "ko" ? item.titleKo : item.titleEn}${ready ? "" : ` — ${t("seasonalPolaroid.flow.yearRound.comingSoon")}`}`}
+                            onClick={() => updateOccasion(item.id)}
+                            className={`min-h-12 rounded-full border px-3 py-3 text-center text-sm leading-5 transition ${selected ? "border-[#9e774c] bg-[#f1e5cf] text-[#393129]" : "border-[#eadcc6] bg-[#fff8ec] text-[#463021] hover:border-[#9e774c]/60"} ${bodyFont}`}
+                          >
+                            {lang === "ko" ? item.titleKo : item.titleEn}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
                 </div>
               ) : null}
 
-              {step === 3 ? <OptionGroup label="" options={availableCostumes} selected={answers.costume} onSelect={(id) => updateAnswers({ costume: id }, { kind: "costume", id })} bodyFont={bodyFont} /> : null}
-
-              {step === 4 ? (
-                <div className="space-y-8">
-                  <OptionGroup label={t("seasonalPolaroid.flow.screen4.sceneLabel")} options={availableScenes} selected={answers.scene} onSelect={(id) => updateAnswers({ scene: id }, { kind: "scene", id })} bodyFont={bodyFont} />
-                  <OptionGroup label={t("seasonalPolaroid.flow.screen4.vibeLabel")} options={availableVibes} selected={answers.vibe} onSelect={(id) => updateAnswers({ vibe: id }, { kind: "vibe", id })} bodyFont={bodyFont} />
-                </div>
-              ) : null}
-
-              {step === 5 ? (
+              {step === 3 ? (
                 <div className="space-y-8">
                   <div>
-                    <div className="mb-3 flex items-center justify-between gap-3"><p className={`text-sm text-[#F3EAD8] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen5.personalityLabel")}</p><span className={`text-xs text-[#D8B84C] ${bodyFont}`}>{t("seasonalPolaroid.flow.personalityCount").replace("%COUNT%", String(answers.personalities.length))}</span></div>
+                    <div className="mb-3 flex items-center justify-between gap-3"><p className={`text-sm text-[#393129] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen5.personalityLabel")}</p><span className={`text-xs text-[#9e774c] ${bodyFont}`}>{t("seasonalPolaroid.flow.personalityCount").replace("%COUNT%", String(answers.personalities.length))}</span></div>
                     <div className="grid min-w-0 grid-cols-1 auto-rows-fr gap-3 sm:grid-cols-2">
                       {theme.personalities.map((item) => <ChoiceButton key={item.id} option={item} label={label(item)} selected={answers.personalities.includes(item.id)} onClick={() => {
                         const selected = answers.personalities.includes(item.id);
@@ -1231,13 +1424,8 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
                   </div>
                   <OptionGroup label={t("seasonalPolaroid.flow.screen5.habitLabel")} options={habitOptions} selected={answers.habit} onSelect={(id) => updateAnswers({ habit: id, ...(id === "custom" ? {} : { customHabit: "" }) }, { kind: "habit" })} bodyFont={bodyFont} />
                   {answers.habit === "custom" ? <input type="text" maxLength={60} value={answers.customHabit} onChange={(event) => updateAnswers({ customHabit: event.target.value.slice(0, 60) })} placeholder={t("seasonalPolaroid.flow.screen5.habitCustomPlaceholder")} className={fieldClass(lang)} /> : null}
-                </div>
-              ) : null}
-
-              {step === 6 ? (
-                <div className="space-y-8">
                   <div>
-                    <p className={`mb-3 text-sm text-[#F3EAD8] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen6.treatLabel")}</p>
+                    <p className={`mb-3 text-sm text-[#393129] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen6.treatLabel")}</p>
                     <div className="grid min-w-0 grid-cols-1 auto-rows-fr gap-3 sm:grid-cols-2">
                       {availableTreats.map((item) => <ChoiceButton key={item.id} option={item} label={label(item)} selected={answers.favoriteTreat === item.id} onClick={() => updateAnswers({ favoriteTreat: item.id }, { kind: "treat" })} bodyFont={bodyFont} />)}
                     </div>
@@ -1246,49 +1434,77 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
                   <OptionGroup label={t(status === "passed" ? "seasonalPolaroid.flow.screen6.callNameLabelPassed" : "seasonalPolaroid.flow.screen6.callNameLabel")} options={theme.callNames} selected={answers.callName} onSelect={(id) => updateAnswers({ callName: id }, { kind: "callName" })} bodyFont={bodyFont} />
                   {answers.callName === "by-name" ? <input type="text" maxLength={40} value={answers.customCallName} onChange={(event) => updateAnswers({ customCallName: event.target.value.slice(0, 40) })} placeholder={t("seasonalPolaroid.flow.screen6.callNameCustomPlaceholder")} className={fieldClass(lang)} /> : null}
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-3"><label htmlFor="seasonal-detail" className={`text-sm text-[#F3EAD8] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen6.personalLabel")}</label><span className={`text-xs text-[#8F8578] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen6.characterCount").replace("%COUNT%", String(answers.personalDetail.length))}</span></div>
+                    <div className="flex items-center justify-between gap-3"><label htmlFor="seasonal-detail" className={`text-sm text-[#393129] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen6.personalLabel")}</label><span className={`text-xs text-[#8F8578] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen6.characterCount").replace("%COUNT%", String(answers.personalDetail.length))}</span></div>
                     <textarea id="seasonal-detail" maxLength={60} rows={3} value={answers.personalDetail} onChange={(event) => updateAnswers({ personalDetail: event.target.value.slice(0, 60) })} placeholder={t("seasonalPolaroid.flow.screen6.personalPlaceholder")} className={`resize-none ${fieldClass(lang)}`} />
                   </div>
                 </div>
               ) : null}
+
+              {step === 4 ? (
+                <div className="space-y-5">
+                  <p className={`text-sm leading-6 text-[#594b3c] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.previewHint")}</p>
+                  <dl className={`grid gap-3 text-sm text-[#393129] ${bodyFont}`}>
+                    <div className="rounded-2xl border border-[#eadcc6] bg-[#fff8ec] px-4 py-3"><dt className="text-xs text-[#857666]">{t("seasonalPolaroid.flow.yearRound.artStyleLabel")}</dt><dd className="mt-1">{selectedTheme ? polaroidThemeTitle(selectedTheme, lang) : answers.themeId}</dd></div>
+                    <div className="rounded-2xl border border-[#eadcc6] bg-[#fff8ec] px-4 py-3"><dt className="text-xs text-[#857666]">{t("seasonalPolaroid.flow.yearRound.occasionLabel")}</dt><dd className="mt-1">{selectedOccasion ? (lang === "ko" ? selectedOccasion.titleKo : selectedOccasion.titleEn) : t("seasonalPolaroid.flow.yearRound.occasionNone")}</dd></div>
+                    <div className="rounded-2xl border border-[#eadcc6] bg-[#fff8ec] px-4 py-3"><dt className="text-xs text-[#857666]">{t("seasonalPolaroid.flow.screen1.nameLabel")}</dt><dd className="mt-1">{answers.petName}</dd></div>
+                  </dl>
+                  {!occasionReady ? <p role="status" className={`text-sm leading-6 text-[#9e774c] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.occasionNotReady")}</p> : null}
+                  {primaryPhoto ? <img src={primaryPhoto.url} alt="" className="h-auto w-full rounded-2xl border border-[#eadcc6] object-contain" /> : null}
+                </div>
+              ) : null}
             </div>
 
-            {error ? <p role="alert" className={`mt-6 rounded-xl border border-red-300/30 bg-red-950/20 px-4 py-3 text-sm leading-6 text-red-200 ${bodyFont}`}>{error}</p> : null}
-            {notice ? <p role="status" className={`mt-6 rounded-xl border border-[#D4AF37]/40 bg-[#D4AF37]/[0.08] px-4 py-3 text-sm leading-6 text-[#F5E6B8] ${bodyFont}`}>{notice}</p> : null}
+            {error ? <p id="polaroid-question-error" role="alert" className={`mt-6 rounded-xl border border-[#d8b4a0] bg-[#fff1ea] px-4 py-3 text-sm leading-6 text-[#7a3e2b] ${bodyFont}`}>{error}</p> : null}
+            {notice ? <p role="status" className={`mt-6 rounded-xl border border-[#eadcc6] bg-[#fff8ec] px-4 py-3 text-sm leading-6 text-[#594b3c] ${bodyFont}`}>{notice}</p> : null}
 
-            <nav className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6" aria-label="Polaroid questionnaire navigation">
-              <button type="button" onClick={goBack} disabled={step === 1} className={`min-h-12 rounded-xl border border-[#D4AF37]/35 px-5 py-3 text-sm text-[#E3D4BF] transition hover:bg-[#D4AF37]/10 disabled:cursor-not-allowed disabled:opacity-35 ${bodyFont}`}>{t("seasonalPolaroid.flow.backStep")}</button>
+            <nav className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[#eadcc6] pt-6" aria-label="Polaroid questionnaire navigation">
+              <button type="button" onClick={goBack} disabled={step === 1} className={`min-h-12 rounded-xl border border-[#b7a38b] px-5 py-3 text-sm text-[#393129] transition hover:bg-[#f1e5cf] disabled:cursor-not-allowed disabled:opacity-35 ${bodyFont}`}>{t("seasonalPolaroid.flow.backStep")}</button>
               <div className="ml-auto flex flex-wrap justify-end gap-3">
-                <button type="button" onClick={goNext} disabled={step === 6 && authSession.status === "loading"} className={`min-h-12 rounded-xl bg-[#B89A2E] px-6 py-3 text-sm font-medium text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] transition hover:bg-[#D0AE3D] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F3EAD8] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}>
-                  {step === 6 ? (status === "passed" ? t("seasonalPolaroid.flow.createPassed") : t("seasonalPolaroid.flow.createLiving")) : t("seasonalPolaroid.flow.next")}
+                <button type="button" onClick={goNext} disabled={(step === 4 && authSession.status === "loading") || (step === 4 && !occasionReady)} className={`min-h-12 rounded-xl bg-[#9e774c] px-6 py-3 text-sm font-medium text-[#fffaf2] transition hover:bg-[#8d6a43] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9e774c] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}>
+                  {step === 4 ? t("seasonalPolaroid.flow.yearRound.createPolaroid") : t("seasonalPolaroid.flow.next")}
                 </button>
               </div>
             </nav>
           </section>
 
           <aside className="order-1 min-w-0 lg:sticky lg:top-6 lg:order-2" aria-label={t("seasonalPolaroid.flow.preview.label")}>
-            <div className="rounded-[24px] border border-[#D4AF37]/25 bg-[#0D0C0A]/90 p-4 shadow-[0_22px_70px_rgba(0,0,0,0.35)] sm:p-5">
+            <div className="rounded-[24px] border border-[#eadcc6] bg-[#fffbf3] p-4 shadow-[0_8px_28px_rgba(121,92,53,0.08)] sm:p-5">
               <div className="flex items-center justify-between gap-3 px-1">
-                <p className="font-display-en text-[10px] uppercase tracking-[0.28em] text-[#D4AF37]">{t("seasonalPolaroid.flow.preview.label")}</p>
-                <span className="text-lg" aria-hidden="true">🎃</span>
+                <p className="font-display-en text-[10px] uppercase tracking-[0.28em] text-[#9e774c]">{t("seasonalPolaroid.flow.preview.label")}</p>
               </div>
-              <div className="mx-auto mt-4 w-[min(100%,350px)] rotate-[-1deg] rounded-[4px] bg-[#F1E6D2] p-3 pb-7 shadow-[0_22px_44px_rgba(0,0,0,0.52)] transition duration-500 hover:rotate-0 motion-reduce:transform-none">
-                <div className="relative aspect-[4/3] overflow-hidden bg-[radial-gradient(circle_at_70%_18%,rgba(255,167,76,0.32),transparent_22%),linear-gradient(145deg,#1b1021,#6a2d1d)]">
-                  {primaryPhoto ? <img src={primaryPhoto.url} alt={t("polaroidPreviewAlt")} className="absolute inset-0 h-full w-full object-cover brightness-[0.72] saturate-[0.78]" /> : <div className="absolute inset-0 flex flex-col items-center justify-center px-5 text-center text-[#F5D999]"><span className="text-4xl" aria-hidden="true">✦</span><p className={`mt-3 text-xs leading-6 ${bodyFont}`}>{t("seasonalPolaroid.flow.preview.placeholder")}</p></div>}
-                  <span className="absolute inset-0 bg-[linear-gradient(145deg,rgba(30,12,38,0.42),rgba(117,43,20,0.42))]" aria-hidden="true" />
-                  {answers.costume ? <span className="absolute left-3 top-3 rounded-full border border-[#F2B45D]/70 bg-black/45 px-2 py-1 text-xs text-[#FFF0C9]">{optionById(theme.costumes, answers.costume)?.emoji} {label(optionById(theme.costumes, answers.costume) ?? theme.costumes[0])}</span> : null}
-                  <span className="absolute bottom-3 right-3 text-2xl" aria-hidden="true">🎃</span>
-                </div>
-                <div className="pt-3 text-center text-[#4C3829]">
-                  <p className="font-display-en text-[10px] uppercase tracking-[0.3em]">SOUL TRACE</p>
-                  <p className={`mt-1 text-base font-medium ${lang === "ko" ? "font-ko" : "font-display-en !tracking-normal"}`}>{answers.petName || t("polaroid.previewLabel")}</p>
-                  <p className={`mt-1 text-xs ${lang === "ko" ? "font-ko" : "font-display-en !tracking-normal"}`}>{status === "passed" ? t("seasonalPolaroid.flow.preview.statusPassed") : t("seasonalPolaroid.flow.preview.statusLiving")}</p>
-                </div>
+              <div className="mx-auto mt-4 w-[min(100%,350px)]">
+                {answers.themeId ? (
+                  <SeasonalPolaroidFrame
+                    lang={lang}
+                    t={t}
+                    themeId={answers.themeId}
+                    imageUrl={primaryPhoto?.url ?? null}
+                    imageAlt={t("polaroidPreviewAlt")}
+                    memoLines={["", "", "", ""]}
+                    showMemo={false}
+                    placeholder={!primaryPhoto}
+                    className={`${SEASONAL_POLAROID_FRAME_BASE_CLASS} rounded-[12px]`}
+                  />
+                ) : (
+                  <div className="rounded-[18px] border border-[#eadcc6] bg-[#fff8ec] p-3">
+                    <div className="relative overflow-hidden rounded-xl bg-[#f3e6cf]">
+                      {primaryPhoto ? <img src={primaryPhoto.url} alt={t("polaroidPreviewAlt")} className="h-auto w-full object-contain" /> : <div className="flex min-h-40 flex-col items-center justify-center px-5 text-center text-[#857666]"><p className={`text-xs leading-6 ${bodyFont}`}>{t("seasonalPolaroid.flow.preview.placeholder")}</p></div>}
+                    </div>
+                    <div className="pt-3 text-center text-[#4C3829]">
+                      <p className="font-display-en text-[10px] uppercase tracking-[0.3em]">SOUL TRACE</p>
+                      <p className={`mt-1 text-base font-medium ${lang === "ko" ? "font-ko" : "font-display-en !tracking-normal"}`}>{answers.petName || t("polaroid.previewLabel")}</p>
+                      <p className={`mt-1 text-xs ${lang === "ko" ? "font-ko" : "font-display-en !tracking-normal"}`}>{t("seasonalPolaroid.flow.yearRound.themeLabel")}</p>
+                    </div>
+                  </div>
+                )}
+                {answers.themeId ? (
+                  <p className={`mt-3 text-center text-xs text-[#857666] ${bodyFont}`}>{selectedTheme ? polaroidThemeTitle(selectedTheme, lang) : answers.themeId}</p>
+                ) : null}
               </div>
 
-              {step >= 2 && answers.petName ? <div className="mt-5 rounded-2xl border border-[#D4AF37]/22 bg-[#D4AF37]/[0.045] px-4 py-3.5" aria-live="polite">
-                <p className={`text-[10px] uppercase tracking-[0.24em] text-[#D4AF37]/80 ${lang === "ko" ? "font-ko" : "font-display-en"}`}>{t("seasonalPolaroid.flow.preview.whisperLabel")}</p>
-                <p key={`${whisperTrigger.kind}-${"id" in whisperTrigger ? whisperTrigger.id : ""}-${status}`} className={`mt-2 text-sm leading-7 text-[#F4E7D0] animate-fade-in ${bodyFont}`}>“{whisperText}”</p>
+              {step >= 2 && answers.petName ? <div className="mt-5 rounded-2xl border border-[#eadcc6] bg-[#fff8ec] px-4 py-3.5" aria-live="polite">
+                <p className={`text-[10px] uppercase tracking-[0.24em] text-[#9e774c] ${lang === "ko" ? "font-ko" : "font-display-en"}`}>{t("seasonalPolaroid.flow.preview.whisperLabel")}</p>
+                <p key={`${whisperTrigger.kind}-${"id" in whisperTrigger ? whisperTrigger.id : ""}-${status}`} className={`mt-2 text-sm leading-7 text-[#393129] animate-fade-in ${bodyFont}`}>“{whisperText}”</p>
               </div> : null}
 
               {selectedChips.length ? <div className="mt-5">
@@ -1359,7 +1575,36 @@ export function PolaroidEntry({ generationEnabled = false }: PolaroidEntryProps)
           </div>
         </div>
       ) : null}
+      <StoryTabbar current="create" {...storyTabProps(petFirstCopy(lang), null)} />
     </main>
+  );
+}
+
+function ThemeCard({
+  entry,
+  selected,
+  locale,
+  onSelect,
+}: {
+  entry: PolaroidThemeCatalogEntry;
+  selected: boolean;
+  locale: Locale;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onSelect}
+      className={`flex h-full flex-col overflow-hidden rounded-2xl border text-left transition ${selected ? "border-[#9e774c] bg-[#f1e5cf]" : "border-[#eadcc6] bg-[#fff8ec]"}`}
+    >
+      <span className="relative block aspect-square w-full bg-[#f3e6cf]">
+        <img src={entry.thumb} alt="" className="h-full w-full object-contain" />
+        {selected ? <span className="absolute right-2 top-2 rounded-full bg-[#9e774c] px-2 py-0.5 text-[10px] text-[#fffaf2]" aria-hidden="true">✓</span> : null}
+      </span>
+      <span className="block px-3 pt-2 text-sm text-[#393129]">{locale === "ko" ? entry.titleKo : entry.titleEn}</span>
+      <span className="block px-3 pb-3 text-[11px] leading-5 text-[#857666]">{locale === "ko" ? entry.hintKo : entry.hintEn}</span>
+    </button>
   );
 }
 
@@ -1380,7 +1625,7 @@ function OptionGroup({
 
   return (
     <div>
-      {label ? <p className={`mb-3 text-sm text-[#F3EAD8] ${bodyFont}`}>{label}</p> : null}
+      {label ? <p className={`mb-3 text-sm text-[#594b3c] ${bodyFont}`}>{label}</p> : null}
       <div className="grid min-w-0 grid-cols-1 auto-rows-fr gap-3 sm:grid-cols-2">
         {options.map((item) => <ChoiceButton key={item.id} option={item} label={t(optionPath(item))} selected={selected === item.id} onClick={() => onSelect(item.id)} bodyFont={bodyFont} />)}
       </div>
@@ -1412,20 +1657,19 @@ function PhotoSlotView({
   bodyFont: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[#D4AF37]/25 bg-black/20 p-3 sm:p-4">
+    <div className="rounded-2xl border border-[#eadcc6] bg-[#fff8ec] p-3 sm:p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className={`text-sm text-[#F3EAD8] ${bodyFont}`}>{label}</p>
-        {required ? <span className="text-xs text-[#D8B84C]">*</span> : null}
+        <p className={`text-sm text-[#393129] ${bodyFont}`}>{label}</p>
+        {required ? <span className="text-xs text-[#9e774c]">*</span> : null}
       </div>
       <div className="mt-3 flex items-center gap-4">
-        <div className="relative size-24 shrink-0 overflow-hidden rounded-xl border border-dashed border-[#D4AF37]/40 bg-[#17130E] sm:size-28">
-          {photo ? <img src={photo.url} alt="" className="h-full w-full object-cover" /> : <button type="button" onClick={onChoose} className={`flex h-full w-full flex-col items-center justify-center px-2 text-center text-xs text-[#B9AA95] transition hover:bg-[#D4AF37]/10 focus-visible:outline-2 focus-visible:outline-[#D4AF37] ${bodyFont}`}><span className="text-xl" aria-hidden="true">＋</span><span className="mt-1">{emptyLabel}</span></button>}
+        <div className="relative size-24 shrink-0 overflow-hidden rounded-xl border border-[#eadcc6] bg-[#f3e6cf] sm:size-28">
+          {photo ? <img src={photo.url} alt="" className="h-full w-full object-contain" /> : <button type="button" onClick={onChoose} className={`flex h-full w-full flex-col items-center justify-center px-2 text-center text-xs text-[#857666] transition hover:bg-[#f1e5cf] focus-visible:outline-2 focus-visible:outline-[#9e774c] ${bodyFont}`}><span className="text-xl" aria-hidden="true">＋</span><span className="mt-1">{emptyLabel}</span></button>}
         </div>
         <div className="min-w-0 flex-1">
-          {photo ? <p className={`truncate text-xs text-[#B9AA95] ${bodyFont}`}>{photo.file.name}</p> : null}
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" onClick={onChoose} className={`min-h-10 rounded-lg border border-[#D4AF37]/45 px-3 py-2 text-xs text-[#F0D68A] transition hover:bg-[#D4AF37]/10 focus-visible:outline-2 focus-visible:outline-[#D4AF37] ${bodyFont}`}>{photo ? changeLabel : uploadLabel}</button>
-            {photo ? <button type="button" onClick={onRemove} className={`min-h-10 rounded-lg px-2 py-2 text-xs text-[#AFA598] underline underline-offset-4 transition hover:text-red-200 focus-visible:outline-2 focus-visible:outline-[#D4AF37] ${bodyFont}`}>{removeLabel}</button> : null}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={onChoose} className={`min-h-10 rounded-lg border border-[#b7a38b] bg-[#fffaf0] px-3 py-2 text-xs text-[#393129] transition hover:bg-[#f1e5cf] focus-visible:outline-2 focus-visible:outline-[#9e774c] ${bodyFont}`}>{photo ? changeLabel : uploadLabel}</button>
+            {photo ? <button type="button" onClick={onRemove} className={`min-h-10 rounded-lg px-2 py-2 text-xs text-[#857666] underline underline-offset-4 transition hover:text-[#7a3e2b] focus-visible:outline-2 focus-visible:outline-[#9e774c] ${bodyFont}`}>{removeLabel}</button> : null}
           </div>
         </div>
       </div>
@@ -1453,6 +1697,8 @@ function PolaroidGenerationExperience({
   authStatus,
   generationEnabled,
   onDownload,
+  onSave,
+  onShare,
   onRegenerate,
   onStartOver,
   onRetry,
@@ -1476,6 +1722,8 @@ function PolaroidGenerationExperience({
   authStatus: "loading" | "authenticated" | "anonymous";
   generationEnabled: boolean;
   onDownload: () => void;
+  onSave: () => void;
+  onShare: () => void;
   onRegenerate: () => void;
   onStartOver: () => void;
   onRetry: () => void;
@@ -1498,18 +1746,21 @@ function PolaroidGenerationExperience({
   const hasTerminalError = Boolean(generationError && !generationStatus);
 
   return (
-    <main className="relative min-h-[100svh] overflow-x-hidden bg-[radial-gradient(circle_at_16%_16%,rgba(126,48,28,0.24),transparent_28%),radial-gradient(circle_at_86%_12%,rgba(218,151,47,0.16),transparent_24%),radial-gradient(circle_at_50%_92%,rgba(63,24,76,0.22),transparent_42%),#050403] text-[#F3EAD8]">
+    <main className="relative flex min-h-[100svh] flex-col overflow-x-hidden bg-[#fffaf0] text-[#393129]">
       <header className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-4 sm:px-7 md:px-10 md:py-5">
-        <button type="button" onClick={onStartOver} className={`inline-flex min-h-11 w-fit items-center rounded-md text-sm text-[#E8D6B4] transition hover:text-[#FFF4DE] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] sm:text-base ${bodyFont}`}>
+        <button type="button" onClick={onStartOver} className={`inline-flex min-h-11 w-fit items-center rounded-md text-sm text-[#594b3c] transition hover:text-[#9e774c] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9e774c] sm:text-base ${bodyFont}`}>
           {t("seasonalPolaroid.flow.back")}
         </button>
-        <p className="font-display-en text-center text-xs tracking-[0.34em] text-[#E8D6B4] sm:text-sm">SOUL TRACE</p>
-        <div className="justify-self-end"><LanguageToggle /></div>
+        <div className="flex flex-col items-center text-[#6b4a2c]">
+          <BrandMark className="h-8 w-8" />
+          <p className="font-display-en text-center text-sm tracking-[0.06em]">SoulTrace</p>
+        </div>
+        <div className="justify-self-end"><LanguageToggle tone="paper" /></div>
       </header>
 
       <section className="mx-auto flex w-full max-w-[960px] flex-col items-center px-5 pb-16 pt-7 sm:px-8 sm:pt-12" aria-busy={Boolean(generationStatus || imageLoading)}>
         <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37] sm:text-xs">{t("seasonalPolaroid.generation.eyebrow")}</p>
-        <h1 className={`mt-5 text-center text-2xl font-light text-[#F8EAD1] sm:text-4xl ${bodyFont}`}>
+        <h1 className={`mt-5 text-center text-2xl font-light text-[#393129] sm:text-4xl ${bodyFont}`}>
           {generationResult && !generationStatus ? t("seasonalPolaroid.generation.readyTitle") : t("seasonalPolaroid.generation.developingTitle")}
         </h1>
         {petName ? <p className={`mt-3 text-center text-sm text-[#B6AA99] ${bodyFont}`}>{petName}</p> : null}
@@ -1519,6 +1770,7 @@ function PolaroidGenerationExperience({
             polaroidRef={polaroidRef}
             lang={lang}
             t={t}
+            themeId={answers.themeId}
             imageUrl={imageUrl}
             memoLines={memoLines}
             showMemo={Boolean(generationResult && !imageLoading)}
@@ -1549,8 +1801,10 @@ function PolaroidGenerationExperience({
             {saveError ? <p role="alert" className={`mb-4 rounded-xl border border-red-300/25 bg-red-950/20 px-4 py-3 text-center text-sm leading-6 text-red-100 ${bodyFont}`}>{saveError}</p> : null}
             {savedNotice ? <p role="status" className={`mb-4 text-center text-sm text-[#F0CF71] ${bodyFont}`}>{t("seasonalPolaroid.generation.saved")}</p> : null}
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <button type="button" disabled={!generationEnabled || mockMode || isSaving || isDownloading || authStatus === "loading"} onClick={onRegenerate} className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#D4AF37]/55 px-5 py-3 text-sm text-[#F0CF71] transition hover:bg-[#D4AF37]/10 focus-visible:outline-2 focus-visible:outline-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}><LuRefreshCw aria-hidden="true" className="size-4" />{t("seasonalPolaroid.generation.regenerate")}</button>
-              <button type="button" disabled={mockMode || isSaving || isDownloading || authStatus === "loading"} onClick={onDownload} className={`min-h-12 rounded-xl bg-[#B89A2E] px-5 py-3 text-sm font-medium text-black transition hover:bg-[#D0AE3D] focus-visible:outline-2 focus-visible:outline-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}>{isDownloading ? t("seasonalPolaroid.generation.downloading") : t("seasonalPolaroid.generation.download")}</button>
+              <button type="button" disabled={mockMode || isSaving || isDownloading || authStatus === "loading"} onClick={onSave} className={`min-h-12 rounded-xl border border-[#b7a38b] px-5 py-3 text-sm text-[#393129] transition hover:bg-[#f1e5cf] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}>{isSaving ? t("seasonalPolaroid.generation.saving") : t("seasonalPolaroid.generation.save")}</button>
+              <button type="button" disabled={mockMode || isSaving || isDownloading || authStatus === "loading"} onClick={onDownload} className={`min-h-12 rounded-xl bg-[#9e774c] px-5 py-3 text-sm font-medium text-[#fffaf2] transition hover:bg-[#8d6a43] focus-visible:outline-2 focus-visible:outline-[#9e774c] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}>{isDownloading ? t("seasonalPolaroid.generation.downloading") : t("seasonalPolaroid.generation.download")}</button>
+              <button type="button" disabled={mockMode || isSaving || isDownloading} onClick={onShare} className={`min-h-12 rounded-xl border border-[#b7a38b] px-5 py-3 text-sm text-[#393129] transition hover:bg-[#f1e5cf] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.share")}</button>
+              <button type="button" disabled={!generationEnabled || mockMode || isSaving || isDownloading || authStatus === "loading"} onClick={onRegenerate} className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#b7a38b] px-5 py-3 text-sm text-[#393129] transition hover:bg-[#f1e5cf] focus-visible:outline-2 focus-visible:outline-[#9e774c] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}><LuRefreshCw aria-hidden="true" className="size-4" />{t("seasonalPolaroid.generation.regenerate")}</button>
             </div>
             <Link href="/my-polaroids" className={`mt-5 inline-flex min-h-10 items-center justify-center text-sm text-[#D8B84C] underline underline-offset-4 transition hover:text-[#F5E6C8] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] ${bodyFont}`}>
               {t("seasonalPolaroid.generation.viewMyPolaroids")}
@@ -1559,8 +1813,9 @@ function PolaroidGenerationExperience({
         ) : null}
 
         {mockMode ? <p className={`mt-5 rounded-full border border-[#D4AF37]/40 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#D8B84C] ${bodyFont}`}>{t("seasonalPolaroid.generation.mockBadge")}</p> : null}
-        <button type="button" onClick={onStartOver} className={`mt-8 min-h-11 text-sm text-[#B6AA99] underline underline-offset-4 transition hover:text-[#F0CF71] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] ${bodyFont}`}>{t("seasonalPolaroid.generation.startOver")}</button>
+        <button type="button" onClick={onStartOver} className={`mt-8 min-h-11 text-sm text-[#857666] underline underline-offset-4 transition hover:text-[#9e774c] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9e774c] ${bodyFont}`}>{t("seasonalPolaroid.generation.startOver")}</button>
       </section>
+      <StoryTabbar current="create" {...storyTabProps(petFirstCopy(lang), null)} />
     </main>
   );
 }
@@ -1569,6 +1824,7 @@ function PolaroidResultFrame({
   polaroidRef,
   lang,
   t,
+  themeId,
   imageUrl,
   memoLines,
   showMemo,
@@ -1578,6 +1834,7 @@ function PolaroidResultFrame({
   polaroidRef: RefObject<HTMLDivElement | null>;
   lang: Locale;
   t: (path: string) => string;
+  themeId: string;
   imageUrl: string | null;
   memoLines: string[];
   showMemo: boolean;
@@ -1590,6 +1847,7 @@ function PolaroidResultFrame({
       polaroidRef={polaroidRef}
       lang={lang}
       t={t}
+      themeId={themeId}
       imageUrl={imageUrl}
       memoLines={memoLines}
       showMemo={showMemo}

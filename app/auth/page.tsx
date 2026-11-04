@@ -36,6 +36,8 @@ export default async function AuthPage({
 
   const authError = Array.isArray(params.authError) ? params.authError[0] : params.authError;
   const passwordUpdated = params.passwordUpdated === "1";
+  const modeParam = Array.isArray(params.mode) ? params.mode[0] : params.mode;
+  const initialMode = modeParam === "signin" || modeParam === "signup" ? modeParam : undefined;
   const initialAuthError = authError === "verification_failed"
     ? "invalid_link"
     : authError === "claim_failed"
@@ -47,6 +49,7 @@ export default async function AuthPage({
       returnTo={returnTo}
       initialAuthError={initialAuthError}
       passwordUpdated={passwordUpdated}
+      initialMode={initialMode}
     />
   );
 }

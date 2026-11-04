@@ -44,7 +44,9 @@ async function compileFrameModule(): Promise<string> {
     transform: (code: string, options: Record<string, unknown>) => Promise<{ code: string }>;
   };
   await swc.loadBindings();
-  const source = readFileSync("components/seasonal-polaroid-frame.tsx", "utf8");
+  const source = `${readFileSync("lib/polaroid-frames.ts", "utf8")}\n${readFileSync("components/seasonal-polaroid-frame.tsx", "utf8")
+    .replace(/^"use client";/m, "")
+    .replace(/import \{ polaroidFrameLayout \} from "@\/lib\/polaroid-frames";/, "")}`;
   const { code } = await swc.transform(source, {
     filename: "seasonal-polaroid-frame.tsx",
     jsc: { parser: { syntax: "typescript", tsx: true }, transform: { react: { runtime: "automatic" } }, target: "es2022" },

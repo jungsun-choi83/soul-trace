@@ -1,9 +1,10 @@
-import { WelcomeExperience } from "@/components/welcome-experience";
+import { EntryChoice } from "@/components/entry-choice";
+import { HomeEntry } from "@/components/home-entry";
 import { PartnerEntryFallback } from "@/components/partner-entry-fallback";
 import { PartnerEntryRedirect } from "@/components/partner-entry-redirect";
 import { looksLikePartnerCode, PARTNER_CODE_PARAM, resolvePartnerCode } from "@/lib/partner";
 import { partnerEntryDestination } from "@/lib/partner-entry";
-import { hrefWithSearchParams, type ServerSearchParams } from "@/lib/search-params";
+import type { ServerSearchParams } from "@/lib/search-params";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/site-url";
 import type { Metadata } from "next";
@@ -39,11 +40,9 @@ export default async function WelcomePage({
     );
   }
 
-  const choiceHref = hrefWithSearchParams("/choose", params);
-
   return (
-    <WelcomeExperience
-      choiceHref={choiceHref}
-    />
+    <HomeEntry>
+      <EntryChoice />
+    </HomeEntry>
   );
 }

@@ -7,9 +7,13 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRightIcon } from "./icons";
 import styles from "./homepage.module.css";
 import { getEternalBeamMainUrl } from "@/lib/eternalbeam-urls";
+import { isPetFirstArchiveEnabled, petFirstCopy } from "@/lib/pet-first-archive";
 
 export function FinalCta({ choiceHref }: { choiceHref: string }) {
   const { lang, t } = useLocale();
+  const petFirst = isPetFirstArchiveEnabled();
+  const recordCopy = petFirstCopy(lang);
+  const recordHref = "/my/pets";
   const sectionRef = useRef<HTMLElement>(null);
   const [environmentVisible, setEnvironmentVisible] = useState(false);
   const display =
@@ -81,12 +85,23 @@ export function FinalCta({ choiceHref }: { choiceHref: string }) {
         </div>
         <div>
           <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:mt-8 sm:flex-row sm:gap-3">
+            {petFirst ? (
+              <Link
+                href={recordHref}
+                className={`${display} group inline-flex min-h-11 w-auto max-w-full items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-5 py-3 text-xs font-medium text-[#0b0a09] transition hover:bg-[#d8b463] sm:min-h-12 sm:px-8 sm:py-4 sm:text-sm`}
+              >
+                {recordCopy.recordCta}
+                <ArrowRightIcon className="size-4 shrink-0 transition-transform group-hover:translate-x-1" />
+              </Link>
+            ) : null}
             <Link
               href={choiceHref}
-              className={`${display} group inline-flex min-h-11 w-auto max-w-full items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-5 py-3 text-xs font-medium text-[#0b0a09] transition hover:bg-[#d8b463] sm:min-h-12 sm:px-8 sm:py-4 sm:text-sm`}
+              className={petFirst
+                ? `${display} ${styles.finalCtaSecondaryButton} inline-flex min-h-11 w-auto max-w-full items-center justify-center rounded-full px-5 py-3 text-xs sm:min-h-12 sm:px-8 sm:py-4 sm:text-sm`
+                : `${display} group inline-flex min-h-11 w-auto max-w-full items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-5 py-3 text-xs font-medium text-[#0b0a09] transition hover:bg-[#d8b463] sm:min-h-12 sm:px-8 sm:py-4 sm:text-sm`}
             >
-              {t("homepage.finalCta.primary")}
-              <ArrowRightIcon className="size-4 shrink-0 transition-transform group-hover:translate-x-1" />
+              {petFirst ? recordCopy.letterCta : t("homepage.finalCta.primary")}
+              {petFirst ? null : <ArrowRightIcon className="size-4 shrink-0 transition-transform group-hover:translate-x-1" />}
             </Link>
             <a
               href={getEternalBeamMainUrl()}

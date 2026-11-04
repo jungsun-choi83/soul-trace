@@ -45,7 +45,7 @@ export function PasswordUpdateForm({ returnTo }: { returnTo: string }) {
   };
 
   return (
-    <main className="relative isolate flex min-h-[100svh] items-center justify-center overflow-hidden bg-black px-6 py-10 text-[#F3EAD8] sm:px-8">
+    <main className="relative isolate flex min-h-[100svh] items-center justify-center overflow-x-clip overflow-y-auto bg-black px-6 py-10 text-[#F3EAD8] sm:px-8">
       <section className="w-full max-w-[460px] rounded-[22px] border border-[#D4AF37]/30 bg-[rgba(16,14,11,0.86)] px-5 py-8 shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:px-8 sm:py-10">
         <div className="flex justify-end"><LanguageToggle /></div>
         <h1 className={`mt-5 text-center text-3xl font-light text-[#FFF6E5] ${bodyFont}`}>{t("auth.recovery.updateTitle")}</h1>

@@ -31,6 +31,7 @@ test("only Letter cards reset the session before navigation", () => {
   const choice = readFileSync("components/mode-choice.tsx", "utf8");
   assert.match(choice, /onClick=\{\(\) => startLetter\("living"\)\}/);
   assert.match(choice, /onClick=\{\(\) => startLetter\("memorial"\)\}/);
-  assert.match(choice, /kind="polaroid"[\s\S]*?seasonal/);
-  assert.doesNotMatch(choice, /kind="polaroid"[\s\S]*?onClick=\{\(\) => startLetter/);
+  const polaroidLink = choice.slice(choice.indexOf("href={polaroidHref}"), choice.indexOf("href={polaroidHref}") + 180);
+  assert.match(polaroidLink, /href=\{polaroidHref\}/);
+  assert.doesNotMatch(polaroidLink, /startLetter/);
 });
