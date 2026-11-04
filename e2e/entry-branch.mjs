@@ -37,7 +37,7 @@ try {
     const page = await context.newPage();
 
     await openChoice(page);
-    await page.getByRole("link", { name: "함께 있는 아이로 시작하기" }).click();
+    await page.getByTestId("living-choice").click();
     await page.waitForURL(/\/dashboard\/living/, { timeout: 20000 });
     const livingHeading = await page.getByRole("heading", { name: "우리 아이와 함께하는 오늘" }).isVisible();
     const livingHall = await page.getByRole("link", { name: "추모관", exact: true }).count();
@@ -71,7 +71,7 @@ try {
     const memorialContext = await browser.newContext({ viewport: { width, height: 844 } });
     const memorial = await memorialContext.newPage();
     await openChoice(memorial);
-    await memorial.getByRole("link", { name: "구름 위의 아이로 시작하기" }).click();
+    await memorial.getByTestId("memorial-choice").click();
     await memorial.waitForURL(/\/dashboard\/memorial/, { timeout: 20000 });
     const memorialHeading = await memorial.getByRole("heading", { name: "우리 아이와 함께했던 소중한 순간들" }).isVisible();
     const memorialCollar = await memorial.getByRole("link", { name: "목걸이", exact: true }).count();

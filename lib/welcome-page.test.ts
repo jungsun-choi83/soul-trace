@@ -37,10 +37,16 @@ test("splash is followed by two different home choices", () => {
   assert.match(page, /<EntryChoice \/>/);
   assert.match(choice, /entryHomePath\("living"/);
   assert.match(choice, /entryHomePath\("memorial"/);
+  assert.match(choice, /testId="living-choice"/);
+  assert.match(choice, /testId="memorial-choice"/);
+  assert.match(choice, /data-testid=\{testId\}/);
+  assert.match(choice, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(choice, /aspect-\[1\/1\.05\]/);
+  assert.match(choice, /오늘을 기록하고, 새 추억을 만들어요/);
+  assert.match(choice, /소중했던 순간을 오래 간직해요/);
+  assert.doesNotMatch(choice, /StoryTabbar|grid-cols-1|flex-col gap-4/);
   assert.match(readFileSync("lib/entry-branch.ts", "utf8"), /\/dashboard\/living/);
   assert.match(readFileSync("lib/entry-branch.ts", "utf8"), /\/dashboard\/memorial/);
-  assert.match(choice, /함께 있는 아이로 시작하기/);
-  assert.match(choice, /구름 위의 아이로 시작하기/);
   assert.doesNotMatch(page, /redirect\("\/splash"\)|href="\/splash"/);
 });
 
