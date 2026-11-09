@@ -1,4 +1,4 @@
-import { EntryChoice } from "@/components/entry-choice";
+import { FreeTrialStart } from "@/components/free-trial-start";
 import { HomeEntry } from "@/components/home-entry";
 import { PartnerEntryFallback } from "@/components/partner-entry-fallback";
 import { PartnerEntryRedirect } from "@/components/partner-entry-redirect";
@@ -42,7 +42,7 @@ export default async function WelcomePage({
 
   return (
     <HomeEntry>
-      <EntryChoice />
+      <FreeTrialStart />
     </HomeEntry>
   );
 }

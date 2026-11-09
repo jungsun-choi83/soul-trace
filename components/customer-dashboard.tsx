@@ -6,7 +6,7 @@ import { StoryBrandHeader } from "@/components/storybook/story-chrome";
 import { StoryScene } from "@/components/storybook/story-scene";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
 import { beamSceneHref, memorialSpaceHref, moodJournalHref, polaroidHrefFromArchive } from "@/lib/memory-library";
-import { UIUX_GARDEN_CLEAN, UIUX_GARDEN_HERO, UIUX_ROOM_ART } from "@/lib/uiux-art";
+import { POSE_ART } from "@/lib/pose-art";
 import { letterPathForLifeStatus, type LifeStatus } from "@/lib/pet-first-archive";
 import type { HomePet, HomeRecent } from "@/lib/pet-first-archive-data";
 import { fill, petFirstCopy, withKoreanWa, type PetFirstCopy } from "@/lib/storybook-copy";
@@ -191,7 +191,7 @@ export function CustomerDashboard({
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <Link href={`${albumHref}#album`} className="st-card overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={UIUX_ROOM_ART} alt="" className="aspect-[5/3] w-full object-cover object-[center_30%]" />
+                    <img src={POSE_ART.shibaHome} alt="" className="aspect-[5/3] w-full bg-[#f6efe2] object-contain object-center" />
                     <div className="px-4 py-3">
                       <h3 className="font-medium">{copy.tidyMemories}</h3>
                       <p className="mt-1 text-sm text-[color:var(--st-text-soft)]">{copy.tidyMemoriesBody}</p>
@@ -199,7 +199,7 @@ export function CustomerDashboard({
                   </Link>
                   <Link href={`${albumHref}#album`} className="st-card overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={UIUX_GARDEN_CLEAN} alt="" className="aspect-[5/3] w-full object-cover object-[center_35%]" />
+                    <img src={POSE_ART.corgiSpring} alt="" className="aspect-[5/3] w-full bg-[#f6efe2] object-contain object-center" />
                     <div className="px-4 py-3">
                       <h3 className="font-medium">{copy.monthBest}</h3>
                       <p className="mt-1 text-sm text-[color:var(--st-text-soft)]">{fill(copy.monthBestBody, { NAME: active.petName })}</p>
@@ -261,11 +261,11 @@ function HomeBranch({
 }
 
 function PetHero({ pet }: { pet: HomePet }) {
-  const src = pet.avatarUrl || UIUX_GARDEN_HERO;
+  const src = pet.avatarUrl || POSE_ART.shibaHome;
   return (
     <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-[22px] bg-[#f8f2e5]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className="h-full w-full object-cover object-[center_22%]" />
+      <img src={src} alt="" className={`h-full w-full object-center ${pet.avatarUrl ? "object-cover" : "object-contain"}`} />
     </div>
   );
 }

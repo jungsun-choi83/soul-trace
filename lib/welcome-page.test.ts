@@ -31,10 +31,14 @@ test("homepage and letter result do not show Kickstarter", () => {
   assert.doesNotMatch(flow, /Kickstarter|KICKSTARTER|kickstarter-promo/);
 });
 
-test("splash is followed by two different home choices", () => {
+test("splash is followed by the free polaroid start, and the archive choice stays available", () => {
   const choice = readFileSync("components/entry-choice.tsx", "utf8");
+  const start = readFileSync("components/free-trial-start.tsx", "utf8");
   assert.match(page, /<HomeEntry>/);
-  assert.match(page, /<EntryChoice \/>/);
+  assert.match(page, /<FreeTrialStart \/>/);
+  assert.match(start, /우리아이 첫 폴라로이드 만들기/);
+  assert.doesNotMatch(start, /첫 폴라로이드 무료|eyebrow/);
+  assert.match(start, /href="\/try"/);
   assert.match(choice, /entryHomePath\("living"/);
   assert.match(choice, /entryHomePath\("memorial"/);
   assert.match(choice, /testId="living-choice"/);
@@ -51,7 +55,7 @@ test("splash is followed by two different home choices", () => {
 });
 
 test("root partner routing and the welcome alias remain intact", () => {
-  assert.match(page, /EntryChoice/);
+  assert.match(page, /FreeTrialStart/);
   assert.match(page, /HomeEntry/);
   assert.match(page, /resolvePartnerCode/);
   assert.match(page, /PartnerEntryRedirect/);
@@ -65,6 +69,6 @@ test("root partner routing and the welcome alias remain intact", () => {
 
 test("homepage still lives at / and is not replaced by splash", () => {
   assert.match(page, /<HomeEntry>/);
-  assert.match(page, /<EntryChoice \/>/);
+  assert.match(page, /<FreeTrialStart \/>/);
   assert.doesNotMatch(page, /redirect\("\/splash"\)|href="\/splash"/);
 });

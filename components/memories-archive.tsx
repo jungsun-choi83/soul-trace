@@ -12,6 +12,7 @@ import {
   type MemoryLibraryItem,
 } from "@/lib/memory-library";
 import type { LifeStatus } from "@/lib/pet-first-archive";
+import { POSE_ART } from "@/lib/pose-art";
 import { petFirstCopy } from "@/lib/storybook-copy";
 import { storyTabProps } from "@/lib/story-tabs";
 import Link from "next/link";
@@ -215,9 +216,15 @@ export function MemoriesArchive({
         {loading ? <p className="mt-6 text-sm text-[#6b5846]">추억을 불러오는 중이에요.</p> : null}
 
         {access !== "owner" || !pet || loading || loadError ? null : visible.length === 0 ? (
-          <p data-testid="memories-empty" className="mt-6 text-sm leading-6 text-[#6b5846]">
-            {favoritesOnly && photos.length ? "즐겨찾기한 사진이 아직 없어요." : EMPTY_COPY}
-          </p>
+          <div className="mt-6">
+            {favoritesOnly && photos.length ? null : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={POSE_ART.shibaHome} alt="" className="aspect-[4/3] w-full rounded-[22px] bg-[#f6efe2] object-contain object-center" />
+            )}
+            <p data-testid="memories-empty" className="mt-4 text-sm leading-6 text-[#6b5846]">
+              {favoritesOnly && photos.length ? "즐겨찾기한 사진이 아직 없어요." : EMPTY_COPY}
+            </p>
+          </div>
         ) : (
           <section id="months" data-testid="memories-months" className="mt-6 grid gap-6">
             {groups.map((month) => (
@@ -272,6 +279,8 @@ function GuestImport({
 }) {
   return (
     <section className="mt-5 grid gap-3">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={POSE_ART.shibaHome} alt="" className="aspect-[4/3] w-full rounded-[22px] bg-[#f6efe2] object-contain object-center" />
       <p data-testid="memories-empty" className="text-sm leading-6 text-[#6b5846]">{EMPTY_COPY}</p>
       <label className="st-btn st-btn-forest w-full">
         사진 가져오기

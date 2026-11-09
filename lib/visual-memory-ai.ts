@@ -60,7 +60,8 @@ export type PetImageGenerationInput = {
   openai: OpenAI;
   references: readonly PetImageReference[];
   prompt: string;
-  size: "1024x1024" | "1024x1536";
+  size: "1024x1024" | "1024x1536" | "1536x1024";
+  quality?: "low" | "medium" | "high";
   logLabel?: string;
 };
 
@@ -118,6 +119,7 @@ export async function generatePetReferenceImage({
   references,
   prompt,
   size,
+  quality = "medium",
   logLabel = "pet-image",
 }: PetImageGenerationInput): Promise<VisualMemoryImageGenerationResult> {
   if (!references.length) throw new Error("At least one pet reference is required.");
@@ -132,7 +134,7 @@ export async function generatePetReferenceImage({
       prompt,
       n: 1,
       size,
-      quality: "medium",
+      quality,
       output_format: "jpeg",
       output_compression: 85,
     }, OPENAI_IMAGE_OPTIONS);

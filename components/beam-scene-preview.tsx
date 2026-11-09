@@ -14,6 +14,7 @@ import {
   type MemoryLibraryItem,
 } from "@/lib/memory-library";
 import type { PetProfile } from "@/lib/pet-first-archive-data";
+import { POSE_ART } from "@/lib/pose-art";
 import { petFirstCopy } from "@/lib/pet-first-archive";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -95,7 +96,7 @@ export function BeamScenePreview({
     <div className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-5 sm:pt-8">
         <StoryBrandHeader backHref={`/my/pets/${petId}#album`} backLabel={copy.albumTitle} />
-        <UiuxHero title={copy.beamSceneTitle} body={copy.beamSceneBody} />
+        <UiuxHero src={POSE_ART.shibaAutumn} title={copy.beamSceneTitle} body={copy.beamSceneBody} />
         <p className="st-eyebrow mt-4">{copy.beamSceneEyebrow}</p>
         <p className="mt-2 text-xs text-[color:var(--st-text-soft)]">{copy.beamNoPlayback}</p>
 
@@ -106,7 +107,10 @@ export function BeamScenePreview({
             {assets.original ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={assets.original} alt={draft.title} className="absolute inset-x-[12%] bottom-[8%] top-[18%] object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.45)]" />
-            ) : null}
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={POSE_ART.shibaSpring} alt="" className="absolute inset-x-[8%] bottom-[6%] top-[12%] object-contain object-center" />
+            )}
           </div>
           <figcaption className="space-y-1 px-5 py-4">
             <p className="st-headline text-xl">{draft.title || copy.beamSceneName}</p>

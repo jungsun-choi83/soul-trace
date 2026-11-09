@@ -7,7 +7,7 @@ import { StoryScene } from "@/components/storybook/story-scene";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
 import { type LifeStatus } from "@/lib/pet-first-archive";
 import { petFirstCopy } from "@/lib/storybook-copy";
-import { UIUX_GARDEN_CLEAN } from "@/lib/uiux-art";
+import { POSE_ART } from "@/lib/pose-art";
 import type { ReactNode } from "react";
 
 export function StorybookShell({
@@ -32,7 +32,7 @@ export function StorybookShell({
         <StoryBrandHeader backHref={backHref} />
         {creating ? (
           <>
-            <UiuxHero src={UIUX_GARDEN_CLEAN} title={copy.setupTitle} body={copy.setupBody} />
+            <UiuxHero src={POSE_ART.shibaSpring} title={copy.setupTitle} body={copy.setupBody} />
             <p className="st-eyebrow mt-6">{copy.helloLittle}</p>
             <StoryScene scene="portrait" className="mt-5 rounded-[15px]" />
           </>

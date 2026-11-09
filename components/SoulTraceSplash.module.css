@@ -1,7 +1,11 @@
-.screen{position:fixed;inset:0;z-index:1000;overflow:hidden;background:#1c2418;isolation:isolate;color:#fff8e8;transition:opacity 400ms ease-out}
+.screen{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;overflow:hidden;background:#f6efe2;isolation:isolate;color:#2f3a28;transition:opacity 400ms ease-out}
 .leaving{opacity:0;pointer-events:none}
-.scene{object-fit:cover;object-position:center 36%;z-index:0}
-.visuallyHidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.sceneFrame{position:relative;flex:1 1 auto;min-height:0}
+.scene{object-fit:contain;object-position:center bottom}
+.identity{flex:0 0 auto;padding:18px 24px max(28px,env(safe-area-inset-bottom));text-align:center}
+.wordmark{font-family:Georgia,'Times New Roman',serif;font-size:clamp(2.2rem,9vw,3.2rem);font-weight:400;letter-spacing:.02em;line-height:1.05;color:#2f4a32}
+.tagline{margin:10px 0 0;font-size:15px;line-height:1.7;color:#5c5144}
+.loading{margin:14px 0 0;font-size:12px;letter-spacing:.12em;text-transform:lowercase;color:#8a7358}
 .srOnly{position:absolute;top:12px;left:12px;transform:translateY(-200%);background:#fff;color:#111;padding:10px;z-index:2}
 .srOnly:focus{transform:none}
 @media(prefers-reduced-motion:reduce){.screen{animation:none!important;transition:none!important}}

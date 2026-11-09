@@ -1,4 +1,5 @@
 import { FlowNote } from "@/components/flow-note";
+import { POSE_ART } from "@/lib/pose-art";
 import type { LifeStatus } from "@/lib/pet-first-archive";
 import type { ServerSearchParams } from "@/lib/search-params";
 import type { Metadata } from "next";
@@ -16,6 +17,7 @@ export default async function BeamDeviceInfoPage({
   const lifeStatus: LifeStatus = value === "memorial" ? "memorial" : value === "living" ? "living" : "unspecified";
   return (
     <FlowNote
+      art={POSE_ART.shibaHome}
       lifeStatus={lifeStatus}
       tab="memories"
       title="Eternal Beam 기기 안내"

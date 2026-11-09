@@ -8,7 +8,7 @@ import { StoryTabbar } from "@/components/storybook/story-tabbar";
 import { letterPathForLifeStatus } from "@/lib/pet-first-archive";
 import type { HomePet } from "@/lib/pet-first-archive-data";
 import { petFirstCopy } from "@/lib/storybook-copy";
-import { UIUX_GARDEN_HERO } from "@/lib/uiux-art";
+import { POSE_ART } from "@/lib/pose-art";
 import Link from "next/link";
 
 export function PetRoster({ pets }: { pets: HomePet[] }) {
@@ -20,7 +20,7 @@ export function PetRoster({ pets }: { pets: HomePet[] }) {
     <div className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-5 sm:pt-8">
         <StoryBrandHeader backHref="/dashboard" settingsHref="/settings" settingsLabel={copy.settingsTitle} />
-        <UiuxHero src={UIUX_GARDEN_HERO} title={copy.myPets} body={copy.emptyPets} />
+        <UiuxHero src={POSE_ART.shibaAutumn} title={copy.myPets} body={copy.emptyPets} />
 
         {!active ? (
           <section className="st-card mt-6 px-5 py-6">
@@ -40,7 +40,7 @@ export function PetRoster({ pets }: { pets: HomePet[] }) {
                       <img src={pet.avatarUrl} alt="" className="size-14 rounded-full object-cover" />
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={UIUX_GARDEN_HERO} alt="" className="size-14 rounded-full object-cover object-[center_22%]" />
+                      <img src={POSE_ART.shibaSpring} alt="" className="size-14 rounded-full bg-[#f6efe2] object-contain object-center" />
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block font-medium">{pet.petName}</span>

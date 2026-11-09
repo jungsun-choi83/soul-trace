@@ -12,7 +12,8 @@ import {
 import type { HomePet, HomeRecent } from "@/lib/pet-first-archive-data";
 import { petFirstCopy } from "@/lib/storybook-copy";
 import { storyTabProps } from "@/lib/story-tabs";
-import { UIUX_GARDEN_HERO } from "@/lib/uiux-art";
+import { FreePolaroidNotice } from "@/components/free-polaroid-notice";
+import { POSE_ART } from "@/lib/pose-art";
 import Link from "next/link";
 
 const COPY = {
@@ -78,12 +79,11 @@ export function LivingHome({
     <div data-testid="living-home" className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-4">
         <StoryBrandHeader homeHref={entryHomePath("living", petId)} settingsHref={signedIn ? "/settings" : authEntryPath("/dashboard/living")} settingsLabel={tabs.settingsTitle} />
-        <section className="relative mt-4 overflow-hidden rounded-[22px] bg-[#f8f2e5]">
+        <section className="mt-4 overflow-hidden rounded-[22px] bg-[#f8f2e5]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={UIUX_GARDEN_HERO} alt="" className="aspect-[4/3] w-full object-cover object-[center_42%]" />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#24321f]/80 to-transparent px-4 pb-4 pt-12">
-            <h1 className="st-headline text-[clamp(1.25rem,5.4vw,1.55rem)] leading-snug !tracking-[-0.03em] text-[#fff8ea]">{copy.title}</h1>
-          </div>
+          <img src={POSE_ART.shibaHome} alt="" className="aspect-[4/3] w-full bg-[#f6efe2] object-contain object-center" />
+          <h1 className="st-headline px-4 py-3 text-[clamp(1.25rem,5.4vw,1.55rem)] leading-snug !tracking-[-0.03em] text-[#3a452f]">{copy.title}</h1>
+          {signedIn && petId ? <div className="px-4 pb-3"><FreePolaroidNotice petId={petId} /></div> : null}
         </section>
 
         <PetSwitch
@@ -108,7 +108,19 @@ export function LivingHome({
 
         <section className="mt-6" aria-labelledby="living-months">
           <h2 id="living-months" className="st-headline text-xl text-[#3a452f]">{copy.monthTitle}</h2>
-          {months.length === 0 ? <p className="mt-2 text-sm text-[#6b5846]">{copy.monthlyEmpty}</p> : null}
+          {months.length === 0 ? (
+            <>
+              <ul className="mt-3 grid grid-cols-3 gap-2">
+                {[POSE_ART.shibaSpring, POSE_ART.shibaAutumn, POSE_ART.corgiSpring].map((src) => (
+                  <li key={src}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt="" className="aspect-square w-full rounded-[16px] bg-[#f6efe2] object-contain object-center" />
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-sm text-[#6b5846]">{copy.monthlyEmpty}</p>
+            </>
+          ) : null}
           <ul className="mt-3 grid gap-2">
             {months.map(([month, items]) => (
               <li key={month}>

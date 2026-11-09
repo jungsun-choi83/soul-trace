@@ -4,7 +4,7 @@ import { useLocale } from "@/components/locale-provider";
 import { StoryBrandHeader } from "@/components/storybook/story-chrome";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
 import { authEntryPath } from "@/lib/auth-redirect";
-import { CLEAN_ART } from "@/lib/design-art";
+import { POSE_ART } from "@/lib/pose-art";
 import {
   entryHomePath,
   petsOnBranch,
@@ -81,12 +81,10 @@ export function MemorialHome({
     <div data-testid="memorial-home" className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-4">
         <StoryBrandHeader homeHref={entryHomePath("memorial", petId)} settingsHref={signedIn ? "/settings" : authEntryPath("/dashboard/memorial")} settingsLabel={tabs.settingsTitle} />
-        <section className="relative mt-4 overflow-hidden rounded-[22px] bg-[#efe6d6]">
+        <section className="mt-4 overflow-hidden rounded-[22px] bg-[#efe6d6]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={CLEAN_ART.nightWindow} alt="" className="aspect-[4/3] w-full object-cover object-[center_62%]" />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#2a313c]/78 to-transparent px-4 pb-4 pt-12">
-            <h1 className="st-headline text-[clamp(1.2rem,5vw,1.5rem)] leading-snug !tracking-[-0.03em] text-[#fff8ea]">{copy.title}</h1>
-          </div>
+          <img src={POSE_ART.shibaAutumn} alt="" className="aspect-[4/3] w-full bg-[#efe6d6] object-contain object-center" />
+          <h1 className="st-headline px-4 py-3 text-[clamp(1.2rem,5vw,1.5rem)] leading-snug !tracking-[-0.03em] text-[#3a3428]">{copy.title}</h1>
         </section>
 
         {here.length > 0 ? (

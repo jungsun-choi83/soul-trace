@@ -1,4 +1,5 @@
 import { parsePetCreateInput, petInsertRow } from "@/lib/pet-first-archive";
+import { trialLedger } from "@/lib/pet-free-trial";
 import { ensureOwnerRow, privateJson, requirePetFirstUser } from "@/lib/pet-first-archive-server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
@@ -62,6 +63,13 @@ export async function POST(request: Request) {
   const writer = admin ?? access.supabase;
   const created = await writer.from("soul_trace_pets").insert(row).select(FULL_SELECT).single();
   if (!created.error && created.data) {
+    trialLedger().attachOwnedPet({
+      petId: created.data.pet_id,
+      userId: access.user.id,
+      name: created.data.pet_name,
+      now: Date.now(),
+      enforceCap: true,
+    });
     return privateJson(publicPet(created.data), 201);
   }
 
@@ -72,6 +80,13 @@ export async function POST(request: Request) {
     .select(BASE_SELECT)
     .single();
   if (!fallback.error && fallback.data) {
+    trialLedger().attachOwnedPet({
+      petId: fallback.data.pet_id,
+      userId: access.user.id,
+      name: fallback.data.pet_name,
+      now: Date.now(),
+      enforceCap: true,
+    });
     return privateJson(publicPet({ ...fallback.data, ...parsed.value, adopted_on: parsed.value.adoptedOn }), 201);
   }
 

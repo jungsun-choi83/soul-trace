@@ -25,7 +25,8 @@ test("splash uses the official standalone gouache scene, not a generated stand-i
   assert.equal(existsSync("public/images/soultrace-splash-background.png"), true);
   assert.equal(existsSync("public/images/soultrace-splash-standalone.png"), true);
   assert.equal(existsSync("public/images/uiux/garden-path.png"), true);
-  assert.equal(SPLASH_ART_SRC, "/images/uiux/garden-path.png");
+  assert.equal(SPLASH_ART_SRC, "/images/poses/shiba-autumn.jpg");
+  assert.equal(existsSync("public/images/poses/shiba-autumn.jpg"), true);
   assert.match(standalone, /SPLASH_ART_SRC/);
   assert.match(standalone, /SoulTrace/);
   assert.match(standalone, /splash\.tagline/);
@@ -58,7 +59,7 @@ test("splash is session-scoped so first entry is not repeated or held", () => {
 });
 
 test("home, letter, polaroid, and archive routes stay in place", () => {
-  assert.match(page, /<EntryChoice \/>/);
+  assert.match(page, /<FreeTrialStart \/>/);
   assert.match(page, /<HomeEntry>/);
   assert.match(welcome, /choiceHref/);
   assert.match(welcome, /\/create/);

@@ -1,18 +1,18 @@
-import { CLEAN_ART, cleanArtSize } from "@/lib/design-art";
+import { POSE_ART, poseSize } from "@/lib/pose-art";
 import Image from "next/image";
 import type { ReactNode } from "react";
 
-/** Clean original illustrations only. Composites with status bars or baked UI copy are excluded. */
+/** Demo pose illustrations. Owner-uploaded photos stay on their own image tags. */
 export const STORY_SCENES = {
-  splash: CLEAN_ART.livingHero,
-  home: CLEAN_ART.livingHero,
-  livingroom: CLEAN_ART.livingHero,
-  timeline: CLEAN_ART.walk,
-  letter: CLEAN_ART.running,
-  memorial: CLEAN_ART.nightWindow,
-  monthly: CLEAN_ART.walk,
-  portrait: CLEAN_ART.running,
-  bloom: CLEAN_ART.livingHero,
+  splash: POSE_ART.shibaAutumn,
+  home: POSE_ART.shibaHome,
+  livingroom: POSE_ART.shibaHome,
+  timeline: POSE_ART.corgiAutumn,
+  letter: POSE_ART.shibaSpring,
+  memorial: POSE_ART.shibaAutumn,
+  monthly: POSE_ART.shibaSpring,
+  portrait: POSE_ART.shibaSpring,
+  bloom: POSE_ART.corgiSpring,
 } as const;
 
 export type StorySceneName = keyof typeof STORY_SCENES;
@@ -31,7 +31,7 @@ export function StoryScene({
   children?: ReactNode;
 }) {
   const src = STORY_SCENES[scene];
-  const size = cleanArtSize(src);
+  const size = poseSize(src);
   return (
     <div className={`st-scene ${className}`}>
       <Image

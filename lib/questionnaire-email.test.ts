@@ -23,7 +23,7 @@ test("Living can be entered without an authentication redirect", () => {
 
 test("Memorial can be entered without an authentication redirect", () => {
   assert.doesNotMatch(memorial, /authEntryPath|redirect\([^)]*auth|auth\.getUser/);
-  assert.match(welcome, /EntryChoice/);
+  assert.match(welcome, /FreeTrialStart/);
   assert.doesNotMatch(welcome, /authEntryPath|auth\.getUser/);
 });
 
