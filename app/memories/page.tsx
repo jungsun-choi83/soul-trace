@@ -23,17 +23,22 @@ export default async function MemoriesPage({
   const params = await searchParams;
   const raw = params.pet;
   const requested = Array.isArray(raw) ? raw[0] : raw ?? null;
+  const viewRaw = params.view;
+  const view = (Array.isArray(viewRaw) ? viewRaw[0] : viewRaw) === "months" ? "months" : "archive";
+  const monthRaw = params.month;
+  const monthValue = Array.isArray(monthRaw) ? monthRaw[0] : monthRaw;
+  const month = monthValue && /^\d{4}-\d{2}$/.test(monthValue) ? monthValue : null;
   const supabase = await createSupabaseAuthServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
   if (!supabase || !user) {
-    return <MemoriesArchive access="guest" pets={[]} selectedPetId={null} />;
+    return <MemoriesArchive access="guest" pets={[]} selectedPetId={null} view={view} month={month} />;
   }
   if (!isPetFirstArchiveEnabled()) {
-    return <MemoriesArchive access="unavailable" pets={[]} selectedPetId={null} />;
+    return <MemoriesArchive access="unavailable" pets={[]} selectedPetId={null} view={view} month={month} />;
   }
 
   const home = await loadPetHome(supabase, user.id);
-  if (!home) return <MemoriesArchive access="unavailable" pets={[]} selectedPetId={null} />;
+  if (!home) return <MemoriesArchive access="unavailable" pets={[]} selectedPetId={null} view={view} month={month} />;
 
   const pets: MemoriesPet[] = home.pets.map((pet) => ({
     petId: pet.petId,
@@ -43,5 +48,5 @@ export default async function MemoriesPage({
     avatarUrl: pet.avatarUrl,
   }));
   const selected = pets.find((pet) => pet.petId === requested) ?? pets[0] ?? null;
-  return <MemoriesArchive access="owner" pets={pets} selectedPetId={selected?.petId ?? null} />;
+  return <MemoriesArchive access="owner" pets={pets} selectedPetId={selected?.petId ?? null} view={view} month={month} />;
 }

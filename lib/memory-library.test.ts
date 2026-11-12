@@ -14,6 +14,7 @@ import {
   groupLibraryByMonthAndDay,
   isMoodJournalItem,
   memorialSpaceHref,
+  memoriesMonthHref,
   memoryPatchRow,
   moodJournalHref,
   MOOD_JOURNAL_TITLE,
@@ -49,6 +50,8 @@ test("photos group by capture month then the same calendar day", () => {
   assert.deepEqual(groups.map((month) => month.key), ["2026-10", "2026-09"]);
   assert.deepEqual(groups[0].days.map((day) => day.key), ["2026-10-03", "2026-10-02"]);
   assert.deepEqual(groups[0].days[1].items.map((entry) => entry.entryId), ["b", "a"]);
+  assert.equal(memoriesMonthHref("pet-1", "2026-10"), "/memories?pet=pet-1&view=months&month=2026-10");
+  assert.equal(memoriesMonthHref(null), "/memories?view=months");
 });
 
 test("memory patches accept owner-entered date, title, place and favorite", () => {

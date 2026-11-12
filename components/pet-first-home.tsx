@@ -272,7 +272,7 @@ function RegisterForm({ copy, onCreated }: { copy: PetFirstCopy; onCreated: (pet
       return;
     }
     const created = await response.json() as PetSummary;
-    onCreated({ ...created, entryDays: [], letterCount: 0, avatarUrl: null });
+    onCreated({ ...created, birthday: created.birthday ?? null, entryDays: [], letterCount: 0, avatarUrl: null });
     router.push(`/my/pets/${created.petId}#compose`);
   }
 

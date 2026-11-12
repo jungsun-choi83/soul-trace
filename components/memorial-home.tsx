@@ -9,7 +9,7 @@ import {
   petsOnBranch,
   petsOnOtherBranch,
 } from "@/lib/entry-branch";
-import { memorialSpaceHref } from "@/lib/memory-library";
+import { memorialSpaceHref, memoriesMonthHref } from "@/lib/memory-library";
 import type { HomePet, HomeRecent } from "@/lib/pet-first-archive-data";
 import { petFirstCopy } from "@/lib/storybook-copy";
 import { storyTabProps } from "@/lib/story-tabs";
@@ -21,7 +21,7 @@ const COPY = {
     importTitle: "우리 아이 사진 가져오기",
     importBody: "사진 원본은 그대로 두고, 이 아이 기록으로 모아요.",
     monthTitle: "이번 달의 추억",
-    monthBody: "함께했던 사진을 이번 달 기준으로 모아 봐요.",
+    monthBody: "함께했던 사진을 월별 폴더로 모아요.",
     monthlyEmpty: "이 홈에 모을 기록이 아직 없어요.",
     createTitle: "특별한 추억 만들기",
     createBody: "AI 편지와 폴라로이드는 만들기에서 이어져요.",
@@ -36,7 +36,7 @@ const COPY = {
     importTitle: "Bring in our pet's photos",
     importBody: "Original photos stay as they are, and copies gather with this pet.",
     monthTitle: "This month's memories",
-    monthBody: "Photos you shared are gathered for this month.",
+    monthBody: "Shared photos gather into a folder for each month.",
     monthlyEmpty: "Nothing is gathered on this home yet.",
     createTitle: "Make a special memory",
     createBody: "AI letters and polaroids continue from Create.",
@@ -71,7 +71,7 @@ export function MemorialHome({
   const memories = recent.filter((item) => visibleIds.has(item.petId));
   const months = groupMonths(memories);
   const importHref = petId ? `/memories?pet=${encodeURIComponent(petId)}` : "/memories";
-  const monthlyHref = importHref;
+  const monthlyHref = memoriesMonthHref(petId);
   const createHref = petId ? `/create?pet=${encodeURIComponent(petId)}&branch=memorial` : "/create?branch=memorial";
   const hallHref = petId ? memorialSpaceHref(petId) : "/memorial-space";
 

@@ -50,6 +50,7 @@ export type PetSummary = {
   petName: string;
   lifeStatus: LifeStatus;
   species: string | null;
+  birthday?: string | null;
   createdAt: string;
 };
 
