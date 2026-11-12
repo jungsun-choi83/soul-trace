@@ -3,7 +3,6 @@
 import { useLocale } from "@/components/locale-provider";
 import { StoryBrandHeader } from "@/components/storybook/story-chrome";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
-import { authEntryPath } from "@/lib/auth-redirect";
 import { POSE_ART } from "@/lib/pose-art";
 import {
   entryHomePath,
@@ -71,16 +70,15 @@ export function MemorialHome({
   const visibleIds = new Set(here.map((pet) => pet.petId));
   const memories = recent.filter((item) => visibleIds.has(item.petId));
   const months = groupMonths(memories);
-  const saveHref = (path: string) => (signedIn ? path : authEntryPath(path));
-  const importHref = petId ? saveHref(`/memories/import?pet=${encodeURIComponent(petId)}`) : saveHref("/my/pets/new?status=memorial");
-  const monthlyHref = petId ? saveHref(`/memories/month?pet=${encodeURIComponent(petId)}`) : saveHref("/my/pets/new?status=memorial");
+  const importHref = petId ? `/memories?pet=${encodeURIComponent(petId)}` : "/memories";
+  const monthlyHref = importHref;
   const createHref = petId ? `/create?pet=${encodeURIComponent(petId)}&branch=memorial` : "/create?branch=memorial";
-  const hallHref = petId ? saveHref(memorialSpaceHref(petId)) : saveHref("/memorial-space");
+  const hallHref = petId ? memorialSpaceHref(petId) : "/memorial-space";
 
   return (
     <div data-testid="memorial-home" className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-4">
-        <StoryBrandHeader homeHref={entryHomePath("memorial", petId)} settingsHref={signedIn ? "/settings" : authEntryPath("/dashboard/memorial")} settingsLabel={tabs.settingsTitle} />
+        <StoryBrandHeader homeHref={entryHomePath("memorial", petId)} settingsHref="/settings" settingsLabel={tabs.settingsTitle} />
         <section className="mt-4 overflow-hidden rounded-[22px] bg-[#efe6d6]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={POSE_ART.shibaAutumn} alt="" className="aspect-[4/3] w-full bg-[#efe6d6] object-contain object-center" />

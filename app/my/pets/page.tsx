@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { PetRoster } from "@/components/pet-roster";
-import { authEntryPath } from "@/lib/auth-redirect";
 import { isPetFirstArchiveEnabled } from "@/lib/pet-first-archive";
 import { loadPetHome } from "@/lib/pet-first-archive-data";
 import { ensureOwnerRow } from "@/lib/pet-first-archive-server";
@@ -22,7 +21,7 @@ export default async function MyPetsPage() {
   if (!isPetFirstArchiveEnabled()) notFound();
   const supabase = await createSupabaseAuthServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
-  if (!supabase || !user) redirect(authEntryPath("/my/pets"));
+  if (!supabase || !user) return <PetRoster pets={[]} />;
 
   await ensureOwnerRow(supabase, user.id);
 

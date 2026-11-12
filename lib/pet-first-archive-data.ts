@@ -1,6 +1,6 @@
 import "server-only";
 
-import { isMissingRelationError, type LifeStatus } from "@/lib/pet-first-archive";
+import { GUEST_PREVIEW_PET_ID, isMissingRelationError, type LifeStatus } from "@/lib/pet-first-archive";
 import type { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 
 let timelineRelationMissing = false;
@@ -186,6 +186,20 @@ export async function loadPetProfile(supabase: AuthClient, userId: string, petId
 }
 
 export type PetProfile = Extract<Awaited<ReturnType<typeof loadPetProfile>>, { status: "ok" }>["profile"];
+
+/** Layout-only pet so screens can open before a session exists. Not a database row. */
+export function guestPreviewProfile(lifeStatus: LifeStatus = "living"): PetProfile {
+  return {
+    petId: GUEST_PREVIEW_PET_ID,
+    petName: "우리 아이",
+    lifeStatus,
+    species: null,
+    birthday: null,
+    adoptedOn: null,
+    traits: null,
+    letterCount: 0,
+  };
+}
 
 export async function pickOwnedPet(
   supabase: AuthClient,

@@ -1,18 +1,12 @@
 import { FlowNote } from "@/components/flow-note";
-import { authEntryPath } from "@/lib/auth-redirect";
-import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: "가족 공유" };
 
-export default async function FamilySharePage() {
-  const supabase = await createSupabaseAuthServerClient();
-  const user = supabase ? (await supabase.auth.getUser()).data.user : null;
-  if (!user) redirect(authEntryPath("/family"));
+export default function FamilySharePage() {
   return (
     <FlowNote
-      signedIn
+      signedIn={false}
       lifeStatus="memorial"
       tab="home"
       title="가족 공유"

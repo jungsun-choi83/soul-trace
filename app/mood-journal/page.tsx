@@ -4,10 +4,9 @@ import { notFound, redirect } from "next/navigation";
 import { MemorialSpaceClosed } from "@/components/memorial-space";
 import { MoodJournal } from "@/components/mood-journal";
 import { PetFirstUnavailable } from "@/components/pet-first-unavailable";
-import { authEntryPath } from "@/lib/auth-redirect";
 import { decideMemorialSpaceAccess } from "@/lib/memory-library";
 import { isPetFirstArchiveEnabled, isUuid } from "@/lib/pet-first-archive";
-import { loadPetProfile, pickOwnedPet } from "@/lib/pet-first-archive-data";
+import { guestPreviewProfile, loadPetProfile, pickOwnedPet } from "@/lib/pet-first-archive-data";
 import type { ServerSearchParams } from "@/lib/search-params";
 import { noIndexRobots } from "@/lib/site-url";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
@@ -33,7 +32,7 @@ export default async function MoodJournalPage({
 
   const supabase = await createSupabaseAuthServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
-  if (!supabase || !user) redirect(authEntryPath(petId ? `/mood-journal?pet=${petId}` : "/mood-journal"));
+  if (!supabase || !user) return <MoodJournal profile={guestPreviewProfile("memorial")} />;
   if (!petId || !isUuid(petId)) {
     const memorialPet = await pickOwnedPet(supabase, user.id, "memorial");
     if (!memorialPet) return <MemorialSpaceClosed reason="not_memorial" />;

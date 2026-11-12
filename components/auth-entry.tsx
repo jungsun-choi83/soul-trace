@@ -13,7 +13,7 @@ import { completePasswordSignupOnServer, createPasswordAccount, signInWithPasswo
 import { normalizeAuthEmail, type AuthMode } from "@/lib/passwordless-auth";
 import { passwordValidationError, requestPasswordRecovery } from "@/lib/password-recovery";
 import { createSupabaseBrowserAuthClient } from "@/lib/supabase-auth-browser";
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 type AuthErrorState = "invalid_link" | "unavailable" | "signup_unavailable" | "signin_unavailable" | "request_failed" | "already_registered" | "invalid_credentials" | "email_not_confirmed" | "policy_failed" | null;
 
@@ -33,6 +33,13 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [recoveryStatus, setRecoveryStatus] = useState<"idle" | "sending" | "sent" | "request_failed">("idle");
   const requestPending = useRef(false);
+  const [localPreview, setLocalPreview] = useState(false);
+  const [localPreviewError, setLocalPreviewError] = useState(false);
+  useEffect(() => {
+    const host = window.location.hostname;
+    const local = host === "localhost" || host.endsWith(".local") || host.startsWith("127.") || /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+    setLocalPreview(local);
+  }, []);
   const bodyFont = lang === "ko" ? "font-ko" : "font-display-en";
   const emailValid = normalizeAuthEmail(email) !== null;
   const passwordError = passwordValidationError(password, mode === "signup" ? passwordConfirmation : password);
@@ -176,6 +183,8 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
         {!recoveryOpen && status !== "check_email" && mode === "signup" ? <div className={`mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm ${bodyFont}`}><span className="text-[#857666]">{t("auth.registered")}</span><button type="button" onClick={switchMode} className="st-link">{t("auth.signIn")}</button></div> : null}
         {mode === "signin" && !recoveryOpen && status !== "check_email" ? <div className={`mt-4 flex flex-wrap justify-center gap-x-4 gap-y-3 text-sm ${bodyFont}`}><button type="button" onClick={openRecovery} className="st-link">{t("auth.forgotPassword")}</button><span className="text-[#cbb58e]" aria-hidden="true">|</span><a href="/terms-of-service" className="st-link">{t("homepage.footer.termsOfService")}</a></div> : null}
         {recoveryOpen ? <button type="button" onClick={() => { setRecoveryOpen(false); setRecoveryStatus("idle"); setShowErrors(false); }} className={`st-link mt-5 w-full text-center text-sm ${bodyFont}`}>{t("auth.recovery.back")}</button> : null}
+        {localPreview && !recoveryOpen ? <button type="button" onClick={() => { void (async () => { setLocalPreviewError(false); const response = await fetch("/api/auth/local-preview", { method: "POST" }); if (!response.ok) { setLocalPreviewError(true); return; } window.location.assign(continueAfterAuth(returnTo)); })(); }} className={`st-btn mt-6 min-h-14 w-full rounded-full border-2 border-[#3a452f] bg-transparent px-5 py-4 text-base text-[#3a452f] ${bodyFont}`}>이 컴퓨터에서 시험 로그인</button> : null}
+        {localPreviewError ? <p role="alert" className="mt-2 text-center text-xs text-[#b97064]">시험 로그인을 열지 못했어요.</p> : null}
       </main>
       <PrivacyConsentSheet open={privacySheetOpen} onClose={() => setPrivacySheetOpen(false)} titlePath="form.privacyConsentTitle" bodyPath="form.privacyConsentBody" agreePath="form.privacyConsentAgree" checked={privacyConsent} onConfirm={() => setPrivacyConsent(true)} />
     </PaperShell>

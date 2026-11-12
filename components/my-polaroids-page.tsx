@@ -139,7 +139,7 @@ export function MyPolaroidsPage() {
           <p className={`mt-3 text-sm leading-7 text-[#C9BDAE] ${bodyFont}`}>{t("myPolaroids.description")}</p>
         </div>
         {authStatus === "loading" ? <p className={`mx-auto mt-12 text-center text-sm text-[#B6AA99] ${bodyFont}`}>{t("myPolaroids.loading")}</p> : null}
-        {authStatus === "anonymous" ? <div className="mx-auto mt-12 max-w-md rounded-2xl border border-[#D4AF37]/30 bg-[#17130f]/80 p-7 text-center"><p className={`text-sm leading-7 text-[#E7D7BD] ${bodyFont}`}>{t("myPolaroids.authRequired")}</p><button type="button" onClick={openAuth} className={`mt-5 min-h-11 rounded-xl bg-[#B89A2E] px-6 py-3 text-sm font-medium text-black hover:bg-[#D0AE3D] ${bodyFont}`}>{t("myPolaroids.verifyEmail")}</button></div> : null}
+        {authStatus === "anonymous" ? <p className={`mx-auto mt-12 max-w-md text-center text-sm leading-7 text-[#B6AA99] ${bodyFont}`}>{t("myPolaroids.empty")}</p> : null}
         {authStatus === "authenticated" && loading ? <p className={`mx-auto mt-12 text-center text-sm text-[#B6AA99] ${bodyFont}`}>{t("myPolaroids.loading")}</p> : null}
         {error ? <div className="mx-auto mt-10 max-w-lg rounded-2xl border border-red-300/25 bg-red-950/20 p-6 text-center"><p className={`text-sm leading-7 text-red-100 ${bodyFont}`}>{error}</p><button type="button" onClick={() => void load()} className={`mt-4 rounded-xl border border-[#D4AF37]/50 px-5 py-2 text-sm text-[#F0CF71] ${bodyFont}`}>{t("myPolaroids.retry")}</button></div> : null}
         {authStatus === "authenticated" && !loading && !error && items.length === 0 ? <p className={`mx-auto mt-12 max-w-md text-center text-sm leading-7 text-[#B6AA99] ${bodyFont}`}>{t("myPolaroids.empty")}</p> : null}

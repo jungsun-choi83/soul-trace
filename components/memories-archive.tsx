@@ -2,7 +2,6 @@
 
 import { useLocale } from "@/components/locale-provider";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
-import { authEntryPath } from "@/lib/auth-redirect";
 import {
   beamSceneHref,
   groupLibraryByMonthAndDay,
@@ -183,7 +182,6 @@ export function MemoriesArchive({
         {access === "owner" && !pet ? (
           <section className="mt-5">
             <p data-testid="memories-empty" className="text-sm leading-6 text-[#6b5846]">{EMPTY_COPY}</p>
-            <Link href="/my/pets/new" className="st-btn st-btn-forest mt-4 w-full">아이 등록하기</Link>
           </section>
         ) : null}
         {access === "owner" && pet ? (
@@ -201,7 +199,7 @@ export function MemoriesArchive({
         ) : null}
         {saveError ? <p role="alert" className="mt-3 text-sm text-[#8a4b32]">사진을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.</p> : null}
         {loadError === "login" ? (
-          <Link href={authEntryPath(memoriesHref(pet?.petId), "signin")} className="st-btn st-btn-forest mt-4 w-full">로그인하고 추억 보기</Link>
+          <Link href="/dashboard/living" className="st-btn st-btn-forest mt-4 w-full">홈으로</Link>
         ) : null}
         {loadError === "unavailable" ? <p className="mt-4 text-sm leading-6 text-[#6b5846]">이 환경에서는 계정 저장이 아직 준비되지 않았어요.</p> : null}
 
@@ -300,7 +298,7 @@ function GuestImport({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={preview} alt="" className="aspect-square w-full rounded-[16px] object-contain bg-[#f8f2e5]" />
       ) : null}
-      <Link href={authEntryPath("/memories", "signin")} className="st-btn st-btn-quiet w-full">로그인하고 기록에 저장</Link>
+      <Link href="/dashboard/living" className="st-btn st-btn-quiet w-full">홈으로</Link>
     </section>
   );
 }

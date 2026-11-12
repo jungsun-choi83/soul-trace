@@ -3,7 +3,6 @@
 import { useLocale } from "@/components/locale-provider";
 import { StoryBrandHeader } from "@/components/storybook/story-chrome";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
-import { authEntryPath } from "@/lib/auth-redirect";
 import {
   entryHomePath,
   petsOnBranch,
@@ -69,16 +68,15 @@ export function LivingHome({
   const visibleIds = new Set(here.map((pet) => pet.petId));
   const memories = recent.filter((item) => visibleIds.has(item.petId));
   const months = groupMonths(memories);
-  const saveHref = (path: string) => (signedIn ? path : authEntryPath(path));
-  const importHref = petId ? saveHref(`/memories/import?pet=${encodeURIComponent(petId)}`) : saveHref("/my/pets/new?status=living");
-  const monthlyHref = petId ? saveHref(`/memories/month?pet=${encodeURIComponent(petId)}`) : saveHref("/my/pets/new?status=living");
+  const importHref = petId ? `/memories?pet=${encodeURIComponent(petId)}` : "/memories";
+  const monthlyHref = importHref;
   const createHref = petId ? `/create?pet=${encodeURIComponent(petId)}&branch=living` : "/create?branch=living";
   const collarHref = petId ? `/my/device?pet=${encodeURIComponent(petId)}` : "/my/device";
 
   return (
     <div data-testid="living-home" className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-4">
-        <StoryBrandHeader homeHref={entryHomePath("living", petId)} settingsHref={signedIn ? "/settings" : authEntryPath("/dashboard/living")} settingsLabel={tabs.settingsTitle} />
+        <StoryBrandHeader homeHref={entryHomePath("living", petId)} settingsHref="/settings" settingsLabel={tabs.settingsTitle} />
         <section className="mt-4 overflow-hidden rounded-[22px] bg-[#f8f2e5]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={POSE_ART.shibaHome} alt="" className="aspect-[4/3] w-full bg-[#f6efe2] object-contain object-center" />

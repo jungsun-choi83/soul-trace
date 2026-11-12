@@ -15,7 +15,7 @@ import {
 } from "@/lib/memory-library";
 import type { PetProfile } from "@/lib/pet-first-archive-data";
 import { POSE_ART } from "@/lib/pose-art";
-import { petFirstCopy } from "@/lib/pet-first-archive";
+import { GUEST_PREVIEW_PET_ID, petFirstCopy } from "@/lib/pet-first-archive";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -46,6 +46,7 @@ export function BeamScenePreview({
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
+    if (petId === GUEST_PREVIEW_PET_ID) return;
     const response = await fetch(`/api/my/pets/${petId}/memories`);
     if (!response.ok) return;
     const body = await response.json() as { timeline?: MemoryLibraryItem[] };

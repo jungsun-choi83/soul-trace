@@ -27,6 +27,6 @@ export default async function DashboardPage({
   const requested = Array.isArray(rawPet) ? rawPet[0] : rawPet;
   const selectedPetId = requested && isUuid(requested) ? requested : null;
   const home = await loadEntryHome();
-  if (!home.signedIn) redirect("/choose");
+  if (!home.signedIn) redirect("/dashboard/living");
   redirect(dashboardHomePath(home.pets, selectedPetId));
 }

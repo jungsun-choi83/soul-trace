@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { PetFirstMemory } from "@/components/pet-first-memory";
 import { PetFirstUnavailable } from "@/components/pet-first-unavailable";
-import { authEntryPath } from "@/lib/auth-redirect";
 import { isPetFirstArchiveEnabled, isUuid, seoulToday } from "@/lib/pet-first-archive";
-import { loadPetProfile } from "@/lib/pet-first-archive-data";
+import { guestPreviewProfile, loadPetProfile } from "@/lib/pet-first-archive-data";
 import { noIndexRobots } from "@/lib/site-url";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 
@@ -28,7 +27,7 @@ export default async function PetMemoryPage({
   if (!isUuid(petId)) notFound();
   const supabase = await createSupabaseAuthServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
-  if (!supabase || !user) redirect(authEntryPath(`/my/pets/${petId}`));
+  if (!supabase || !user) return <PetFirstMemory profile={guestPreviewProfile()} today={seoulToday()} />;
 
   const result = await loadPetProfile(supabase, user.id, petId);
   if (result.status === "unavailable") return <PetFirstUnavailable />;

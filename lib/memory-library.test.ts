@@ -138,7 +138,7 @@ test("archive, memorial-space, device and beam pages stay behind the pet-first f
     const source = readFileSync(path, "utf8");
     assert.match(source, /isPetFirstArchiveEnabled\(\)/);
     assert.match(source, /notFound\(\)/);
-    assert.match(source, /authEntryPath/);
+    assert.doesNotMatch(source, /authEntryPath/);
   }
   const memoryUi = readFileSync("components/pet-first-memory.tsx", "utf8");
   const roster = readFileSync("components/pet-roster.tsx", "utf8");

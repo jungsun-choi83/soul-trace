@@ -4,7 +4,6 @@ import { notFound, redirect } from "next/navigation";
 import { CollarStudioRoute } from "@/components/collar-studio";
 import { DeviceLivingOnly } from "@/components/device-living-only";
 import { PetFirstUnavailable } from "@/components/pet-first-unavailable";
-import { authEntryPath } from "@/lib/auth-redirect";
 import { decideDeviceAccess } from "@/lib/memory-library";
 import { isPetFirstArchiveEnabled, isUuid } from "@/lib/pet-first-archive";
 import { loadPetHome, loadPetProfile } from "@/lib/pet-first-archive-data";
@@ -34,8 +33,7 @@ export default async function DevicePage({
   const supabase = await createSupabaseAuthServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
   if (!supabase || !user) {
-    if (petId) redirect(authEntryPath(`/my/device?pet=${petId}`));
-    return <CollarStudioRoute step="hub" pet={null} />;
+    return <CollarStudioRoute step="hub" pet={petId ? { petId, petName: "우리 아이" } : null} />;
   }
 
   if (!petId || !isUuid(petId)) {

@@ -7,7 +7,7 @@ import { StoryState } from "@/components/storybook/story-state";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
 import { memorialSpaceHref } from "@/lib/memory-library";
 import type { PetProfile } from "@/lib/pet-first-archive-data";
-import { petFirstCopy } from "@/lib/pet-first-archive";
+import { GUEST_PREVIEW_PET_ID, petFirstCopy } from "@/lib/pet-first-archive";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
@@ -25,6 +25,12 @@ export function MoodJournal({ profile }: { profile: PetProfile }) {
 
   const load = useCallback(async () => {
     setLoading(true);
+    if (petId === GUEST_PREVIEW_PET_ID) {
+      setEntries([]);
+      setLoading(false);
+      setError(false);
+      return;
+    }
     const response = await fetch(`/api/my/pets/${petId}/mood-journal`);
     setLoading(false);
     if (!response.ok) {

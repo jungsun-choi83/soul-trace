@@ -24,6 +24,7 @@ import {
   isSameDayLastYear,
   letterPathForLifeStatus,
   MONTHLY_CARD_MIN_ENTRIES,
+  GUEST_PREVIEW_PET_ID,
   petFirstCopy,
   timelineDay,
   timelineMonthKey,
@@ -68,6 +69,11 @@ export function PetFirstMemory({ profile, today }: { profile: PetProfile; today:
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(false);
+    if (petId === GUEST_PREVIEW_PET_ID) {
+      setTimeline([]);
+      setLoading(false);
+      return;
+    }
     const response = await fetch(`/api/my/pets/${petId}/memories`);
     setLoading(false);
     if (!response.ok) {
