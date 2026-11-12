@@ -27,7 +27,7 @@ export default async function BeamScenePage({
   if (!isPetFirstArchiveEnabled()) notFound();
   const params = await searchParams;
   const rawPet = params.pet;
-  let petId = Array.isArray(rawPet) ? rawPet[0] : rawPet;
+  const petId = Array.isArray(rawPet) ? rawPet[0] : rawPet;
   const rawEntry = params.entry;
   const rawAsset = params.asset;
 

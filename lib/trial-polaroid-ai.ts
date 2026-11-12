@@ -27,16 +27,17 @@ export type TrialPlatePreset = {
   foregroundOverlay: null;
   ground: string;
   snowContact: boolean;
+  sceneComposition: string;
 };
 
-/** Relative placement on the center path. Fractions of the frame, not pixels. */
+/** Approximate placement in the open scene area. Fractions of the frame, not pixels. */
 export const TRIAL_PLATE_PRESETS: Record<TrialThemeId, TrialPlatePreset> = {
-  "christmas-village": { themeId: "christmas-village", petAnchorX: 0.5, petAnchorY: 0.74, petMaxWidth: 0.34, petMaxHeight: 0.52, foregroundOverlay: null, ground: "the snowy village path", snowContact: true },
-  "spring-picnic": { themeId: "spring-picnic", petAnchorX: 0.5, petAnchorY: 0.72, petMaxWidth: 0.34, petMaxHeight: 0.5, foregroundOverlay: null, ground: "the picnic path", snowContact: false },
-  "summer-beach": { themeId: "summer-beach", petAnchorX: 0.5, petAnchorY: 0.7, petMaxWidth: 0.36, petMaxHeight: 0.5, foregroundOverlay: null, ground: "the resort path", snowContact: false },
-  "autumn-walk": { themeId: "autumn-walk", petAnchorX: 0.5, petAnchorY: 0.73, petMaxWidth: 0.32, petMaxHeight: 0.52, foregroundOverlay: null, ground: "the autumn path", snowContact: false },
-  "birthday-room": { themeId: "birthday-room", petAnchorX: 0.5, petAnchorY: 0.7, petMaxWidth: 0.34, petMaxHeight: 0.5, foregroundOverlay: null, ground: "the party-room floor", snowContact: false },
-  "first-snow-street": { themeId: "first-snow-street", petAnchorX: 0.5, petAnchorY: 0.74, petMaxWidth: 0.32, petMaxHeight: 0.52, foregroundOverlay: null, ground: "the first-snow street", snowContact: true },
+  "christmas-village": { themeId: "christmas-village", petAnchorX: 0.5, petAnchorY: 0.74, petMaxWidth: 0.34, petMaxHeight: 0.52, foregroundOverlay: null, ground: "the snowy village path", snowContact: true, sceneComposition: "Choose a relaxed walk or pause on the open village path; angle the body along the path and let the pet glance toward a warmly lit shop or decorated tree. Keep the village windows and central buildings visible." },
+  "spring-picnic": { themeId: "spring-picnic", petAnchorX: 0.5, petAnchorY: 0.72, petMaxWidth: 0.34, petMaxHeight: 0.5, foregroundOverlay: null, ground: "the picnic meadow", snowContact: false, sceneComposition: "Place the pet in the open meadow near the picnic clearing, with a natural sit, stand, or gentle walk among the flowers. It may look toward the blossoms or picnic basket; keep the blanket, basket, and tent visible, and keep paws off the food." },
+  "summer-beach": { themeId: "summer-beach", petAnchorX: 0.5, petAnchorY: 0.7, petMaxWidth: 0.36, petMaxHeight: 0.5, foregroundOverlay: null, ground: "the dry sandy beach", snowContact: false, sceneComposition: "Set the pet on dry sand in a comfortable standing, seated, or shoreline-walking pose. It may look toward the waves or distant lighthouse; keep it out of the water and leave the lighthouse and beach chairs unobstructed." },
+  "autumn-walk": { themeId: "autumn-walk", petAnchorX: 0.5, petAnchorY: 0.73, petMaxWidth: 0.32, petMaxHeight: 0.52, foregroundOverlay: null, ground: "the leaf-strewn autumn path", snowContact: false, sceneComposition: "Compose the pet strolling along the path or pausing naturally beside it, with its body turned down the path or toward the lake and falling leaves. Keep the bench, fence, and lakeside view visible." },
+  "birthday-room": { themeId: "birthday-room", petAnchorX: 0.5, petAnchorY: 0.7, petMaxWidth: 0.34, petMaxHeight: 0.5, foregroundOverlay: null, ground: "the open party-room floor", snowContact: false, sceneComposition: "Use a calm seated or standing pose on the open floor, with the pet naturally looking toward the birthday cake or decorations. Keep the cake, gift table, and room details clear; do not place paws on the table or cake." },
+  "first-snow-street": { themeId: "first-snow-street", petAnchorX: 0.5, petAnchorY: 0.74, petMaxWidth: 0.32, petMaxHeight: 0.52, foregroundOverlay: null, ground: "the snowy street path", snowContact: true, sceneComposition: "Choose a gentle walk through the snow or a quiet seated pause on the open street. The pet may turn toward a warm window or lantern, with its body following the street's perspective; keep the storefronts and street details visible." },
 };
 
 const STYLE_BRIEF: Record<FreeStyle, string> = {
@@ -68,9 +69,10 @@ export function buildTrialPolaroidPrompt(style: FreeStyle, theme: TrialThemeId):
     "The pet and the background must look like one illustration in the same medium. A cutout photograph pasted onto the artwork is forbidden. Do not place a rectangle, frame, or photo edge around the pet. Do not cut a hole or a black region out of the background.",
     STYLE_BRIEF[style],
     "Keep the background artwork itself: the same buildings, trees, path, decorations, and framing. Do not redraw the scene, do not move the buildings, and do not add text, letters, a border, or a polaroid frame.",
-    `Place the restyled pet on ${preset.ground}, at the horizontal center, with the paws about ${down}% of the way down the picture and slightly below the middle of the path.`,
-    `The full pet must be visible: head, ears, tail, and paws are not cropped. Fit the pet inside about ${width}% of the frame width and ${height}% of the frame height, scaled to the path's perspective. A small pet stays smaller; a large pet may be larger, but it must not cover the main buildings.`,
-    "The paws stand or sit on the ground. Add a soft contact shadow that matches the background light. Match the background's perspective and color temperature.",
+    `Read the visible background and compose the pet on ${preset.ground}. ${preset.sceneComposition} Keep it near the open center area (around x ${Math.round(preset.petAnchorX * 100)}%, with paws around y ${down}%), allowing a modest shift within the open ground when that creates a more natural composition.`,
+    "Choose one species-appropriate pose that fits this scene: sitting, standing, walking, or pausing to look toward a relevant background element. Do not copy the reference photo's pose or body orientation. Do not force the pet to face the camera; a natural side or three-quarter view is welcome when it suits the scene, while keeping enough of the face visible to preserve identity.",
+    `The full pet must be visible: head, ears, tail, and paws are not cropped. Fit the pet inside about ${width}% of the frame width and ${height}% of the frame height, scaled to the scene's perspective. A small pet stays smaller; a large pet may be larger, but it must not cover important background elements.`,
+    "Keep the posture anatomically natural for this individual pet, with paws or body visibly supported by the ground. Add a soft contact shadow that matches the background light. Match the background's perspective and color temperature.",
     preset.snowContact ? "This is a snowy path. Add a light natural snow contact around the paws. Do not bury the pet." : "Do not add snow.",
     "Preserve this individual pet: breed and build, coat colors and markings, ear shape, eye and nose character, face, body proportions, and a collar or other clear accessory if the photo shows one.",
     "Do not swap the breed, invent a smile, add a hat, or add a costume. No Christmas outfit unless it is already in the photo.",

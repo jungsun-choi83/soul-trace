@@ -6,6 +6,7 @@ import { StoryBrandHeader } from "@/components/storybook/story-chrome";
 import { StoryScene } from "@/components/storybook/story-scene";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
 import { beamSceneHref, memorialSpaceHref, moodJournalHref, polaroidHrefFromArchive } from "@/lib/memory-library";
+import { fetchOrNull, requestFailed } from "@/lib/network-failure";
 import { POSE_ART } from "@/lib/pose-art";
 import { letterPathForLifeStatus, type LifeStatus } from "@/lib/pet-first-archive";
 import type { HomePet, HomeRecent } from "@/lib/pet-first-archive-data";
@@ -42,13 +43,15 @@ export function CustomerDashboard({
     if (!active || savingBranch) return;
     setBranchError(false);
     setSavingBranch(true);
-    const response = await fetch(`/api/my/pets/${active.petId}`, {
+    const response = await fetchOrNull(`/api/my/pets/${active.petId}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ lifeStatus: next }),
     });
+    // Releasing savingBranch re-enables both buttons, so a dropped connection
+    // leaves the current status untouched and the choice retryable by hand.
     setSavingBranch(false);
-    if (!response.ok) {
+    if (requestFailed(response)) {
       setBranchError(true);
       return;
     }

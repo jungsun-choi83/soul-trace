@@ -5,6 +5,7 @@ import { trialPlateSrc } from "@/components/trial-theme-scene";
 import { isFreeStyle, trialLedger, type FreeStyle, type TrialActor } from "@/lib/pet-free-trial";
 import { isUuid } from "@/lib/pet-first-archive";
 import { generateTrialPolaroidImage, isTrialTheme, type TrialThemeId } from "@/lib/trial-polaroid-ai";
+import { freeTrialPersistenceEnabled, handleDurableFreeTrial } from "@/lib/free-trial-persistence-server";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -46,8 +47,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
 
-  const existing = request.headers.get("cookie")?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${COOKIE}=`))?.slice(COOKIE.length + 1);
-  const guestSessionId = existing && isUuid(existing) ? existing : crypto.randomUUID();
+  if (freeTrialPersistenceEnabled()) {
+    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    const plate = await plateReference(style, theme);
+    if (!apiKey || !plate) return NextResponse.json({ error: "generation_unavailable" }, { status: 503 });
+    return handleDurableFreeTrial({ request, name, style, theme, idempotencyKey: key, photo, plate });
+  }
+
+  const cookieValue = request.headers.get("cookie")?.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${COOKIE}=`))?.slice(COOKIE.length + 1);
+  const guestSessionId = cookieValue && isUuid(cookieValue) ? cookieValue : crypto.randomUUID();
+  const shouldSetGuestCookie = guestSessionId !== cookieValue;
+  const jsonResponse = (body: unknown, status = 200) => {
+    const response = NextResponse.json(body, { status });
+    if (shouldSetGuestCookie) {
+      response.cookies.set(COOKIE, guestSessionId, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7 });
+    }
+    return response;
+  };
   const actor = actorFrom(guestSessionId);
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
   const book = trialLedger();
@@ -59,23 +75,31 @@ export async function POST(request: Request) {
     petId: isUuid(requestedPet) ? requestedPet : undefined,
   });
   if (!registered.ok) {
-    const status = registered.error === "rate_limited" ? 429 : registered.error === "forbidden" ? 404 : 409;
-    return NextResponse.json({ error: registered.error }, { status });
+    const status = registered.error === "rate_limited" || registered.error === "guest_start_limited" ? 429 : registered.error === "forbidden" ? 404 : 409;
+    return jsonResponse({ error: registered.error }, status);
   }
   const reserved = book.reserve({ petId: registered.petId, actor, style, idempotencyKey: key });
   if (!reserved.ok) {
     const status = reserved.error === "forbidden" ? 404 : 409;
-    return NextResponse.json({ error: reserved.error }, { status });
+    return jsonResponse({ error: reserved.error }, status);
   }
 
   const jobId = reserved.reservation.jobId;
   let image = savedArtwork().get(jobId) ?? null;
   if (!reserved.reservation.replayed) {
     const apiKey = process.env.OPENAI_API_KEY?.trim();
-    const plate = apiKey ? await plateReference(style, theme) : null;
-    if (!apiKey || !plate) {
+    const plate = await plateReference(style, theme);
+    if (!plate) {
       book.fail(jobId);
-      return NextResponse.json({ error: "failed" }, { status: 500 });
+      return jsonResponse({ error: "failed" }, 500);
+    }
+    if (!apiKey) {
+      book.fail(jobId);
+      return jsonResponse({ error: "failed" }, 500);
+    }
+    if (!book.recordGenerationAttempt(ip, Date.now())) {
+      book.fail(jobId);
+      return jsonResponse({ error: "rate_limited" }, 429);
     }
     try {
       const generated = await generateTrialPolaroidImage({
@@ -92,26 +116,22 @@ export async function POST(request: Request) {
     }
     if (!image) {
       book.fail(jobId);
-      return NextResponse.json({ error: "failed" }, { status: 500 });
+      return jsonResponse({ error: "failed" }, 500);
     }
     const charged = book.succeed(jobId);
     if (charged) {
       book.fail(jobId);
-      return NextResponse.json({ error: "failed" }, { status: 500 });
+      return jsonResponse({ error: "failed" }, 500);
     }
     savedArtwork().set(jobId, image);
   }
-  if (!image) return NextResponse.json({ error: "failed" }, { status: 500 });
+  if (!image) return jsonResponse({ error: "failed" }, 500);
 
-  const response = NextResponse.json({
+  return jsonResponse({
     petId: reserved.reservation.petId,
     jobId,
     style: reserved.reservation.style,
     remaining: book.remaining(reserved.reservation.petId),
     image,
   });
-  if (!existing) {
-    response.cookies.set(COOKIE, guestSessionId, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 7 });
-  }
-  return response;
 }

@@ -26,6 +26,11 @@ test("trial prompt restyles the pet into the plate and forbids a pasted photo", 
     assert.match(prompt, /pasted|cutout photograph/i);
     assert.match(prompt, /first image is the real pet/i);
     assert.match(prompt, /second image is the finished background/i);
+    assert.match(prompt, /choose one species-appropriate pose/i);
+    assert.match(prompt, /do not copy the reference photo's pose/i);
+    assert.match(prompt, /do not force the pet to face the camera/i);
+    assert.match(prompt, /allowing a modest shift within the open ground/i);
+    assert.match(prompt, /preserve this individual pet: breed and build, coat colors and markings/i);
     assert.doesNotMatch(prompt, /must look like a new real photograph/i);
     assert.doesNotMatch(prompt, /Do not beautify/i);
   }
@@ -34,6 +39,15 @@ test("trial prompt restyles the pet into the plate and forbids a pasted photo", 
   assert.match(buildTrialPolaroidPrompt("crayon-diary", "summer-beach"), /pastel vintage/i);
   assert.match(buildTrialPolaroidPrompt("crayon-diary", "first-snow-street"), /snow contact/i);
   assert.match(buildTrialPolaroidPrompt("gouache-story", "birthday-room"), /Do not add snow/);
+});
+
+test("trial composition cues follow the selected background scene", () => {
+  assert.match(buildTrialPolaroidPrompt("gouache-story", "christmas-village"), /glance toward a warmly lit shop or decorated tree/i);
+  assert.match(buildTrialPolaroidPrompt("gouache-story", "spring-picnic"), /look toward the blossoms or picnic basket/i);
+  assert.match(buildTrialPolaroidPrompt("gouache-story", "summer-beach"), /look toward the waves or distant lighthouse/i);
+  assert.match(buildTrialPolaroidPrompt("gouache-story", "autumn-walk"), /turned down the path or toward the lake and falling leaves/i);
+  assert.match(buildTrialPolaroidPrompt("gouache-story", "birthday-room"), /looking toward the birthday cake or decorations/i);
+  assert.match(buildTrialPolaroidPrompt("gouache-story", "first-snow-street"), /turn toward a warm window or lantern/i);
 });
 
 test("trial generation sends the pet and the background plate as two references", async () => {

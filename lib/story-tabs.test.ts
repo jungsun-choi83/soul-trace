@@ -12,6 +12,8 @@ const living = readFileSync("app/living/page.tsx", "utf8");
 const memorial = readFileSync("app/memorial/page.tsx", "utf8");
 const polaroid = readFileSync("app/polaroid/page.tsx", "utf8");
 const memorialSpace = readFileSync("app/memorial-space/page.tsx", "utf8");
+const petMemory = readFileSync("components/pet-first-memory.tsx", "utf8");
+const petRoster = readFileSync("components/pet-roster.tsx", "utf8");
 
 test("four tabs stay home, memories, create, and pet", () => {
   const livingTabs = storyTabHrefs("pet-1", true, "living");
@@ -21,12 +23,19 @@ test("four tabs stay home, memories, create, and pet", () => {
 
   assert.deepEqual(Object.keys(livingTabs), ["home", "memories", "create", "pet"]);
   assert.equal(livingTabs.home, "/dashboard/living?pet=pet-1");
-  assert.equal(livingTabs.memories, "/memories?pet=pet-1");
+  assert.equal(livingTabs.memories, "/my/pets/pet-1/memories#album");
   assert.equal(livingTabs.create, "/create?pet=pet-1&branch=living");
   assert.equal(livingTabs.pet, "/my/pets");
   assert.equal(memorialTabs.home, "/dashboard/memorial?pet=pet-1");
+  assert.equal(memorialTabs.memories, "/my/pets/pet-1/memories#album");
   assert.equal(memorialTabs.create, "/create?pet=pet-1&branch=memorial");
-  assert.equal(openTabs.memories, "/memories");
+  assert.equal(storyTabHrefs("pet-2", true, "living").memories, "/my/pets/pet-2/memories#album");
+  assert.equal(openTabs.memories, "/my/pets");
+  assert.equal(storyTabHrefs(null, false, "unspecified").memories, "/memories");
+  assert.equal(storyTabHrefs("pet-1", false, "living").memories, "/memories?pet=pet-1");
+  assert.match(petRoster, /href="\/my\/pets\/new"/);
+  assert.match(petMemory, /<StoryTabbar current="memories"/);
+  assert.match(petMemory, /<section id="album"/);
   assert.doesNotMatch(readFileSync("app/memories/page.tsx", "utf8"), /LifeArchiveAccessRequired|eternal-beam-access/);
   assert.match(readFileSync("app/life-archive/page.tsx", "utf8"), /LifeArchiveAccessRequired/);
   assert.match(readFileSync("components/memories-archive.tsx", "utf8"), /아직 기록한 추억이 없어요/);

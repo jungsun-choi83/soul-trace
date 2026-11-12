@@ -65,6 +65,21 @@ test("Seasonal client forwards an optional special-day occasion", () => {
   assert.equal(form.get("occasionId"), "christmas-little-ghost");
 });
 
+test("canonical Pet ID is optional for guest requests and travels separately from prompt answers", () => {
+  const primary = new File([new Uint8Array([1, 2, 3])], "primary.webp", { type: "image/webp" });
+  const answers = {
+    themeId: "halloween", locale: "en", petName: "Bubu", species: "dog", status: "living",
+    costume: "pumpkin", scene: "pumpkinPatch", vibe: "cuteCozy", personalities: ["foodie"],
+    habit: "toyCarrier", favoriteTreat: "pumpkinBiscuit", callName: "mom", customTreat: "", customCallName: "",
+  };
+  const guestForm = buildSeasonalPolaroidFormData(answers, primary);
+  const petForm = buildSeasonalPolaroidFormData(answers, primary, "11111111-1111-4111-8111-111111111111");
+  assert.equal(guestForm.has("petId"), false);
+  assert.equal(petForm.get("petId"), "11111111-1111-4111-8111-111111111111");
+  assert.doesNotMatch(JSON.stringify(answers), /petId/);
+  assert.match(clientSource, /value\.petId !== undefined/);
+});
+
 test("Seasonal status capability is transported in a request header, not the query string", () => {
   assert.match(clientSource, /x-soul-trace-seasonal-capability/);
   assert.doesNotMatch(clientSource, /capability: session\.capability/);

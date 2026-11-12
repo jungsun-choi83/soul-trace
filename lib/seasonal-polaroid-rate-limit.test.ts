@@ -37,8 +37,10 @@ test("missing retry data is handled without exposing identifiers", () => {
 
 test("Seasonal questionnaire state and photos remain after a rejected admission", () => {
   assert.match(component, /setView\("questionnaire"\);[\s\S]{0,260}setGenerationError\(sessionExpired \? null : message\)/);
-  // The only place the photo is cleared is the explicit Remove button.
-  assert.equal(component.match(/setPrimaryPhoto\(null\)/g)?.length, 1);
+  // Photos survive rejected admissions, and are cleared only by Remove or
+  // when switching to a different pet so one pet's photo cannot cross over.
+  assert.equal(component.match(/setPrimaryPhoto\(null\)/g)?.length, 2);
+  assert.match(component, /if \(selectedPetIdRef\.current !== pet\.petId\)[\s\S]{0,160}setPrimaryPhoto\(null\)/);
   assert.match(component, /const removePhoto = \(\) => \{\s*if \(primaryPhoto\) URL\.revokeObjectURL\(primaryPhoto\.url\);\s*setPrimaryPhoto\(null\);/);
   assert.doesNotMatch(component, /secondPhoto|secondInputRef|secondLabel/);
 });

@@ -1,5 +1,5 @@
 import { MemoriesArchive, type MemoriesPet } from "@/components/memories-archive";
-import { isPetFirstArchiveEnabled } from "@/lib/pet-first-archive";
+import { isPetFirstArchiveEnabled, isUuid } from "@/lib/pet-first-archive";
 import { loadPetHome } from "@/lib/pet-first-archive-data";
 import type { ServerSearchParams } from "@/lib/search-params";
 import { noIndexRobots } from "@/lib/site-url";
@@ -23,10 +23,11 @@ export default async function MemoriesPage({
   const params = await searchParams;
   const raw = params.pet;
   const requested = Array.isArray(raw) ? raw[0] : raw ?? null;
+  const requestedPetId = requested && isUuid(requested) ? requested : null;
   const supabase = await createSupabaseAuthServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
   if (!supabase || !user) {
-    return <MemoriesArchive access="guest" pets={[]} selectedPetId={null} />;
+    return <MemoriesArchive access="guest" pets={[]} selectedPetId={requestedPetId} />;
   }
   if (!isPetFirstArchiveEnabled()) {
     return <MemoriesArchive access="unavailable" pets={[]} selectedPetId={null} />;
@@ -42,6 +43,6 @@ export default async function MemoriesPage({
     species: pet.species,
     avatarUrl: pet.avatarUrl,
   }));
-  const selected = pets.find((pet) => pet.petId === requested) ?? pets[0] ?? null;
+  const selected = pets.find((pet) => pet.petId === requestedPetId) ?? pets[0] ?? null;
   return <MemoriesArchive access="owner" pets={pets} selectedPetId={selected?.petId ?? null} />;
 }

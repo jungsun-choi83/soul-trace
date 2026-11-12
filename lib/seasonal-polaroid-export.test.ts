@@ -19,19 +19,24 @@ test("the frame tags the parts the exporter draws natively, once each", () => {
   }
   // The tags sit on the elements the exporter expects.
   assert.match(frame, /<img data-seasonal-polaroid="template" src=\{layout\.templateSrc\}/);
-  assert.match(frame, /left-\[16\.2%\] top-\[15\.2%\] z-10 h-\[50\.7%\] w-\[67\.8%\] overflow-hidden rounded-\[4%\] bg-\[#E9E1D7\]/);
+  assert.match(frame, /left: layout\.photo\.left,[\s\S]*?top: layout\.photo\.top,[\s\S]*?width: layout\.photo\.width,[\s\S]*?height: layout\.photo\.height,[\s\S]*?borderRadius: layout\.photoRadius/);
   assert.match(frame, /<img data-seasonal-polaroid="photo" src=\{imageUrl\}[^>]*className="h-full w-full object-cover object-center"/);
-  assert.match(frame, /bottom-\[19%\] left-\[19%\] right-\[19%\] top-\[70\.6%\]/);
+  assert.match(frame, /left: layout\.caption\.left,[\s\S]*?right: layout\.caption\.right,[\s\S]*?top: layout\.caption\.top,[\s\S]*?bottom: layout\.caption\.bottom/);
+  assert.match(frame, /font-semibold leading-\[1\.1\] text-\[#49372A\]/);
 });
 
-test("the template and the photo bypass html-to-image, which WebKit paints before their data loads", () => {
+test("native layers export in frame-specific order, which keeps Gouache flowers above the photo", () => {
   // Those two images are excluded from the SVG capture...
   assert.match(exporter, /filter: \(element: HTMLElement\) => \{[\s\S]*?return name !== "template" && name !== "photo";/);
-  // ...and drawn from the decoded <img> elements with drawImage, template first, then the photo clipped to the window.
-  const templateDraw = exporter.indexOf('if (template && template.naturalWidth) drawFitted(stage, template, layoutRect(template));');
-  const photoDraw = exporter.indexOf('if (photo && photo.naturalWidth) drawFitted(stage, photo, windowRect);');
+  // ...and drawn from decoded <img> elements. Legacy templates remain under
+  // the photo; Gouache's transparent floral overlay is drawn after it.
+  assert.match(exporter, /const templateOverlay = node\.getAttribute\("data-seasonal-polaroid-template-overlay"\) === "true";/);
+  assert.match(exporter, /stage\.fillStyle = templateOverlay \? "#000000" : SEASONAL_POLAROID_EXPORT_BACKGROUND;/);
+  assert.match(exporter, /if \(templateOverlay\) \{\s*drawPhoto\(\);\s*drawTemplate\(\);\s*\} else \{\s*drawTemplate\(\);\s*drawPhoto\(\);\s*\}/);
+  assert.match(exporter, /if \(template && template\.naturalWidth\) drawFitted\(stage, template, layoutRect\(template\)\);/);
+  assert.match(exporter, /if \(photo && photo\.naturalWidth\) drawFitted\(stage, photo, windowRect\);/);
   const vectorDraw = exporter.indexOf("stage.drawImage(vectorLayer, 0, 0);");
-  assert.ok(templateDraw > 0 && photoDraw > templateDraw && vectorDraw > photoDraw, "draw order must be template, photo, then the vector layer");
+  assert.ok(vectorDraw > exporter.indexOf("if (templateOverlay)"), "the vector layer must remain above the bitmap layers");
   assert.match(exporter, /roundedRectPath\(stage, windowRect, resolveSeasonalPolaroidRadius\(windowStyle\.borderTopLeftRadius/);
   assert.match(exporter, /stage\.clip\(\);/);
   // The vector layer is composited over them, so it must be captured transparent.

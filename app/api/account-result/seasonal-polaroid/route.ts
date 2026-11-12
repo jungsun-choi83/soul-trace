@@ -7,6 +7,7 @@ import { isSeasonalPolaroidResultPath, downloadSeasonalPolaroidResultImage } fro
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { seasonalPolaroidOwnerMatches } from "@/lib/seasonal-polaroid-ownership";
+import { requireOwnedPet } from "@/lib/pet-first-archive-server";
 
 const RESULT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const JOB_ID_PATTERN = /^[0-9a-f]{64}$/i;
@@ -44,9 +45,14 @@ function verifiedSeasonalResult(
   if (!memo || !pet || typeof pet !== "object") return null;
   const petRecord = pet as Record<string, unknown>;
   if (typeof petRecord.name !== "string" || typeof petRecord.species !== "string" || typeof petRecord.status !== "string") return null;
+  const payload = job.input_payload && typeof job.input_payload === "object" ? job.input_payload : null;
+  const payloadPetId = payload && typeof payload.petId === "string" ? payload.petId : null;
+  const resultPetId = typeof job.result.petId === "string" ? job.result.petId : null;
+  if ((payloadPetId?.toLowerCase() ?? null) !== (resultPetId?.toLowerCase() ?? null)) return null;
   return {
     resultId,
     jobId,
+    petId: resultPetId,
     imageObjectKey: imageRecord.objectKey,
     imageMimeType: imageRecord.mimeType === "image/png" ? "image/png" : "image/jpeg",
     memo,
@@ -65,10 +71,12 @@ export async function POST(request: NextRequest): Promise<Response> {
     resultId?: unknown;
     jobId?: unknown;
     capability?: unknown;
+    petId?: unknown;
   } | null;
   const resultId = typeof body?.resultId === "string" ? body.resultId.trim() : "";
   const jobId = typeof body?.jobId === "string" ? body.jobId.trim().toLowerCase() : "";
   const capability = typeof body?.capability === "string" ? body.capability.trim() : "";
+  const requestedPetId = typeof body?.petId === "string" ? body.petId.trim() : null;
   if (!RESULT_ID_PATTERN.test(resultId) || !JOB_ID_PATTERN.test(jobId) || !capability) {
     return genericError(403, "result_unverified");
   }
@@ -81,6 +89,13 @@ export async function POST(request: NextRequest): Promise<Response> {
   if (!user) return genericError(401, "authentication_required");
   if (!seasonalPolaroidOwnerMatches(job?.owner_identity_hash, user.id)) {
     return genericError(403, "result_unverified");
+  }
+  if ((requestedPetId?.toLowerCase() ?? null) !== (verified.petId?.toLowerCase() ?? null)) {
+    return genericError(403, "result_unverified");
+  }
+  if (verified.petId) {
+    const petAccess = await requireOwnedPet(verified.petId);
+    if (!petAccess.ok || petAccess.user.id !== user.id) return genericError(403, "result_unverified");
   }
   const db = createSupabaseServerClient();
   if (!db) return genericError(503, "storage_unavailable");
@@ -95,6 +110,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     result_id: verified.resultId,
     job_id: verified.jobId,
     owner_user_id: user.id,
+    ...(verified.petId ? { pet_id: verified.petId } : {}),
     pet_name: verified.pet.name.slice(0, 200),
     species: verified.pet.species.slice(0, 32),
     status: verified.pet.status,
@@ -110,12 +126,25 @@ export async function POST(request: NextRequest): Promise<Response> {
   });
   if (!error) return NextResponse.json({ status: "saved", resultId });
   if (error.code === "23505") {
-    const { data: existing } = await db
-      .from("seasonal_polaroid_results")
-      .select("owner_user_id")
-      .eq("result_id", resultId)
-      .maybeSingle();
-    if (existing?.owner_user_id === user.id) return NextResponse.json({ status: "already_saved", resultId });
+    let existingOwnerId: string | null = null;
+    let existingPetId: string | null = null;
+    if (verified.petId) {
+      const { data: existing } = await db.from("seasonal_polaroid_results")
+        .select("owner_user_id, pet_id")
+        .eq("result_id", resultId)
+        .maybeSingle();
+      existingOwnerId = existing?.owner_user_id ?? null;
+      existingPetId = existing?.pet_id ?? null;
+    } else {
+      const { data: existing } = await db.from("seasonal_polaroid_results")
+        .select("owner_user_id")
+        .eq("result_id", resultId)
+        .maybeSingle();
+      existingOwnerId = existing?.owner_user_id ?? null;
+    }
+    if (existingOwnerId === user.id && (!verified.petId || existingPetId === verified.petId)) {
+      return NextResponse.json({ status: "already_saved", resultId });
+    }
     return genericError(403, "result_forbidden");
   }
   return genericError(503, "storage_unavailable");

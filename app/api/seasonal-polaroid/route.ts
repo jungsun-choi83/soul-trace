@@ -17,13 +17,15 @@ import {
   validateSeasonalPolaroidPhotoContent,
 } from "@/lib/seasonal-polaroid-photo-server";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
+import { requireOwnedPet } from "@/lib/pet-first-archive-server";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 240;
 
 // Explicit server-side activation control. The environment flag defaults to
 // false, so local and production deployments remain disabled until reviewed.
-export const SEASONAL_POLAROID_GENERATION_ENABLED = isSeasonalPolaroidEnabled();
+const seasonalPolaroidGenerationEnabled = isSeasonalPolaroidEnabled();
 
 function text(formData: FormData, key: string, maxLength: number): string {
   const value = formData.get(key);
@@ -92,6 +94,7 @@ async function optionalSeasonalUserId(): Promise<string | null> {
 function admissionResponse(
   decision: Awaited<ReturnType<typeof admitSeasonalPolaroidInternally>>,
   requestHash: string,
+  petId: string | null,
 ): Response {
   if (!("jobId" in decision) || !decision.jobId) {
     return guardHttpResponse(decision as Exclude<typeof decision, { decision: "acquired" | "succeeded" }>);
@@ -105,7 +108,7 @@ function admissionResponse(
   }
   if (decision.decision === "succeeded") {
     return Response.json(
-      { status: "succeeded", jobId: decision.jobId, capability, trialRemaining: decision.trialRemaining },
+      { status: "succeeded", jobId: decision.jobId, capability, trialRemaining: decision.trialRemaining, petId },
       { headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -114,7 +117,7 @@ function admissionResponse(
     : decision.decision === "pending" ? "queued" : decision.decision;
   const retryAfter = "retryAfter" in decision ? decision.retryAfter : 1;
   return Response.json(
-    { status, jobId: decision.jobId, capability, trialRemaining: decision.trialRemaining },
+    { status, jobId: decision.jobId, capability, trialRemaining: decision.trialRemaining, petId },
     {
       status: 202,
       headers: {
@@ -129,7 +132,7 @@ export async function POST(request: Request): Promise<Response> {
   // The feature flag is checked before parsing or materializing photos. When
   // controlled test mode is enabled, the additional access gate is also
   // evaluated before admission.
-  if (!SEASONAL_POLAROID_GENERATION_ENABLED) {
+  if (!seasonalPolaroidGenerationEnabled) {
     return Response.json(
       {
         error: "seasonal_polaroid_unavailable",
@@ -168,6 +171,29 @@ export async function POST(request: Request): Promise<Response> {
     return invalidRequest([{ field: "request", code: "invalid_form_data" }]);
   }
 
+  // The request ID is untrusted input. Only a server-side ownership lookup can
+  // bind a Pet-First result; general/guest Polaroids keep a null association.
+  const requestedPetId = text(formData, "petId", 64).trim();
+  let selectedPetId: string | null = null;
+  let selectedPet: { pet_name: string; species?: string | null; life_status?: string | null } | null = null;
+  if (requestedPetId) {
+    const access = await requireOwnedPet(requestedPetId);
+    if (!access.ok) return access.response;
+    if (!authenticatedUserId || access.user.id !== authenticatedUserId) {
+      return Response.json({ error: "pet_unavailable" }, { status: 404, headers: { "Cache-Control": "no-store" } });
+    }
+    selectedPetId = access.pet.pet_id;
+    selectedPet = access.pet;
+
+    // Do not queue paid work that an older completion RPC could persist
+    // without its Pet ID. The additive migration installs the column and the
+    // matching transactional completion logic together.
+    const db = createSupabaseServerClient();
+    if (!db) return Response.json({ error: "pet_polaroid_unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    const petLinkSchema = await db.from("seasonal_polaroid_results").select("pet_id").limit(0);
+    if (petLinkSchema.error) return Response.json({ error: "pet_polaroid_unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+
   const primaryPhoto = readFile(formData, "primaryPhoto", "photo");
   if (hasRepeatedFile(formData, "primaryPhoto", "photo")) {
     return invalidRequest([{ field: "primaryPhoto", code: "too_many" }]);
@@ -195,6 +221,17 @@ export async function POST(request: Request): Promise<Response> {
     personalDetail: optionalText(formData, "personalDetail", 60),
     generationNonce: optionalText(formData, "generationNonce", 128),
   };
+  if (selectedPet) {
+    // Canonical identity/status always come from the owned pet row. Missing
+    // legacy profile fields remain questionnaire answers and are never saved
+    // back to the pet profile.
+    answers.petName = selectedPet.pet_name.slice(0, 12);
+    if (typeof selectedPet.species === "string" && ["dog", "cat", "rabbit", "hamster", "bird", "other"].includes(selectedPet.species)) {
+      answers.species = selectedPet.species;
+    }
+    if (selectedPet.life_status === "living") answers.status = "living";
+    if (selectedPet.life_status === "memorial") answers.status = "passed";
+  }
 
   // Only the primary photo is read; any extra file fields are ignored.
   const validation = validateSeasonalPolaroidRequest({ answers, primaryPhoto: primaryPhoto! });
@@ -220,6 +257,7 @@ export async function POST(request: Request): Promise<Response> {
   const baseRequestHash = await seasonalPolaroidRequestHash({
     answers: validation.answers,
     primaryBytes,
+    petId: selectedPetId,
   });
   // A local developer submission gets its own idempotency namespace. This
   // prevents it from reusing a customer's job while keeping normal retries
@@ -257,10 +295,11 @@ export async function POST(request: Request): Promise<Response> {
     },
     ...(accountHash ? { accountHash } : {}),
     identity: authenticatedUserId,
+    petId: selectedPetId,
     developerTestMode,
   });
   if (["unavailable", "rate_limited", "busy", "conflict", "guest_trial_exhausted"].includes(decision.decision)) {
     return guardHttpResponse(decision as Exclude<typeof decision, { decision: "acquired" | "succeeded" }>);
   }
-  return admissionResponse(decision, requestHash);
+  return admissionResponse(decision, requestHash, selectedPetId);
 }

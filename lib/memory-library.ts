@@ -18,6 +18,48 @@ export type MemoryAsset = {
   order: number;
 };
 
+export type PrivateMemoryAsset = {
+  asset_id: string;
+  storage_bucket: string;
+  storage_path: string;
+  content_type: string;
+  asset_order: number;
+};
+
+export async function signAvailableMemoryAssets(
+  assets: readonly PrivateMemoryAsset[],
+  createSignedUrl: (asset: PrivateMemoryAsset) => Promise<{ url: string | null; error?: unknown }>,
+): Promise<{ assets: MemoryAsset[]; failedCount: number }> {
+  const results = await Promise.all(assets.map(async (asset) => {
+    try {
+      const signed = await createSignedUrl(asset);
+      if (signed.error || !signed.url) return null;
+      return {
+        assetId: asset.asset_id,
+        url: signed.url,
+        contentType: asset.content_type || "application/octet-stream",
+        order: asset.asset_order,
+      };
+    } catch {
+      return null;
+    }
+  }));
+  const available = results.filter((asset): asset is MemoryAsset => asset !== null);
+  return { assets: available, failedCount: results.length - available.length };
+}
+
+export async function readOptionalMemoryRows<T>(
+  read: () => PromiseLike<{ data: T[] | null; error: { code?: string | null } | null }>,
+): Promise<{ rows: T[]; errorCode: string | null }> {
+  try {
+    const result = await read();
+    if (result.error) return { rows: [], errorCode: result.error.code || "read_failed" };
+    return { rows: result.data ?? [], errorCode: null };
+  } catch {
+    return { rows: [], errorCode: "read_failed" };
+  }
+}
+
 export type MemoryLibraryItem = PetTimelineDate & {
   entryId: string;
   kind: MemoryKind;
@@ -38,6 +80,16 @@ export type DayGroup<T extends PetTimelineDate = MemoryLibraryItem> = {
 export type MonthGroup<T extends PetTimelineDate = MemoryLibraryItem> = {
   key: string;
   days: DayGroup<T>[];
+};
+
+export type YearMonthFolder<T extends PetTimelineDate = MemoryLibraryItem> = MonthGroup<T> & {
+  year: string;
+  count: number;
+};
+
+export type YearFolder<T extends PetTimelineDate = MemoryLibraryItem> = {
+  year: string;
+  months: YearMonthFolder<T>[];
 };
 
 export const MOOD_JOURNAL_TITLE = "마음 기록";
@@ -64,8 +116,40 @@ export function deviceHref(petId: string): string {
   return `/my/device?pet=${encodeURIComponent(petId)}`;
 }
 
-export function polaroidHrefFromArchive(petId: string): string {
-  return `/polaroid?petId=${encodeURIComponent(petId)}`;
+export function polaroidHrefFromArchive(petId: string, entryId?: string, assetId?: string): string {
+  const query = new URLSearchParams({ petId });
+  if (entryId && assetId) {
+    query.set("memoryEntryId", entryId);
+    query.set("memoryAssetId", assetId);
+  }
+  return `/polaroid?${query.toString()}`;
+}
+
+export type MemoryPolaroidPhotoSource = {
+  assetId: string;
+  entryId: string;
+  ownerUserId: string;
+  petId: string;
+  storageBucket: string;
+  storagePath: string;
+  contentType: string;
+};
+
+export function authorizeMemoryPolaroidPhoto(
+  source: MemoryPolaroidPhotoSource | null | undefined,
+  expected: { assetId: string; entryId: string; ownerUserId: string; petId: string },
+): MemoryPolaroidPhotoSource | null {
+  if (!source) return null;
+  if (
+    source.assetId !== expected.assetId
+    || source.entryId !== expected.entryId
+    || source.ownerUserId !== expected.ownerUserId
+    || source.petId !== expected.petId
+    || source.storageBucket !== "life-archive-photos"
+    || !source.storagePath
+    || !["image/jpeg", "image/png", "image/webp"].includes(source.contentType)
+  ) return null;
+  return source;
 }
 
 export function beamSceneHref(petId: string, entryId?: string, assetId?: string): string {
@@ -144,6 +228,7 @@ function parseOptionalTitle(value: unknown): string | null | undefined {
 
 export type MemoryPatch = {
   title?: string | null;
+  story?: string | null;
   place?: string | null;
   happenedOn?: string | null;
   favorite?: boolean;
@@ -159,6 +244,17 @@ export function parseMemoryPatch(
     const title = parseOptionalTitle(record.title);
     if (title === undefined) return { ok: false, error: "invalid_memory" };
     value.title = title;
+  }
+  if ("story" in record) {
+    if (record.story === null || record.story === "") {
+      value.story = null;
+    } else if (typeof record.story !== "string") {
+      return { ok: false, error: "invalid_memory" };
+    } else {
+      const story = record.story.trim();
+      if (story.length > 2000) return { ok: false, error: "invalid_memory" };
+      value.story = story || null;
+    }
   }
   if ("place" in record) {
     const place = parseOptionalPlace(record.place);
@@ -181,6 +277,7 @@ export function parseMemoryPatch(
 export function memoryPatchRow(input: MemoryPatch, updatedAt: string) {
   return {
     ...(Object.prototype.hasOwnProperty.call(input, "title") ? { title: input.title ?? null } : {}),
+    ...(Object.prototype.hasOwnProperty.call(input, "story") ? { story: input.story ?? null } : {}),
     ...(Object.prototype.hasOwnProperty.call(input, "place") ? { place: input.place ?? null } : {}),
     ...(Object.prototype.hasOwnProperty.call(input, "happenedOn") ? { happened_on: input.happenedOn ?? null } : {}),
     ...(Object.prototype.hasOwnProperty.call(input, "favorite") ? { favorite: Boolean(input.favorite) } : {}),
@@ -207,6 +304,39 @@ export function groupLibraryByMonthAndDay<T extends PetTimelineDate & { createdA
     else month.days.push({ key: dayKey, items: [item] });
   }
   return months;
+}
+
+export function groupLibraryIntoYearFolders<T extends PetTimelineDate & { createdAt: string }>(items: T[]): YearFolder<T>[] {
+  const years: YearFolder<T>[] = [];
+  for (const month of groupLibraryByMonthAndDay(items)) {
+    const year = month.key.slice(0, 4);
+    const folder: YearMonthFolder<T> = {
+      ...month,
+      year,
+      count: month.days.reduce((count, day) => count + day.items.length, 0),
+    };
+    let yearGroup = years[years.length - 1];
+    if (!yearGroup || yearGroup.year !== year) {
+      yearGroup = { year, months: [] };
+      years.push(yearGroup);
+    }
+    yearGroup.months.push(folder);
+  }
+  return years;
+}
+
+export function flattenYearFoldersNewestFirst<T extends PetTimelineDate>(years: readonly YearFolder<T>[]): YearMonthFolder<T>[] {
+  return years.flatMap((year) => year.months).sort((a, b) => b.key.localeCompare(a.key));
+}
+
+export function monthFolderCoverUrl(folder: YearMonthFolder<MemoryLibraryItem>): string | null {
+  for (const day of folder.days) {
+    for (const item of day.items) {
+      const photo = item.assets.find((asset) => asset.contentType.startsWith("image/"));
+      if (photo) return photo.url;
+    }
+  }
+  return null;
 }
 
 export function isMoodJournalItem(item: Pick<MemoryLibraryItem, "kind" | "title">): boolean {

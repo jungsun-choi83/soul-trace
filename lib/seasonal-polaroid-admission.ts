@@ -35,6 +35,8 @@ import {
 
 export type SeasonalPolaroidQueuePayload = {
   version: 1;
+  /** Canonical pet selected by an authenticated owner; null for general flow. */
+  petId?: string | null;
   themeId: string;
   locale: string;
   answers: {
@@ -93,14 +95,18 @@ function normalizedAnswers(answers: SeasonalPolaroidQuestionnaire) {
 export async function seasonalPolaroidRequestHash(args: {
   answers: SeasonalPolaroidQuestionnaire;
   primaryBytes: Uint8Array;
+  petId?: string | null;
 }): Promise<string> {
   const primaryPhotoHash = await sha256Hex(args.primaryBytes);
   // The hash shape keeps the retired `secondary: null` slot so one-photo
   // requests admitted before the second upload was removed still match.
-  return sha256Hex(JSON.stringify({
+  const request = {
     answers: normalizedAnswers(args.answers),
     photos: { primary: primaryPhotoHash, secondary: null },
-  }));
+  };
+  // Keep the exact legacy hash shape for guest/general jobs. A selected pet
+  // gets its own idempotency namespace so two pets can never reuse a result.
+  return sha256Hex(JSON.stringify(args.petId ? { ...request, petId: args.petId.toLowerCase() } : request));
 }
 
 export function seasonalPolaroidQueuePayload(
@@ -109,10 +115,12 @@ export function seasonalPolaroidQueuePayload(
   photoMetadata?: SeasonalPolaroidQueuePayload["photoMetadata"],
   guestTrialReservationId?: string,
   guestTrialReservationVersion?: number,
+  petId?: string | null,
 ): SeasonalPolaroidQueuePayload {
   const normalized = normalizedAnswers(answers);
   return {
     version: 1,
+    petId: petId ?? null,
     themeId: normalized.themeId,
     locale: normalized.locale,
     answers: normalized,
@@ -170,6 +178,8 @@ export function parseSeasonalPolaroidQueuePayload(
     payload.version !== 1 ||
     typeof payload.themeId !== "string" || typeof payload.locale !== "string" ||
     typeof payload.resultPath !== "string" ||
+    (payload.petId !== undefined && payload.petId !== null &&
+      (typeof payload.petId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.petId))) ||
     !photos || typeof photos !== "object" ||
     !isPhotoPath(photos.primary, jobId, "primary") ||
     (photos.secondary !== null && !isPhotoPath(photos.secondary, jobId, "secondary")) ||
@@ -206,6 +216,8 @@ export async function admitSeasonalPolaroidInternally(args: {
   requestHash: string;
   /** Server-verified Supabase auth.users ID; never accept this from FormData. */
   identity?: string | null;
+  /** Server-verified canonical pet ID, or null for general/guest creation. */
+  petId?: string | null;
   /** Stable HMAC of the verified Supabase user ID. */
   accountHash?: string;
   /** @deprecated Cookie identity retained for legacy isolated callers only. */
@@ -318,7 +330,7 @@ export async function admitSeasonalPolaroidInternally(args: {
   const payload = seasonalPolaroidQueuePayload(args.answers, uploaded.paths, {
     primary: { name: args.primary.name, contentType: args.primary.contentType },
     secondary: null,
-  }, trial?.reservationId, trial?.reservationVersion);
+  }, trial?.reservationId, trial?.reservationVersion, args.petId);
   const attached = await attachAiGenerationInput({
     kind: "seasonal_polaroid",
     requestHash: args.requestHash,

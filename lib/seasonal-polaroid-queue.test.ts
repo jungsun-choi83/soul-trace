@@ -79,7 +79,7 @@ test("Seasonal migrations target only generation-kind checks and use attempt-sco
 });
 
 test("Seasonal public admission is disabled without exposing a job capability", () => {
-  assert.match(seasonalRoute, /SEASONAL_POLAROID_GENERATION_ENABLED = isSeasonalPolaroidEnabled\(\)/);
+  assert.match(seasonalRoute, /const seasonalPolaroidGenerationEnabled = isSeasonalPolaroidEnabled\(\)/);
   assert.match(seasonalRoute, /primaryPhoto/);
   assert.doesNotMatch(seasonalRoute, /secondaryPhoto|photoSecondary/);
   assert.match(seasonalRoute, /generationNonce/);
@@ -141,6 +141,6 @@ test("internal admission is prepared but not reachable from the disabled public 
   assert.match(admission, /createSeasonalPolaroidInputAttempt/);
   assert.match(admission, /attachAiGenerationInput/);
   assert.match(admission, /scheduleAiGenerationWorker/);
-  assert.match(seasonalRoute, /SEASONAL_POLAROID_GENERATION_ENABLED = isSeasonalPolaroidEnabled\(\)/);
-  assert.match(seasonalRoute, /if \(!SEASONAL_POLAROID_GENERATION_ENABLED\)/);
+  assert.match(seasonalRoute, /const seasonalPolaroidGenerationEnabled = isSeasonalPolaroidEnabled\(\)/);
+  assert.match(seasonalRoute, /if \(!seasonalPolaroidGenerationEnabled\)/);
 });

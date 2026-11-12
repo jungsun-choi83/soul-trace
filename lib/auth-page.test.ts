@@ -7,6 +7,7 @@ import {
   authCallbackUrl,
   authEntryPath,
   continueAfterAuth,
+  newAccountProfilePath,
   resolveAuthReturnPath,
   safeAuthErrorPath,
   safeAuthReturnPath,
@@ -59,6 +60,14 @@ test("authenticated auth visitors redirect while unauthenticated visitors render
   assert.match(page, /<AuthEntry/);
 });
 
+test("new account confirmation continues to a pet profile and preserves Living or Memorial intent", () => {
+  assert.equal(newAccountProfilePath("/dashboard/living?pet=old-pet"), "/my/pets/new?status=living");
+  assert.equal(newAccountProfilePath("/dashboard/memorial?pet=old-pet"), "/my/pets/new?status=memorial");
+  assert.equal(newAccountProfilePath("/my/pets/new?status=memorial"), "/my/pets/new?status=memorial");
+  assert.equal(newAccountProfilePath("/memories?pet=11111111-1111-4111-8111-111111111111"), "/memories?pet=11111111-1111-4111-8111-111111111111");
+  assert.equal(newAccountProfilePath("/choose"), "/my/pets/new");
+});
+
 test("browser and server Supabase authentication stay in separate module graphs", () => {
   assert.match(
     component,
@@ -86,7 +95,9 @@ test("auth page provides localized email, privacy, and signup/sign-in controls",
   assert.equal(en.auth.signIn, "Sign in");
   assert.ok(ko.auth.continueEmail);
   assert.deepEqual(Object.keys(ko.auth).sort(), Object.keys(en.auth).sort());
-  assert.match(component, /authCallbackUrl\(window\.location\.origin, returnTo, lang\)/);
+  assert.match(component, /confirmationRedirectTo\(newProfilePath\)/);
+  assert.match(component, /verifyPasswordSignupOtp/);
+  assert.match(component, /resendPasswordSignupOtp/);
   assert.match(component, /locale: lang/);
 });
 
@@ -305,12 +316,14 @@ test("localized authentication failures remain safe", () => {
 
 test("pending state blocks duplicate requests and language switching has no auth effect", () => {
   assert.match(component, /if \(requestPending\.current\) return/);
-  assert.match(component, /disabled=\{status === "submitting"\}/);
+  assert.match(component, /disabled=\{status !== "idle"\}/);
   assert.doesNotMatch(component, /setLang[\s\S]*(?:createPasswordAccount|signInWithPassword)/);
   assert.match(component, /status === "check_email"/);
   assert.doesNotMatch(component, /auth\.guestHint|welcomeGuestLetter/);
   assert.match(component, /mode === "signin" \|\| privacyConsent/);
-  assert.doesNotMatch(component, /useEffect\([\s\S]*(?:createPasswordAccount|signInWithPassword)/);
+  const timerEffect = component.match(/useEffect\(\(\) => \{[\s\S]*?\}, \[status, resendAvailableAt\]\);/)?.[0] ?? "";
+  assert.ok(timerEffect);
+  assert.doesNotMatch(timerEffect, /createPasswordAccount|signInWithPassword/);
 });
 
 test("confirmation keeps legacy Life Archive restoration and adds only a safe error return", () => {

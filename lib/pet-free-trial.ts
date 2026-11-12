@@ -1,8 +1,9 @@
 export const FREE_POLAROID_GRANT = "polaroid_first" as const;
 export const FREE_STYLES = ["felt-doll", "gouache-story", "crayon-diary"] as const;
-export const GUEST_PET_LIMIT = 1;
 export const FREE_GRANT_DAILY_CAP = 3;
 export const GUEST_STARTS_PER_HOUR = 5;
+// Temporary development allowance; restore this to 5 before production release.
+export const GUEST_GENERATION_ATTEMPTS_PER_HOUR = 10;
 export const GUEST_RETENTION_MS = 72 * 60 * 60 * 1000;
 
 export type FreeStyle = (typeof FREE_STYLES)[number];
@@ -13,6 +14,7 @@ export type TrialError =
   | "exhausted"
   | "deleted"
   | "rate_limited"
+  | "guest_start_limited"
   | "guest_limit"
   | "withheld";
 
@@ -21,6 +23,7 @@ type EntitlementStatus = "available" | "reserved" | "consumed";
 type PetRecord = {
   petId: string;
   name: string;
+  guestPetKey?: string | null;
   photoRevision: number;
   ownerUserId: string | null;
   guestSessionId: string | null;
@@ -60,12 +63,17 @@ export function isFreeStyle(value: unknown): value is FreeStyle {
   return FREE_STYLES.includes(value as FreeStyle);
 }
 
+function guestPetKey(name: string): string {
+  return name.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 export class FreeTrialLedger {
   private pets = new Map<string, PetRecord>();
   private grants = new Map<string, Entitlement>();
   private jobs = new Map<string, Job>();
   private jobsByKey = new Map<string, string>();
   private starts: { key: string; at: number }[] = [];
+  private generationAttempts: { key: string; at: number }[] = [];
   private ids: () => string;
 
   constructor(ids?: () => string) {
@@ -103,14 +111,19 @@ export class FreeTrialLedger {
     }
 
     if (!input.actor.userId) {
-      const guestPets = [...this.pets.values()].filter((pet) => pet.guestSessionId === input.actor.guestSessionId);
-      if (guestPets.length >= GUEST_PET_LIMIT) {
-        const current = guestPets.find((pet) => !pet.deletedAt) ?? guestPets[0];
-        if (!current || current.deletedAt) return { ok: false, error: "deleted" };
-        return { ok: true, petId: current.petId, remaining: this.remaining(current.petId) };
+      const identity = guestPetKey(name);
+      const existing = [...this.pets.values()].find((pet) =>
+        pet.guestSessionId === input.actor.guestSessionId
+        && (pet.guestPetKey ?? guestPetKey(pet.name)) === identity,
+      );
+      if (existing) {
+        if (existing.deletedAt) return { ok: false, error: "deleted" };
+        // Backfill records held by a hot-reloaded in-memory ledger.
+        existing.guestPetKey ??= identity;
+        return { ok: true, petId: existing.petId, remaining: this.remaining(existing.petId) };
       }
     }
-    if (!this.allowStart(input.ipKey, input.now)) return { ok: false, error: "rate_limited" };
+    if (!this.allowStart(input.ipKey, input.now)) return { ok: false, error: "guest_start_limited" };
     if (input.actor.userId && this.grantsToday(input.actor.userId, input.now) >= FREE_GRANT_DAILY_CAP) {
       return { ok: false, error: "withheld" };
     }
@@ -119,6 +132,7 @@ export class FreeTrialLedger {
     this.pets.set(petId, {
       petId,
       name,
+      guestPetKey: input.actor.userId ? null : guestPetKey(name),
       photoRevision: 1,
       ownerUserId: input.actor.userId,
       guestSessionId: input.actor.userId ? null : input.actor.guestSessionId,
@@ -224,6 +238,13 @@ export class FreeTrialLedger {
     return null;
   }
 
+  recordGenerationAttempt(ipKey: string, now: number): boolean {
+    const recent = this.generationAttempts.filter((item) => item.key === ipKey && now - item.at < 60 * 60 * 1000);
+    if (recent.length >= GUEST_GENERATION_ATTEMPTS_PER_HOUR) return false;
+    this.generationAttempts.push({ key: ipKey, at: now });
+    return true;
+  }
+
   claim(guestSessionId: string, userId: string): string[] {
     const moved: string[] = [];
     for (const pet of this.pets.values()) {
@@ -256,6 +277,7 @@ export class FreeTrialLedger {
       this.pets.delete(pet.petId);
     }
     this.starts = this.starts.filter((item) => now - item.at < 60 * 60 * 1000);
+    this.generationAttempts = this.generationAttempts.filter((item) => now - item.at < 60 * 60 * 1000);
   }
 
   private allowStart(ipKey: string, now: number): boolean {

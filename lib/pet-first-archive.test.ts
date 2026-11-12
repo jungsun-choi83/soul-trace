@@ -29,6 +29,7 @@ const rollback = readFileSync("supabase/rollback_pet_first_archive.sql", "utf8")
 const petsRoute = readFileSync("app/api/my/pets/route.ts", "utf8");
 const petRoute = readFileSync("app/api/my/pets/[petId]/route.ts", "utf8");
 const photoRoute = readFileSync("app/api/my/pets/[petId]/photos/route.ts", "utf8");
+const petProfileForm = readFileSync("components/pet-profile-form.tsx", "utf8");
 const videoRoute = readFileSync("app/api/my/pets/[petId]/videos/route.ts", "utf8");
 const memoryRoute = readFileSync("app/api/my/pets/[petId]/memories/route.ts", "utf8");
 const petsPage = readFileSync("app/my/pets/page.tsx", "utf8");
@@ -97,7 +98,17 @@ test("a blank photo date is not treated as the day the photo was taken", () => {
   assert.equal(describeMemoryDate(null), "save-time-only");
   assert.equal(describeMemoryDate("2020-01-02"), "owner-entered");
   assert.equal(parsePetCreateInput({ petName: "보리", birthday: "2026-02-31" }).ok, false);
-  assert.doesNotMatch(photoRoute, /exif/i);
+  assert.match(photoRoute, /form\.getAll\("photoDates"\)/);
+  assert.match(photoRoute, /requireOwnedPet\(petId\)/);
+  assert.match(photoRoute, /persistDatedPhotoBatch/);
+  assert.match(photoRoute, /\.in\("entry_id", entryIds\)/);
+  assert.match(petProfileForm, /upload\.set\("photos", photo\)/);
+});
+
+test("photo API remains compatible with legacy single-date and profile-photo callers", () => {
+  assert.match(photoRoute, /parsePhotoBatchDates\(caption, submittedDates, legacyDate, files\.length\)/);
+  assert.match(photoRoute, /storage\.from\("life-archive-photos"\)\.remove\(uploaded\)/);
+  assert.match(petProfileForm, /fetch\(`\/api\/my\/pets\/\$\{saved\.petId\}\/photos`/);
 });
 
 test("text memories require an owner-written story and stay private in the route", () => {
@@ -245,7 +256,7 @@ test("P1 customer home, profile, memories, and settings stay on existing auth an
   assert.match(tabRoutes, /\/dashboard\/living\$\{petQuery\}/);
   assert.match(tabRoutes, /\/dashboard\/memorial\$\{petQuery\}/);
   assert.match(tabRoutes, /pet: "\/my\/pets"/);
-  assert.match(tabRoutes, /memories: memoriesHref\(petId\)/);
+  assert.match(tabRoutes, /`\/my\/pets\/\$\{encodeURIComponent\(petId\)\}\/memories#album`/);
   assert.match(readFileSync("app/memories/page.tsx", "utf8"), /loadPetHome/);
   assert.doesNotMatch(readFileSync("app/memories/page.tsx", "utf8"), /LifeArchiveAccessRequired|eternal-beam-access/);
   assert.match(petsPage, /PetRoster/);

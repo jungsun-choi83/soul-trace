@@ -183,7 +183,7 @@ test("concurrent attempts have isolated object ownership and cleanup", async () 
 
 test("the public route stays explicitly disabled before migration/generator readiness", () => {
   const route = readFileSync("app/api/seasonal-polaroid/route.ts", "utf8");
-  assert.match(route, /SEASONAL_POLAROID_GENERATION_ENABLED = isSeasonalPolaroidEnabled\(\)/);
+  assert.match(route, /const seasonalPolaroidGenerationEnabled = isSeasonalPolaroidEnabled\(\)/);
   assert.match(route, /seasonal_polaroid_unavailable/);
   assert.doesNotMatch(route, /visualMemoryGenerationCookie/);
   assert.doesNotMatch(route, /acquireAiGeneration\(/);

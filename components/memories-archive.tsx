@@ -176,7 +176,7 @@ export function MemoriesArchive({
           </ul>
         ) : null}
 
-        {access === "guest" ? <GuestImport preview={localPreview} onPick={setLocalPreview} /> : null}
+        {access === "guest" ? <GuestImport preview={localPreview} petId={selectedPetId} onPick={setLocalPreview} /> : null}
         {access === "unavailable" ? (
           <p className="st-card mt-5 px-4 py-4 text-sm leading-6 text-[#6b5846]">이 환경에서는 계정 저장이 아직 준비되지 않았어요. 사진은 서버에 올리지 않아요.</p>
         ) : null}
@@ -256,7 +256,7 @@ export function MemoriesArchive({
             <img src={selected.url} alt={selected.item.title || pet.petName} className="aspect-square w-full rounded-[16px] object-contain bg-[#f8f2e5]" />
             <p className="mt-3 text-sm text-[#6b5846]">{selected.item.happenedOn || selected.item.createdAt.slice(0, 10)}{selected.item.favorite ? " · 즐겨찾기" : ""}</p>
             <div className="mt-3 grid gap-2">
-              <button type="button" onClick={() => void toggleFavorite(selected)} className="st-btn st-btn-quiet w-full">즐겨찾기</button>
+              {selected.item.deletable ? <button type="button" onClick={() => void toggleFavorite(selected)} className="st-btn st-btn-quiet w-full">{selected.item.favorite ? "즐겨찾기 해제" : "즐겨찾기"}</button> : null}
               <Link href={polaroidHrefFromArchive(pet.petId)} className="st-btn st-btn-forest w-full">폴라로이드 만들기</Link>
               <Link href={beamSceneHref(pet.petId, selected.item.entryId, selected.assetId)} className="st-btn st-btn-quiet w-full">Beam 장면 미리보기</Link>
               {selected.item.deletable ? <button type="button" onClick={() => void remove(selected)} className="st-btn st-btn-quiet w-full">삭제</button> : null}
@@ -272,9 +272,11 @@ export function MemoriesArchive({
 
 function GuestImport({
   preview,
+  petId,
   onPick,
 }: {
   preview: string | null;
+  petId: string | null;
   onPick: (url: string | null) => void;
 }) {
   return (
@@ -300,7 +302,7 @@ function GuestImport({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={preview} alt="" className="aspect-square w-full rounded-[16px] object-contain bg-[#f8f2e5]" />
       ) : null}
-      <Link href={authEntryPath("/memories", "signin")} className="st-btn st-btn-quiet w-full">로그인하고 기록에 저장</Link>
+      <Link href={authEntryPath(memoriesHref(petId), "signin")} className="st-btn st-btn-quiet w-full">로그인하고 기록에 저장</Link>
     </section>
   );
 }

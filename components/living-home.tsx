@@ -13,7 +13,9 @@ import type { HomePet, HomeRecent } from "@/lib/pet-first-archive-data";
 import { petFirstCopy } from "@/lib/storybook-copy";
 import { storyTabProps } from "@/lib/story-tabs";
 import { FreePolaroidNotice } from "@/components/free-polaroid-notice";
+import { HomeRecentMemories } from "@/components/home-recent-memories";
 import { POSE_ART } from "@/lib/pose-art";
+import { recentMemoriesForPet } from "@/lib/home-memory-preview";
 import Link from "next/link";
 
 const COPY = {
@@ -21,9 +23,11 @@ const COPY = {
     title: "우리 아이와 함께하는 오늘",
     importTitle: "우리 아이 사진 가져오기",
     importBody: "사진 원본은 그대로 두고, 이 아이 기록으로 모아요.",
-    monthTitle: "이번 달의 추억",
-    monthBody: "촬영일 기준으로 이번 달 사진을 모아 봐요.",
-    monthlyEmpty: "이번 달로 모을 사진이 아직 없어요.",
+    albumTitle: "월별 추억 앨범",
+    albumBody: "추억을 연도와 월별 폴더로 모아 봐요.",
+    recentTitle: "최근 추억",
+    recentEmpty: "아직 남긴 추억이 없어요.",
+    viewAll: "앨범 모두 보기",
     createTitle: "특별한 추억 만들기",
     createBody: "AI 편지와 폴라로이드는 만들기에서 이어져요.",
     deviceStatus: "기기 연결 전 · 데모",
@@ -35,9 +39,11 @@ const COPY = {
     title: "Today with our pet",
     importTitle: "Bring in our pet's photos",
     importBody: "Original photos stay as they are, and copies gather with this pet.",
-    monthTitle: "This month's memories",
-    monthBody: "Photos from this month stay grouped by the day they were taken.",
-    monthlyEmpty: "No photos to group this month yet.",
+    albumTitle: "Memories Album",
+    albumBody: "Open this pet's memories, organized into year and month folders.",
+    recentTitle: "Recent memories",
+    recentEmpty: "No memories for this pet yet.",
+    viewAll: "View album",
     createTitle: "Make a special memory",
     createBody: "AI letters and polaroids continue from Create.",
     deviceStatus: "Device not connected · demo",
@@ -66,12 +72,10 @@ export function LivingHome({
   const waiting = pets.filter((pet) => pet.lifeStatus === "unspecified" && pet.petId !== selectedPetId);
   const selected = here.find((pet) => pet.petId === selectedPetId) ?? here.find((pet) => pet.lifeStatus === "living") ?? null;
   const petId = selected?.petId ?? null;
-  const visibleIds = new Set(here.map((pet) => pet.petId));
-  const memories = recent.filter((item) => visibleIds.has(item.petId));
-  const months = groupMonths(memories);
+  const memories = recentMemoriesForPet(recent, petId);
   const saveHref = (path: string) => (signedIn ? path : authEntryPath(path));
-  const importHref = petId ? saveHref(`/memories/import?pet=${encodeURIComponent(petId)}`) : saveHref("/my/pets/new?status=living");
-  const monthlyHref = petId ? saveHref(`/memories/month?pet=${encodeURIComponent(petId)}`) : saveHref("/my/pets/new?status=living");
+  const importHref = petId ? saveHref(`/my/pets/${encodeURIComponent(petId)}/memories/record`) : saveHref("/my/pets/new?status=living");
+  const albumHref = petId ? saveHref(`/my/pets/${encodeURIComponent(petId)}/memories#album`) : saveHref("/my/pets");
   const createHref = petId ? `/create?pet=${encodeURIComponent(petId)}&branch=living` : "/create?branch=living";
   const collarHref = petId ? `/my/device?pet=${encodeURIComponent(petId)}` : "/my/device";
 
@@ -99,49 +103,21 @@ export function LivingHome({
 
         <div className="mt-4 grid gap-3">
           <Feature href={importHref} title={copy.importTitle} body={copy.importBody} />
-          <Feature href={monthlyHref} title={copy.monthTitle} body={copy.monthBody} />
+          <Feature href={albumHref} title={copy.albumTitle} body={copy.albumBody} />
           <Feature href={createHref} title={copy.createTitle} body={copy.createBody} />
         </div>
         <Link href={collarHref} className="mt-3 inline-flex min-h-11 items-center text-sm text-[#6b5846]">
           {copy.deviceStatus}
         </Link>
 
-        <section className="mt-6" aria-labelledby="living-months">
-          <h2 id="living-months" className="st-headline text-xl text-[#3a452f]">{copy.monthTitle}</h2>
-          {months.length === 0 ? (
-            <>
-              <ul className="mt-3 grid grid-cols-3 gap-2">
-                {[POSE_ART.shibaSpring, POSE_ART.shibaAutumn, POSE_ART.corgiSpring].map((src) => (
-                  <li key={src}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt="" className="aspect-square w-full rounded-[16px] bg-[#f6efe2] object-contain object-center" />
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 text-sm text-[#6b5846]">{copy.monthlyEmpty}</p>
-            </>
-          ) : null}
-          <ul className="mt-3 grid gap-2">
-            {months.map(([month, items]) => (
-              <li key={month}>
-                <Link href={monthlyHref} className="block rounded-[18px] border border-[#e4d2b4] bg-[#fffdf8] px-4 py-3">
-                  <span className="font-semibold text-[#3a452f]">{month}</span>
-                  <span className="mt-1 block text-sm text-[#6b5846]">{items.length}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <ul className="mt-3 grid gap-2">
-          {memories.map((item) => (
-            <li key={item.entryId}>
-              <Link href={`/my/pets/${item.petId}`} className="block rounded-[18px] border border-[#e4d2b4] bg-[#fffdf8] px-4 py-3 text-sm text-[#3a3428]">
-                {item.title || item.happenedOn || item.petName}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <HomeRecentMemories
+          items={memories}
+          href={albumHref}
+          lang={lang === "en" ? "en" : "ko"}
+          title={copy.recentTitle}
+          empty={copy.recentEmpty}
+          viewAll={copy.viewAll}
+        />
       </main>
       <StoryTabbar current="home" {...storyTabProps(tabs, petId, signedIn, "living")} />
     </div>
@@ -224,15 +200,4 @@ function PetSwitch({
       ) : null}
     </div>
   );
-}
-
-function groupMonths(items: HomeRecent[]): [string, HomeRecent[]][] {
-  const groups = new Map<string, HomeRecent[]>();
-  for (const item of items) {
-    const key = (item.happenedOn ?? item.createdAt).slice(0, 7);
-    const list = groups.get(key) ?? [];
-    list.push(item);
-    groups.set(key, list);
-  }
-  return [...groups.entries()];
 }

@@ -3,10 +3,10 @@
 /* eslint-disable @next/next/no-img-element -- Phase 2 previews use local blob URLs and stay client-side. */
 
 import { LanguageToggle } from "@/components/language-toggle";
-import { storyTabProps } from "@/components/pet-first-home";
 import { BrandMark } from "@/components/storybook/brand-mark";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
 import { petFirstCopy } from "@/lib/pet-first-archive";
+import { storyTabProps } from "@/lib/story-tabs";
 import { LetterDownloadGate } from "@/components/letter-download-gate";
 import { useLocale } from "@/components/locale-provider";
 import { useAuthSession } from "@/components/use-auth-session";
@@ -32,7 +32,14 @@ import {
   POLAROID_OCCASION_GROUPS,
   type PolaroidThemeCatalogEntry,
 } from "@/lib/polaroid-theme-catalog";
+import { resolvePolaroidFrameThemeId } from "@/lib/polaroid-frames";
 import { polaroidThemeById } from "@/lib/polaroid-themes";
+import {
+  parseSeasonalPolaroidPetProfile,
+  polaroidStatusFromLifeStatus,
+  seasonalPolaroidDraftKey,
+  type SeasonalPolaroidPetProfile,
+} from "@/lib/seasonal-polaroid-pet";
 import {
   SEASONAL_POLAROID_PHOTO_ACCEPT,
   validateSeasonalPolaroidPhoto,
@@ -84,6 +91,8 @@ type PolaroidAnswers = {
   personalDetail: string;
 };
 
+type SavedPolaroidDraft = Partial<PolaroidAnswers> & { sceneChoiceVersion?: number };
+
 type LocalPhoto = {
   id: string;
   file: File;
@@ -104,9 +113,11 @@ type PolaroidEntryProps = {
   christmasEnabled?: boolean;
   artAllEnabled?: boolean;
   initialPetId?: string | null;
+  resumeDraft?: boolean;
+  initialMemoryEntryId?: string | null;
+  initialMemoryAssetId?: string | null;
 };
 
-const DRAFT_STORAGE_KEY = "soul-trace-seasonal-polaroid-draft";
 const EMPTY_ANSWERS: PolaroidAnswers = {
   themeId: "",
   occasionId: "",
@@ -163,36 +174,65 @@ function koreanSubject(name: string): string {
   return `${trimmed}${hasFinalConsonant ? "이" : "가"}`;
 }
 
-function sceneDefaults(themeId: string, status: PolaroidStatus | "") {
-  const theme = polaroidThemeById(themeId) ?? polaroidThemeById("halloween")!;
-  const typedStatus = status || "living";
-  return {
-    costume: optionsForStatus(theme.costumes, typedStatus)[0]?.id ?? "",
-    scene: optionsForStatus(theme.scenes, typedStatus)[0]?.id ?? "",
-    vibe: optionsForStatus(theme.vibes, typedStatus)[0]?.id ?? "",
-  };
-}
-
 function interpolateWhisper(text: string, name: string, lang: Locale): string {
   return text
     .replaceAll("%NAME%", name.trim())
     .replaceAll("%NAME_SUBJECT%", lang === "ko" ? koreanSubject(name) : name.trim());
 }
 
-function restoreDraft(value: unknown): Partial<PolaroidAnswers> {
+function defaultPolaroidSceneAnswers(
+  themeId: string,
+  occasionId: string,
+  status: PolaroidStatus | "",
+  current: Pick<PolaroidAnswers, "costume" | "scene" | "vibe">,
+): Pick<PolaroidAnswers, "costume" | "scene" | "vibe"> {
+  const optionTheme = polaroidThemeById(occasionId) ?? polaroidThemeById(themeId);
+  // Never turn a missing/unknown new-flow theme into an implicit Halloween
+  // request. Admission validation will reject missing required legacy values.
+  if (!optionTheme) return { costume: "", scene: "", vibe: "" };
+  const resolvedStatus = status || "living";
+  const costumes = optionsForStatus(optionTheme.costumes, resolvedStatus);
+  const scenes = optionsForStatus(optionTheme.scenes, resolvedStatus);
+  const vibes = optionsForStatus(optionTheme.vibes, resolvedStatus);
+  const pick = (options: readonly SeasonalOption[], selected: string, preferred = "") =>
+    options.some((item) => item.id === selected)
+      ? selected
+      : options.some((item) => item.id === preferred)
+        ? preferred
+        : options[0]?.id ?? "";
+
+  return {
+    costume: pick(costumes, current.costume, "surprise"),
+    scene: pick(scenes, current.scene),
+    vibe: pick(vibes, current.vibe),
+  };
+}
+
+function restoreDraft(
+  value: unknown,
+  flags: { yearRound?: boolean; christmas?: boolean; artAll?: boolean },
+): Partial<PolaroidAnswers> {
   if (!value || typeof value !== "object") return {};
-  const draft = value as Partial<PolaroidAnswers>;
+  const draft = value as SavedPolaroidDraft;
+  // Older drafts contain values that the UI silently selected as defaults.
+  // Only restore these choices after the user has explicitly chosen them in
+  // the updated questionnaire.
+  const hasExplicitSceneChoices = draft.sceneChoiceVersion === 2;
   const restored: Partial<PolaroidAnswers> = {
     themeId: typeof draft.themeId === "string" && (isEverydayPolaroidArtStyle(draft.themeId) || draft.themeId === "halloween") && polaroidThemeById(draft.themeId) ? draft.themeId : "",
-    occasionId: typeof draft.occasionId === "string" && polaroidOccasionItem(draft.occasionId) ? draft.occasionId : "",
+    occasionId: typeof draft.occasionId === "string"
+      && polaroidOccasionItem(draft.occasionId)
+      && isPolaroidOccasionAdmitted(draft.occasionId, flags)
+      ? draft.occasionId
+      : "",
     petName: typeof draft.petName === "string" ? draft.petName.slice(0, 12) : "",
     species: ["dog", "cat", "rabbit", "hamster", "bird", "other"].includes(String(draft.species))
       ? draft.species as PolaroidSpecies
       : "",
     status: draft.status === "living" || draft.status === "passed" ? draft.status : "",
-    costume: typeof draft.costume === "string" ? draft.costume : "",
-    scene: typeof draft.scene === "string" ? draft.scene : "",
-    vibe: typeof draft.vibe === "string" ? draft.vibe : "",
+    costume: hasExplicitSceneChoices && typeof draft.costume === "string" ? draft.costume : "",
+    scene: hasExplicitSceneChoices && typeof draft.scene === "string" ? draft.scene : "",
+    vibe: hasExplicitSceneChoices && typeof draft.vibe === "string" ? draft.vibe : "",
     personalities: Array.isArray(draft.personalities)
       ? draft.personalities.filter((item): item is string => typeof item === "string").slice(0, 2)
       : [],
@@ -310,6 +350,9 @@ export function PolaroidEntry({
   christmasEnabled = false,
   artAllEnabled = false,
   initialPetId = null,
+  resumeDraft = false,
+  initialMemoryEntryId = null,
+  initialMemoryAssetId = null,
 }: PolaroidEntryProps) {
   const { lang, t: translate } = useLocale();
   // Seasonal generation copy lives under the flow namespace in both locale
@@ -327,6 +370,13 @@ export function PolaroidEntry({
     artAll: artAllEnabled,
   }), [artAllEnabled, christmasEnabled, yearRoundEnabled]);
   const [savedPets, setSavedPets] = useState<Array<{ petId: string; petName: string; species: string | null; lifeStatus: string }>>([]);
+  const [selectedPet, setSelectedPet] = useState<SeasonalPolaroidPetProfile | null>(null);
+  const selectedPetSpecies = selectedPet
+    ? SPECIES_OPTIONS.find((item) => item.id === selectedPet.species?.trim().toLowerCase())
+    : undefined;
+  const selectedPetStatus = selectedPet ? polaroidStatusFromLifeStatus(selectedPet.lifeStatus) : null;
+  const [petProfileLoading, setPetProfileLoading] = useState(false);
+  const [petProfileError, setPetProfileError] = useState(false);
   const artThemes = useMemo(
     () => everydayPolaroidArtStyles(themeFlags),
     [themeFlags],
@@ -335,7 +385,6 @@ export function PolaroidEntry({
   const [answers, setAnswers] = useState<PolaroidAnswers>(() => ({
     ...EMPTY_ANSWERS,
     themeId: yearRoundEnabled ? "" : "halloween",
-    ...(!yearRoundEnabled ? sceneDefaults("halloween", "") : {}),
   }));
   const theme = polaroidThemeById(answers.themeId) ?? polaroidThemeById("halloween")!;
   const optionTheme = polaroidThemeById(answers.occasionId) ?? theme;
@@ -376,7 +425,9 @@ export function PolaroidEntry({
   const [isDownloading, setIsDownloading] = useState(false);
   const [whisperTrigger, setWhisperTrigger] = useState<WhisperTrigger>({ kind: "default" });
   const primaryInputRef = useRef<HTMLInputElement>(null);
+  const initialPetLoadKey = useRef("");
   const photoRef = useRef<LocalPhoto | null>(null);
+  const selectedPetIdRef = useRef<string | null>(selectedPet?.petId ?? null);
   const imageUrlRef = useRef<string | null>(null);
   const polaroidRef = useRef<HTMLDivElement>(null);
   const saveLock = useRef(false);
@@ -390,17 +441,65 @@ export function PolaroidEntry({
     setImageUrl(null);
   };
 
+  const applySavedPet = useCallback((pet: SeasonalPolaroidPetProfile) => {
+    const speciesId = SPECIES_OPTIONS.find((item) => item.id === pet.species)?.id as PolaroidSpecies | undefined;
+    const status = polaroidStatusFromLifeStatus(pet.lifeStatus);
+    if (selectedPetIdRef.current !== pet.petId) {
+      if (photoRef.current) URL.revokeObjectURL(photoRef.current.url);
+      setPrimaryPhoto(null);
+      photoRef.current = null;
+    }
+    let draft: Partial<PolaroidAnswers> = {};
+    if (resumeDraft) {
+      try {
+        const saved = window.sessionStorage.getItem(seasonalPolaroidDraftKey(pet.petId));
+        if (saved) draft = restoreDraft(JSON.parse(saved), themeFlags);
+      } catch {
+        // A malformed or blocked pet draft is safely ignored.
+      }
+    }
+    const base: PolaroidAnswers = {
+      ...EMPTY_ANSWERS,
+      themeId: yearRoundEnabled ? "" : "halloween",
+    };
+    const savedStatusMatchesProfile = !status || !draft.status || draft.status === status;
+    setAnswers({
+      ...base,
+      ...draft,
+      ...(savedStatusMatchesProfile ? {} : { costume: "", scene: "", vibe: "" }),
+      // Profile fields take precedence over editable draft values.
+      petName: pet.petName.slice(0, 12),
+      ...(speciesId ? { species: speciesId } : {}),
+      ...(status ? { status } : {}),
+    });
+    selectedPetIdRef.current = pet.petId;
+    setSelectedPet(pet);
+    setPetProfileError(false);
+    setError(null);
+    setWhisperTrigger({ kind: "default" });
+  }, [resumeDraft, themeFlags, yearRoundEnabled]);
+
   useEffect(() => {
     try {
-      const saved = window.sessionStorage.getItem(DRAFT_STORAGE_KEY);
-      if (saved) {
-        setAnswers((current) => ({ ...current, ...restoreDraft(JSON.parse(saved)) }));
+      // A pet entry link is not trusted until its owner-scoped API lookup
+      // succeeds. Never hydrate that flow from the shared no-pet draft.
+      if (!initialPetId && resumeDraft) {
+        const saved = window.sessionStorage.getItem(seasonalPolaroidDraftKey());
+        if (saved) setAnswers((current) => ({ ...current, ...restoreDraft(JSON.parse(saved), themeFlags) }));
       }
     } catch {
       // A blocked or malformed draft is safely ignored.
     }
     setHydrated(true);
-  }, []);
+  }, [initialPetId, resumeDraft, themeFlags]);
+
+  useEffect(() => {
+    if (!hydrated || resumeDraft) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("resumeDraft") === "1") return;
+    url.searchParams.set("resumeDraft", "1");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [hydrated, resumeDraft]);
 
   useEffect(() => {
     photoRef.current = primaryPhoto;
@@ -411,25 +510,25 @@ export function PolaroidEntry({
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || (initialPetId && !selectedPet)) return;
     try {
-      window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(answers));
+      window.sessionStorage.setItem(seasonalPolaroidDraftKey(selectedPet?.petId), JSON.stringify({ ...answers, sceneChoiceVersion: 2 }));
     } catch {
       // Draft restoration is an enhancement; private browsing may disable it.
     }
-  }, [answers, hydrated]);
+  }, [answers, hydrated, initialPetId, selectedPet]);
 
   useEffect(() => {
-    if (!hydrated || !generationEnabled) return;
+    if (!hydrated || !generationEnabled || (initialPetId && !selectedPet)) return;
     const saved = readSeasonalPolaroidSession();
-    if (!saved) return;
+    if (!saved || (saved.petId ?? null) !== (selectedPet?.petId ?? null)) return;
     setGenerationSession(saved);
     if (saved.pendingAction) setPendingAction(saved.pendingAction);
     const pending = readPendingResultSave();
     if (pending?.kind === "seasonal-polaroid" && pending.jobId === saved.jobId) setPendingAction(pending.action);
     setView("developing");
     setGenerationStatus("queued");
-  }, [generationEnabled, hydrated]);
+  }, [generationEnabled, hydrated, initialPetId, selectedPet]);
 
   useEffect(() => {
     if (Date.now() >= resendAvailableAt) return;
@@ -468,10 +567,30 @@ export function PolaroidEntry({
   }, [authSession.status, hydrated]);
 
   useEffect(() => {
-    if (!initialPetId || !savedPets.length) return;
-    const pet = savedPets.find((item) => item.petId === initialPetId);
-    if (pet) applySavedPet(pet);
-  }, [initialPetId, savedPets]);
+    if (!initialPetId || authSession.status !== "authenticated") return;
+    const loadKey = `${initialPetId}:${authSession.status}:${resumeDraft ? "resume" : "new"}`;
+    if (initialPetLoadKey.current === loadKey) return;
+    initialPetLoadKey.current = loadKey;
+    const controller = new AbortController();
+    setPetProfileLoading(true);
+    setPetProfileError(false);
+    void fetch(`/api/my/pets/${encodeURIComponent(initialPetId)}`, {
+      credentials: "same-origin",
+      cache: "no-store",
+      signal: controller.signal,
+    }).then(async (response) => {
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error("pet_profile_unavailable");
+      const profile = parseSeasonalPolaroidPetProfile(body, initialPetId);
+      if (!profile) throw new Error("pet_profile_invalid");
+      applySavedPet(profile);
+    }).catch(() => {
+      if (!controller.signal.aborted) setPetProfileError(true);
+    }).finally(() => {
+      if (!controller.signal.aborted) setPetProfileLoading(false);
+    });
+    return () => controller.abort();
+  }, [applySavedPet, authSession.status, initialPetId, resumeDraft]);
 
   useEffect(() => {
     if (!hydrated || !generationEnabled) return;
@@ -615,10 +734,11 @@ export function PolaroidEntry({
       : `seasonalPolaroid.flow.${whisperRule.key}`;
   const whisperText = interpolateWhisper(t(whisperPath), answers.petName, lang);
 
+  const isArtStyleFlow = isEverydayPolaroidArtStyle(answers.themeId);
   const selectedChips = [
-    answers.costume ? optionById(optionTheme.costumes, answers.costume) : undefined,
-    answers.scene ? optionById(optionTheme.scenes, answers.scene) : undefined,
-    answers.vibe ? optionById(optionTheme.vibes, answers.vibe) : undefined,
+    isArtStyleFlow ? undefined : answers.costume ? optionById(optionTheme.costumes, answers.costume) : undefined,
+    isArtStyleFlow ? undefined : answers.scene ? optionById(optionTheme.scenes, answers.scene) : undefined,
+    isArtStyleFlow ? undefined : answers.vibe ? optionById(optionTheme.vibes, answers.vibe) : undefined,
     ...answers.personalities.map((id) => optionById(theme.personalities, id)),
     answers.habit && answers.habit !== "custom"
       ? optionById(availableHabits, answers.habit)
@@ -645,14 +765,7 @@ export function PolaroidEntry({
   };
 
   const updateStatus = (nextStatus: PolaroidStatus) => {
-    setAnswers((current) => {
-      const nextOption = polaroidThemeById(current.occasionId) ?? polaroidThemeById(current.themeId) ?? polaroidThemeById("halloween")!;
-      return {
-        ...current,
-        status: nextStatus,
-        ...sceneDefaults(nextOption.id, nextStatus),
-      };
-    });
+    setAnswers((current) => ({ ...current, status: nextStatus, costume: "", scene: "", vibe: "" }));
     setError(null);
     setWhisperTrigger({ kind: "default" });
   };
@@ -660,14 +773,7 @@ export function PolaroidEntry({
   const updateTheme = (nextThemeId: string) => {
     const nextTheme = polaroidThemeById(nextThemeId);
     if (!nextTheme) return;
-    setAnswers((current) => {
-      const optionId = polaroidThemeById(current.occasionId) ? current.occasionId : nextThemeId;
-      return {
-        ...current,
-        themeId: nextThemeId,
-        ...sceneDefaults(optionId, current.status),
-      };
-    });
+    setAnswers((current) => ({ ...current, themeId: nextThemeId, costume: "", scene: "", vibe: "" }));
     setError(null);
     setWhisperTrigger({ kind: "default" });
   };
@@ -676,24 +782,16 @@ export function PolaroidEntry({
     setAnswers((current) => {
       const cleared = current.occasionId === nextOccasionId;
       const occasionId = cleared ? "" : nextOccasionId;
-      const optionId = polaroidThemeById(occasionId)?.id || current.themeId || "halloween";
       return {
         ...current,
         occasionId,
-        ...sceneDefaults(optionId, current.status),
+        costume: "",
+        scene: "",
+        vibe: "",
       };
     });
     setError(null);
     setWhisperTrigger({ kind: "default" });
-  };
-
-  const applySavedPet = (pet: { petName: string; species: string | null; lifeStatus: string }) => {
-    const speciesId = SPECIES_OPTIONS.find((item) => item.id === pet.species)?.id as PolaroidSpecies | undefined;
-    updateAnswers({
-      petName: pet.petName.slice(0, 12),
-      ...(speciesId ? { species: speciesId } : {}),
-    }, { kind: "default" });
-    void pet.lifeStatus;
   };
 
   const updateSpecies = (nextSpecies: PolaroidSpecies) => {
@@ -742,6 +840,49 @@ export function PolaroidEntry({
     if (primaryInputRef.current) primaryInputRef.current.value = "";
   };
 
+  useEffect(() => {
+    if (
+      !initialPetId
+      || !initialMemoryEntryId
+      || !initialMemoryAssetId
+      || authSession.status !== "authenticated"
+      || selectedPet?.petId !== initialPetId
+      || primaryPhoto
+    ) return;
+
+    const controller = new AbortController();
+    void fetch(`/api/my/pets/${encodeURIComponent(initialPetId)}/memories/${encodeURIComponent(initialMemoryEntryId)}/assets/${encodeURIComponent(initialMemoryAssetId)}`, {
+      credentials: "same-origin",
+      cache: "no-store",
+      signal: controller.signal,
+    }).then(async (response) => {
+      if (!response.ok) return;
+      const blob = await response.blob();
+      const contentType = response.headers.get("content-type") ?? blob.type;
+      const extension = contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg";
+      const file = new File([blob], `memory-${initialMemoryAssetId}.${extension}`, { type: contentType });
+      if (validateSeasonalPolaroidPhoto(file)) return;
+      const photo = {
+        id: `memory-${initialMemoryAssetId}`,
+        file,
+        url: URL.createObjectURL(file),
+      };
+      setPrimaryPhoto((current) => {
+        if (current || selectedPetIdRef.current !== initialPetId) {
+          URL.revokeObjectURL(photo.url);
+          return current;
+        }
+        return photo;
+      });
+      setPhotoError(null);
+      setWhisperTrigger({ kind: "photo" });
+    }).catch(() => {
+      // Missing or unavailable memory photos fall back to the regular picker.
+    });
+
+    return () => controller.abort();
+  }, [authSession.status, initialMemoryAssetId, initialMemoryEntryId, initialPetId, primaryPhoto, selectedPet?.petId]);
+
   const validateStep = (currentStep: Step): string | null => {
     if (currentStep === 1) {
       if (!answers.petName.trim()) return t("seasonalPolaroid.flow.validation.name");
@@ -753,10 +894,6 @@ export function PolaroidEntry({
     if (currentStep === 2) {
       if (!answers.themeId || !polaroidThemeById(answers.themeId)) return t("seasonalPolaroid.flow.yearRound.themeRequired");
       if (yearRoundEnabled && !isEverydayPolaroidArtStyle(answers.themeId)) return t("seasonalPolaroid.flow.yearRound.themeRequired");
-      if (!answers.costume || !answers.scene || !answers.vibe) {
-        const optionId = polaroidThemeById(answers.occasionId)?.id || answers.themeId;
-        updateAnswers(sceneDefaults(optionId, answers.status));
-      }
     }
     if (currentStep === 3) {
       if (answers.personalities.length < 1) return t("seasonalPolaroid.flow.validation.personality");
@@ -864,6 +1001,10 @@ export function PolaroidEntry({
 
   const startGeneration = () => {
     if (view !== "questionnaire") return;
+    if (initialPetId && authSession.status === "authenticated" && !selectedPet) {
+      setPetProfileError(true);
+      return;
+    }
     const validation = validateStep(1) || validateStep(2) || validateStep(3);
     if (validation) {
       setError(validation);
@@ -909,6 +1050,13 @@ export function PolaroidEntry({
       return;
     }
 
+    const sceneAnswers = defaultPolaroidSceneAnswers(
+      answers.themeId || "halloween",
+      answers.occasionId,
+      answers.status,
+      answers,
+    );
+
     const questionnaire: SeasonalPolaroidQuestionnaire = {
       themeId: answers.themeId || "halloween",
       occasionId: answers.occasionId && isPolaroidOccasionAdmitted(answers.occasionId, themeFlags) ? answers.occasionId : "",
@@ -916,9 +1064,9 @@ export function PolaroidEntry({
       petName: answers.petName.trim(),
       species: answers.species,
       status: answers.status,
-      costume: answers.costume,
-      scene: answers.scene,
-      vibe: answers.vibe,
+      costume: sceneAnswers.costume,
+      scene: sceneAnswers.scene,
+      vibe: sceneAnswers.vibe,
       personalities: answers.personalities,
       habit: answers.habit,
       customHabit: answers.customHabit.trim(),
@@ -943,13 +1091,14 @@ export function PolaroidEntry({
     setView("developing");
     try {
       const response = await admitSeasonalPolaroid(
-        buildSeasonalPolaroidFormData(questionnaire, primaryPhoto.file),
+        buildSeasonalPolaroidFormData(questionnaire, primaryPhoto.file, selectedPet?.petId),
       );
       const session: SeasonalPolaroidGenerationSession = {
         jobId: response.jobId,
         capability: response.capability,
         locale: lang,
         petName: answers.petName.trim(),
+        petId: response.petId ?? selectedPet?.petId ?? null,
       };
       saveSeasonalPolaroidSession(session);
       setGenerationSession(session);
@@ -1029,8 +1178,8 @@ export function PolaroidEntry({
             ] as [string, string, string, string],
       },
       themeId: (answers.themeId || "halloween") as SeasonalPolaroidResult["themeId"],
-      costumeId: answers.costume || "surprise",
-      generation: { themeId: (answers.themeId || "halloween") as SeasonalPolaroidResult["themeId"], imageModel: "development-mock", textModel: "development-mock", generatedAt: new Date().toISOString() },
+      costumeId: isEverydayPolaroidArtStyle(answers.themeId) ? "" : answers.costume || "surprise",
+      generation: { themeId: (answers.themeId || "halloween") as SeasonalPolaroidResult["themeId"], occasionId: answers.occasionId || null, imageModel: "development-mock", textModel: "development-mock", generatedAt: new Date().toISOString() },
       saveProof: null,
     };
     setMockMode(true);
@@ -1117,6 +1266,7 @@ export function PolaroidEntry({
           resultId: generationResult.resultId,
           jobId: generationSession.jobId,
           capability: generationSession.capability,
+          petId: generationSession.petId ?? null,
         }),
       });
       const payload = await response.json().catch(() => null) as { status?: string; error?: string } | null;
@@ -1221,6 +1371,10 @@ export function PolaroidEntry({
           lang={lang}
           t={t}
           petName={answers.petName}
+          petId={generationSession?.petId ?? null}
+          // The saved result decides the frame. The draft only covers a
+          // Polaroid still being made, and is empty on a resumed session.
+          themeId={resolvePolaroidFrameThemeId(generationResult?.themeId, answers.themeId) ?? ""}
           status={answers.status}
           generationStatus={generationStatus}
           generationResult={generationResult}
@@ -1281,7 +1435,7 @@ export function PolaroidEntry({
   return (
     <main className="flex min-h-[100svh] flex-col overflow-x-hidden bg-[#fffaf0] text-[#393129]" data-polaroid-flow={answers.themeId || "halloween"}>
       <header className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-4 sm:px-7 md:px-10 md:py-5">
-        <Link href="/choose" className={`inline-flex min-h-11 w-fit items-center gap-2 rounded-md text-sm text-[#594b3c] transition hover:text-[#9e774c] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9e774c] sm:text-base ${bodyFont}`}>
+        <Link href={selectedPet ? `/my/pets/${encodeURIComponent(selectedPet.petId)}` : "/choose"} className={`inline-flex min-h-11 w-fit items-center gap-2 rounded-md text-sm text-[#594b3c] transition hover:text-[#9e774c] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9e774c] sm:text-base ${bodyFont}`}>
           <span aria-hidden="true" className="text-xl leading-none">←</span>
           <span>{t("seasonalPolaroid.flow.back")}</span>
         </Link>
@@ -1336,28 +1490,47 @@ export function PolaroidEntry({
             <div className="mt-7">
               {step === 1 ? (
                 <div className="space-y-7">
-                  {savedPets.length ? (
+                  {petProfileLoading ? <p role="status" className={`text-sm text-[#594b3c] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.petProfileLoading")}</p> : null}
+                  {petProfileError ? <p role="alert" className={`rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800 ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.petProfileUnavailable")}</p> : null}
+                  {selectedPet ? (
+                    <div className="rounded-2xl border border-[#d8c4a5] bg-[#fff8ec] p-4">
+                      <p className={`text-sm font-medium text-[#393129] ${bodyFont}`}>{selectedPet.petName}</p>
+                      <p className={`mt-1 text-xs leading-5 text-[#857666] ${bodyFont}`}>
+                        {selectedPetSpecies
+                          ? t(optionPath(selectedPetSpecies))
+                          : selectedPet.species?.trim() || t("seasonalPolaroid.flow.options.species.other")}
+                        {" · "}
+                        {selectedPetStatus
+                          ? t(`seasonalPolaroid.flow.options.status.${selectedPetStatus}`)
+                          : t("seasonalPolaroid.flow.yearRound.profileStatusNotSet")}
+                      </p>
+                    </div>
+                  ) : null}
+                  {savedPets.length && (!selectedPet || savedPets.length > 1) ? (
                     <div className="space-y-2">
-                      <p className={`text-sm text-[#393129] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.useSavedPet")}</p>
-                      <p className={`text-xs leading-5 text-[#857666] ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.savedPetHint")}</p>
+                      <p className={`text-sm text-[#393129] ${bodyFont}`}>
+                        {t(selectedPet
+                          ? "seasonalPolaroid.flow.yearRound.changePet"
+                          : "seasonalPolaroid.flow.yearRound.useSavedPet")}
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {savedPets.map((pet) => (
-                          <button key={pet.petId} type="button" onClick={() => applySavedPet(pet)} className={`min-h-10 rounded-full border border-[#eadcc6] bg-[#fff8ec] px-3 py-2 text-xs text-[#393129] transition hover:border-[#9e774c] ${bodyFont}`}>
+                          <button key={pet.petId} type="button" onClick={() => applySavedPet(pet)} aria-pressed={selectedPet?.petId === pet.petId} className={`min-h-10 rounded-full border border-[#eadcc6] bg-[#fff8ec] px-3 py-2 text-xs text-[#393129] transition hover:border-[#9e774c] ${bodyFont}`}>
                             {pet.petName}
                           </button>
                         ))}
                       </div>
                     </div>
                   ) : null}
-                  <div className="space-y-2">
+                  {!selectedPet ? <div className="space-y-2">
                     <label htmlFor="seasonal-pet-name" className={`text-sm text-[#393129] ${bodyFont}`}>{t("seasonalPolaroid.flow.screen1.nameLabel")}</label>
                     <input id="seasonal-pet-name" type="text" maxLength={12} value={answers.petName} onChange={(event) => updateAnswers({ petName: event.target.value.slice(0, 12) }, { kind: "default" })} placeholder={t("seasonalPolaroid.flow.screen1.namePlaceholder")} className={fieldClass(lang, Boolean(error && !answers.petName.trim()))} />
                     <p className={`text-right text-xs text-[#8F8578] ${bodyFont}`}>{answers.petName.length} / 12</p>
-                  </div>
-                  <OptionGroup label={t("seasonalPolaroid.flow.screen1.speciesLabel")} options={SPECIES_OPTIONS} selected={answers.species} onSelect={(id) => updateSpecies(id as PolaroidSpecies)} bodyFont={bodyFont} />
-                  <div id="polaroid-status">
+                  </div> : null}
+                  {(!selectedPet || !SPECIES_OPTIONS.some((item) => item.id === selectedPet.species)) ? <OptionGroup label={t("seasonalPolaroid.flow.screen1.speciesLabel")} options={SPECIES_OPTIONS} selected={answers.species} onSelect={(id) => updateSpecies(id as PolaroidSpecies)} bodyFont={bodyFont} /> : null}
+                  {(!selectedPet || !polaroidStatusFromLifeStatus(selectedPet.lifeStatus)) ? <div id="polaroid-status">
                     <OptionGroup label={t("seasonalPolaroid.flow.screen1.statusLabel")} options={[{ id: "living", emoji: "✦", labelKey: "options.status.living" }, { id: "passed", emoji: "✦", labelKey: "options.status.passed" }]} selected={answers.status} onSelect={(id) => updateStatus(id as PolaroidStatus)} bodyFont={bodyFont} />
-                  </div>
+                  </div> : null}
                   <input ref={primaryInputRef} type="file" accept={SEASONAL_POLAROID_PHOTO_ACCEPT} className="hidden" onChange={(event) => onPhotoInput(event.target.files)} />
                   <PhotoSlotView photo={primaryPhoto} label={t("seasonalPolaroid.flow.screen2.primaryLabel")} emptyLabel={t("seasonalPolaroid.flow.screen2.empty")} uploadLabel={t("seasonalPolaroid.flow.screen2.upload")} changeLabel={t("seasonalPolaroid.flow.screen2.change")} removeLabel={t("seasonalPolaroid.flow.screen2.remove")} onChoose={openPhotoPicker} onRemove={removePhoto} required bodyFont={bodyFont} />
                   <div className="rounded-2xl border border-[#eadcc6] bg-[#fff8ec] p-4">
@@ -1395,10 +1568,11 @@ export function PolaroidEntry({
                           <button
                             key={item.id}
                             type="button"
+                            disabled={!ready}
                             aria-pressed={selected}
                             aria-label={`${lang === "ko" ? item.titleKo : item.titleEn}${ready ? "" : ` — ${t("seasonalPolaroid.flow.yearRound.comingSoon")}`}`}
                             onClick={() => updateOccasion(item.id)}
-                            className={`min-h-12 rounded-full border px-3 py-3 text-center text-sm leading-5 transition ${selected ? "border-[#9e774c] bg-[#f1e5cf] text-[#393129]" : "border-[#eadcc6] bg-[#fff8ec] text-[#463021] hover:border-[#9e774c]/60"} ${bodyFont}`}
+                            className={`min-h-12 rounded-full border px-3 py-3 text-center text-sm leading-5 transition disabled:cursor-not-allowed disabled:opacity-50 ${selected ? "border-[#9e774c] bg-[#f1e5cf] text-[#393129]" : "border-[#eadcc6] bg-[#fff8ec] text-[#463021] hover:border-[#9e774c]/60"} ${bodyFont}`}
                           >
                             {lang === "ko" ? item.titleKo : item.titleEn}
                           </button>
@@ -1681,6 +1855,8 @@ function PolaroidGenerationExperience({
   lang,
   t,
   petName,
+  petId,
+  themeId,
   status,
   generationStatus,
   generationResult,
@@ -1706,6 +1882,8 @@ function PolaroidGenerationExperience({
   lang: Locale;
   t: (path: string) => string;
   petName: string;
+  petId: string | null;
+  themeId: string;
   status: PolaroidStatus | "";
   generationStatus: "queued" | "processing" | null;
   generationResult: (SeasonalPolaroidResult | SeasonalPolaroidPreviewResult) | null;
@@ -1770,7 +1948,7 @@ function PolaroidGenerationExperience({
             polaroidRef={polaroidRef}
             lang={lang}
             t={t}
-            themeId={answers.themeId}
+            themeId={themeId}
             imageUrl={imageUrl}
             memoLines={memoLines}
             showMemo={Boolean(generationResult && !imageLoading)}
@@ -1806,7 +1984,7 @@ function PolaroidGenerationExperience({
               <button type="button" disabled={mockMode || isSaving || isDownloading} onClick={onShare} className={`min-h-12 rounded-xl border border-[#b7a38b] px-5 py-3 text-sm text-[#393129] transition hover:bg-[#f1e5cf] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}>{t("seasonalPolaroid.flow.yearRound.share")}</button>
               <button type="button" disabled={!generationEnabled || mockMode || isSaving || isDownloading || authStatus === "loading"} onClick={onRegenerate} className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#b7a38b] px-5 py-3 text-sm text-[#393129] transition hover:bg-[#f1e5cf] focus-visible:outline-2 focus-visible:outline-[#9e774c] disabled:cursor-not-allowed disabled:opacity-55 ${bodyFont}`}><LuRefreshCw aria-hidden="true" className="size-4" />{t("seasonalPolaroid.generation.regenerate")}</button>
             </div>
-            <Link href="/my-polaroids" className={`mt-5 inline-flex min-h-10 items-center justify-center text-sm text-[#D8B84C] underline underline-offset-4 transition hover:text-[#F5E6C8] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] ${bodyFont}`}>
+            <Link href={petId ? `/my-polaroids?petId=${encodeURIComponent(petId)}` : "/my-polaroids"} className={`mt-5 inline-flex min-h-10 items-center justify-center text-sm text-[#D8B84C] underline underline-offset-4 transition hover:text-[#F5E6C8] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37] ${bodyFont}`}>
               {t("seasonalPolaroid.generation.viewMyPolaroids")}
             </Link>
             <Link href="/premium" className={`mt-3 block text-center text-sm text-[#857666] underline underline-offset-4 ${bodyFont}`}>

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  authorizeMemoryPolaroidPhoto,
   beamDualDisplay,
   beamSceneHref,
   canOpenCollar,
@@ -11,16 +12,21 @@ import {
   decideDeviceAccess,
   decideMemorialSpaceAccess,
   deviceHref,
+  flattenYearFoldersNewestFirst,
+  groupLibraryIntoYearFolders,
   groupLibraryByMonthAndDay,
   isMoodJournalItem,
   memorialSpaceHref,
   memoryPatchRow,
+  monthFolderCoverUrl,
   moodJournalHref,
   MOOD_JOURNAL_TITLE,
   NATIVE_PHOTO_SYNC,
   parseMemoryPatch,
   parseMoodJournalBody,
   polaroidHrefFromArchive,
+  readOptionalMemoryRows,
+  signAvailableMemoryAssets,
   splitBeamAssets,
   type MemoryLibraryItem,
 } from "./memory-library.ts";
@@ -51,17 +57,95 @@ test("photos group by capture month then the same calendar day", () => {
   assert.deepEqual(groups[0].days[1].items.map((entry) => entry.entryId), ["b", "a"]);
 });
 
-test("memory patches accept owner-entered date, title, place and favorite", () => {
-  const parsed = parseMemoryPatch({ title: "창가", place: "집", happenedOn: "2026-03-01", favorite: true });
+test("memory folders group actual records by year and month and retain the saved-date fallback", () => {
+  const folders = groupLibraryIntoYearFolders([
+    item({ entryId: "captured-a", happenedOn: "2026-10-02", createdAt: "2026-11-01T10:00:00Z" }),
+    item({ entryId: "captured-b", happenedOn: "2026-10-02", createdAt: "2026-11-01T11:00:00Z" }),
+    item({ entryId: "saved-date", happenedOn: null, createdAt: "2026-09-30T09:00:00Z" }),
+    item({ entryId: "older", happenedOn: "2025-12-01", createdAt: "2025-12-01T09:00:00Z" }),
+  ]);
+
+  assert.deepEqual(folders.map((year) => year.year), ["2026", "2025"]);
+  assert.deepEqual(folders[0].months.map(({ key, count }) => [key, count]), [["2026-10", 2], ["2026-09", 1]]);
+  assert.equal(folders[0].months[1].days[0].items[0].entryId, "saved-date");
+  assert.deepEqual(folders[1].months.map(({ key, count }) => [key, count]), [["2025-12", 1]]);
+  assert.deepEqual(flattenYearFoldersNewestFirst(folders).map(({ key }) => key), ["2026-10", "2026-09", "2025-12"]);
+});
+
+test("month folder cover uses an available photo and stays empty when a month has no photo", () => {
+  const [folder] = groupLibraryIntoYearFolders([
+    item({
+      entryId: "video-only",
+      happenedOn: "2026-10-02",
+      createdAt: "2026-10-02T10:00:00Z",
+      assets: [{ assetId: "video", url: "/signed-video", contentType: "video/mp4", order: 0 }],
+    }),
+    item({
+      entryId: "photo",
+      happenedOn: "2026-10-01",
+      createdAt: "2026-10-01T10:00:00Z",
+      assets: [{ assetId: "photo", url: "/signed-photo", contentType: "image/jpeg", order: 0 }],
+    }),
+    item({
+      entryId: "other-month",
+      happenedOn: "2026-09-01",
+      createdAt: "2026-09-01T10:00:00Z",
+      assets: [{ assetId: "other-photo", url: "/other-photo", contentType: "image/jpeg", order: 0 }],
+    }),
+  ]);
+
+  assert.equal(monthFolderCoverUrl(folder.months[0]), "/signed-photo");
+  assert.equal(monthFolderCoverUrl(folder.months[1]), "/other-photo");
+  assert.equal(monthFolderCoverUrl({ ...folder.months[0], days: [{ key: "2026-10-02", items: [folder.months[0].days[0].items[0]] }] }), null);
+});
+
+test("one private asset signing failure leaves other signed memories available", async () => {
+  const privatePath = "owner/pet/path/private-photo.jpg";
+  const result = await signAvailableMemoryAssets([
+    { asset_id: "asset-a", storage_bucket: "life-archive-photos", storage_path: privatePath, content_type: "image/jpeg", asset_order: 0 },
+    { asset_id: "asset-b", storage_bucket: "life-archive-photos", storage_path: "owner/pet/path/unavailable.jpg", content_type: "image/jpeg", asset_order: 1 },
+    { asset_id: "asset-c", storage_bucket: "life-archive-photos", storage_path: "owner/pet/path/permission-denied.jpg", content_type: "image/jpeg", asset_order: 2 },
+    { asset_id: "asset-d", storage_bucket: "life-archive-photos", storage_path: "owner/pet/path/available.jpg", content_type: "image/png", asset_order: 3 },
+  ], async (asset) => {
+    if (asset.asset_id === "asset-b") throw new Error("storage unavailable");
+    if (asset.asset_id === "asset-c") return { url: null, error: { code: "not_found" } };
+    return { url: `https://signed.example/${asset.asset_id}` };
+  });
+
+  assert.equal(result.failedCount, 2);
+  assert.deepEqual(result.assets.map((asset) => asset.assetId), ["asset-a", "asset-d"]);
+  assert.equal(JSON.stringify(result).includes(privatePath), false);
+});
+
+test("optional Letter and Polaroid reads report failures without throwing away caller control", async () => {
+  assert.deepEqual(await readOptionalMemoryRows(async () => ({ data: [{ id: 1 }], error: null })), {
+    rows: [{ id: 1 }],
+    errorCode: null,
+  });
+  assert.deepEqual(await readOptionalMemoryRows(async () => ({ data: null, error: { code: "42501" } })), {
+    rows: [],
+    errorCode: "42501",
+  });
+  assert.deepEqual(await readOptionalMemoryRows(async () => { throw new Error("offline"); }), {
+    rows: [],
+    errorCode: "read_failed",
+  });
+});
+
+test("memory patches accept story edits and preserve the other editable fields", () => {
+  const parsed = parseMemoryPatch({ title: "창가", story: "  A quiet day together.  ", place: "집", happenedOn: "2026-03-01", favorite: true });
   assert.equal(parsed.ok, true);
   if (!parsed.ok) return;
   assert.deepEqual(memoryPatchRow(parsed.value, "2026-11-01T00:00:00Z"), {
     title: "창가",
+    story: "A quiet day together.",
     place: "집",
     happened_on: "2026-03-01",
     favorite: true,
     updated_at: "2026-11-01T00:00:00Z",
   });
+  assert.equal(parseMemoryPatch({ story: "  " }).ok, true);
+  assert.equal(parseMemoryPatch({ story: "x".repeat(2001) }).ok, false);
   assert.equal(parseMemoryPatch({ happenedOn: "2026-02-31" }).ok, false);
   assert.equal(parseMemoryPatch({ favorite: "yes" }).ok, false);
 });
@@ -84,6 +168,25 @@ test("memorial space and collar menus stay status-gated and owner-only", () => {
   assert.equal(deviceHref("pet-1"), "/my/device?pet=pet-1");
   assert.equal(polaroidHrefFromArchive("pet-1"), "/polaroid?petId=pet-1");
   assert.equal(beamSceneHref("pet-1", "entry-1", "asset-1"), "/beam-scene?pet=pet-1&entry=entry-1&asset=asset-1");
+});
+
+test("a Memories photo handoff accepts only the requested owner's pet image", () => {
+  const expected = { assetId: "asset-1", entryId: "entry-1", ownerUserId: "owner-1", petId: "pet-1" };
+  const source = {
+    ...expected,
+    storageBucket: "life-archive-photos",
+    storagePath: "owner-1/pet-1/photo.jpg",
+    contentType: "image/jpeg",
+  };
+
+  assert.deepEqual(authorizeMemoryPolaroidPhoto(source, expected), source);
+  assert.equal(authorizeMemoryPolaroidPhoto({ ...source, ownerUserId: "other-owner" }, expected), null);
+  assert.equal(authorizeMemoryPolaroidPhoto({ ...source, petId: "other-pet" }, expected), null);
+  assert.equal(authorizeMemoryPolaroidPhoto({ ...source, entryId: "other-entry" }, expected), null);
+  assert.equal(authorizeMemoryPolaroidPhoto({ ...source, contentType: "video/mp4" }, expected), null);
+  assert.equal(authorizeMemoryPolaroidPhoto(null, expected), null);
+  assert.equal(polaroidHrefFromArchive("pet-1", "entry-1", "asset-1"), "/polaroid?petId=pet-1&memoryEntryId=entry-1&memoryAssetId=asset-1");
+  assert.equal(polaroidHrefFromArchive("pet-1", "entry-1"), "/polaroid?petId=pet-1");
 });
 
 test("mood journal stays private and beam scenes keep originals apart from derivatives", () => {
@@ -141,8 +244,9 @@ test("archive, memorial-space, device and beam pages stay behind the pet-first f
     assert.match(source, /authEntryPath/);
   }
   const memoryUi = readFileSync("components/pet-first-memory.tsx", "utf8");
+  const petProfile = readFileSync("components/pet-first-profile.tsx", "utf8");
   const roster = readFileSync("components/pet-roster.tsx", "utf8");
-  assert.match(memoryUi, /canOpenMemorialSpace\(status\)/);
+  assert.match(petProfile, /canOpenMemorialSpace\(profile\.lifeStatus\)/);
   assert.doesNotMatch(memoryUi, /\/my\/device\?pet=/);
   assert.match(roster, /lifeStatus === "living"[\s\S]*\/my\/device\?pet=/);
   assert.doesNotMatch(memoryUi, /href=["']\/my\/collar["']/);

@@ -122,7 +122,7 @@ const ANSWERS: SeasonalPolaroidPromptAnswers = {
 const RESULT_PATH = `seasonal-polaroid/${JOB_ID}/result/${ATTEMPT}.jpg`;
 const GENERATED_IMAGE = new Uint8Array([0xff, 0xd8, 0xff, 0xdb, 9, 8, 7, 6, 5]);
 
-function job() {
+function job(answers: SeasonalPolaroidPromptAnswers = ANSWERS) {
   return {
     idempotency_key: JOB_ID,
     request_hash: "b".repeat(64),
@@ -138,12 +138,13 @@ function job() {
     input_ready: true,
     input_payload: {
       version: 1,
-      themeId: "halloween",
-      locale: "en",
+      themeId: answers.themeId,
+      occasionId: answers.occasionId ?? null,
+      locale: answers.locale,
       resultPath: RESULT_PATH,
       inputPhotos: { primary: `seasonal-polaroid/${JOB_ID}/inputs/${ATTEMPT}/primary.input`, secondary: null },
       photoMetadata: { primary: { name: "juju.jpg", contentType: "image/jpeg" }, secondary: null },
-      answers: ANSWERS,
+      answers,
       guestTrialReservationId: "123e4567-e89b-42d3-a456-426614174000",
       guestTrialReservationVersion: 1,
     },
@@ -184,11 +185,119 @@ test("fresh job: image generated once, stored, then captioned from that exact im
   assert.equal(result.generation.memoFirstAttemptValid, true);
   assert.deepEqual(result.generation.memoFailureCodes, []);
   assert.equal(result.generation.imageModel, "gpt-image-2");
+  assert.equal(result.generation.occasionId, null);
   assert.deepEqual(result.memo.lines, mocks.memoLines);
   assert.deepEqual(result.image, { kind: "private-object", objectKey: RESULT_PATH, mimeType: "image/jpeg" });
   assert.equal(mocks.finalized, 1, "trial finalized once on completion");
   assert.deepEqual(mocks.requeues, []);
 });
+
+test("worker completion preserves the validated Christmas occasion separately from the frame", async () => {
+  const christmasAnswers: SeasonalPolaroidPromptAnswers = {
+    ...ANSWERS,
+    themeId: "felt-doll",
+    occasionId: "christmas-little-ghost",
+    costume: "tiny-bell-collar",
+    scene: "candle-window",
+    vibe: "christmas-cozy",
+  };
+  reset({ jobs: [job(christmasAnswers)] });
+  await runWorker();
+  const result = mocks.completions[0] as { themeId: string; generation: Record<string, unknown> };
+  assert.equal(result.themeId, "felt-doll", "themeId remains the decorative frame selection");
+  assert.equal(result.generation.themeId, "felt-doll");
+  assert.equal(result.generation.occasionId, "christmas-little-ghost");
+});
+
+test("worker completion persists Adoption Day in generation metadata without replacing the frame", async () => {
+  const adoptionAnswers: SeasonalPolaroidPromptAnswers = {
+    ...ANSWERS,
+    themeId: "crayon-diary",
+    occasionId: "adoption-day",
+    costume: "crayon-bow",
+    scene: "diary-page",
+    vibe: "handmade-warm",
+  };
+  reset({
+    jobs: [job(adoptionAnswers)],
+    memoLines: fallbackSeasonalPolaroidMemo(adoptionAnswers).lines,
+  });
+  await runWorker();
+  const result = mocks.completions[0] as { themeId: string; generation: Record<string, unknown> };
+  assert.equal(result.themeId, "crayon-diary");
+  assert.equal(result.generation.themeId, "crayon-diary");
+  assert.equal(result.generation.occasionId, "adoption-day");
+});
+
+test("worker completion persists Birthday in generation metadata without Halloween fallback", async () => {
+  const birthdayAnswers: SeasonalPolaroidPromptAnswers = {
+    ...ANSWERS,
+    themeId: "gouache-story",
+    occasionId: "birthday-star",
+    costume: "picture-cape",
+    scene: "meadow-path",
+    vibe: "bright-story",
+  };
+  reset({
+    jobs: [job(birthdayAnswers)],
+    memoLines: fallbackSeasonalPolaroidMemo(birthdayAnswers).lines,
+  });
+  await runWorker();
+  const result = mocks.completions[0] as { themeId: string; generation: Record<string, unknown>; memo: { lines: string[] } };
+  assert.equal(result.themeId, "gouache-story", "themeId remains the decorative frame selection");
+  assert.equal(result.generation.themeId, "gouache-story");
+  assert.equal(result.generation.occasionId, "birthday-star");
+  assert.equal(result.memo.lines.length, 4);
+  assert.doesNotMatch(result.memo.lines.join(" "), /Halloween|pumpkin|vampire/i);
+});
+
+test("worker completion persists New Year separately from the decorative frame", async () => {
+  const newYearAnswers: SeasonalPolaroidPromptAnswers = {
+    ...ANSWERS,
+    themeId: "felt-doll",
+    occasionId: "newyear-blessing",
+    costume: "knit-scarf",
+    scene: "tiny-armchair",
+    vibe: "cute-cozy",
+  };
+  reset({
+    jobs: [job(newYearAnswers)],
+    memoLines: fallbackSeasonalPolaroidMemo(newYearAnswers).lines,
+  });
+  await runWorker();
+  const result = mocks.completions[0] as { themeId: string; generation: Record<string, unknown>; memo: { lines: string[] } };
+  assert.equal(result.themeId, "felt-doll");
+  assert.equal(result.generation.themeId, "felt-doll");
+  assert.equal(result.generation.occasionId, "newyear-blessing");
+  assert.equal(result.memo.lines.length, 4);
+  assert.doesNotMatch(result.memo.lines.join(" "), /Halloween|pumpkin|vampire/i);
+});
+
+for (const { occasionId, themeId } of [
+  { occasionId: "valentine-letter", themeId: "felt-doll" },
+  { occasionId: "spring-secret-garden", themeId: "gouache-story" },
+  { occasionId: "summer-seaside", themeId: "crayon-diary" },
+  { occasionId: "halloween-mischief-ghost", themeId: "felt-doll" },
+]) {
+  test(`worker completion persists ${occasionId} separately from the frame`, async () => {
+    const answers: SeasonalPolaroidPromptAnswers = {
+      ...ANSWERS,
+      themeId,
+      occasionId,
+      costume: themeId === "felt-doll" ? "knit-scarf" : themeId === "gouache-story" ? "picture-cape" : "crayon-bow",
+      scene: themeId === "felt-doll" ? "tiny-armchair" : themeId === "gouache-story" ? "meadow-path" : "diary-page",
+      vibe: themeId === "felt-doll" ? "cute-cozy" : themeId === "gouache-story" ? "bright-story" : "handmade-warm",
+    };
+    reset({ jobs: [job(answers)], memoLines: fallbackSeasonalPolaroidMemo(answers).lines });
+    await runWorker();
+    const result = mocks.completions[0] as { themeId: string; generation: Record<string, unknown>; memo: { lines: string[] } };
+    assert.equal(result.themeId, themeId);
+    assert.equal(result.generation.themeId, themeId);
+    assert.equal(result.generation.occasionId, occasionId);
+    assert.equal(result.memo.lines.length, 4);
+    assert.doesNotMatch(result.memo.lines.join(" "), /happy Halloween|pumpkin|vampire/i);
+  });
+}
 
 test("a legacy two-photo job is generated from its primary photo only", async () => {
   const legacy = job() as { input_payload: { inputPhotos: Record<string, unknown>; photoMetadata: Record<string, unknown> } };

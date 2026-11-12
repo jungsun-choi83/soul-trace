@@ -41,16 +41,25 @@ test("gallery images reuse the authenticated private result endpoint", () => {
   assert.match(page, /SEASONAL_POLAROID_FRAME_BASE_CLASS/);
   assert.doesNotMatch(page, /max-w-\[440px\] overflow-hidden bg-\[#F2E8D7\] text-\[#806A56\]/);
   assert.match(frame, /aspect-\[2\/3\]/);
-  assert.match(frame, /template\.png.*z-0/);
-  assert.match(frame, /left-\[16\.2%\].*top-\[15\.2%\].*z-10/);
+  assert.match(frame, /src=\{layout\.templateSrc\}[^>]*className=\{`absolute inset-0/);
+  assert.match(frame, /layout\.templateOverlay \? "z-20" : "z-0"/);
+  assert.match(frame, /left: layout\.caption\.left,[\s\S]*right: layout\.caption\.right,[\s\S]*top: layout\.caption\.top,[\s\S]*bottom: layout\.caption\.bottom/);
   assert.match(frame, /memoLines\.slice\(0, 4\)/);
 });
 
 test("gallery navigation is additive and does not alter generation actions", () => {
   assert.match(choose, /href=\{polaroidHref\}/);
-  assert.match(result, /href="\/my-polaroids"/);
+  assert.match(result, /href=\{petId \? `\/my-polaroids\?petId=/);
+  assert.match(result, /\/my-polaroids"\}/);
   assert.match(result, /onClick=\{onRegenerate\}/);
   assert.match(result, /onClick=\{onDownload\}/);
+});
+
+test("gallery exposes persisted occasion labels separately from the decorative frame", () => {
+  assert.match(route, /generation_metadata/);
+  assert.match(route, /occasionId: persistedPolaroidOccasionId\(row\.generation_metadata, row\.theme_id\)/);
+  assert.match(page, /polaroidOccasionItem\(item\.occasionId\)/);
+  assert.match(client, /occasionId: string \| null/);
 });
 
 test("the existing result table keeps private owner-scoped storage", () => {

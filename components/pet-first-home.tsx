@@ -31,6 +31,7 @@ export function PetFirstHome({
   const monthKey = today.slice(0, 7);
   const monthCount = active ? active.entryDays.filter((day) => day.startsWith(monthKey)).length : 0;
   const petHref = active ? `/my/pets/${active.petId}` : "/my/pets";
+  const recordHref = active ? `/my/pets/${encodeURIComponent(active.petId)}/memories/record` : "/my/pets";
   const memorial = active?.lifeStatus === "memorial";
   const letterHref = active ? `/choose?petId=${encodeURIComponent(active.petId)}` : "/choose";
 
@@ -74,7 +75,7 @@ export function PetFirstHome({
               </>
             ) : (
               <>
-                <QuickTile href={`${petHref}#compose`} label={copy.quickRecord} icon="pen" />
+                <QuickTile href={recordHref} label={copy.quickRecord} icon="pen" />
                 <QuickTile href={letterHref} label={copy.quickLetter} icon="letter" />
                 <QuickTile href="/polaroid" label={copy.quickPolaroid} icon="polaroid" />
               </>
@@ -273,7 +274,7 @@ function RegisterForm({ copy, onCreated }: { copy: PetFirstCopy; onCreated: (pet
     }
     const created = await response.json() as PetSummary;
     onCreated({ ...created, entryDays: [], letterCount: 0, avatarUrl: null });
-    router.push(`/my/pets/${created.petId}#compose`);
+    router.push(`/my/pets/${encodeURIComponent(created.petId)}/memories/record`);
   }
 
   return (

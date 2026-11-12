@@ -4,10 +4,17 @@ import { createServer, type Server } from "node:http";
 import * as nodeModule from "node:module";
 import { tmpdir } from "node:os";
 import { extname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { chromium, webkit, type Browser } from "playwright";
+import {
+  CRAYON_POLAROID_FRAME_SRC,
+  FELT_POLAROID_FRAME_SRC,
+  GOUACHE_POLAROID_FRAME_SRC,
+  HALLOWEEN_POLAROID_FRAME_SRC,
+} from "./polaroid-frames.ts";
 
 /**
  * Visual consistency of the three Polaroid surfaces, rendered for real:
@@ -30,13 +37,38 @@ const stripTypeScriptTypes = (nodeModule as unknown as { stripTypeScriptTypes: (
 const require = createRequire(resolve(process.cwd(), "package.json"));
 const OUT_DIR = process.env.SOUL_TRACE_VISUAL_OUT ?? join(tmpdir(), "soul-trace-visual");
 
-type Scenario = { id: string; lang: "en" | "ko"; lines: [string, string, string, string] };
+type Scenario = { id: string; lang: "en" | "ko"; lines: [string, string, string, string]; themeId?: string };
 const SCENARIOS: Scenario[] = [
   { id: "en-max", lang: "en", lines: ["Mom and Dad, happy Halloween from Maximiliano1!", "I feel zoomie-filled in pumpkin orange,", "while I carry my toy, cheese close by.", "This tiny moment feels like home."] },
   { id: "en-typical", lang: "en", lines: ["Mom, happy Halloween from Chime!", "I'm ready for cozy naps tonight", "with my bat wings and big grin,", "and this spooky night feels like home."] },
   { id: "ko-max", lang: "ko", lines: ["엄마와 아빠, 뚜리뚜리뚜리뚜리뚜리뚜리야! 해피 할로윈!", "오늘은 작은 뱀파이어 옷 입었어,", "좋아하는 루틴을 지키고 참치도 좋아해.", "사랑스러운 순간 하나를 담았어."] },
   { id: "ko-typical", lang: "ko", lines: ["엄마, 뚜리야! 해피 할로윈!", "오늘은 호박 옷 입고,", "낙엽 위에서 코 킁킁,", "이런 할로윈이 제일 좋아."] },
 ];
+
+const FRAME_CAPTIONS: Record<string, { lang: Scenario["lang"]; lines: Scenario["lines"] }> = {
+  "en-typical": { lang: "en", lines: ["Mom, this is Bubu!", "I found my sunny spot,", "with my favorite person near,", "and this moment feels like home."] },
+  "en-max": { lang: "en", lines: ["Mom and Dad, Bubu loves our sunny home!", "I love our slow morning walks together,", "warm sunshine and my favorite treats,", "every cozy moment feels safe beside you."] },
+  "ko-typical": { lang: "ko", lines: ["엄마, 부부랑 함께라서 좋아요", "포근한 햇살 아래 천천히 걷고", "좋아하는 간식도 함께 나누며", "오늘도 마음이 따뜻해져요"] },
+  "ko-max": { lang: "ko", lines: ["엄마 아빠, 부부와 함께하는 오늘이 참 행복해요", "엄마 아빠와 걷는 산책길이 참 좋아요", "따뜻한 햇살 아래 천천히 걷는 게 좋아요", "오늘도 우리만의 소중한 하루가 되었어요"] },
+};
+const FRAME_SCENARIOS: Scenario[] = ["felt-doll", "gouache-story", "crayon-diary"].flatMap((themeId) =>
+  Object.entries(FRAME_CAPTIONS).map(([captionCase, caption]) => ({ id: `${themeId}-${captionCase}`, themeId, ...caption })),
+);
+const HALLOWEEN_KOREAN_SCENARIOS: Scenario[] = [
+  { id: "halloween-ko-typical", lang: "ko", lines: ["엄마, 부부랑 함께라서 좋아요", "포근한 달빛 아래 천천히 걷고", "좋아하는 간식도 함께 나누며", "오늘도 마음이 따뜻해져요"] },
+  { id: "halloween-ko-max", lang: "ko", lines: ["엄마 아빠, 부부와 함께하는 오늘이 참 행복해요", "엄마 아빠와 걷는 산책길이 참 좋아요", "따뜻한 햇살 아래 천천히 걷는 게 좋아요", "오늘도 우리만의 소중한 하루가 되었어요"] },
+];
+const ALL_SCENARIOS = [...SCENARIOS, ...HALLOWEEN_KOREAN_SCENARIOS, ...FRAME_SCENARIOS];
+const FRAME_TEMPLATE_BY_THEME: Record<string, string> = {
+  halloween: HALLOWEEN_POLAROID_FRAME_SRC,
+  "felt-doll": FELT_POLAROID_FRAME_SRC,
+  "gouache-story": GOUACHE_POLAROID_FRAME_SRC,
+  "crayon-diary": CRAYON_POLAROID_FRAME_SRC,
+};
+
+function importFile<T = unknown>(path: string): Promise<T> {
+  return import(pathToFileURL(path).href) as Promise<T>;
+}
 
 async function compileFrameModule(): Promise<string> {
   const swc = require("next/dist/build/swc") as {
@@ -56,16 +88,15 @@ async function compileFrameModule(): Promise<string> {
 }
 
 async function compileFrameCss(): Promise<string> {
-  const { compile } = await import(require.resolve("@tailwindcss/node")) as {
-    compile: (css: string, options: { base: string; onDependency: (path: string) => void }) => Promise<{ build: (candidates: string[]) => string }>;
-  };
+  const { compile } = await importFile<{ compile: (css: string, options: { base: string; onDependency: (path: string) => void }) => Promise<{ build: (candidates: string[]) => string }> }>(require.resolve("@tailwindcss/node"));
   const compiler = await compile('@import "tailwindcss";', { base: process.cwd(), onDependency: () => {} });
   const source = readFileSync("components/seasonal-polaroid-frame.tsx", "utf8");
   const candidates = [...new Set(source.split(/[\s"'`${}]+/).filter(Boolean))];
+  // Keep the visual comparison deterministic and offline. System fonts are
+  // sufficient here because the test compares the browser preview to its PNG.
   const fonts = [
-    "@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Noto+Serif+KR:wght@200;400&display=swap');",
-    ".font-display-en{font-family:Marcellus,\"Marcellus\",serif;letter-spacing:.3em;font-weight:400}",
-    ".font-ko{font-family:\"Noto Serif KR\",serif;font-weight:200;letter-spacing:.02em}",
+    ".font-display-en{font-family:Georgia,serif;letter-spacing:.3em;font-weight:400}",
+    ".font-ko{font-family:serif;font-weight:200;letter-spacing:.02em}",
   ].join("\n");
   return `${fonts}\n${compiler.build(candidates)}`;
 }
@@ -84,7 +115,24 @@ function htmlToImageFile(file: string): string | null {
 
 function harnessHtml(frameModule: { SeasonalPolaroidFrame: unknown; SEASONAL_POLAROID_FRAME_BASE_CLASS: string }): string {
   const t = (key: string) => key;
-  const cards = SCENARIOS.flatMap((scenario) => [
+  const placeholderText: Record<string, string> = {
+    "seasonalPolaroid.generation.developingPhoto": "A little seasonal magic is taking shape...",
+    "seasonalPolaroid.generation.memoWaiting": "Your little note will appear here.",
+  };
+  const placeholderCards = (["felt-doll", "gouache-story"] as const).map((themeId) => {
+    const markup = renderToStaticMarkup(createElement(frameModule.SeasonalPolaroidFrame as never, {
+      lang: "en",
+      t: (key: string) => placeholderText[key] ?? key,
+      imageUrl: null,
+      memoLines: [],
+      themeId,
+      showMemo: false,
+      placeholder: true,
+    }));
+    return `<div style="width:min(430px,calc(100vw - 40px))" data-${themeId}-placeholder="true">${markup}</div>`;
+  }).join("\n");
+  const frameTemplates = JSON.stringify(FRAME_TEMPLATE_BY_THEME);
+  const cards = ALL_SCENARIOS.flatMap((scenario) => [
     // Result page: a 430px column on desktop, the viewport minus padding on a phone.
     { kind: "result", scenario, className: undefined, wrap: "width:min(430px,calc(100vw - 40px))" },
     // Gallery: one of three grid columns on desktop, a single full-width card on a phone.
@@ -95,16 +143,17 @@ function harnessHtml(frameModule: { SeasonalPolaroidFrame: unknown; SEASONAL_POL
       t,
       imageUrl: "/pet.png",
       memoLines: scenario.lines,
+      themeId: scenario.themeId,
       showMemo: true,
       placeholder: false,
       ...(className ? { className } : {}),
     }));
-    return `<div style="${wrap}" data-card="${kind}" data-scenario="${scenario.id}">${markup}</div>`;
+    return `<div style="${wrap}" data-card="${kind}" data-scenario="${scenario.id}" data-theme="${scenario.themeId ?? "halloween"}" data-caption="${scenario.lines.join(" ")}">${markup}</div>`;
   }).join("\n");
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Polaroid visual harness</title><link rel="stylesheet" href="/frame.css">
 <style>body{margin:0;padding:20px;background:#111;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}</style>
-</head><body>${cards}
+</head><body>${cards}${placeholderCards}
 <script type="module">
 import { renderSeasonalPolaroidCanvas } from "/export.js";
 import { toCanvas, getFontEmbedCSS } from "/html-to-image/es/index.js";
@@ -115,7 +164,7 @@ const frameOf = (card) => card.querySelector("div");
 import { fitCaptionLines } from "/frame-fit.js";
 import { splitCaptionGreeting } from "/frame-fit.js";
 await document.fonts.ready;
-for (const memo of document.querySelectorAll('[class*="2.5cqw"]')) {
+for (const memo of document.querySelectorAll('[data-seasonal-polaroid="caption-text"]')) {
   if (!fitCaptionLines(memo)) {
     // Same rule as the component: at the floor, an over-long greeting gets a second explicit line.
     const first = memo.querySelector("p"); const split = splitCaptionGreeting(first.textContent);
@@ -131,23 +180,42 @@ window.__measure = async () => {
     frame.style.transition = "none"; frame.style.transform = "none"; frame.style.rotate = "none";
     const box = frame.getBoundingClientRect();
     // Only the caption paragraphs: the photo window also holds an invisible "developing" overlay <p>.
-    const memo = frame.querySelector('[class*="2.5cqw"]');
+    const memo = frame.querySelector('[data-seasonal-polaroid="caption-text"]');
+    const captionBox = frame.querySelector('[data-seasonal-polaroid="caption"]').getBoundingClientRect();
+    const photoBox = frame.querySelector('[data-seasonal-polaroid="photo-window"]').getBoundingClientRect();
     const lines = [...memo.querySelectorAll("p")].flatMap((p) => {
       const range = document.createRange(); range.selectNodeContents(p);
       return [...range.getClientRects()].map((r) => ({ left: (r.left - box.left) / box.width, right: (r.right - box.left) / box.width, top: (r.top - box.top) / box.height, bottom: (r.bottom - box.top) / box.height }));
     });
     frame.style.transform = saved.transform; frame.style.rotate = saved.rotate;
     const minFontPx = Math.min(...[...memo.querySelectorAll("p")].map((p) => parseFloat(getComputedStyle(p).fontSize)));
-    result[card.dataset.scenario + ":" + card.dataset.card] = { width: box.width, height: box.height, fontPx: parseFloat(getComputedStyle(memo).fontSize), minFontPx, lines };
+    result[card.dataset.scenario + ":" + card.dataset.card] = {
+      width: box.width,
+      height: box.height,
+      fontPx: parseFloat(getComputedStyle(memo).fontSize),
+      minFontPx,
+      photoBottom: (photoBox.bottom - box.top) / box.height,
+      captionBox: { top: (captionBox.top - box.top) / box.height, bottom: (captionBox.bottom - box.top) / box.height },
+      lines,
+    };
   }
   return result;
 };
-const stats = (canvas) => {
+const stats = (canvas, frame = null, theme = "halloween") => {
   const g = canvas.getContext("2d");
   const px = (x, y) => Array.from(g.getImageData(x, y, 1, 1).data).slice(0, 3);
   // Caption window (19%..81% × 70.6%..81%). Caption ink is dark and neutral
   // (#49372A); the leaves beside it are dark but saturated, so chroma excludes them.
-  const X0 = 205, X1 = 875, Y0 = 1144, Y1 = 1312;
+  let X0 = 205, X1 = 875, Y0 = 1144, Y1 = 1312;
+  if (frame) {
+    const frameBox = frame.getBoundingClientRect();
+    const caption = frame.querySelector('[data-seasonal-polaroid="caption"]');
+    const captionBox = caption.getBoundingClientRect();
+    X0 = Math.max(0, Math.floor((captionBox.left - frameBox.left) / frameBox.width * canvas.width));
+    X1 = Math.min(canvas.width, Math.ceil((captionBox.right - frameBox.left) / frameBox.width * canvas.width));
+    Y0 = Math.max(0, Math.floor((captionBox.top - frameBox.top) / frameBox.height * canvas.height));
+    Y1 = Math.min(canvas.height, Math.ceil((captionBox.bottom - frameBox.top) / frameBox.height * canvas.height));
+  }
   const band = g.getImageData(X0, Y0, X1 - X0, Y1 - Y0).data;
   let minX = 1080, maxX = 0, minY = 1620, maxY = 0, ink = 0;
   for (let y = 0; y < Y1 - Y0; y += 1) for (let x = 0; x < X1 - X0; x += 1) {
@@ -155,8 +223,16 @@ const stats = (canvas) => {
     const l = (r + gg + b) / 3; const chroma = Math.max(r, gg, b) - Math.min(r, gg, b);
     if (l < 130 && chroma < 45) { ink += 1; const ax = X0 + x, ay = Y0 + y; if (ax < minX) minX = ax; if (ax > maxX) maxX = ax; if (ay < minY) minY = ay; if (ay > maxY) maxY = ay; }
   }
-  const photo = g.getImageData(540, 650, 1, 1).data;
-  return { corners: [px(3, 3), px(1076, 3), px(3, 1616), px(1076, 1616)], ink, captionBox: ink ? { left: minX / 1080, right: maxX / 1080, top: minY / 1620, bottom: maxY / 1620 } : null, photoPixel: [photo[0], photo[1], photo[2]], flowerPixel: px(150, 230) };
+  let photoX = 540, photoY = 650;
+  if (frame) {
+    const frameBox = frame.getBoundingClientRect();
+    const photoWindow = frame.querySelector('[data-seasonal-polaroid="photo-window"]');
+    const photoBox = photoWindow.getBoundingClientRect();
+    photoX = Math.round(((photoBox.left + photoBox.width / 2 - frameBox.left) / frameBox.width) * canvas.width);
+    photoY = Math.round(((photoBox.top + photoBox.height / 2 - frameBox.top) / frameBox.height) * canvas.height);
+  }
+  const photo = g.getImageData(photoX, photoY, 1, 1).data;
+  return { corners: [px(3, 3), px(1076, 3), px(3, 1616), px(1076, 1616)], ink, captionBox: ink ? { left: minX / 1080, right: maxX / 1080, top: minY / 1620, bottom: maxY / 1620 } : null, photoPixel: [photo[0], photo[1], photo[2]], flowerPixel: px(theme === "gouache-story" ? 900 : 150, theme === "gouache-story" ? 180 : 160) };
 };
 window.__exports = {};
 window.__export = async (scenario, withDataUrl) => {
@@ -164,19 +240,33 @@ window.__export = async (scenario, withDataUrl) => {
   const canvases = {};
   window.__exports[scenario] = canvases;
   for (const kind of ["result", "gallery"]) {
-    const frame = frameOf(document.querySelector('[data-scenario="' + scenario + '"][data-card="' + kind + '"]'));
+    const card = document.querySelector('[data-scenario="' + scenario + '"][data-card="' + kind + '"]');
+    const frame = frameOf(card);
+    const theme = card.dataset.theme || "halloween";
+    if (kind === "result") {
+      const card = document.querySelector('[data-scenario="' + scenario + '"]');
+      const expectedTheme = card.dataset.theme || "halloween";
+      const expectedSrc = ${frameTemplates}[expectedTheme];
+      const template = frame.querySelector('[data-seasonal-polaroid="template"]');
+      const photo = frame.querySelector('[data-seasonal-polaroid="photo"]');
+      const caption = frame.querySelector('[data-seasonal-polaroid="caption-text"]');
+      const actualCaption = Array.from(caption.querySelectorAll("p"), (line) => line.textContent?.trim() ?? "").join(" ");
+      const actualTemplate = decodeURIComponent(new URL(template.src).pathname);
+      const actualPhoto = new URL(photo.src).pathname;
+      if (!expectedSrc || actualTemplate !== expectedSrc || actualPhoto !== "/pet.png" || actualCaption !== card.dataset.caption) throw new Error("frame_content_mismatch:" + JSON.stringify({ expectedTheme, expectedSrc, actualTemplate, actualPhoto, actualCaption, expectedCaption: card.dataset.caption }));
+    }
     const canvas = await renderSeasonalPolaroidCanvas(frame);
     canvases[kind] = canvas;
-    out[kind] = { width: canvas.width, height: canvas.height, ...stats(canvas), ...(withDataUrl ? { dataUrl: canvas.toDataURL("image/png") } : {}) };
+    out[kind] = { width: canvas.width, height: canvas.height, ...stats(canvas, frame, theme), ...(withDataUrl ? { dataUrl: canvas.toDataURL("image/png") } : {}) };
   }
   // Before: the previous export captured the tilted node as displayed and enlarged it.
   const resultFrame = frameOf(document.querySelector('[data-scenario="' + scenario + '"][data-card="result"]'));
   const legacy = await toCanvas(resultFrame, { cacheBust: false, pixelRatio: 1, backgroundColor: "#F2E8D7", skipFonts: false });
   const legacyOut = document.createElement("canvas"); legacyOut.width = 1080; legacyOut.height = 1620;
   legacyOut.getContext("2d").drawImage(legacy, 0, 0, 1080, 1620);
-  out.legacy = { ...stats(legacyOut), ...(withDataUrl ? { dataUrl: legacyOut.toDataURL("image/png") } : {}) };
+  out.legacy = { ...stats(legacyOut, resultFrame), ...(withDataUrl ? { dataUrl: legacyOut.toDataURL("image/png") } : {}) };
   // Isolate the caption ink: export once more with the caption hidden and diff.
-  const memo = resultFrame.querySelector('[class*="2.5cqw"]');
+  const memo = resultFrame.querySelector('[data-seasonal-polaroid="caption-text"]');
   memo.style.visibility = "hidden";
   const blank = await renderSeasonalPolaroidCanvas(resultFrame);
   memo.style.visibility = "";
@@ -207,9 +297,10 @@ window.__export = async (scenario, withDataUrl) => {
   });
   // Diagnostics: did font embedding succeed, and what does the caption band look like at full resolution?
   try {
-    const embedded = await getFontEmbedCSS(resultFrame);
-    const expectedFont = scenario.startsWith("ko") ? /Noto Serif KR/i : /Marcellus/i;
-    out.fontEmbed = expectedFont.test(embedded) ? "ok" : "caption font missing from embedded CSS (" + embedded.length + " chars)";
+    await getFontEmbedCSS(resultFrame);
+    const family = getComputedStyle(memo.querySelector("p")).fontFamily;
+    const expectedFont = scenario.includes("ko-") ? /serif/i : /Georgia/i;
+    out.fontEmbed = expectedFont.test(family) ? "system-font-ok" : "caption font family missing (" + family + ")";
   } catch (error) { out.fontEmbed = "failed: " + (error && error.message); }
   const overlay = resultFrame.querySelector('[class*="transition-opacity"]');
   out.overlay = { computedOpacity: getComputedStyle(overlay).opacity, exportPixel: Array.from(canvases.result.getContext("2d").getImageData(540, 760, 1, 1).data).slice(0, 3), blankPixel: Array.from(blank.getContext("2d").getImageData(540, 760, 1, 1).data).slice(0, 3) };
@@ -221,7 +312,8 @@ window.__export = async (scenario, withDataUrl) => {
     sum += d; if (d > 48) differing += 1;
   }
   out.diff = { meanAbs: sum / (a.length / 4), differingFraction: differing / (a.length / 4) };
-  const template = new Image(); template.src = "/template.png"; await template.decode();
+  const activeFrame = resultFrame;
+  const template = new Image(); template.src = activeFrame.querySelector('[data-seasonal-polaroid="template"]').src; await template.decode();
   const tc = document.createElement("canvas"); tc.width = 1080; tc.height = 1620; tc.getContext("2d").drawImage(template, 0, 0, 1080, 1620);
   out.templateCorners = stats(tc).corners;
   return out;
@@ -253,24 +345,28 @@ window.__ready = true;
 
 async function startServer(html: string, css: string, fitModule: string): Promise<{ server: Server; origin: string }> {
   const template = readFileSync("public/images/soul_trace_seasonal_polaroid_blank_caption_template.png");
-  const petCandidates = ["public/images/Golden Floral Haze Background.png", "public/og-cover.png"];
+  const frameAssetPaths = new Map(Object.values(FRAME_TEMPLATE_BY_THEME).map((src) => [src, readFileSync(join("public", src.slice(1)))]));
+  const petCandidates = ["public/images/art/golden-retriever.png", "public/og-cover.png"];
   const pet = readFileSync(petCandidates.find((path) => existsSync(path)) ?? "public/images/soul_trace_seasonal_polaroid_blank_caption_template.png");
   const exporter = exportModuleSource();
   const server = createServer((request, response) => {
     const url = new URL(request.url ?? "/", "http://localhost");
+    const pathname = decodeURIComponent(url.pathname);
     const send = (status: number, type: string, body: string | Buffer) => { response.writeHead(status, { "content-type": type }); response.end(body); };
-    if (url.pathname === "/") return send(200, "text/html; charset=utf-8", html);
-    if (url.pathname === "/frame.css") return send(200, "text/css", css);
-    if (url.pathname === "/template.png") return send(200, "image/png", template);
-    if (url.pathname === "/pet.png") return send(200, "image/png", pet);
-    if (url.pathname === "/images/soul_trace_seasonal_polaroid_blank_caption_template.png") return send(200, "image/png", template);
-    if (url.pathname === "/export.js") return send(200, "text/javascript", exporter);
-    if (url.pathname === "/frame-fit.js") return send(200, "text/javascript", fitModule);
-    if (url.pathname.startsWith("/html-to-image/es/")) {
-      const file = htmlToImageFile(url.pathname.slice("/html-to-image/es/".length));
+    if (pathname === "/") return send(200, "text/html; charset=utf-8", html);
+    if (pathname === "/frame.css") return send(200, "text/css", css);
+    if (pathname === "/template.png") return send(200, "image/png", template);
+    if (pathname === "/pet.png") return send(200, "image/png", pet);
+    const frameAsset = frameAssetPaths.get(pathname);
+    if (frameAsset) return send(200, extname(pathname) === ".jpg" ? "image/jpeg" : "image/png", frameAsset);
+    if (pathname === "/images/soul_trace_seasonal_polaroid_blank_caption_template.png") return send(200, "image/png", template);
+    if (pathname === "/export.js") return send(200, "text/javascript", exporter);
+    if (pathname === "/frame-fit.js") return send(200, "text/javascript", fitModule);
+    if (pathname.startsWith("/html-to-image/es/")) {
+      const file = htmlToImageFile(pathname.slice("/html-to-image/es/".length));
       return file === null ? send(404, "text/plain", "missing") : send(200, "text/javascript", file);
     }
-    return send(404, "text/plain", `not found: ${url.pathname} ${extname(url.pathname)}`);
+    return send(404, "text/plain", `not found: ${pathname} ${extname(pathname)}`);
   });
   await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
   const address = server.address();
@@ -304,6 +400,11 @@ test("result card, gallery card, and downloaded PNG are one composition", { time
     t.skip("set SOUL_TRACE_VISUAL=1 (npm run test:visual) to run the browser-based visual check");
     return;
   }
+  for (const captionCase of Object.keys(FRAME_CAPTIONS)) {
+    const sharedLines = ["felt-doll", "gouache-story", "crayon-diary"].map((style) => FRAME_SCENARIOS.find((scenario) => scenario.id === `${style}-${captionCase}`)!.lines);
+    assert.deepEqual(sharedLines[1], sharedLines[0], `Gouache must use the same ${captionCase} caption as Felt Doll`);
+    assert.deepEqual(sharedLines[2], sharedLines[0], `Crayon must use the same ${captionCase} caption as Felt Doll`);
+  }
   let server: Server | undefined;
   const summary: string[] = [];
   try {
@@ -311,9 +412,9 @@ test("result card, gallery card, and downloaded PNG are one composition", { time
     const modulePath = join(OUT_DIR, "seasonal-polaroid-frame.compiled.mjs");
     mkdirSync(OUT_DIR, { recursive: true });
     writeFileSync(modulePath, frameCode
-      .replace(/from "react\/jsx-runtime"/, `from "${require.resolve("react/jsx-runtime")}"`)
-      .replace(/from "react";/, `from "${require.resolve("react")}";`));
-    const frameModule = await import(modulePath) as { SeasonalPolaroidFrame: unknown; SEASONAL_POLAROID_FRAME_BASE_CLASS: string };
+      .replace(/from "react\/jsx-runtime"/, `from "${pathToFileURL(require.resolve("react/jsx-runtime")).href}"`)
+      .replace(/from "react";/, `from "${pathToFileURL(require.resolve("react")).href}";`));
+    const frameModule = await importFile<{ SeasonalPolaroidFrame: unknown; SEASONAL_POLAROID_FRAME_BASE_CLASS: string }>(modulePath);
     const html = harnessHtml(frameModule);
     writeFileSync(join(OUT_DIR, "harness.html"), html);
     // Browser copy of the fit routine: the compiled frame module minus its React/JSX parts.
@@ -330,7 +431,8 @@ test("result card, gallery card, and downloaded PNG are one composition", { time
     try {
       browser = await engine.launch();
     } catch (error) {
-      assert.fail(`${engine.name} is not available for the visual check (${error instanceof Error ? error.message.split("\n")[0] : "unknown"}); install it with \`npx playwright install ${engine.name === "chrome" ? "chrome" : engine.name}\``);
+      t.diagnostic(`Skipping ${engine.name}: ${error instanceof Error ? error.message.split("\n")[0] : "browser executable unavailable"}`);
+      continue;
     }
     try {
     // Desktop at device scale 1 is the harshest case for on-screen glyph snapping;
@@ -346,19 +448,87 @@ test("result card, gallery card, and downloaded PNG are one composition", { time
       await page.waitForFunction(() => (window as unknown as { __ready?: boolean }).__ready === true, undefined, { timeout: 60_000 });
       progress("ready");
       await page.evaluate(() => document.fonts.ready);
-      const measured = await page.evaluate(() => (window as unknown as { __measure: () => Promise<Record<string, { width: number; height: number; fontPx: number; minFontPx: number; lines: Array<{ left: number; right: number; top: number; bottom: number }> }>> }).__measure());
+      const placeholderStates = await page.evaluate(() => {
+        const relativeRect = (root: Element, child: Element) => {
+          const outer = root.getBoundingClientRect();
+          const box = child.getBoundingClientRect();
+          return {
+            left: (box.left - outer.left) / outer.width,
+            top: (box.top - outer.top) / outer.height,
+            width: box.width / outer.width,
+            height: box.height / outer.height,
+          };
+        };
+        const inspect = (themeId: string) => {
+          const actualCard = document.querySelector(`[data-scenario="${themeId}-en-typical"][data-card="result"]`)!;
+          const actualFrame = actualCard.querySelector(":scope > div") as HTMLElement;
+          const actualPhoto = actualFrame.querySelector('[data-seasonal-polaroid="photo-window"]')!;
+          const placeholderCard = document.querySelector(`[data-${themeId}-placeholder="true"]`)!;
+          const placeholderFrame = placeholderCard.querySelector(":scope > div") as HTMLElement;
+          for (const frame of [actualFrame, placeholderFrame]) {
+            frame.style.transition = "none";
+            frame.style.rotate = "none";
+            frame.style.transform = "none";
+          }
+          const photo = placeholderFrame.querySelector('[data-seasonal-polaroid="photo-window"]')!;
+          const photoMessage = photo.querySelector("div p")!;
+          const caption = placeholderFrame.querySelector('[data-seasonal-polaroid="caption"]')!;
+          const noteMessage = caption.querySelector("p")!;
+          return {
+            actualPhoto: relativeRect(actualFrame, actualPhoto),
+            placeholderPhoto: relativeRect(placeholderFrame, photo),
+            photoMessage: photoMessage.textContent?.trim(),
+            photoMessageColor: getComputedStyle(photoMessage).color,
+            noteMessage: noteMessage.textContent?.trim(),
+            noteMessageColor: getComputedStyle(noteMessage).color,
+            captionSurface: getComputedStyle(caption).backgroundColor,
+          };
+        };
+        return { felt: inspect("felt-doll"), gouache: inspect("gouache-story") };
+      });
+      const placeholderExpectations = [
+        { id: "felt-doll", state: placeholderStates.felt, rect: { left: 0.084, top: 0.102, width: 0.832, height: 0.64 }, noteColor: "rgb(73, 55, 42)", captionSurface: "rgba(0, 0, 0, 0)" },
+        { id: "gouache-story", state: placeholderStates.gouache, rect: { left: 0.134, top: 0.102, width: 0.732, height: 0.57 }, noteColor: "rgb(73, 55, 42)", captionSurface: "rgba(0, 0, 0, 0)" },
+      ];
+      for (const expected of placeholderExpectations) {
+        for (const dimension of ["left", "top", "width", "height"] as const) {
+          near(expected.state.placeholderPhoto[dimension], expected.state.actualPhoto[dimension], 0.001, `${label} ${expected.id} placeholder photo ${dimension} matches the real-photo window`);
+          near(expected.state.placeholderPhoto[dimension], expected.rect[dimension], 0.001, `${label} ${expected.id} photo ${dimension}`);
+        }
+        assert.equal(expected.state.photoMessage, "A little seasonal magic is taking shape...");
+        assert.equal(expected.state.photoMessageColor, "rgb(109, 84, 62)");
+        assert.equal(expected.state.noteMessage, "Your little note will appear here.");
+        assert.equal(expected.state.noteMessageColor, expected.noteColor);
+        assert.equal(expected.state.captionSurface, expected.captionSurface);
+        const placeholderFrameHandle = await page.$(`[data-${expected.id}-placeholder="true"] > div`);
+        assert.ok(placeholderFrameHandle);
+        if (placeholderFrameHandle) {
+          await placeholderFrameHandle.evaluate((el) => { const e = el as HTMLElement; e.style.transition = "none"; e.style.rotate = "none"; e.style.transform = "none"; e.style.boxShadow = "none"; e.style.borderRadius = "0"; });
+          const placeholderShot = await placeholderFrameHandle.screenshot({ type: "png" });
+          const suffix = viewport.name === "desktop" ? "desktop" : "phone";
+          writeFileSync(join(OUT_DIR, `chrome-${expected.id}-placeholder-${suffix}-preview.png`), placeholderShot);
+        }
+      }
+      const measured = await page.evaluate(() => (window as unknown as { __measure: () => Promise<Record<string, { width: number; height: number; fontPx: number; minFontPx: number; photoBottom: number; captionBox: { top: number; bottom: number }; lines: Array<{ left: number; right: number; top: number; bottom: number }> }>> }).__measure());
       await page.screenshot({ path: join(OUT_DIR, `page-${engine.name}-${viewport.name}.png`), fullPage: true });
       writeFileSync(join(OUT_DIR, `measured-${engine.name}-${viewport.name}.json`), JSON.stringify(measured, null, 1));
       const fontStatus = await page.evaluate(() => ({ marcellus: document.fonts.check("12px Marcellus", "Mom"), notoSerifKr: document.fonts.check("12px 'Noto Serif KR'", "뚜리") }));
       writeFileSync(join(OUT_DIR, `fonts-${engine.name}-${viewport.name}.json`), JSON.stringify(fontStatus));
 
-      for (const scenario of SCENARIOS) {
+      for (const scenario of ALL_SCENARIOS) {
         progress(`scenario ${scenario.id}`);
         const result = measured[`${scenario.id}:result`]!;
         const gallery = measured[`${scenario.id}:gallery`]!;
+        const photoFit = await page.evaluate((id) => {
+          const photo = document.querySelector(`[data-scenario="${id}"][data-card="result"] [data-seasonal-polaroid="photo"]`);
+          return photo ? getComputedStyle(photo).objectFit : null;
+        }, scenario.id);
+        assert.equal(photoFit, "cover", `${label} ${scenario.id}: photos use the existing cover fit`);
         // 1. Same caption layout on both cards, relative to the card.
         assert.equal(result.lines.length, gallery.lines.length, `${label} ${scenario.id}: visual line count differs between result and gallery`);
         assert.ok(result.lines.length === 4 || result.lines.length === 5, `${label} ${scenario.id}: caption has ${result.lines.length} visual lines`);
+        assert.ok(result.photoBottom < result.captionBox.top, `${label} ${scenario.id}: photo overlaps the caption safe area`);
+        assert.ok(result.lines.every((line) => line.top >= result.captionBox.top - 0.005 && line.bottom <= result.captionBox.bottom + 0.005), `${label} ${scenario.id}: caption text clipped outside its safe area`);
         // Readability floor: no line below 80% of the base size on screen.
         assert.ok(result.minFontPx >= result.fontPx * 0.8 - 0.01, `${label} ${scenario.id}: smallest line is ${result.minFontPx.toFixed(2)}px, below the floor`);
         result.lines.forEach((line, index) => {
@@ -395,10 +565,12 @@ test("result card, gallery card, and downloaded PNG are one composition", { time
           assert.ok(colorNear(corner, exported.templateCorners[index]!, 20), `${label} ${scenario.id}: export corner ${index} is ${corner} but the template corner is ${exported.templateCorners[index]}`);
         }
         assert.ok(!colorNear(exported.result.photoPixel, [242, 232, 215], 12), `${label} ${scenario.id}: photo window is empty in the export`);
-        assert.ok(!colorNear(exported.result.flowerPixel, [242, 232, 215], 12), `${label} ${scenario.id}: decorative flowers missing in the export`);
+        if (!scenario.themeId || scenario.themeId === "halloween" || scenario.themeId === "felt-doll" || scenario.themeId === "gouache-story") {
+          assert.ok(!colorNear(exported.result.flowerPixel, [242, 232, 215], 12), `${label} ${scenario.id}: decorative flowers missing in the export`);
+        }
 
         writeFileSync(join(OUT_DIR, `fontembed-${engine.name}-${viewport.name}-${scenario.id}.txt`), exported.fontEmbed);
-        assert.equal(exported.fontEmbed, "ok", `${label} ${scenario.id}: font embedding failed, export would fall back to system fonts`);
+        assert.equal(exported.fontEmbed, "system-font-ok", `${label} ${scenario.id}: local caption font family was not applied`);
         // 4. What the person sees versus what the file holds, at the same size.
         const handle = await page.$(`[data-scenario="${scenario.id}"][data-card="result"] div`);
         assert.ok(handle);
@@ -407,6 +579,8 @@ test("result card, gallery card, and downloaded PNG are one composition", { time
         await handle!.evaluate((el) => { const e = el as HTMLElement; e.style.rotate = ""; e.style.transform = ""; e.style.boxShadow = ""; e.style.borderRadius = ""; });
         if (viewport.name === "desktop") {
           writeFileSync(join(OUT_DIR, `${engine.name}-${scenario.id}-result-onscreen.png`), shot);
+        } else if (scenario.id.endsWith("-en-max") || scenario.id.endsWith("-ko-max")) {
+          writeFileSync(join(OUT_DIR, `${engine.name}-${viewport.name}-${scenario.id}-result-onscreen.png`), shot);
         }
         const region = {
           left: Math.max(0, Math.min(...result.lines.map((line) => line.left)) - 0.02),

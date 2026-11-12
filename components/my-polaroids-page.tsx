@@ -6,7 +6,7 @@ import { SEASONAL_POLAROID_FRAME_BASE_CLASS, SeasonalPolaroidFrame } from "@/com
 import { useAuthSession } from "@/components/use-auth-session";
 import { useLocale } from "@/components/locale-provider";
 import { fetchMyPolaroids, myPolaroidImageUrl, type SavedSeasonalPolaroid } from "@/lib/my-polaroids-client";
-import { polaroidThemeTitle } from "@/lib/polaroid-theme-catalog";
+import { polaroidOccasionItem, polaroidThemeTitle } from "@/lib/polaroid-theme-catalog";
 import { exportSeasonalPolaroidPng } from "@/lib/seasonal-polaroid-export";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -33,6 +33,8 @@ function SavedPolaroidCard({ item, lang, t }: {
   const [downloadError, setDownloadError] = useState(false);
   const imageUrl = myPolaroidImageUrl(item.resultId);
   const bodyFont = lang === "ko" ? "font-ko break-keep" : "font-display-en";
+  const occasion = item.occasionId ? polaroidOccasionItem(item.occasionId) : undefined;
+  const occasionTitle = occasion ? (lang === "ko" ? occasion.titleKo : occasion.titleEn) : null;
 
   const download = async () => {
     if (!frameRef.current || downloading || imageError) return;
@@ -74,7 +76,8 @@ function SavedPolaroidCard({ item, lang, t }: {
       <div className={`mt-4 flex items-start justify-between gap-3 ${bodyFont}`}>
         <div className="min-w-0">
           <h2 className="truncate text-lg text-[#F3EAD8]">{item.petName}</h2>
-          <p className="mt-1 text-xs text-[#B6AA99]">{item.themeId === "halloween" ? t("myPolaroids.halloween") : polaroidThemeTitle(item.themeId, lang) || item.themeId} · {displayDate(item.createdAt, lang)}</p>
+          {item.petId ? <Link href={`/my/pets/${encodeURIComponent(item.petId)}`} className={`mt-1 inline-flex min-h-10 items-center text-xs text-[#EAC15A] underline-offset-4 hover:underline ${bodyFont}`}>{t("myPolaroids.openPetMemories")}</Link> : null}
+          <p className="mt-1 text-xs text-[#B6AA99]">{item.themeId === "halloween" ? t("myPolaroids.halloween") : polaroidThemeTitle(item.themeId, lang) || item.themeId}{occasionTitle ? ` · ${occasionTitle}` : ""} · {displayDate(item.createdAt, lang)}</p>
         </div>
         <button type="button" onClick={download} disabled={downloading || imageError} className={`shrink-0 rounded-xl bg-[#B89A2E] px-3 py-2 text-xs font-medium text-black transition hover:bg-[#D0AE3D] disabled:cursor-not-allowed disabled:opacity-50 ${bodyFont}`}>
           {downloading ? t("myPolaroids.downloading") : t("myPolaroids.download")}
@@ -92,6 +95,8 @@ export function MyPolaroidsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
+  const [petFilter, setPetFilter] = useState("");
+  const [pets, setPets] = useState<Array<{ petId: string; petName: string }>>([]);
   const controllerRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -101,18 +106,33 @@ export function MyPolaroidsPage() {
     setLoading(true);
     setError(null);
     try {
-      setItems(await fetchMyPolaroids(controller.signal));
+      setItems(await fetchMyPolaroids(controller.signal, petFilter || null));
     } catch (caught) {
       if (!controller.signal.aborted) setError(errorCopy(caught, t));
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [t]);
+  }, [petFilter, t]);
 
   useEffect(() => () => controllerRef.current?.abort(), []);
   useEffect(() => {
     if (authStatus === "authenticated") void load();
   }, [authStatus, load]);
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    const controller = new AbortController();
+    void fetch("/api/my/pets", { credentials: "same-origin", cache: "no-store", signal: controller.signal })
+      .then((response) => response.ok ? response.json() : null)
+      .then((body) => {
+        if (Array.isArray(body?.pets)) {
+          setPets(body.pets.flatMap((pet: { petId?: unknown; petName?: unknown }) =>
+            typeof pet.petId === "string" && typeof pet.petName === "string" ? [{ petId: pet.petId, petName: pet.petName }] : [],
+          ));
+        }
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [authStatus]);
 
   const openAuth = () => {
     setAuthOpen(true);
@@ -138,6 +158,15 @@ export function MyPolaroidsPage() {
           <h1 className={`mt-3 text-3xl font-light text-[#FFF0D0] sm:text-5xl ${bodyFont}`}>{t("myPolaroids.title")}</h1>
           <p className={`mt-3 text-sm leading-7 text-[#C9BDAE] ${bodyFont}`}>{t("myPolaroids.description")}</p>
         </div>
+        {authStatus === "authenticated" && pets.length > 0 ? (
+          <div className="mx-auto mt-8 flex max-w-md flex-col gap-2">
+            <label htmlFor="my-polaroids-pet-filter" className={`text-left text-xs text-[#C9BDAE] ${bodyFont}`}>{t("myPolaroids.petFilterLabel")}</label>
+            <select id="my-polaroids-pet-filter" value={petFilter} onChange={(event) => setPetFilter(event.target.value)} className={`min-h-11 rounded-xl border border-[#D4AF37]/30 bg-[#17130f] px-3 text-sm text-[#F3EAD8] ${bodyFont}`}>
+              <option value="">{t("myPolaroids.allPetsFilter")}</option>
+              {pets.map((pet) => <option key={pet.petId} value={pet.petId}>{pet.petName}</option>)}
+            </select>
+          </div>
+        ) : null}
         {authStatus === "loading" ? <p className={`mx-auto mt-12 text-center text-sm text-[#B6AA99] ${bodyFont}`}>{t("myPolaroids.loading")}</p> : null}
         {authStatus === "anonymous" ? <div className="mx-auto mt-12 max-w-md rounded-2xl border border-[#D4AF37]/30 bg-[#17130f]/80 p-7 text-center"><p className={`text-sm leading-7 text-[#E7D7BD] ${bodyFont}`}>{t("myPolaroids.authRequired")}</p><button type="button" onClick={openAuth} className={`mt-5 min-h-11 rounded-xl bg-[#B89A2E] px-6 py-3 text-sm font-medium text-black hover:bg-[#D0AE3D] ${bodyFont}`}>{t("myPolaroids.verifyEmail")}</button></div> : null}
         {authStatus === "authenticated" && loading ? <p className={`mx-auto mt-12 text-center text-sm text-[#B6AA99] ${bodyFont}`}>{t("myPolaroids.loading")}</p> : null}

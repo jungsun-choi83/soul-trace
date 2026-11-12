@@ -24,7 +24,7 @@ test("Seasonal admission validates, hashes, guards, attaches, and returns a capa
 
 test("activation defaults off and does not touch production configuration", () => {
   assert.match(feature, /=== "true"/);
-  assert.match(route, /SEASONAL_POLAROID_GENERATION_ENABLED = isSeasonalPolaroidEnabled\(\)/);
+  assert.match(route, /const seasonalPolaroidGenerationEnabled = isSeasonalPolaroidEnabled\(\)/);
   assert.match(route, /seasonal_polaroid_unavailable/);
   assert.match(status, /kind === "seasonal_polaroid" && !SEASONAL_STATUS_ENABLED/);
   assert.match(image, /if \(!isSeasonalPolaroidEnabled\(\)\)/);

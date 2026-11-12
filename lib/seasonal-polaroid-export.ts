@@ -240,6 +240,7 @@ export async function renderSeasonalPolaroidCanvas(node: HTMLElement): Promise<H
   const template = part<HTMLImageElement>(node, "template");
   const photoWindow = part(node, "photo-window");
   const photo = part<HTMLImageElement>(node, "photo");
+  const templateOverlay = node.getAttribute("data-seasonal-polaroid-template-overlay") === "true";
   const caption = part(node, "caption");
   const captionRect = caption ? layoutRect(caption) : null;
   const vectorLayer = await captureVectorLayer(node, pixelRatio, captionRect, Boolean(caption && captionHasVisibleText(caption)));
@@ -251,15 +252,18 @@ export async function renderSeasonalPolaroidCanvas(node: HTMLElement): Promise<H
   if (!stage) throw new Error("export_failed");
   stage.imageSmoothingEnabled = true;
   stage.imageSmoothingQuality = "high";
-  stage.fillStyle = SEASONAL_POLAROID_EXPORT_BACKGROUND;
+  stage.fillStyle = templateOverlay ? "#000000" : SEASONAL_POLAROID_EXPORT_BACKGROUND;
   stage.fillRect(0, 0, rendered.width, rendered.height);
   stage.scale(pixelRatio, pixelRatio);
 
-  // 1. The decorative template, stretched over the whole frame like `object-fill`.
-  if (template && template.naturalWidth) drawFitted(stage, template, layoutRect(template));
-
-  // 2. The photo window: its background, then the photo clipped to the rounded corners.
-  if (photoWindow) {
+  const drawTemplate = () => {
+    // Alpha-matted Gouache and Crayon templates sit above the photo and retain
+    // their original artwork while their openings reveal the photo below.
+    if (template && template.naturalWidth) drawFitted(stage, template, layoutRect(template));
+  };
+  const drawPhoto = () => {
+    // The photo window: its background, then the photo clipped to the rounded corners.
+    if (!photoWindow) return;
     const windowRect = layoutRect(photoWindow);
     const windowStyle = getComputedStyle(photoWindow);
     stage.save();
@@ -269,6 +273,16 @@ export async function renderSeasonalPolaroidCanvas(node: HTMLElement): Promise<H
     stage.fillRect(windowRect.left, windowRect.top, windowRect.width, windowRect.height);
     if (photo && photo.naturalWidth) drawFitted(stage, photo, windowRect);
     stage.restore();
+  };
+
+  // Legacy frames keep their established order. Gouache lays the photo first,
+  // then restores the decorative overlay above it.
+  if (templateOverlay) {
+    drawPhoto();
+    drawTemplate();
+  } else {
+    drawTemplate();
+    drawPhoto();
   }
 
   // 3. Caption, sparkle and overlays, rasterised from the DOM at the same scale.

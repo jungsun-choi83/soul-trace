@@ -55,7 +55,7 @@ test("the normal Seasonal path still uses the explicit worker branch and queue c
 test("existing worker authentication and public feature gating remain intact", () => {
   assert.match(worker, /AI_GENERATION_WORKER_SECRET/);
   assert.match(worker, /CRON_SECRET/);
-  assert.match(seasonalRoute, /if \(!SEASONAL_POLAROID_GENERATION_ENABLED\)/);
+  assert.match(seasonalRoute, /if \(!seasonalPolaroidGenerationEnabled\)/);
   assert.match(seasonalRoute, /seasonal_polaroid_unavailable/);
 });
 

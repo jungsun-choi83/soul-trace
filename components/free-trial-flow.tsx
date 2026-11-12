@@ -4,6 +4,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { SoulTraceLogo } from "@/components/storybook/soul-trace-logo";
 import { STYLE_ORDER, TRIAL_THEMES, trialPlateSrc, type TrialThemeId } from "@/components/trial-theme-scene";
 import { useLocale } from "@/components/locale-provider";
+import { fetchOrNull, jsonOrNull } from "@/lib/network-failure";
 import type { FreeStyle } from "@/lib/pet-free-trial";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
@@ -22,7 +23,6 @@ const LABELS: Record<"ko" | "en", Record<FreeStyle, string>> = {
 };
 
 const PHOTO_OK = /^image\/(jpeg|png|webp)$/i;
-
 function photoAllowed(file: File) {
   return PHOTO_OK.test(file.type) || (!file.type && /\.(jpe?g|png|webp)$/i.test(file.name));
 }
@@ -121,11 +121,24 @@ export function FreeTrialFlow() {
     body.set("idempotencyKey", key.current);
     body.set("occasionId", occasion);
     body.set("photo", file);
-    const response = await fetch("/api/try/polaroid", { method: "POST", body });
-    const payload = (await response.json().catch(() => null)) as { error?: string; style?: FreeStyle; image?: string } | null;
+    // The idempotency key is deliberately NOT reset here. After a dropped
+    // connection the server may already have generated this polaroid, so a
+    // manual retry reuses the same key and is de-duplicated server side.
+    const response = await fetchOrNull("/api/try/polaroid", { method: "POST", body });
+    const payload = await jsonOrNull<{ error?: string; style?: FreeStyle; image?: string }>(response);
     setPending(false);
+    if (!response) {
+      setError(copyLang === "ko"
+        ? "연결이 끊겨 완료를 확인하지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요."
+        : "The connection dropped, so this could not be confirmed. Check your connection and try again.");
+      return;
+    }
     if (!response.ok || !payload?.image) {
-      setError(payload?.error === "exhausted"
+      setError(payload?.error === "rate_limited"
+        ? (copyLang === "ko" ? "한 시간 동안 만들 수 있는 무료 체험 횟수(10회)에 도달했어요. 잠시 후 다시 시도해 주세요." : "You’ve reached the limit of 10 Free Trial attempts per hour. Please try again later.")
+        : payload?.error === "guest_start_limited"
+          ? (copyLang === "ko" ? "새 무료 체험 시작 횟수에 도달했어요. 한 시간 후 다시 시도해 주세요." : "You’ve reached the hourly limit for starting new guest trials. Please try again in an hour.")
+        : payload?.error === "exhausted"
         ? (copyLang === "ko" ? "이 아이의 무료 폴라로이드를 이미 사용했어요." : "This pet already used the free polaroid.")
         : copyLang === "ko" ? "지금 만들지 못했어요. 잠시 후 다시 시도해 주세요." : "This could not be made just now. Try again in a moment.");
       return;
@@ -262,6 +275,7 @@ export function FreeTrialFlow() {
             </div>
           </div>
           {error === "이 아이의 무료 폴라로이드를 이미 사용했어요." ? <Link href="/premium" className="rounded-full bg-[#e7a0b4] py-4 text-center text-white">추가 콘텐츠 만들기</Link> : null}
+
           {error ? <p role="alert" className="text-sm text-[#a14b4b]">{error}</p> : null}
           {artwork ? <a href={artwork} download="soultrace-polaroid.jpg" className="rounded-full border border-[#f0d5c4] bg-white py-4 text-center text-base font-medium text-[#8a6248]">다운로드</a> : null}
           {result ? (

@@ -248,7 +248,6 @@ export const PLANNED_POLAROID_THEMES = [
   { id: "summer-seaside", category: "seasonal" as const, titleKo: "한여름의 작은 바닷마을", titleEn: "A Tiny Midsummer Harbor", hintKo: "햇살과 바닷바람이 있는 작은 마을", hintEn: "A tiny harbor of sun and sea breeze" },
   { id: "halloween-mischief-ghost", category: "seasonal" as const, titleKo: "장난꾸러기 유령", titleEn: "A Mischief Ghost", hintKo: "장난기 가득한 작은 유령과 함께", hintEn: "A playful night with a tiny mischief ghost" },
   { id: "birthday-star", category: "seasonal" as const, titleKo: "오늘은 내가 주인공 — 생일", titleEn: "Today I Am the Star — Birthday", hintKo: "오늘만큼은 내가 주인공인 하루", hintEn: "A birthday where this child is the star" },
-  { id: "adoption-day", category: "seasonal" as const, titleKo: "우리가 처음 만난 날 — 입양 기념일", titleEn: "The Day We First Met — Adoption Day", hintKo: "우리가 처음 만난 그날의 온기", hintEn: "The warmth of the day we first met" },
 ] as const;
 
 export type PolaroidOccasionItem = {
@@ -267,6 +266,56 @@ export type PolaroidOccasionGroup = {
   items: readonly PolaroidOccasionItem[];
 };
 
+const ADOPTION_DAY_OCCASION: PolaroidOccasionItem = {
+  id: "adoption-day",
+  titleKo: "우리가 처음 만난 날 — 입양 기념일",
+  titleEn: "The Day We First Met — Adoption Day",
+  hintKo: "우리가 처음 만난 그날의 온기",
+  hintEn: "The warmth of the day we first met",
+  implemented: true,
+};
+
+const BIRTHDAY_OCCASION: PolaroidOccasionItem = {
+  ...plannedOccasion("birthday-star"),
+  hintEn: "A warm celebration with this pet as the star",
+  implemented: true,
+};
+
+const NEW_YEAR_OCCASION: PolaroidOccasionItem = {
+  ...plannedOccasion("newyear-blessing"),
+  hintKo: "새해의 따뜻한 소망과 희망찬 시작",
+  hintEn: "A hopeful New Year keepsake with a little blessing",
+  implemented: true,
+};
+
+const VALENTINE_OCCASION: PolaroidOccasionItem = {
+  ...plannedOccasion("valentine-letter"),
+  hintKo: "반려동물의 실제 정보만 담은 따뜻한 사랑의 편지",
+  hintEn: "A sweet little love note grounded in the pet's supplied details",
+  implemented: true,
+};
+
+const SPRING_OCCASION: PolaroidOccasionItem = {
+  ...plannedOccasion("spring-secret-garden"),
+  hintKo: "꽃잎과 부드러운 봄빛이 머무는 작은 정원",
+  hintEn: "A quiet garden of petals and soft spring light",
+  implemented: true,
+};
+
+const SUMMER_OCCASION: PolaroidOccasionItem = {
+  ...plannedOccasion("summer-seaside"),
+  hintKo: "바닷바람이 부는 잔잔한 작은 항구",
+  hintEn: "A tiny calm harbor with a gentle sea breeze",
+  implemented: true,
+};
+
+const MISCHIEF_GHOST_OCCASION: PolaroidOccasionItem = {
+  ...plannedOccasion("halloween-mischief-ghost"),
+  hintKo: "무섭지 않고 장난기 많은 다정한 유령 장면",
+  hintEn: "A playful, friendly ghostly scene—gentle, never scary",
+  implemented: true,
+};
+
 export const POLAROID_OCCASION_GROUPS: readonly PolaroidOccasionGroup[] = [
   {
     id: "christmas",
@@ -283,25 +332,25 @@ export const POLAROID_OCCASION_GROUPS: readonly PolaroidOccasionGroup[] = [
     id: "newyear",
     titleKo: "새해·설날",
     titleEn: "New Year",
-    items: [plannedOccasion("newyear-blessing")],
+    items: [NEW_YEAR_OCCASION],
   },
   {
     id: "valentine",
     titleKo: "밸런타인데이",
     titleEn: "Valentine's Day",
-    items: [plannedOccasion("valentine-letter")],
+    items: [VALENTINE_OCCASION],
   },
   {
     id: "spring",
     titleKo: "봄",
     titleEn: "Spring",
-    items: [plannedOccasion("spring-secret-garden")],
+    items: [SPRING_OCCASION],
   },
   {
     id: "summer",
     titleKo: "여름",
     titleEn: "Summer",
-    items: [plannedOccasion("summer-seaside")],
+    items: [SUMMER_OCCASION],
   },
   {
     id: "halloween",
@@ -309,14 +358,14 @@ export const POLAROID_OCCASION_GROUPS: readonly PolaroidOccasionGroup[] = [
     titleEn: "Halloween",
     items: [
       { id: "halloween", titleKo: "호박마을의 밤", titleEn: "Pumpkin Village Night", hintKo: "호박등이 빛나는 포근한 밤", hintEn: "A cozy night of pumpkin lanterns", implemented: true },
-      plannedOccasion("halloween-mischief-ghost"),
+      MISCHIEF_GHOST_OCCASION,
     ],
   },
   {
     id: "milestone",
     titleKo: "우리 아이의 기념일",
     titleEn: "Our child's day",
-    items: [plannedOccasion("birthday-star"), plannedOccasion("adoption-day")],
+    items: [BIRTHDAY_OCCASION, ADOPTION_DAY_OCCASION],
   },
 ];
 
@@ -338,6 +387,13 @@ export const POLAROID_OCCASION_SCENE_EN: Record<string, string> = {
   "christmas-santa-workshop": "A cozy toy workshop with wooden benches, ribbons, wrapped gifts, and warm lamp light. No brand names and no copyrighted Santa likeness.",
   "christmas-first-snow-post": "A tiny snowy post office after the first snow, with a small letter bag and warm window light. No brand names.",
   "christmas-snow-globe": "A handmade snow globe holding a tiny winter village, soft falling snow, and glass-curved light. No brand names.",
+  "adoption-day": "A quiet welcome-home keepsake for the pet's first day together, shown through a softly lit doorway or a calm, familiar home interior. Keep the supplied pet as the only subject; do not invent people, another pet, an adoption event, a shelter, paperwork, a date, or any detail not supplied. No text or logos.",
+  "birthday-star": "A warm, gentle birthday celebration centered on the supplied pet, with soft festive colors, balanced celebratory light, and simple paper garlands or confetti kept safely away from the pet. Keep the supplied pet as the only subject. Do not add people, candles, cake, age numbers, dates, written text, or invented memories. No logos.",
+  "newyear-blessing": "A warm, hopeful New Year keepsake centered on the supplied pet, with soft golden morning light, calm festive colors, and a small unmarked blessing envelope as a symbolic prop beside the pet. Keep the supplied pet as the only subject. Do not depict a delivery event or invent people, places, dates, written messages, resolutions, or personal memories. No text, numbers, or logos.",
+  "valentine-letter": "A tender Valentine's keepsake centered on the supplied pet, with soft rose and cream colors and one small unmarked folded note or heart-shaped paper detail nearby. Keep it a decorative scene, not a claimed event or relationship. Do not add people, dates, written messages, names, or invented personal memories. No text or logos.",
+  "spring-secret-garden": "A quiet secret garden of fresh spring leaves, a few drifting petals, and soft dappled daylight around the supplied pet. Keep the pet as the only animal and clear focal subject. This is an illustrative setting, not a claimed visit or memory; do not add people, dates, text, or invented events. No logos.",
+  "summer-seaside": "A tiny, peaceful summer harbor setting with pale blue light and a gentle sea-breeze feeling. Keep the supplied pet on a dry, safe boardwalk well away from water, with the pet as the only animal and clear focal subject. Do not imply a real trip or voyage, or invent people, dates, events, or memories. No text or logos.",
+  "halloween-mischief-ghost": "A playful, gentle Halloween-mischief scene: keep the supplied pet as the clear focal subject, with one tiny friendly ghost peeking playfully nearby in a softly moonlit setting. The ghost is a scene companion, not a costume; do not dress the pet in a ghost sheet. Keep the mood cute and safe, never frightening. Do not add people, graves, death imagery, dates, text, or invented personal memories. No logos.",
 };
 
 export function polaroidArtStyleKey(themeId: string): PolaroidArtStyleKey | null {
@@ -410,7 +466,7 @@ export function isPolaroidOccasionAdmitted(
 ): boolean {
   const item = polaroidOccasionItem(occasionId);
   if (!item?.implemented) return false;
-  if (occasionId === "halloween") return true;
+  if (["halloween", "adoption-day", "birthday-star", "newyear-blessing", "valentine-letter", "spring-secret-garden", "summer-seaside", "halloween-mischief-ghost"].includes(occasionId)) return true;
   return isPolaroidThemeSelectable(occasionId, Date.now(), flags);
 }
 
@@ -419,7 +475,7 @@ export function everydayPolaroidArtStyles(
 ): PolaroidThemeCatalogEntry[] {
   return EVERYDAY_POLAROID_ART_STYLE_IDS
     .map((id) => polaroidThemeCatalogEntry(id))
-    .filter((entry): entry is PolaroidThemeCatalogEntry => Boolean(entry) && isPolaroidThemeSelectable(entry.id, Date.now(), flags));
+    .filter((entry): entry is PolaroidThemeCatalogEntry => entry !== undefined && isPolaroidThemeSelectable(entry.id, Date.now(), flags));
 }
 
 export function selectablePolaroidThemes(

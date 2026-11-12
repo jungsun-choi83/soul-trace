@@ -6,6 +6,7 @@ import { StorybookShell } from "@/components/pet-form-shell";
 import { authEntryPath } from "@/lib/auth-redirect";
 import { isPetFirstArchiveEnabled, isUuid } from "@/lib/pet-first-archive";
 import { loadPetProfile } from "@/lib/pet-first-archive-data";
+import type { ServerSearchParams } from "@/lib/search-params";
 import { noIndexRobots } from "@/lib/site-url";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 
@@ -18,11 +19,16 @@ export const metadata: Metadata = {
 
 export default async function EditPetPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ petId: string }>;
+  searchParams: Promise<ServerSearchParams>;
 }) {
   if (!isPetFirstArchiveEnabled()) notFound();
   const { petId } = await params;
+  const query = await searchParams;
+  const rawPhotoError = Array.isArray(query.photoError) ? query.photoError[0] : query.photoError;
+  const rawContinueTo = Array.isArray(query.continueTo) ? query.continueTo[0] : query.continueTo;
   if (!isUuid(petId)) notFound();
   const supabase = await createSupabaseAuthServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
@@ -37,6 +43,8 @@ export default async function EditPetPage({
       <PetProfileForm
         mode="edit"
         petId={result.profile.petId}
+        continueTo={rawContinueTo ?? null}
+        initialError={rawPhotoError === "1" ? "photo" : null}
         initial={{
           petName: result.profile.petName,
           lifeStatus: result.profile.lifeStatus,

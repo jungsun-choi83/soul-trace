@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { FreeTrialLedger, FREE_GRANT_DAILY_CAP, GUEST_RETENTION_MS, GUEST_STARTS_PER_HOUR } from "./pet-free-trial.ts";
+import { FreeTrialLedger, FREE_GRANT_DAILY_CAP, GUEST_GENERATION_ATTEMPTS_PER_HOUR, GUEST_RETENTION_MS, GUEST_STARTS_PER_HOUR } from "./pet-free-trial.ts";
 
 const day = 1_700_000_000_000;
 let seq = 0;
@@ -47,8 +47,10 @@ test("the same request key does not spend a second credit, and a failed job give
   const actor = guest();
   const first = book.reserve({ petId, actor, style: "crayon-diary", idempotencyKey: "idem-same" });
   const replay = book.reserve({ petId, actor, style: "felt-doll", idempotencyKey: "idem-same" });
-  assert.equal(first.ok && replay.ok && first.reservation.jobId, replay.reservation.jobId);
-  assert.equal(replay.ok && replay.reservation.replayed, true);
+  assert.ok(first.ok);
+  assert.ok(replay.ok);
+  assert.equal(first.reservation.jobId, replay.reservation.jobId);
+  assert.equal(replay.reservation.replayed, true);
   if (first.ok) assert.equal(book.fail(first.reservation.jobId), null);
   assert.equal(book.remaining(petId), 1);
   const retry = book.reserve({ petId, actor, style: "gouache-story", idempotencyKey: "idem-same" });
@@ -99,7 +101,7 @@ test("a reinstall session cannot reset another guest pet, and old guest data exp
   assert.equal(book.remaining(petId), 0);
 });
 
-test("repeated new pets are capped per day and guest sessions keep a single pet", () => {
+test("authenticated daily grants are capped and a guest session can register distinct pets", () => {
   seq = 0;
   const book = ledger();
   const user = { userId: "user-1", guestSessionId: null };
@@ -113,8 +115,55 @@ test("repeated new pets are capped per day and guest sessions keep a single pet"
   const first = book.registerPet({ actor: guest(), name: "게스트", now: day, ipKey: "guest-ip" });
   assert.equal(first.ok, true);
   const second = book.registerPet({ actor: guest(), name: "둘째", now: day + 1, ipKey: "guest-ip-2" });
-  assert.equal(second.ok && first.ok && second.petId, first.ok ? first.petId : "");
+  assert.equal(second.ok && first.ok && second.petId !== first.petId, true);
   assert.equal(book.remaining(first.ok ? first.petId : ""), 1);
+  assert.equal(book.remaining(second.ok ? second.petId : ""), 1);
+});
+
+test("guest pet names are normalized for repeat recognition and each allowance stays separate", () => {
+  seq = 0;
+  const book = ledger();
+  const actor = guest();
+  const first = book.registerPet({ actor, name: "Milo", now: day, ipKey: "ip" });
+  const sameName = book.registerPet({ actor, name: "  ＭＩＬＯ  ", now: day + 1, ipKey: "ip" });
+  const second = book.registerPet({ actor, name: "Luna", now: day + 2, ipKey: "ip" });
+  assert.equal(first.ok && sameName.ok ? first.petId === sameName.petId : false, true);
+  assert.equal(first.ok && second.ok && first.petId !== second.petId, true);
+  assert.equal(first.ok && second.ok && first.remaining, 1);
+  assert.equal(second.ok && second.remaining, 1);
+
+  if (!first.ok || !second.ok) return;
+  const firstJob = book.reserve({ petId: first.petId, actor, style: "felt-doll", idempotencyKey: "milo-success-1" });
+  assert.equal(firstJob.ok, true);
+  if (firstJob.ok) assert.equal(book.succeed(firstJob.reservation.jobId), null);
+
+  const repeated = book.registerPet({ actor, name: "milo", now: day + 3, ipKey: "ip" });
+  assert.equal(repeated.ok && repeated.petId, first.petId);
+  assert.equal(repeated.ok && repeated.remaining, 0);
+  const blocked = book.reserve({ petId: first.petId, actor, style: "gouache-story", idempotencyKey: "milo-repeat-2" });
+  assert.equal(blocked.ok, false);
+  if (!blocked.ok) assert.equal(blocked.error, "exhausted");
+
+  const secondJob = book.reserve({ petId: second.petId, actor, style: "felt-doll", idempotencyKey: "luna-success-1" });
+  assert.equal(secondJob.ok, true);
+  if (secondJob.ok) assert.equal(book.succeed(secondJob.reservation.jobId), null);
+  assert.equal(book.remaining(second.petId), 0);
+  const repeatedSecond = book.reserve({ petId: second.petId, actor, style: "crayon-diary", idempotencyKey: "luna-repeat-2" });
+  assert.equal(repeatedSecond.ok, false);
+  if (!repeatedSecond.ok) assert.equal(repeatedSecond.error, "exhausted");
+});
+
+test("new guest pets in one session remain subject to the hourly start limit", () => {
+  seq = 0;
+  const book = ledger();
+  const actor = guest("many-pets");
+  for (let index = 0; index < GUEST_STARTS_PER_HOUR; index += 1) {
+    const created = book.registerPet({ actor, name: `Pet ${index}`, now: day + index, ipKey: "shared-ip" });
+    assert.equal(created.ok, true);
+  }
+  const limited = book.registerPet({ actor, name: "Another pet", now: day + 10, ipKey: "shared-ip" });
+  assert.equal(limited.ok, false);
+  if (!limited.ok) assert.equal(limited.error, "guest_start_limited");
 });
 
 test("anonymous starts are rate limited", () => {
@@ -126,7 +175,66 @@ test("anonymous starts are rate limited", () => {
   }
   const limited = book.registerPet({ actor: guest("overflow"), name: "아이", now: day, ipKey: "shared" });
   assert.equal(limited.ok, false);
-  if (!limited.ok) assert.equal(limited.error, "rate_limited");
+  if (!limited.ok) assert.equal(limited.error, "guest_start_limited");
+});
+
+test("failed generation retries retain one guest pet and have a separate per-IP attempt cap", () => {
+  seq = 0;
+  const book = ledger();
+  const actor = guest("retry-guest");
+  const created = book.registerPet({ actor, name: "Milo", now: day, ipKey: "retry-ip" });
+  assert.equal(created.ok, true);
+  if (!created.ok) return;
+
+  assert.equal(GUEST_GENERATION_ATTEMPTS_PER_HOUR, 10);
+  for (let attempt = 0; attempt < GUEST_GENERATION_ATTEMPTS_PER_HOUR; attempt += 1) {
+    const reservation = book.reserve({
+      petId: created.petId,
+      actor,
+      style: "felt-doll",
+      idempotencyKey: `retry-${attempt}-key`,
+    });
+    assert.equal(reservation.ok, true);
+    if (!reservation.ok) return;
+    assert.equal(book.recordGenerationAttempt("retry-ip", day + attempt), true);
+    assert.equal(book.fail(reservation.reservation.jobId), null);
+  }
+
+  const stillSamePet = book.registerPet({ actor, name: "Milo", now: day + 10, ipKey: "retry-ip" });
+  assert.equal(stillSamePet.ok && stillSamePet.petId, created.petId);
+  const finalReservation = book.reserve({
+    petId: created.petId,
+    actor,
+    style: "felt-doll",
+    idempotencyKey: "retry-final-key",
+  });
+  assert.equal(finalReservation.ok, true);
+  if (finalReservation.ok) {
+    assert.equal(book.recordGenerationAttempt("retry-ip", day + 10), false);
+    assert.equal(book.fail(finalReservation.reservation.jobId), null);
+  }
+  assert.equal(book.recordGenerationAttempt("retry-ip", day + 60 * 60 * 1000), true);
+
+  assert.equal(GUEST_STARTS_PER_HOUR, 5);
+  for (let index = 1; index < GUEST_STARTS_PER_HOUR; index += 1) {
+    const nextGuest = book.registerPet({ actor: guest(`extra-${index}`), name: "Pet", now: day + 20, ipKey: "retry-ip" });
+    assert.equal(nextGuest.ok, true);
+  }
+  const extraGuest = book.registerPet({ actor: guest("extra-overflow"), name: "Pet", now: day + 20, ipKey: "retry-ip" });
+  assert.equal(extraGuest.ok, false);
+  if (!extraGuest.ok) assert.equal(extraGuest.error, "guest_start_limited");
+});
+
+test("failed trial responses retain the guest cookie and distinguish rate limits in the UI", () => {
+  const route = readFileSync("app/api/try/polaroid/route.ts", "utf8");
+  const flow = readFileSync("components/free-trial-flow.tsx", "utf8");
+  assert.match(route, /shouldSetGuestCookie/);
+  assert.match(route, /recordGenerationAttempt\(ip, Date\.now\(\)\)/);
+  assert.match(route, /registered\.error === "guest_start_limited"/);
+  assert.match(route, /jsonResponse\(\{ error: "failed" \}, 500\)/);
+  assert.match(flow, /payload\?\.error === "rate_limited"/);
+  assert.match(flow, /limit of 10 Free Trial attempts per hour/);
+  assert.match(flow, /payload\?\.error === "guest_start_limited"/);
 });
 
 test("the migration keeps one polaroid grant per pet and can be rolled back without dropping pets", () => {

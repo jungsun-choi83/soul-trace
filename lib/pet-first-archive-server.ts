@@ -5,6 +5,14 @@ import { NextResponse } from "next/server";
 import { decidePetAccess, isPetFirstArchiveEnabled, isUuid } from "@/lib/pet-first-archive";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import {
+  logOwnerSetupDiagnostic,
+  runOwnerSetup,
+  sanitizeOwnerSetupCode,
+  sanitizeOwnerSetupDiagnostic,
+  type OwnerSetupAttempt,
+  type OwnerSetupError,
+} from "@/lib/owner-row-setup";
 
 type AuthClient = NonNullable<Awaited<ReturnType<typeof createSupabaseAuthServerClient>>>;
 
@@ -66,22 +74,69 @@ export async function requireLivingPet(petId: string) {
 }
 
 export async function ensureOwnerRow(supabase: AuthClient, userId?: string) {
-  const ensured = await supabase.rpc("ensure_soul_trace_owner");
-  if (!ensured.error) return null;
-  const admin = createSupabaseServerClient();
-  const ownerId = userId ?? (await supabase.auth.getUser()).data.user?.id;
-  if (admin && ownerId) {
-    const inserted = await admin.from("soul_trace_owners").upsert({ user_id: ownerId }, { onConflict: "user_id" });
-    if (!inserted.error) return null;
-    console.error("[pet-first] owner setup failed", { code: inserted.error.code });
-  } else {
-    console.error("[pet-first] owner setup failed", { code: ensured.error.code });
+  const result = await runOwnerSetup(
+    async (): Promise<OwnerSetupAttempt> => {
+      const { error } = await supabase.rpc("ensure_soul_trace_owner");
+      return error ? { ok: false, error } : { ok: true };
+    },
+    async (): Promise<OwnerSetupAttempt> => {
+      const admin = createSupabaseServerClient();
+      if (!admin) return { ok: false, unavailable: true, reason: "service_client_unavailable" };
+      const ownerId = userId ?? (await supabase.auth.getUser()).data.user?.id;
+      if (!ownerId) return { ok: false, unavailable: true, reason: "owner_id_unavailable" };
+      const { error } = await admin.from("soul_trace_owners").upsert(
+        { user_id: ownerId },
+        { onConflict: "user_id" },
+      );
+      return error ? { ok: false, error } : { ok: true };
+    },
+  );
+
+  if (result.ok) {
+    if (result.rpcError) logOwnerSetupFailure("rpc", result.rpcError, false);
+    return null;
   }
+
+  logOwnerSetupFailure("rpc", result.rpcError, true);
+  if (result.fallbackError) logOwnerSetupFailure("fallback", result.fallbackError, true);
+  else logOwnerSetupFailure("fallback", null, true, result.fallbackUnavailableReason);
   return privateJson({ error: "unavailable" }, 503);
+}
+
+function logOwnerSetupFailure(
+  stage: "rpc" | "fallback",
+  error: OwnerSetupError | null,
+  terminal: boolean,
+  unavailableReason?: string,
+) {
+  if (process.env.NODE_ENV === "development") {
+    logOwnerSetupDiagnostic(terminal, {
+      stage,
+      terminal,
+      code: sanitizeOwnerSetupCode(error?.code),
+      message: sanitizeOwnerSetupDiagnostic(error?.message),
+      hint: sanitizeOwnerSetupDiagnostic(error?.hint),
+      fallbackUnavailableReason: unavailableReason,
+    });
+    return;
+  }
+  if (terminal) console.error("[pet-first] owner setup failed", { stage });
 }
 
 const PET_SELECT = "pet_id, owner_user_id, pet_name, life_status, species, birthday, adopted_on, traits, created_at";
 const PET_SELECT_BASE = "pet_id, owner_user_id, pet_name, created_at";
+
+type OwnedPetRow = {
+  pet_id: string;
+  owner_user_id: string;
+  pet_name: string;
+  created_at: string;
+  life_status?: string | null;
+  species?: string | null;
+  birthday?: string | null;
+  adopted_on?: string | null;
+  traits?: string | null;
+};
 
 export async function selectOwnedPet(supabase: AuthClient, userId: string, petId: string) {
   const full = await supabase
@@ -90,14 +145,15 @@ export async function selectOwnedPet(supabase: AuthClient, userId: string, petId
     .eq("pet_id", petId)
     .eq("owner_user_id", userId)
     .maybeSingle();
-  if (!full.error) return full;
-  if (full.error.code !== "42703") return full;
-  return supabase
+  if (!full.error) return { ...full, data: full.data as OwnedPetRow | null };
+  if (full.error.code !== "42703") return { ...full, data: null as OwnedPetRow | null };
+  const fallback = await supabase
     .from("soul_trace_pets")
     .select(PET_SELECT_BASE)
     .eq("pet_id", petId)
     .eq("owner_user_id", userId)
     .maybeSingle();
+  return { ...fallback, data: fallback.data as OwnedPetRow | null };
 }
 
 export { privateJson };
