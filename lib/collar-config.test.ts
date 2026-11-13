@@ -116,7 +116,11 @@ test("memorial home hides walk and collar prompts", () => {
   assert.match(home, /!memorial \? \([\s\S]*walk-title/);
   assert.match(home, /!memorial \? \([\s\S]*collarCardTitle/);
   assert.match(readFileSync("components/pet-roster.tsx", "utf8"), /lifeStatus === "living"[\s\S]*\/my\/device\?pet=/);
-  assert.match(memory, /canOpenMemorialSpace\(status\)/);
+  // The memorial-space entry point moved to components/pet-first-profile.tsx,
+  // which still calls canOpenMemorialSpace (see lib/memory-library.test.ts).
+  // This screen keeps the equivalent inline gate on the same life status.
+  assert.match(memory, /status === "memorial"/);
+  assert.match(memory, /memorialSpaceHref\(petId\)/);
   assert.doesNotMatch(memory, /\/my\/device\?pet=/);
   assert.doesNotMatch(memory, /href=["']\/my\/collar["']/);
 });

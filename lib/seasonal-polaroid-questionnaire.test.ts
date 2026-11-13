@@ -12,7 +12,7 @@ const at = (tree: Record<string, unknown>, path: string) => path.split(".").redu
 test("the questionnaire keeps all six original screens in copy and now walks four steps", () => {
   assert.match(component, /const STEP_IDS = \["meet", "scene", "personality", "preview"\]/);
   assert.match(component, /yearRound\.createPolaroid/);
-  assert.match(component, /buildSeasonalPolaroidFormData\(questionnaire, primaryPhoto\.file\)/);
+  assert.match(component, /buildSeasonalPolaroidFormData\(questionnaire, primaryPhoto\.file, selectedPet\?\.petId\)/);
   assert.match(component, /everydayPolaroidArtStyles/);
   assert.match(component, /POLAROID_OCCASION_GROUPS/);
   assert.match(component, /data-polaroid-art-count=\{artThemes\.length\}/);
@@ -29,7 +29,7 @@ test("the questionnaire keeps all six original screens in copy and now walks fou
 test("the photo step has exactly one upload slot and sends only that photo", () => {
   assert.equal((component.match(/<PhotoSlotView\b/g) ?? []).length, 1);
   assert.equal((component.match(/type="file"/g) ?? []).length, 1);
-  assert.match(component, /buildSeasonalPolaroidFormData\(questionnaire, primaryPhoto\.file\)/);
+  assert.match(component, /buildSeasonalPolaroidFormData\(questionnaire, primaryPhoto\.file, selectedPet\?\.petId\)/);
   assert.doesNotMatch(component, /secondPhoto|secondInputRef|PhotoSlot\b|screen2\.secondLabel/);
   for (const locale of [en, ko]) {
     assert.equal(at(locale, "seasonalPolaroid.flow.screen2.secondLabel"), undefined);

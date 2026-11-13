@@ -21,7 +21,7 @@ await mkdir("e2e/screenshots", { recursive: true });
 try {
   for (const [width, height, label] of viewports) {
     const page = await browser.newPage({ viewport: { width, height } });
-    await page.goto(`${base}/?splash=1`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${base}/choose`, { waitUntil: "domcontentloaded" });
     await page.getByRole("heading", { name: "어떤 아이의 이야기를 시작할까요?" }).waitFor({ timeout: 20000 });
     await page.waitForTimeout(1700);
     const box = await page.evaluate(() => {

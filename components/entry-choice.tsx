@@ -5,7 +5,7 @@ import { EternalBeamLogo } from "@/components/storybook/eternal-beam-logo";
 import { useLocale } from "@/components/locale-provider";
 import { entryHomePath, writeEntryBranch, type EntryBranch } from "@/lib/entry-branch";
 import { CLEAN_ART } from "@/lib/design-art";
-import { UIUX_GARDEN_HERO } from "@/lib/uiux-art";
+import { POSE_ART } from "@/lib/pose-art";
 import Link from "next/link";
 
 const COPY = {
@@ -71,7 +71,7 @@ export function EntryChoice({ petId = null }: { petId?: string | null }) {
             testId="living-choice"
             href={entryHomePath("living", petId)}
             onChoose={() => remember("living")}
-            src={UIUX_GARDEN_HERO}
+            src={POSE_ART.shibaSpring}
             badge={copy.livingBadge}
             title={copy.livingTitle}
             body={copy.livingBody}
@@ -126,7 +126,7 @@ function ChoiceCard({
       className="flex h-full min-w-0 flex-col overflow-hidden rounded-[20px] border border-[#e4d2b4] bg-[#fffdf8]"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className={`block aspect-[1/1.05] w-full object-cover ${tone === "spring" ? "object-[center_42%]" : "object-[center_64%]"}`} />
+      <img src={src} alt="" className="block aspect-[1/1.05] w-full bg-[#f6efe2] object-contain object-center" />
       <span className="flex flex-1 flex-col px-2.5 pb-3 pt-2.5">
         <span className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-[-0.01em] ${tone === "spring" ? "bg-[#e5f0e2] text-[#3f6b45]" : "bg-[#ece7f3] text-[#5c5478]"}`}>
           {badge}

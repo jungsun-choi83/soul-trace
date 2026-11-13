@@ -1,14 +1,32 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import { authCallbackUrl } from "./auth-redirect.ts";
-import { createPasswordAccount, signInWithPassword, type MainPasswordAuthClient } from "./password-auth.ts";
+import {
+  createPasswordAccount,
+  resendPasswordSignupOtp,
+  signInWithPassword,
+  verifyPasswordSignupOtp,
+  type MainPasswordAuthClient,
+} from "./password-auth.ts";
 import { passwordValidationError } from "./password-recovery.ts";
 
-function mockClient(options: { signupSession?: unknown; signupError?: { code?: string }; signinSession?: unknown; signinError?: { code?: string } } = {}) {
+function mockClient(options: {
+  signupSession?: unknown;
+  signupError?: { code?: string };
+  signinSession?: unknown;
+  signinError?: { code?: string; message?: string };
+  verifySession?: unknown | null;
+  verifyError?: { code?: string; message?: string };
+  resendError?: { code?: string; message?: string };
+  signoutError?: { code?: string; message?: string };
+} = {}) {
   const signupCalls: unknown[] = [];
   const signinCalls: unknown[] = [];
+  const verifyCalls: unknown[] = [];
+  const resendCalls: unknown[] = [];
+  const signoutCalls: unknown[] = [];
   const client: MainPasswordAuthClient = { auth: {
     async signUp(input) {
       signupCalls.push(input);
@@ -18,8 +36,20 @@ function mockClient(options: { signupSession?: unknown; signupError?: { code?: s
       signinCalls.push(input);
       return { data: { session: options.signinSession ?? null }, error: options.signinError ?? null };
     },
+    async verifyOtp(input) {
+      verifyCalls.push(input);
+      return { data: { session: options.verifySession === undefined ? {} : options.verifySession }, error: options.verifyError ?? null };
+    },
+    async resend(input) {
+      resendCalls.push(input);
+      return { error: options.resendError ?? null };
+    },
+    async signOut(input) {
+      signoutCalls.push(input);
+      return { error: options.signoutError ?? null };
+    },
   } };
-  return { client, signupCalls, signinCalls };
+  return { client, signupCalls, signinCalls, verifyCalls, resendCalls, signoutCalls };
 }
 
 test("password signup normalizes email, sends validated locale and safe callback", async () => {
@@ -32,30 +62,42 @@ test("password signup normalizes email, sends validated locale and safe callback
       password: "password-8",
       options: { emailRedirectTo: callback, data: { locale: expected } },
     }]);
-    assert.equal(mock.signinCalls.length, 1);
+    assert.equal(mock.signinCalls.length, 0);
   }
 });
 
-test("signup check-email and immediate-session responses are handled separately", async () => {
+test("signup requires a confirmation session and fails closed if project confirmation is disabled", async () => {
   assert.equal(await createPasswordAccount(mockClient().client, { email: "a@b.co", password: "password", redirectTo: "https://example.test/auth/confirm", locale: "en" }), "check_email");
-  assert.equal(await createPasswordAccount(mockClient({ signupSession: {} }).client, { email: "a@b.co", password: "password", redirectTo: "https://example.test/auth/confirm", locale: "en" }), "authenticated");
-  assert.equal(await createPasswordAccount(mockClient({ signinSession: {} }).client, { email: "a@b.co", password: "password", redirectTo: "https://example.test/auth/confirm", locale: "en" }), "authenticated");
+  const mock = mockClient({ signupSession: {} });
+  assert.equal(await createPasswordAccount(mock.client, { email: "a@b.co", password: "password", redirectTo: "https://example.test/auth/confirm", locale: "en" }), "confirmation_unavailable");
+  assert.deepEqual(mock.signoutCalls, [{ scope: "local" }]);
+  assert.equal(mock.signinCalls.length, 0);
 });
 
-test("confirmed server provision signs the visitor in without an email link", async () => {
-  const mock = mockClient({ signinSession: {} });
-  assert.equal(
-    await createPasswordAccount(mock.client, {
-      email: "a@b.co",
-      password: "password-8",
-      redirectTo: "https://example.test/auth/confirm",
-      locale: "en",
-      provision: async () => "created",
-    }),
-    "authenticated",
-  );
-  assert.equal(mock.signupCalls.length, 0);
-  assert.deepEqual(mock.signinCalls, [{ email: "a@b.co", password: "password-8" }]);
+test("signup OTP verifies the normalized address and establishes a session", async () => {
+  const mock = mockClient();
+  assert.equal(await verifyPasswordSignupOtp(mock.client, { email: " Person@Example.COM ", code: " 12345678 " }), "authenticated");
+  assert.deepEqual(mock.verifyCalls, [{ email: "person@example.com", token: "12345678", type: "email" }]);
+});
+
+test("signup OTP rejects malformed, invalid, and expired codes", async () => {
+  const malformed = mockClient();
+  assert.equal(await verifyPasswordSignupOtp(malformed.client, { email: "person@example.com", code: "12345" }), "invalid_code");
+  assert.deepEqual(malformed.verifyCalls, []);
+  assert.equal(await verifyPasswordSignupOtp(mockClient({ verifyError: { code: "bad_code" } }).client, { email: "person@example.com", code: "123456" }), "invalid_code");
+  assert.equal(await verifyPasswordSignupOtp(mockClient({ verifyError: { code: "otp_expired" } }).client, { email: "person@example.com", code: "123456" }), "expired");
+  assert.equal(await verifyPasswordSignupOtp(mockClient({ verifySession: null }).client, { email: "person@example.com", code: "123456" }), "invalid_code");
+});
+
+test("signup confirmation resend uses the signup type and safe redirect", async () => {
+  const mock = mockClient();
+  assert.equal(await resendPasswordSignupOtp(mock.client, { email: " Person@Example.COM ", redirectTo: "https://example.test/auth/confirm" }), "sent");
+  assert.deepEqual(mock.resendCalls, [{
+    type: "signup",
+    email: "person@example.com",
+    options: { emailRedirectTo: "https://example.test/auth/confirm" },
+  }]);
+  assert.equal(await resendPasswordSignupOtp(mockClient({ resendError: { code: "rate_limit" } }).client, { email: "person@example.com", redirectTo: "https://example.test/auth/confirm" }), "request_failed");
 });
 
 test("signup recognizes an existing account and directs the user to sign in", async () => {
@@ -68,6 +110,10 @@ test("signup recognizes an existing account and directs the user to sign in", as
       "already_registered",
     );
   }
+});
+
+test("the public admin auto-confirmation endpoint is removed", () => {
+  assert.equal(existsSync("app/api/auth/password-signup/route.ts"), false);
 });
 
 test("password sign-in sends credentials only to signInWithPassword and sends no email", async () => {
@@ -94,6 +140,9 @@ test("main auth UI has credential fields, consent, recovery actions, and clears 
   const component = readFileSync("components/auth-entry.tsx", "utf8");
   assert.match(component, /createPasswordAccount/);
   assert.match(component, /signInWithPassword/);
+  assert.match(component, /verifyPasswordSignupOtp/);
+  assert.match(component, /resendPasswordSignupOtp/);
+  assert.doesNotMatch(component, /completePasswordSignupOnServer|password-signup/);
   assert.doesNotMatch(component, /requestPasswordlessEmail|signInWithOtp/);
   assert.doesNotMatch(component, /Apple|Google|signInWithOAuth|OAuth/);
   assert.match(component, /useState\(false\)/);
@@ -103,7 +152,7 @@ test("main auth UI has credential fields, consent, recovery actions, and clears 
   assert.match(component, /auth-password-confirmation/);
   assert.match(component, /PrivacyConsentTrigger/);
   assert.match(component, /auth\.forgotPassword/);
-  assert.match(component, /auth\.recovery\.open/);
+  assert.match(component, /auth\.forgotPassword/);
   assert.match(component, /setPassword\(""\)/);
   assert.match(component, /setPasswordConfirmation\(""\)/);
   assert.doesNotMatch(component, /localStorage|sessionStorage|indexedDB|searchParams\.set\("password"/);

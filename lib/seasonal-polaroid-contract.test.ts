@@ -198,15 +198,79 @@ test("accepts an art style plus an implemented special-day occasion", () => {
   }
 });
 
-test("rejects a planned special-day occasion that cannot generate", () => {
+test("rejects an unknown special-day occasion", () => {
   const result = validateSeasonalPolaroidRequest(request({
     themeId: "felt-doll",
-    occasionId: "newyear-blessing",
+    occasionId: "unknown-holiday",
     costume: "knit-scarf",
     scene: "tiny-armchair",
     vibe: "cute-cozy",
   }));
   assert.equal(issueFor(result, "occasionId")?.code, "unsupported");
+});
+
+test("accepts Adoption Day with each supported decorative frame", () => {
+  const styles = [
+    { themeId: "felt-doll", costume: "knit-scarf", scene: "tiny-armchair", vibe: "cute-cozy" },
+    { themeId: "gouache-story", costume: "picture-cape", scene: "meadow-path", vibe: "bright-story" },
+    { themeId: "crayon-diary", costume: "crayon-bow", scene: "diary-page", vibe: "handmade-warm" },
+  ];
+  for (const style of styles) {
+    const result = validateSeasonalPolaroidRequest(request({ ...style, occasionId: "adoption-day" }));
+    assert.equal(result.valid, true, `${style.themeId} should accept Adoption Day`);
+    if (result.valid) assert.equal(result.answers.occasionId, "adoption-day");
+  }
+});
+
+test("accepts Birthday with all decorative frames", () => {
+  const styles = [
+    { themeId: "felt-doll", costume: "knit-scarf", scene: "tiny-armchair", vibe: "cute-cozy" },
+    { themeId: "gouache-story", costume: "picture-cape", scene: "meadow-path", vibe: "bright-story" },
+    { themeId: "crayon-diary", costume: "crayon-bow", scene: "diary-page", vibe: "handmade-warm" },
+  ];
+  for (const style of styles) {
+    const result = validateSeasonalPolaroidRequest(request({ ...style, occasionId: "birthday-star" }));
+    assert.equal(result.valid, true, `${style.themeId} should accept Birthday`);
+    if (result.valid) assert.equal(result.answers.occasionId, "birthday-star");
+  }
+});
+
+test("accepts New Year with all decorative frames", () => {
+  const styles = [
+    { themeId: "felt-doll", costume: "knit-scarf", scene: "tiny-armchair", vibe: "cute-cozy" },
+    { themeId: "gouache-story", costume: "picture-cape", scene: "meadow-path", vibe: "bright-story" },
+    { themeId: "crayon-diary", costume: "crayon-bow", scene: "diary-page", vibe: "handmade-warm" },
+  ];
+  for (const style of styles) {
+    const result = validateSeasonalPolaroidRequest(request({ ...style, occasionId: "newyear-blessing" }));
+    assert.equal(result.valid, true, `${style.themeId} should accept New Year`);
+    if (result.valid) assert.equal(result.answers.occasionId, "newyear-blessing");
+  }
+});
+
+test("accepts the four newly implemented occasions with all decorative frames", () => {
+  const stylesByStatus = {
+    living: [
+      { themeId: "felt-doll", costume: "knit-scarf", scene: "tiny-armchair", vibe: "cute-cozy" },
+      { themeId: "gouache-story", costume: "picture-cape", scene: "meadow-path", vibe: "bright-story" },
+      { themeId: "crayon-diary", costume: "crayon-bow", scene: "diary-page", vibe: "handmade-warm" },
+    ],
+    passed: [
+      { themeId: "felt-doll", costume: "knit-scarf", scene: "quiet-shelf", vibe: "gentle-warm" },
+      { themeId: "gouache-story", costume: "picture-cape", scene: "star-hill", vibe: "gentle-warm" },
+      { themeId: "crayon-diary", costume: "crayon-bow", scene: "quiet-margin", vibe: "gentle-warm" },
+    ],
+  } as const;
+  const occasionIds = ["valentine-letter", "spring-secret-garden", "summer-seaside", "halloween-mischief-ghost"];
+  for (const occasionId of occasionIds) {
+    for (const status of ["living", "passed"] as const) {
+      for (const style of stylesByStatus[status]) {
+        const result = validateSeasonalPolaroidRequest(request({ ...style, status, occasionId }));
+        assert.equal(result.valid, true, `${occasionId} should accept ${status} ${style.themeId}`);
+        if (result.valid) assert.equal(result.answers.occasionId, occasionId);
+      }
+    }
+  }
 });
 
 test("rejects unsupported theme, locale, and image formats", () => {

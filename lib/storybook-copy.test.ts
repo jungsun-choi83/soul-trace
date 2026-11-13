@@ -9,10 +9,14 @@ import {
   seoulToday,
   timelineMonthKey,
 } from "./pet-first-archive.ts";
-import { fill, petFirstCopy } from "./storybook-copy.ts";
+import { fill, folderMemoryCount, petFirstCopy } from "./storybook-copy.ts";
 
 test("korean and english storybook copy expose the same keys", () => {
   assert.deepEqual(Object.keys(petFirstCopy("en")).sort(), Object.keys(petFirstCopy("ko")).sort());
+  assert.equal(petFirstCopy("en").adjustDates, "Adjust dates");
+  assert.equal(petFirstCopy("ko").adjustDates, "날짜 조정");
+  assert.equal(petFirstCopy("en").photoMonthCount, "%COUNT% photos");
+  assert.equal(petFirstCopy("ko").photoMonthCount, "%COUNT%장");
   assert.equal(petFirstCopy("ko").todayCta, "오늘의 기억 남기기");
   assert.equal(petFirstCopy("ko").saved, "소중한 순간이 저장되었어요");
 });
@@ -26,6 +30,13 @@ test("storybook copy avoids medical, healing or afterlife claims", () => {
 
 test("fill replaces only known placeholders", () => {
   assert.equal(fill("%NAME% · %COUNT% · %OTHER%", { NAME: "콩이", COUNT: 3 }), "콩이 · 3 · %OTHER%");
+});
+
+test("month folder memory counts use localized singular and plural forms", () => {
+  assert.equal(folderMemoryCount("en", 1), "1 memory");
+  assert.equal(folderMemoryCount("en", 2), "2 memories");
+  assert.equal(folderMemoryCount("ko", 1), "추억 1개");
+  assert.equal(folderMemoryCount("ko", 2), "추억 2개");
 });
 
 test("dates use the owner-entered day and never guess", () => {

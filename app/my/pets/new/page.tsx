@@ -27,12 +27,14 @@ export default async function NewPetPage({
   if (!supabase || !user) redirect(authEntryPath("/my/pets/new"));
   const params = await searchParams;
   const raw = Array.isArray(params.status) ? params.status[0] : params.status;
+  const rawContinueTo = Array.isArray(params.continueTo) ? params.continueTo[0] : params.continueTo;
   const lifeStatus: LifeStatus = raw === "living" || raw === "memorial" ? raw : "unspecified";
 
   return (
     <StorybookShell backHref="/dashboard" titleKey="createPet">
       <PetProfileForm
         mode="create"
+        continueTo={rawContinueTo ?? null}
         initial={{ petName: "", lifeStatus, species: null, birthday: null, adoptedOn: null, traits: null }}
       />
     </StorybookShell>

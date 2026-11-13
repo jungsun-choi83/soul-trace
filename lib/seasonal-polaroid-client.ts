@@ -13,6 +13,7 @@ export type SeasonalPolaroidGenerationSession = {
   capability: string;
   locale: "ko" | "en";
   petName: string;
+  petId?: string | null;
   pendingAction?: "save" | "download";
 };
 
@@ -20,6 +21,7 @@ export type SeasonalPolaroidAdmissionResponse = {
   status: SeasonalPolaroidJobStatus;
   jobId: string;
   capability: string;
+  petId?: string | null;
   trialRemaining?: number;
 };
 
@@ -58,6 +60,7 @@ export class SeasonalPolaroidRequestError extends Error {
 export function buildSeasonalPolaroidFormData(
   answers: SeasonalPolaroidQuestionnaire,
   primaryPhoto: File,
+  petId?: string | null,
 ): FormData {
   const formData = new FormData();
   formData.append("primaryPhoto", primaryPhoto, primaryPhoto.name);
@@ -66,6 +69,7 @@ export function buildSeasonalPolaroidFormData(
   if (answers.occasionId) formData.append("occasionId", String(answers.occasionId));
   formData.append("locale", String(answers.locale));
   formData.append("petName", answers.petName);
+  if (petId) formData.append("petId", petId);
   formData.append("species", answers.species);
   formData.append("status", answers.status);
   formData.append("costume", answers.costume);
@@ -133,6 +137,9 @@ export async function admitSeasonalPolaroid(formData: FormData): Promise<Seasona
     typeof value.capability !== "string" ||
     !["queued", "processing", "succeeded"].includes(String(value.status))
   ) throw new Error("The generation response was incomplete.");
+  if (value.petId !== undefined && value.petId !== null && typeof value.petId !== "string") {
+    throw new Error("The generation response contained an invalid pet reference.");
+  }
   return value as SeasonalPolaroidAdmissionResponse;
 }
 
@@ -234,6 +241,8 @@ export function readSeasonalPolaroidSession(): SeasonalPolaroidGenerationSession
       typeof value.capability !== "string" ||
       !["ko", "en"].includes(String(value.locale)) ||
       typeof value.petName !== "string" ||
+      (value.petId !== undefined && value.petId !== null &&
+        (typeof value.petId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.petId))) ||
       (value.pendingAction !== undefined && value.pendingAction !== "save" && value.pendingAction !== "download")
     ) return null;
     return value as SeasonalPolaroidGenerationSession;

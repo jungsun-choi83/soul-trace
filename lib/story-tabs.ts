@@ -23,7 +23,11 @@ export function storyTabHrefs(
           : signedIn
             ? "/dashboard"
             : "/choose",
-    memories: memoriesHref(petId),
+    memories: signedIn
+      ? petId
+        ? `/my/pets/${encodeURIComponent(petId)}/memories#album`
+        : "/my/pets"
+      : memoriesHref(petId),
     create: createQuery.size ? `/create?${createQuery.toString()}` : "/create",
     pet: "/my/pets",
   };

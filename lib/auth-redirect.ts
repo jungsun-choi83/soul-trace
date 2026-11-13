@@ -44,6 +44,49 @@ export function continueAfterAuth(returnTo: string): string {
   return destination;
 }
 
+/** A verified new account should create its first pet, retaining the selected branch. */
+export function newAccountProfilePath(returnTo: string): string {
+  const destination = safeAuthReturnPath(returnTo);
+  const parsed = new URL(destination, INTERNAL_ORIGIN);
+  // Free Trial saving resumes its own guest result after signup; it does not
+  // create a normal Pet Roster profile as part of account confirmation.
+  if (["/try/save", "/my/free-trial-results"].includes(parsed.pathname)) {
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  }
+  if (parsed.pathname === "/memories" && parsed.searchParams.get("pet")) {
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  }
+  if (parsed.pathname === "/my/pets/new") {
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  }
+  if (["/living", "/memorial", "/polaroid"].includes(parsed.pathname)) {
+    const params = new URLSearchParams();
+    const requestedStatus = parsed.searchParams.get("status") ?? parsed.searchParams.get("branch");
+    const status = parsed.pathname === "/living"
+      ? "living"
+      : parsed.pathname === "/memorial"
+        ? "memorial"
+        : requestedStatus === "living" || requestedStatus === "memorial" ? requestedStatus : null;
+    if (status) params.set("status", status);
+    params.set("continueTo", destination);
+    return `/my/pets/new?${params.toString()}`;
+  }
+  if (parsed.pathname === "/dashboard/living") return "/my/pets/new?status=living";
+  if (parsed.pathname === "/dashboard/memorial") return "/my/pets/new?status=memorial";
+  return "/my/pets/new";
+}
+
+/** Resume a newly registered user's selected create flow using their new canonical Pet ID. */
+export function petCreationContinuePath(returnTo: string | null | undefined, petId: string): string | null {
+  const destination = safeAuthReturnPath(returnTo, "/dashboard");
+  const parsed = new URL(destination, INTERNAL_ORIGIN);
+  if (!["/living", "/memorial", "/polaroid"].includes(parsed.pathname)) return null;
+  parsed.searchParams.delete("pet");
+  parsed.searchParams.delete("petId");
+  parsed.searchParams.set("petId", petId);
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+}
+
 export function safeAuthErrorPath(
   value: string | null | undefined,
   fallback: string,
@@ -103,35 +146,6 @@ export function authCallbackUrl(origin: string, returnTo: string, locale: unknow
     `${errorReturn.pathname}${errorReturn.search}`,
   );
   return callback.toString();
-}
-
-function isLocalOnlyHostname(hostname: string): boolean {
-  const host = hostname.replace(/^\[|\]$/g, "").toLowerCase();
-  if (host === "localhost" || host === "0.0.0.0" || host === "::1" || host.endsWith(".local")) return true;
-  if (host.startsWith("127.")) return true;
-  const parts = host.split(".");
-  if (parts.length !== 4) return false;
-  const numbers = parts.map((part) => Number(part));
-  if (numbers.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
-  const [first, second] = numbers;
-  return first === 10 || (first === 192 && second === 168) || (first === 172 && second >= 16 && second <= 31);
-}
-
-export function authEmailOrigin(browserOrigin: string, publicOrigin: string): string {
-  let browser: URL;
-  try {
-    browser = new URL(browserOrigin);
-  } catch {
-    return new URL(publicOrigin).origin;
-  }
-  if (!isLocalOnlyHostname(browser.hostname)) return browser.origin;
-  try {
-    const published = new URL(publicOrigin);
-    if (published.protocol === "https:" || published.protocol === "http:") return published.origin;
-  } catch {
-    return browser.origin;
-  }
-  return browser.origin;
 }
 
 export function passwordRecoveryCallbackUrl(origin: string, returnTo: string, locale: unknown): string {

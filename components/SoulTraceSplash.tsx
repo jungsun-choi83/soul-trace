@@ -26,19 +26,21 @@ export function SoulTraceSplash({
       aria-hidden={fading}
       onClick={fading ? undefined : onDismiss}
     >
-      <Image
-        src={SPLASH_ART_SRC}
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className={styles.scene}
-      />
-      <p className={styles.visuallyHidden}>
-        SoulTrace
-        {t("splash.tagline")}
-        {t("splash.loading")}
-      </p>
+      <div className={styles.sceneFrame}>
+        <Image
+          src={SPLASH_ART_SRC}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className={styles.scene}
+        />
+      </div>
+      <div className={styles.identity}>
+        <div className={styles.wordmark}>SoulTrace</div>
+        <p className={styles.tagline}>{t("splash.tagline")}</p>
+        <p className={styles.loading}>{t("splash.loading")}</p>
+      </div>
       {onDismiss ? (
         <button className={styles.srOnly} onClick={onDismiss} type="button">
           {t("splash.skip")}

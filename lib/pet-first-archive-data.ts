@@ -1,6 +1,7 @@
 import "server-only";
 
 import { isMissingRelationError, type LifeStatus } from "@/lib/pet-first-archive";
+import { takeRecentRowsPerPet } from "@/lib/home-memory-preview";
 import type { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 
 let timelineRelationMissing = false;
@@ -90,12 +91,17 @@ export async function loadPetHome(supabase: AuthClient, userId: string) {
         .limit(400),
   ]);
   noteTimelineAvailability(entriesResult.error?.code);
+  if (lettersResult.error) {
+    console.error("[pet-first] letters unavailable", { code: lettersResult.error.code });
+    return null;
+  }
   if (entriesResult.error && !isMissingRelationError(entriesResult.error.code)) {
     console.error("[pet-first] timeline unavailable", { code: entriesResult.error.code });
+    return null;
   }
 
   const entries = (entriesResult.error ? [] : entriesResult.data ?? []) as EntryRow[];
-  const letters = lettersResult.error ? [] : lettersResult.data ?? [];
+  const letters = lettersResult.data ?? [];
   const pets: HomePet[] = await Promise.all((petsResult.data ?? []).map(async (pet) => {
     const image = entries
       .filter((entry) => entry.pet_id === pet.pet_id)
@@ -120,7 +126,8 @@ export async function loadPetHome(supabase: AuthClient, userId: string) {
   }));
   const names = new Map(pets.map((pet) => [pet.petId, pet.petName]));
 
-  const recent: HomeRecent[] = await Promise.all(entries.slice(0, 6).map(async (entry) => {
+  const recentEntries = takeRecentRowsPerPet(entries, (entry) => entry.pet_id, 6);
+  const recent: HomeRecent[] = await Promise.all(recentEntries.map(async (entry) => {
     const image = [...(entry.pet_timeline_assets ?? [])]
       .sort((a, b) => a.asset_order - b.asset_order)
       .find((asset) => asset.content_type.startsWith("image/"));

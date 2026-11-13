@@ -12,7 +12,10 @@ import {
 import type { HomePet, HomeRecent } from "@/lib/pet-first-archive-data";
 import { petFirstCopy } from "@/lib/storybook-copy";
 import { storyTabProps } from "@/lib/story-tabs";
-import { UIUX_GARDEN_HERO } from "@/lib/uiux-art";
+import { FreePolaroidNotice } from "@/components/free-polaroid-notice";
+import { HomeRecentMemories } from "@/components/home-recent-memories";
+import { POSE_ART } from "@/lib/pose-art";
+import { recentMemoriesForPet } from "@/lib/home-memory-preview";
 import Link from "next/link";
 
 const COPY = {
@@ -20,9 +23,11 @@ const COPY = {
     title: "우리 아이와 함께하는 오늘",
     importTitle: "우리 아이 사진 가져오기",
     importBody: "사진 원본은 그대로 두고, 이 아이 기록으로 모아요.",
-    monthTitle: "이번 달의 추억",
-    monthBody: "촬영일 기준으로 이번 달 사진을 모아 봐요.",
-    monthlyEmpty: "이번 달로 모을 사진이 아직 없어요.",
+    albumTitle: "월별 추억 앨범",
+    albumBody: "추억을 연도와 월별 폴더로 모아 봐요.",
+    recentTitle: "최근 추억",
+    recentEmpty: "아직 남긴 추억이 없어요.",
+    viewAll: "앨범 모두 보기",
     createTitle: "특별한 추억 만들기",
     createBody: "AI 편지와 폴라로이드는 만들기에서 이어져요.",
     deviceStatus: "기기 연결 전 · 데모",
@@ -34,9 +39,11 @@ const COPY = {
     title: "Today with our pet",
     importTitle: "Bring in our pet's photos",
     importBody: "Original photos stay as they are, and copies gather with this pet.",
-    monthTitle: "This month's memories",
-    monthBody: "Photos from this month stay grouped by the day they were taken.",
-    monthlyEmpty: "No photos to group this month yet.",
+    albumTitle: "Memories Album",
+    albumBody: "Open this pet's memories, organized into year and month folders.",
+    recentTitle: "Recent memories",
+    recentEmpty: "No memories for this pet yet.",
+    viewAll: "View album",
     createTitle: "Make a special memory",
     createBody: "AI letters and polaroids continue from Create.",
     deviceStatus: "Device not connected · demo",
@@ -65,12 +72,10 @@ export function LivingHome({
   const waiting = pets.filter((pet) => pet.lifeStatus === "unspecified" && pet.petId !== selectedPetId);
   const selected = here.find((pet) => pet.petId === selectedPetId) ?? here.find((pet) => pet.lifeStatus === "living") ?? null;
   const petId = selected?.petId ?? null;
-  const visibleIds = new Set(here.map((pet) => pet.petId));
-  const memories = recent.filter((item) => visibleIds.has(item.petId));
-  const months = groupMonths(memories);
+  const memories = recentMemoriesForPet(recent, petId);
   const saveHref = (path: string) => (signedIn ? path : authEntryPath(path));
-  const importHref = petId ? saveHref(`/memories/import?pet=${encodeURIComponent(petId)}`) : saveHref("/my/pets/new?status=living");
-  const monthlyHref = petId ? saveHref(`/memories/month?pet=${encodeURIComponent(petId)}`) : saveHref("/my/pets/new?status=living");
+  const importHref = petId ? saveHref(`/my/pets/${encodeURIComponent(petId)}/memories/record`) : saveHref("/my/pets/new?status=living");
+  const albumHref = petId ? saveHref(`/my/pets/${encodeURIComponent(petId)}/memories#album`) : saveHref("/my/pets");
   const createHref = petId ? `/create?pet=${encodeURIComponent(petId)}&branch=living` : "/create?branch=living";
   const collarHref = petId ? `/my/device?pet=${encodeURIComponent(petId)}` : "/my/device";
 
@@ -78,12 +83,11 @@ export function LivingHome({
     <div data-testid="living-home" className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-4">
         <StoryBrandHeader homeHref={entryHomePath("living", petId)} settingsHref={signedIn ? "/settings" : authEntryPath("/dashboard/living")} settingsLabel={tabs.settingsTitle} />
-        <section className="relative mt-4 overflow-hidden rounded-[22px] bg-[#f8f2e5]">
+        <section className="mt-4 overflow-hidden rounded-[22px] bg-[#f8f2e5]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={UIUX_GARDEN_HERO} alt="" className="aspect-[4/3] w-full object-cover object-[center_42%]" />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#24321f]/80 to-transparent px-4 pb-4 pt-12">
-            <h1 className="st-headline text-[clamp(1.25rem,5.4vw,1.55rem)] leading-snug !tracking-[-0.03em] text-[#fff8ea]">{copy.title}</h1>
-          </div>
+          <img src={POSE_ART.shibaHome} alt="" className="aspect-[4/3] w-full bg-[#f6efe2] object-contain object-center" />
+          <h1 className="st-headline px-4 py-3 text-[clamp(1.25rem,5.4vw,1.55rem)] leading-snug !tracking-[-0.03em] text-[#3a452f]">{copy.title}</h1>
+          {signedIn && petId ? <div className="px-4 pb-3"><FreePolaroidNotice petId={petId} /></div> : null}
         </section>
 
         <PetSwitch
@@ -99,37 +103,21 @@ export function LivingHome({
 
         <div className="mt-4 grid gap-3">
           <Feature href={importHref} title={copy.importTitle} body={copy.importBody} />
-          <Feature href={monthlyHref} title={copy.monthTitle} body={copy.monthBody} />
+          <Feature href={albumHref} title={copy.albumTitle} body={copy.albumBody} />
           <Feature href={createHref} title={copy.createTitle} body={copy.createBody} />
         </div>
         <Link href={collarHref} className="mt-3 inline-flex min-h-11 items-center text-sm text-[#6b5846]">
           {copy.deviceStatus}
         </Link>
 
-        <section className="mt-6" aria-labelledby="living-months">
-          <h2 id="living-months" className="st-headline text-xl text-[#3a452f]">{copy.monthTitle}</h2>
-          {months.length === 0 ? <p className="mt-2 text-sm text-[#6b5846]">{copy.monthlyEmpty}</p> : null}
-          <ul className="mt-3 grid gap-2">
-            {months.map(([month, items]) => (
-              <li key={month}>
-                <Link href={monthlyHref} className="block rounded-[18px] border border-[#e4d2b4] bg-[#fffdf8] px-4 py-3">
-                  <span className="font-semibold text-[#3a452f]">{month}</span>
-                  <span className="mt-1 block text-sm text-[#6b5846]">{items.length}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <ul className="mt-3 grid gap-2">
-          {memories.map((item) => (
-            <li key={item.entryId}>
-              <Link href={`/my/pets/${item.petId}`} className="block rounded-[18px] border border-[#e4d2b4] bg-[#fffdf8] px-4 py-3 text-sm text-[#3a3428]">
-                {item.title || item.happenedOn || item.petName}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <HomeRecentMemories
+          items={memories}
+          href={albumHref}
+          lang={lang === "en" ? "en" : "ko"}
+          title={copy.recentTitle}
+          empty={copy.recentEmpty}
+          viewAll={copy.viewAll}
+        />
       </main>
       <StoryTabbar current="home" {...storyTabProps(tabs, petId, signedIn, "living")} />
     </div>
@@ -212,15 +200,4 @@ function PetSwitch({
       ) : null}
     </div>
   );
-}
-
-function groupMonths(items: HomeRecent[]): [string, HomeRecent[]][] {
-  const groups = new Map<string, HomeRecent[]>();
-  for (const item of items) {
-    const key = (item.happenedOn ?? item.createdAt).slice(0, 7);
-    const list = groups.get(key) ?? [];
-    list.push(item);
-    groups.set(key, list);
-  }
-  return [...groups.entries()];
 }

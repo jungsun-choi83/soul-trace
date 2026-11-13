@@ -65,14 +65,15 @@ export function UiuxHero({
   body?: string;
   children?: ReactNode;
 }) {
+  const pose = src.includes("/images/poses/");
   return (
     <section className="relative mt-4 overflow-hidden rounded-[22px] bg-[#f8f2e5]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className="aspect-[16/9] w-full object-cover object-[center_22%]" />
+      <img src={src} alt="" className={`${pose ? "aspect-[3/4]" : "aspect-[16/9]"} w-full bg-[#f6efe2] object-contain object-center`} />
       {title || body || children ? (
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#2f2618]/78 via-[#2f2618]/28 to-transparent px-5 pb-4 pt-16 text-[#fff7ea]">
+        <div className="px-5 py-4 text-[#3a3428]">
           {title ? <h1 className="st-headline text-[1.7rem] leading-snug">{title}</h1> : null}
-          {body ? <p className="mt-1 text-sm leading-6 text-[#fff7ea]/90">{body}</p> : null}
+          {body ? <p className="mt-1 text-sm leading-6 text-[#6b5846]">{body}</p> : null}
           {children}
         </div>
       ) : null}

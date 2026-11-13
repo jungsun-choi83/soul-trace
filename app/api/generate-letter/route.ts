@@ -54,6 +54,8 @@ import {
   sleep,
 } from "@/lib/supabase-server";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
+import { decideLetterPetAccess, letterMatchesSelectedPet } from "@/lib/letter-pet-access";
+import { buildPetLetterContextBlock, petTypeFromSpecies } from "@/lib/pet-letter-context";
 import { resolvePartnerCode } from "@/lib/partner";
 import {
   acquireAiGeneration,
@@ -725,24 +727,32 @@ async function saveProfileAndAnswersOnce(
     .select("pet_id")
     .eq("letter_id", letterId)
     .maybeSingle();
+  const { data: savedSubmission } = await supabase
+    .from("soul_trace_submissions")
+    .select("pet_id, created_at")
+    .eq("letter_id", letterId)
+    .maybeSingle();
+  const savedPetId = legacyLink?.pet_id ?? savedSubmission?.pet_id ?? null;
+  if (options.petId && savedPetId !== options.petId) {
+    return {
+      ok: false,
+      message: locale === "ko"
+        ? "편지를 선택한 반려동물 프로필에 연결하지 못했습니다. 기존 데이터는 변경하지 않았습니다."
+        : "The letter could not be linked to the selected pet. No existing pet data was changed.",
+      retryable: false,
+    };
+  }
   const { data: savedProfile } = await supabase
     .from("soul_trace_profiles")
     .select("created_at")
     .eq("letter_id", letterId)
     .maybeSingle();
   let createdAt = typeof savedProfile?.created_at === "string" ? savedProfile.created_at : null;
-  if (!createdAt) {
-    const { data: savedSubmission } = await supabase
-      .from("soul_trace_submissions")
-      .select("created_at")
-      .eq("letter_id", letterId)
-      .maybeSingle();
-    createdAt = typeof savedSubmission?.created_at === "string" ? savedSubmission.created_at : null;
-  }
+  if (!createdAt) createdAt = typeof savedSubmission?.created_at === "string" ? savedSubmission.created_at : null;
   return {
     ok: true,
     letterId,
-    petId: legacyLink?.pet_id ?? options.petId,
+    petId: savedPetId ?? options.petId,
     createdAt,
   };
 }
@@ -764,11 +774,16 @@ async function saveProfileAndAnswers(
   petId: string | null,
   serviceChannel: string | null,
 ): Promise<SaveProfileResult> {
-  const attempts = [
-    { includeHeroImage: true, includeArchiveFields: true, partnerId, partnerCode, petId, serviceChannel },
-    { includeHeroImage: true, includeArchiveFields: true, partnerId, partnerCode, petId, serviceChannel },
-    { includeHeroImage: false, includeArchiveFields: false, partnerId, partnerCode, petId, serviceChannel },
-  ] as const;
+  const attempts = petId
+    ? [
+        { includeHeroImage: true, includeArchiveFields: true, partnerId, partnerCode, petId, serviceChannel },
+        { includeHeroImage: false, includeArchiveFields: true, partnerId, partnerCode, petId, serviceChannel },
+      ] as const
+    : [
+        { includeHeroImage: true, includeArchiveFields: true, partnerId, partnerCode, petId, serviceChannel },
+        { includeHeroImage: true, includeArchiveFields: true, partnerId, partnerCode, petId, serviceChannel },
+        { includeHeroImage: false, includeArchiveFields: false, partnerId, partnerCode, petId, serviceChannel },
+      ] as const;
 
   let last: SaveProfileResult = {
     ok: false,
@@ -1004,22 +1019,116 @@ export async function POST(request: Request) {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.petId)
       ? body.petId
       : null;
+    const isLanguageRerunOnly = body.skipImageGeneration === true && body.stream !== true;
     if (body.petId && !requestedPetId) {
       return NextResponse.json({ error: "Invalid pet selection." }, { status: 400 });
     }
+    type SelectedPetRow = {
+      pet_id: string;
+      owner_user_id: string | null;
+      pet_name: string;
+      life_status?: string | null;
+      species?: string | null;
+      birthday?: string | null;
+      adopted_on?: string | null;
+      traits?: string | null;
+    };
+    let selectedPetForLetter: SelectedPetRow | null = null;
     if (requestedPetId) {
-      const { data: ownedPet, error: ownedPetError } = await ownershipClient
+      const requestUserId = authenticatedUser?.id ?? (workerAuthorized ? body.authenticatedUserId ?? null : null);
+      let ownedPet: SelectedPetRow | null = null;
+      let ownedPetLookupError: { code?: string; message?: string; details?: string; hint?: string } | null = null;
+      if (authenticatedUser && authClient) {
+        const result = await authClient
+          .from("soul_trace_pets")
+          .select("pet_id, owner_user_id, pet_name, life_status, species, birthday, adopted_on, traits")
+          .eq("pet_id", requestedPetId)
+          .eq("owner_user_id", authenticatedUser.id)
+          .maybeSingle();
+        ownedPet = result.data as SelectedPetRow | null;
+        ownedPetLookupError = result.error;
+      } else if (requestUserId) {
+        const result = await ownershipClient
+          .from("soul_trace_pets")
+          .select("pet_id, owner_user_id, pet_name, life_status, species, birthday, adopted_on, traits")
+          .eq("pet_id", requestedPetId)
+          .eq("owner_user_id", requestUserId)
+          .maybeSingle();
+        ownedPet = result.data as SelectedPetRow | null;
+        ownedPetLookupError = result.error;
+      }
+      if (ownedPetLookupError) {
+        logSupabaseFailure("Pet-First pet ownership lookup", ownedPetLookupError, { userEmail });
+        return NextResponse.json({ error: "Could not verify pet ownership." }, { status: 503 });
+      }
+
+      const { data: legacyLink, error: legacyLinkError } = await ownershipClient
         .from("soul_trace_legacy_links")
         .select("pet_id")
         .eq("pet_id", requestedPetId)
         .eq("user_email", userEmail)
         .maybeSingle();
-      if (ownedPetError) {
-        logSupabaseFailure("email pet ownership lookup", ownedPetError, { userEmail });
+      if (legacyLinkError) {
+        logSupabaseFailure("verified legacy pet ownership lookup", legacyLinkError, { userEmail });
         return NextResponse.json({ error: "Could not verify pet ownership." }, { status: 503 });
       }
-      if (!ownedPet) {
+
+      let linkedPetOwnerId: string | null = ownedPet?.owner_user_id ?? null;
+      let linkedPet = ownedPet;
+      let hasConflictingSubmissionOwner = false;
+      if (!ownedPet && legacyLink) {
+        const petResult = await ownershipClient
+          .from("soul_trace_pets")
+          .select("pet_id, owner_user_id, pet_name, life_status, species, birthday, adopted_on, traits")
+          .eq("pet_id", requestedPetId)
+          .maybeSingle();
+        if (petResult.error) {
+          logSupabaseFailure("legacy pet owner lookup", petResult.error, { userEmail });
+          return NextResponse.json({ error: "Could not verify pet ownership." }, { status: 503 });
+        }
+        linkedPet = petResult.data as SelectedPetRow | null;
+        linkedPetOwnerId = linkedPet?.owner_user_id ?? null;
+        if (requestUserId) {
+          const submissionOwner = await ownershipClient
+            .from("soul_trace_submissions")
+            .select("owner_user_id")
+            .eq("pet_id", requestedPetId)
+            .not("owner_user_id", "is", null)
+            .neq("owner_user_id", requestUserId)
+            .limit(1)
+            .maybeSingle();
+          if (submissionOwner.error) {
+            logSupabaseFailure("legacy pet submission owner lookup", submissionOwner.error, { userEmail });
+            return NextResponse.json({ error: "Could not verify pet ownership." }, { status: 503 });
+          }
+          hasConflictingSubmissionOwner = Boolean(submissionOwner.data);
+        }
+      }
+      const decision = decideLetterPetAccess({
+        userId: requestUserId,
+        requestedPetId,
+        ownedPetId: ownedPet?.pet_id ?? null,
+        verifiedLegacyLinkMatches: Boolean(
+          legacyLink?.pet_id === requestedPetId &&
+          (authenticatedUser?.email_confirmed_at || workerAuthorized),
+        ),
+        linkedPetOwnerId,
+        hasConflictingSubmissionOwner,
+      });
+      if (!decision.allowed) {
         return NextResponse.json({ error: "Pet selection is unavailable." }, { status: 403 });
+      }
+      selectedPetForLetter = ownedPet ?? linkedPet;
+      if (selectedPetForLetter) {
+        const savedStatus = selectedPetForLetter.life_status;
+        if (!isLanguageRerunOnly && (savedStatus === "living" || savedStatus === "memorial") && savedStatus !== mode) {
+          return NextResponse.json({ error: "pet_life_status_mismatch", mode: savedStatus }, { status: 409 });
+        }
+        // Pet identity comes from the owned/verified record. Letter-specific
+        // questionnaire answers remain request-local and never PATCH the profile.
+        body.petName = selectedPetForLetter.pet_name;
+        const savedPetType = petTypeFromSpecies(selectedPetForLetter.species);
+        if (savedPetType) body.petType = savedPetType;
       }
     }
 
@@ -1065,7 +1174,20 @@ export async function POST(request: Request) {
     const petName = petProfile.petName;
     const letterName = letterPetName(petProfile);
     const preferredScenery = sceneryFallback(locale);
-    const profilePromptBlock = buildPetProfilePromptBlock(locale, petProfile, mode);
+    const profilePromptBlock = [
+      buildPetProfilePromptBlock(locale, petProfile, mode),
+      buildPetLetterContextBlock(selectedPetForLetter ? {
+        petId: selectedPetForLetter.pet_id,
+        petName: selectedPetForLetter.pet_name,
+        lifeStatus: selectedPetForLetter.life_status === "living" || selectedPetForLetter.life_status === "memorial"
+          ? selectedPetForLetter.life_status
+          : "unspecified",
+        species: selectedPetForLetter.species ?? null,
+        birthday: selectedPetForLetter.birthday ?? null,
+        adoptedOn: selectedPetForLetter.adopted_on ?? null,
+        traits: selectedPetForLetter.traits ?? null,
+      } : null, locale),
+    ].filter(Boolean).join("\n\n");
     const tonePromptBlock = buildTonePromptBlock(
       locale,
       tonePrefs,
@@ -1116,8 +1238,6 @@ export async function POST(request: Request) {
     const generationKey = generationCacheKey(userEmail, mode, locale);
 
     /** 언어 전환만: stream 없음 + skipImageGeneration — 기존 편지·배경 유지한 채 문구만 다시 생성 */
-    const isLanguageRerunOnly =
-      body.skipImageGeneration === true && body.stream !== true;
     const existingLetterId = typeof body.letterId === "string" &&
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.letterId)
       ? body.letterId
@@ -1127,17 +1247,78 @@ export async function POST(request: Request) {
       if (!existingLetterId) {
         return NextResponse.json({ error: "Invalid letter selection." }, { status: 400 });
       }
-      const { data: ownedLetter, error: ownedLetterError } = await ownershipClient
-        .from("soul_trace_profiles")
-        .select("letter_id")
-        .eq("letter_id", existingLetterId)
-        .eq("user_email", userEmail)
-        .maybeSingle();
-      if (ownedLetterError) {
-        logSupabaseFailure("email letter ownership lookup", ownedLetterError, { userEmail });
+      const requestUserId = authenticatedUser?.id ?? (workerAuthorized ? body.authenticatedUserId ?? null : null);
+      let userLetter = null as { letter_id: string; pet_id: string | null } | null;
+      let userLetterError: { code?: string; message?: string; details?: string; hint?: string } | null = null;
+      if (authenticatedUser && authClient) {
+        const lookup = await authClient
+          .from("soul_trace_submissions")
+          .select("letter_id, pet_id")
+          .eq("letter_id", existingLetterId)
+          .eq("owner_user_id", authenticatedUser.id)
+          .maybeSingle();
+        userLetter = lookup.data as typeof userLetter;
+        userLetterError = lookup.error;
+      } else if (requestUserId) {
+        const lookup = await ownershipClient
+          .from("soul_trace_submissions")
+          .select("letter_id, pet_id")
+          .eq("letter_id", existingLetterId)
+          .eq("owner_user_id", requestUserId)
+          .maybeSingle();
+        userLetter = lookup.data as typeof userLetter;
+        userLetterError = lookup.error;
+      }
+      if (userLetterError) {
+        logSupabaseFailure("authenticated letter ownership lookup", userLetterError, { userEmail });
         return NextResponse.json({ error: "Could not verify letter ownership." }, { status: 503 });
       }
-      if (!ownedLetter) {
+
+      let legacyLetterAllowed = false;
+      let linkedLetterPetId: string | null = userLetter?.pet_id ?? null;
+      if (!userLetter) {
+        const { data: submission, error: submissionError } = await ownershipClient
+          .from("soul_trace_submissions")
+          .select("owner_user_id, pet_id")
+          .eq("letter_id", existingLetterId)
+          .maybeSingle();
+        if (submissionError) {
+          logSupabaseFailure("legacy submission owner lookup", submissionError, { userEmail });
+          return NextResponse.json({ error: "Could not verify letter ownership." }, { status: 503 });
+        }
+        if (submission?.owner_user_id && submission.owner_user_id !== requestUserId) {
+          return NextResponse.json({ error: "Letter selection is unavailable." }, { status: 403 });
+        }
+        const { data: emailLetter, error: emailLetterError } = await ownershipClient
+          .from("soul_trace_profiles")
+          .select("letter_id")
+          .eq("letter_id", existingLetterId)
+          .eq("user_email", userEmail)
+          .maybeSingle();
+        if (emailLetterError) {
+          logSupabaseFailure("verified legacy letter ownership lookup", emailLetterError, { userEmail });
+          return NextResponse.json({ error: "Could not verify letter ownership." }, { status: 503 });
+        }
+        const { data: legacyLetterLink, error: legacyLetterLinkError } = await ownershipClient
+          .from("soul_trace_legacy_links")
+          .select("pet_id")
+          .eq("letter_id", existingLetterId)
+          .maybeSingle();
+        if (legacyLetterLinkError) {
+          logSupabaseFailure("legacy letter pet lookup", legacyLetterLinkError, { userEmail });
+          return NextResponse.json({ error: "Could not verify letter ownership." }, { status: 503 });
+        }
+        linkedLetterPetId = legacyLetterLink?.pet_id ?? submission?.pet_id ?? null;
+        const verifiedLegacyAccount = Boolean(
+          requestUserId && (authenticatedUser?.email_confirmed_at || workerAuthorized),
+        );
+        legacyLetterAllowed = verifiedLegacyAccount && Boolean(emailLetter) &&
+          (!submission?.owner_user_id || submission.owner_user_id === requestUserId);
+      }
+      if (!userLetter && !legacyLetterAllowed) {
+        return NextResponse.json({ error: "Letter selection is unavailable." }, { status: 403 });
+      }
+      if (!letterMatchesSelectedPet(linkedLetterPetId, requestedPetId)) {
         return NextResponse.json({ error: "Letter selection is unavailable." }, { status: 403 });
       }
     }

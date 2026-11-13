@@ -19,14 +19,18 @@ function assertCodeEmail(template: string, subject: string) {
 
 test("confirm signup email is the 6-digit code, not a site link", () => {
   assertCodeEmail(signup, signupSubject);
+  assert.match(signup, /finish creating your account/);
+  assert.doesNotMatch(signup, /result screen|save this letter/i);
 });
 
 test("magic link email is the 6-digit code, not a site link", () => {
   assertCodeEmail(magicLink, magicLinkSubject);
+  assert.match(magicLink, /result screen/);
 });
 
 test("repository instructions identify the manual dashboard step", () => {
   assert.match(instructions, /Authentication → Email Templates → Confirm signup/);
   assert.match(instructions, /do not update hosted Supabase/i);
+  assert.match(instructions, /project-wide/i);
   assert.match(instructions, /\{\{ \.Token \}\}/);
 });

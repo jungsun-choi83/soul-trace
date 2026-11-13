@@ -19,7 +19,7 @@ import {
   type SeasonalPolaroidQuestionnaire,
 } from "@/lib/seasonal-polaroid-contract";
 import {
-  resolveSeasonalPolaroidCostume,
+  seasonalPolaroidResultCostumeId,
   validateSeasonalPolaroidMemo,
   type SeasonalPolaroidPromptAnswers,
 } from "@/lib/seasonal-polaroid-prompts";
@@ -244,10 +244,13 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
   const resultId = randomUUID();
   const result = {
     resultId,
+    petId: payload.petId ?? null,
     image: { kind: "private-object", objectKey: resultPath, mimeType: "image/jpeg" },
     memo: memoResult.memo,
     themeId: validated.answers.themeId,
-    costumeId: resolveSeasonalPolaroidCostume(promptAnswers),
+    // The legacy result schema keeps this field, but art-style requests have
+    // no user-selected costume to persist.
+    costumeId: seasonalPolaroidResultCostumeId(promptAnswers),
     pet: {
       name: promptAnswers.petName,
       species: promptAnswers.species,
@@ -255,6 +258,7 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
     },
     generation: {
       themeId: validated.answers.themeId,
+      occasionId: validated.answers.occasionId || null,
       imageModel,
       textModel: memoResult.modelUsed,
       generatedAt: new Date().toISOString(),

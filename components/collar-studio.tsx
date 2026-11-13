@@ -15,7 +15,7 @@ import {
   type OverlayMetric,
 } from "@/lib/collar-config";
 import { petFirstCopy } from "@/lib/pet-first-archive";
-import { UIUX_GARDEN_HERO } from "@/lib/uiux-art";
+import { POSE_ART } from "@/lib/pose-art";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -282,7 +282,7 @@ function HubPanel({ t, name, petId, faceHref }: { t: CollarCopy; name: string; p
     <>
       <article className="relative mt-5 overflow-hidden rounded-[22px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={UIUX_GARDEN_HERO} alt="" className="aspect-[16/9] w-full object-cover object-[center_28%]" />
+        <img src={POSE_ART.shibaHome} alt="" className="aspect-[16/9] w-full bg-[#f6efe2] object-contain object-center" />
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#2f2618]/80 to-transparent px-5 pb-4 pt-12 text-[#fff7ea]">
           <p className="text-lg font-medium">{t.screenCardTitle.replaceAll("%NAME%", name)}</p>
           <p className="mt-1 text-xs text-[#fff7ea]/85">{t.screenCardBody}</p>

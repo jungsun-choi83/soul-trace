@@ -13,6 +13,7 @@ import {
 } from "./seasonal-polaroid-contract.ts";
 import {
   polaroidArtStyleKey,
+  polaroidOccasionItem,
   polaroidThemeCatalogEntry,
   POLAROID_OCCASION_SCENE_EN,
   type PolaroidArtStyleKey,
@@ -36,7 +37,10 @@ function optionThemeId(answers: SeasonalPolaroidPromptAnswers): string {
 }
 
 function halloweenVoice(answers: Pick<SeasonalPolaroidPromptAnswers, "themeId" | "occasionId">): boolean {
-  return answers.themeId === "halloween" || answers.occasionId === "halloween";
+  const occasionId = String(answers.occasionId ?? "").trim();
+  // An explicit occasion wins over the legacy theme field. With no occasion,
+  // themeId === "halloween" is the historical Halloween request shape.
+  return occasionId ? occasionId === "halloween" : answers.themeId === "halloween";
 }
 
 export const POLAROID_ART_STYLE_LEADS: Record<PolaroidArtStyleKey, string> = {
@@ -53,11 +57,19 @@ export const POLAROID_ART_STYLE_RENDER: Record<PolaroidArtStyleKey, string> = {
 
 export function resolveSeasonalPolaroidCostume(answers: SeasonalPolaroidPromptAnswers): string {
   if (answers.costume !== "surprise") return answers.costume;
-  const pools = POLAROID_SURPRISE_COSTUMES[optionThemeId(answers) as keyof typeof POLAROID_SURPRISE_COSTUMES]
-    ?? POLAROID_SURPRISE_COSTUMES.halloween;
+  const optionTheme = optionThemeId(answers) as keyof typeof POLAROID_SURPRISE_COSTUMES;
+  const pools = POLAROID_SURPRISE_COSTUMES[optionTheme];
+  if (!pools) throw new Error("seasonal_costume_pool_missing");
   const choices = answers.status === "passed" ? pools.passed : pools.living;
   const index = Array.from(answers.petName).reduce((sum, character) => sum + character.codePointAt(0)!, 0) % choices.length;
   return choices[index]!;
+}
+
+/** Keeps the legacy result column without recording an unselected style-flow costume. */
+export function seasonalPolaroidResultCostumeId(answers: SeasonalPolaroidPromptAnswers): string {
+  return polaroidArtStyleKey(String(answers.themeId))
+    ? ""
+    : resolveSeasonalPolaroidCostume(answers);
 }
 
 const SPECIES: Record<PolaroidSpecies, { en: string; ko: string }> = {
@@ -241,16 +253,19 @@ export function buildSeasonalPolaroidImagePrompt(
   const locale = "en";
   const theme = themeFor(answers);
   const optionTheme = optionThemeFor(answers);
-  const catalog = polaroidThemeCatalogEntry(theme.id);
   const artKey = polaroidArtStyleKey(theme.id);
+  const occasionId = String(answers.occasionId ?? "").trim();
+  const imageDirectionId = occasionId || (artKey ? "" : theme.id);
+  const catalog = polaroidThemeCatalogEntry(imageDirectionId);
   approvedOption(optionTheme, "costumes", answers.costume, answers.status, answers.species);
   approvedOption(optionTheme, "scenes", answers.scene, answers.status, answers.species);
   approvedOption(optionTheme, "vibes", answers.vibe, answers.status, answers.species);
   answers.personalities.forEach((id) => approvedOption(theme, "personalities", id, answers.status, answers.species));
   const species = SPECIES[answers.species][locale];
-  const costume = description(resolveSeasonalPolaroidCostume(answers), locale);
-  const scene = description(answers.scene, locale);
-  const vibe = description(answers.vibe, locale);
+  const legacyHalloweenFlow = !artKey;
+  const costume = legacyHalloweenFlow ? description(resolveSeasonalPolaroidCostume(answers), locale) : "";
+  const scene = legacyHalloweenFlow ? description(answers.scene, locale) : "";
+  const vibe = legacyHalloweenFlow ? description(answers.vibe, locale) : "";
   const personality = answers.personalities.map((id) => description(id, locale)).join(" and ");
   const memorialRules = answers.status === "passed"
     ? [
@@ -259,6 +274,9 @@ export function buildSeasonalPolaroidImagePrompt(
         "Do not claim that the pet is physically present or make unsupported promises.",
       ]
     : ["Keep the living pet playful, safe, and comfortable; do not show danger or distress."];
+  // Each art style keeps its own medium brief. The three styles must stay
+  // genuinely distinct illustrations, not one shared treatment behind
+  // different frames.
   const styleLead = artKey
     ? POLAROID_ART_STYLE_LEADS[artKey]
     : (catalog?.imageStyleEn
@@ -266,15 +284,18 @@ export function buildSeasonalPolaroidImagePrompt(
   const renderRule = artKey
     ? POLAROID_ART_STYLE_RENDER[artKey]
     : "REALISM: Render a believable candid photograph with natural anatomy, paws, fur, fabric, lighting, and contact shadows. Avoid extra limbs, duplicated features, plastic-looking fur, or an overly zoomed-in beauty portrait.";
-  const occasionId = String(answers.occasionId ?? "").trim();
   const occasionScene = occasionId ? POLAROID_OCCASION_SCENE_EN[occasionId] : "";
   const occasionBlock = occasionScene
     ? `OCCASION: Keep the chosen art medium unchanged. Tell this seasonal story only through setting and props: ${occasionScene} Do not convert the image into a live-action seasonal snapshot.`
     : "";
-  const halloweenOnly = theme.id === "halloween" && !artKey;
-  const seasonalContext = halloweenOnly
-    ? "enough surrounding seasonal context to read as Halloween."
-    : "enough surrounding context to read the chosen scene without adding brand names or a Polaroid frame.";
+  const halloweenOnly = !artKey && halloweenVoice(answers);
+  const seasonalContext = artKey
+    ? occasionId
+      ? "enough surrounding context to support the explicitly selected occasion without adding brand names or a Polaroid frame."
+      : "a calm, uncluttered setting that keeps focus on the pet without implying a special occasion or adding a Polaroid frame."
+    : halloweenOnly
+      ? "enough surrounding seasonal context to read as Halloween."
+      : "enough surrounding context to read the chosen scene without adding brand names or a Polaroid frame.";
 
   return [
     styleLead,
@@ -283,9 +304,16 @@ export function buildSeasonalPolaroidImagePrompt(
     "REFERENCE ORDER: The first image is the primary identity reference. Any second image is supporting evidence of the SAME pet; never add a second animal and never blend two different animals.",
     `SUBJECT: one ${species}, clearly visible from head to body with the face unobstructed.`,
     "COMPOSITION PRIORITY: Use a natural medium portrait framing with the complete head, both ears, face, neck, and upper body inside the square frame. Leave visible breathing room above the ears and at both sides; do not crop the top of the head, ears, face, or body.",
-    "IDENTITY VISIBILITY: Keep the eyes, muzzle, nose, coat boundaries, and distinctive markings unobstructed and sharply readable. The seasonal setting and costume must support the pet, never cover or reshape those features.",
-    `COSTUME: ${costume}. SCENE: ${scene}. VIBE: ${vibe}. PERSONALITY: ${personality}.`,
-    "COSTUME FIT: Make the approved costume look physically wearable, gentle, and naturally fitted to this pet. Keep hats, hoods, wings, and fabric away from the eyes, nose, ears, and distinctive facial markings.",
+    "IDENTITY VISIBILITY: Keep the eyes, muzzle, nose, coat boundaries, and distinctive markings unobstructed and sharply readable. The artwork and any explicitly selected occasion must support the pet, never cover or reshape those features.",
+    "POSE AND SCENE FIT: Treat the supplied photo as the identity reference, not as a pose template. Choose one natural, anatomically plausible pose for this species that belongs in this setting — sitting, standing, lying, walking, or pausing to look toward something in the scene — and keep the photo's original pose when it already suits the setting. Adapt body orientation, head turn, and placement so the pet reads as part of the setting — match its perspective, lighting direction, colour temperature, and scale, and keep the paws or body visibly resting on the ground with a soft contact shadow. A natural side or three-quarter view is welcome when it suits the scene, as long as enough of the face stays visible to preserve identity.",
+    "INTEGRATION: The pet must be rendered in the same medium as the rest of the image and belong to the scene. Never produce a cutout pasted onto a background, a rectangle or photo edge around the pet, extra or missing limbs, duplicated features, or distorted anatomy.",
+    "IDENTITY THROUGH POSE CHANGE: While the pose changes, preserve this individual pet's breed and build, coat colours and markings, ear shape and carriage, eye and nose character, face, and body proportions, plus a collar or other clear accessory if the photo shows one. Do not swap the breed, invent a smile, or add a hat or costume that the questionnaire did not supply.",
+    legacyHalloweenFlow
+      ? `COSTUME: ${costume}. SCENE: ${scene}. VIBE: ${vibe}. PERSONALITY: ${personality}.`
+      : `PET PERSONALITY: ${personality}. Do not add a costume or scene from hidden legacy questionnaire values.`,
+    ...(legacyHalloweenFlow
+      ? ["COSTUME FIT: Make the approved costume look physically wearable, gentle, and naturally fitted to this pet. Keep hats, hoods, wings, and fabric away from the eyes, nose, ears, and distinctive facial markings."]
+      : []),
     renderRule,
     "Use the approved descriptions as visual direction only. Do not add text, captions, lettering, logos, signatures, watermarks, borders, or a Polaroid frame.",
     `Compose a clean square 1:1 image with the pet as the clear focal point and ${seasonalContext}`,
@@ -423,7 +451,9 @@ export function validateSeasonalPolaroidMemo(
   // Line 2 is allowed to name the approved little-angel costume, including
   // when "Surprise me" resolved to it. Other memorial lines must not introduce
   // death, loss, or unsupported imagery.
-  const resolvedCostume = resolveSeasonalPolaroidCostume(answers);
+  const resolvedCostume = polaroidArtStyleKey(String(answers.themeId))
+    ? ""
+    : resolveSeasonalPolaroidCostume(answers);
   if (answers.status === "passed" && lines.some((line, index) => {
     const allowsApprovedAngelCostume = index === 1 && resolvedCostume === "little-angel";
     return MEMORIAL_FORBIDDEN.some((pattern) => pattern.test(line)) && !(allowsApprovedAngelCostume && /\bangels?\b|천사/u.test(line));
@@ -632,11 +662,115 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
   const locale = answers.locale as "en" | "ko";
   const callName = resolvedCallName(answers, locale);
   const petName = answers.petName.trim();
-  const costumeId = resolveSeasonalPolaroidCostume(answers);
+  const artStyle = polaroidArtStyleKey(String(answers.themeId));
+  const occasionId = String(answers.occasionId ?? "").trim();
+  const adoptionDay = occasionId === "adoption-day";
+  const birthdayStar = occasionId === "birthday-star";
+  const newYearBlessing = occasionId === "newyear-blessing";
+  const valentineLetter = occasionId === "valentine-letter";
+  const springGarden = occasionId === "spring-secret-garden";
+  const summerHarbor = occasionId === "summer-seaside";
+  const mischiefGhost = occasionId === "halloween-mischief-ghost";
+  const costumeId = artStyle ? "" : resolveSeasonalPolaroidCostume(answers);
   const treat = resolvedTreat(answers, locale);
   const detail = answers.personalDetail?.trim().replace(/[.!?]+$/u, "");
   const variation = memoVariationIndex(answers);
   const memorial = answers.status === "passed";
+
+  if (artStyle) {
+    const personality = answers.personalities[0]!;
+    const catalog = polaroidThemeCatalogEntry(occasionId || (artStyle ? "" : answers.themeId));
+    const moment = catalog?.memoMomentEn ?? "little moment";
+    const halloween = halloweenVoice(answers);
+    const greeting = locale === "ko"
+      ? firstFitting([
+          `${callName}, ${petName}, \uC548\uB155!`,
+          `${callName}, ${petName}!`,
+        ], Math.max(MEMO_LINE_LIMITS.ko, callName.length + petName.length + 8))
+      : firstFitting(halloween
+        ? [`${callName}, happy Halloween from ${petName}!`, `${callName}, it's ${petName}!`]
+        : [`${callName}, it's ${petName}!`, `${callName}, hello from ${petName}!`],
+      Math.max(MEMO_LINE_LIMITS.en, callName.length + petName.length + 8));
+
+    if (locale === "ko") {
+      const habit = KOREAN_HABIT_VOICE[answers.habit] ?? compactMemoValue(resolvedHabit(answers, locale), 8);
+      const treatShort = compactMemoValue(treat, 8);
+      const body = firstFitting(
+        [`${habit} ${treatShort} \uC88B\uC544\uD574`, `${habit} \uC88B\uC544\uD574`],
+        MEMO_BODY_LINE_LIMITS.ko,
+      );
+      return {
+        locale,
+        lines: [
+          greeting,
+          "\uC774 \uADF8\uB9BC \uC18D\uC5D0\uC11C \uB0B4\uAC00 \uCC38 \uC88B\uC544,",
+          memoLineWithDetail(body, detail, locale),
+          adoptionDay
+            ? memorial ? "\uCC98\uC74C \uB9CC\uB09C \uB0A0\uC758 \uC628\uAE30\uAC00 \uB0A8\uC544." : "\uCC98\uC74C \uB9CC\uB09C \uB0A0\uCC98\uB7FC \uB530\uB73B\uD574."
+            : birthdayStar
+              ? memorial ? "\uAE30\uC05C \uB0A0\uC758 \uC628\uAE30\uAC00 \uAE30\uC5B5\uC5D0 \uB0A8\uC544." : "\uC624\uB298\uC740 \uC791\uC740 \uCD95\uD558\uCC98\uB7FC \uB530\uB73B\uD574."
+            : newYearBlessing
+              ? memorial ? "\uB530\uB73B\uD55C \uC0C8\uD574 \uB9C8\uC74C\uC774 \uB0A8\uC544." : "\uC0C8\uD574\uC758 \uD76C\uB9DD\uC774 \uCC38 \uB530\uB73B\uD574."
+            : valentineLetter
+              ? memorial ? "\uB530\uB73B\uD55C \uC0AC\uB791\uC774 \uAC00\uAE4C\uC774 \uB0A8\uC544." : "\uC791\uC740 \uC0AC\uB791\uC774 \uC624\uB298\uC744 \uBE5B\uB0B4."
+            : springGarden
+              ? memorial ? "\uBD04\uC758 \uB530\uC2A4\uD568\uC774 \uAE30\uC5B5\uC5D0 \uB0A8\uC544." : "\uBD04\uBE5B\uCC98\uB7FC \uB9C8\uC74C\uC774 \uD3EC\uADFC\uD574."
+            : summerHarbor
+              ? memorial ? "\uC5EC\uB984\uC758 \uACE0\uC694\uD55C \uBE5B\uC774 \uB0A8\uC544." : "\uC794\uC794\uD55C \uBC14\uB78C\uC774 \uCC38 \uC88B\uC544."
+            : mischiefGhost
+              ? memorial ? "\uB2E4\uC815\uD55C \uC720\uB839 \uC7A5\uBA74\uC774 \uD3EC\uADFC\uD574." : "\uC7A5\uB09C\uC2A4\uB7EC\uC6B4 \uC7A5\uBA74\uC774 \uC990\uAC70\uC6CC."
+            : memorial
+              ? "\uB530\uB73B\uD55C \uAE30\uC5B5\uC73C\uB85C \uB0A8\uC544."
+              : "\uC774 \uC21C\uAC04\uC774 \uCC38 \uC88B\uC544.",
+        ],
+      };
+    }
+
+    const personalityEn = ENGLISH_PERSONALITY_VOICE[personality] ?? description(personality, locale);
+    const habit = ENGLISH_HABIT_VOICE[answers.habit] ?? lowerFirst(compactMemoValue(resolvedHabit(answers, locale), 24));
+    const treatShort = compactMemoValue(treat, 16);
+    const sceneLine = variation === 0
+      ? memorial
+        ? firstFitting([`I loved to ${habit}, ${treatShort} close by.`, `I loved to ${habit}.`], MEMO_BODY_LINE_LIMITS.en)
+        : firstFitting([`while I ${habit}, ${treatShort} close by.`, `while I ${habit}.`], MEMO_BODY_LINE_LIMITS.en)
+      : variation === 1
+        ? memorial
+          ? firstFitting([`I loved ${treatShort} after ${habit}.`, `I loved ${habit}.`], MEMO_BODY_LINE_LIMITS.en)
+          : firstFitting([`I love ${treatShort} after ${habit}.`, `I love ${habit}.`], MEMO_BODY_LINE_LIMITS.en)
+        : memorial
+          ? firstFitting([`and I loved ${habit} with ${treatShort}.`, `and I loved ${habit}.`], MEMO_BODY_LINE_LIMITS.en)
+          : firstFitting([`and I ${habit} with ${treatShort}.`, `and I ${habit}.`], MEMO_BODY_LINE_LIMITS.en);
+    const closing = adoptionDay
+      ? memorial ? "our first day together stays close." : "our first day together feels like home."
+      : birthdayStar
+      ? memorial ? "this bright day stays close to me." : "today feels like a little celebration."
+      : newYearBlessing
+      ? memorial ? "this warm wish stays with me." : "a little hope brightens today."
+      : valentineLetter
+      ? memorial ? "this gentle love stays close." : "a little love brightens today."
+      : springGarden
+      ? memorial ? "spring's soft warmth stays close." : "spring light feels soft today."
+      : summerHarbor
+      ? memorial ? "the quiet summer light stays with me." : "this calm harbor feels like home."
+      : mischiefGhost
+      ? memorial ? "this gentle ghostly scene feels close." : "this friendly ghostly scene feels fun."
+      : memorial
+      ? "and this warm memory stays close."
+      : variation === 0
+        ? "This tiny moment feels like home."
+        : variation === 1
+          ? `a sweet ${moment}.`
+          : `one little ${moment}.`;
+    return {
+      locale,
+      lines: [
+        greeting,
+        firstFitting([`I feel ${personalityEn} in this picture,`, `I'm ${personalityEn} here,`], MEMO_BODY_LINE_LIMITS.en),
+        memoLineWithDetail(sceneLine, detail, locale),
+        closing,
+      ],
+    };
+  }
 
   if (locale === "ko") {
     const costume = KOREAN_COSTUME_VOICE[costumeId] ?? POLAROID_COSTUME_VOICE[costumeId]?.ko ?? compactMemoValue(description(costumeId, locale), 8);
@@ -890,8 +1024,22 @@ export function buildSeasonalPolaroidMemoSystemPrompt(
   occasionId?: string,
 ): string {
   const memorial = status === "passed";
-  const catalog = polaroidThemeCatalogEntry(String(occasionId ?? "").trim() || themeId) ?? polaroidThemeCatalogEntry(themeId);
+  const selectedOccasionId = String(occasionId ?? "").trim();
+  const artStyleRequest = polaroidArtStyleKey(themeId) !== null;
+  const adoptionDay = selectedOccasionId === "adoption-day";
+  const birthdayStar = selectedOccasionId === "birthday-star";
+  const newYearBlessing = selectedOccasionId === "newyear-blessing";
+  const valentineLetter = selectedOccasionId === "valentine-letter";
+  const springGarden = selectedOccasionId === "spring-secret-garden";
+  const summerHarbor = selectedOccasionId === "summer-seaside";
+  const mischiefGhost = selectedOccasionId === "halloween-mischief-ghost";
+  const catalog = selectedOccasionId
+    ? polaroidThemeCatalogEntry(selectedOccasionId)
+    : artStyleRequest
+      ? undefined
+      : polaroidThemeCatalogEntry(themeId);
   const halloween = halloweenVoice({ themeId, occasionId });
+  const occasionItem = selectedOccasionId ? polaroidOccasionItem(selectedOccasionId) : undefined;
   const greetingExample = halloween
     ? "Mom, happy Halloween from Tuli!"
     : "Mom, it's Tuli!";
@@ -901,17 +1049,74 @@ export function buildSeasonalPolaroidMemoSystemPrompt(
   const englishExample = halloween
     ? '["Mom, happy Halloween from Tuli!", "I\'m all pumpkin and grins tonight,", "nose in the leaves, tail going,", "and this is my kind of spooky."]'
     : '["Mom, it\'s Coco!", "I\'m cozy in my little scarf,", "sitting on the tiny chair,", "and this quiet day feels like home."]';
-  const captionKind = halloween ? "Halloween Polaroid" : `${catalog?.titleEn ?? "Polaroid"} keepsake`;
+  const captionKind = halloween ? "Halloween Polaroid" : `${catalog?.titleEn ?? occasionItem?.titleEn ?? "Polaroid"} keepsake`;
+  const adoptionCaptionContext = adoptionDay
+    ? locale === "ko"
+      ? "입양 기념일 맥락: 제공된 personalTouch가 첫 만남이나 집에 온 일을 실제로 설명할 때만 그 세부 내용을 사용한다. 그렇지 않으면 ‘처음 함께한 날’의 따뜻한 느낌만 담는다. 사람, 가족, 장소, 날짜, 보호소, 입양 서류 또는 구체적인 사건을 지어내지 않는다."
+      : "Adoption Day context: use a first-meeting or homecoming detail only when the supplied personalTouch actually provides it. Otherwise, keep to a gentle feeling of a first day together. Do not invent people, family members, places, dates, shelters, adoption paperwork, or specific events."
+    : "";
+  const birthdayCaptionContext = birthdayStar
+    ? locale === "ko"
+      ? "생일 테마: 반려동물을 중심으로 따뜻하게 축하한다. 제공되지 않은 나이, 생일 날짜, 사람, 선물, 촛불, 케이크, 파티 세부 사항이나 추억을 만들지 않는다. 제공된 반려동물 정보와 personalTouch만 사용한다. 추모 중인 반려동물은 현재 파티나 실제로 곁에 있다는 인상 없이 다정한 생일 추억으로 표현한다."
+      : "Birthday context: make this a warm birthday-themed keepsake centered on the pet. No age or birthday date was supplied; do not invent an age, date, people, gifts, candles, cake, party details, or memories. Use only supplied pet details and personalTouch. For a memorial pet, use a gentle birthday remembrance without implying a present-day party or physical presence."
+    : "";
+  const newYearCaptionContext = newYearBlessing
+    ? locale === "ko"
+      ? "새해 테마: 새로운 시작을 떠올리게 하는 따뜻하고 희망적인 분위기로 쓴다. 제공되지 않은 사람, 장소, 날짜, 실제 사건, 배달, 다짐이나 개인적인 추억을 만들어내지 않는다. 제공된 반려동물 정보와 personalTouch만 사용한다. 추모 중인 반려동물은 지금 실제로 곁에 있다고 암시하지 않고 다정하고 평온하게 표현한다."
+      : "New Year context: use a warm, hopeful feeling of a fresh start. Do not invent people, places, dates, real events, a delivery, resolutions, or personal memories. Use only supplied pet details and personalTouch. For a memorial pet, keep the tone gentle and peaceful without implying physical presence."
+    : "";
+  const valentineCaptionContext = valentineLetter
+    ? locale === "ko"
+      ? "Valentine 맥락: 반려동물의 실제 성격과 제공된 정보를 바탕으로 다정하고 따뜻하게 쓴다. 사람, 날짜, 실제 편지나 사건, 관계, 개인적인 추억을 지어내지 않는다. 제공된 pet details와 personalTouch만 사용한다. 추모 중인 반려동물은 평온하고 다정한 기념의 말투로 쓴다."
+      : "Valentine context: keep the note warm and affectionate, grounded in the pet's supplied details. Do not invent people, dates, a real letter or event, relationships, or personal memories. Use only supplied pet details and personalTouch. For a memorial pet, keep the tone gentle and commemorative."
+    : "";
+  const springCaptionContext = springGarden
+    ? locale === "ko"
+      ? "봄 정원 맥락: 사진에 보이는 봄빛과 정원 분위기만 묘사한다. 반려동물이 실제로 그곳을 방문했다거나 특정 추억이 있다고 주장하지 않는다. 사람, 장소, 날짜, 사건이나 개인적인 추억을 지어내지 않고 제공된 반려동물 정보와 personalTouch만 사용한다. 추모 중인 반려동물은 부드럽고 평온하게 표현한다."
+      : "Spring garden context: describe only the spring light and garden mood actually pictured. Do not claim the pet really visited a place or has a specific memory there. Do not invent people, places, dates, events, or personal memories; use only supplied pet details and personalTouch. Keep memorial wording gentle and peaceful."
+    : "";
+  const summerCaptionContext = summerHarbor
+    ? locale === "ko"
+      ? "여름 항구 맥락: 사진 속 잔잔한 여름빛과 항구 분위기를 묘사한다. 여행, 항해, 실제 사건이나 추억을 주장하지 않는다. 사람, 장소, 날짜, 사건 또는 개인적인 추억을 지어내지 않고 제공된 반려동물 정보와 personalTouch만 사용한다. 추모 중인 반려동물은 다정하고 평온하게 표현한다."
+      : "Summer harbor context: describe the calm summer light and harbor mood shown in the image. Do not claim a trip, voyage, real event, or memory. Do not invent people, places, dates, events, or personal memories; use only supplied pet details and personalTouch. Keep memorial wording warm and peaceful."
+    : "";
+  const mischiefGhostCaptionContext = mischiefGhost
+    ? locale === "ko"
+      ? "장난꾸러기 유령 맥락: 사진에 보이는 다정하고 장난기 있는 유령 분위기만 가볍게 담는다. 실제 유령을 만났거나 특정 사건·추억이 있었다고 주장하지 않는다. 사람, 날짜, 죽음, 무덤, 공포 장면이나 개인적인 추억을 만들지 않는다. 추모 중인 반려동물은 따뜻하고 평온하게 표현하며 실제로 곁에 있다고 암시하지 않는다."
+      : "Mischief Ghost context: keep the pictured ghostly mood playful, friendly, and gentle. Do not claim a real ghost encounter or a specific event or memory. Do not invent people, dates, death imagery, graves, frightening scenes, or personal memories. Keep memorial wording warm and peaceful without implying physical presence."
+    : "";
+  const noPhotoMoment = adoptionDay
+    ? locale === "ko" ? "처음 함께한 날" : "our first day together"
+    : birthdayStar
+      ? locale === "ko" ? "따뜻한 생일 축하" : "a warm birthday celebration"
+    : newYearBlessing
+      ? locale === "ko" ? "따뜻한 새해 소망" : "a warm New Year wish"
+    : valentineLetter
+      ? locale === "ko" ? "따뜻한 사랑의 마음" : "a warm note of affection"
+    : springGarden
+      ? locale === "ko" ? "부드러운 봄 정원" : "a quiet spring garden"
+    : summerHarbor
+      ? locale === "ko" ? "잔잔한 여름 항구" : "a calm summer harbor"
+    : mischiefGhost
+      ? locale === "ko" ? "다정한 유령 장면" : "a gentle ghostly scene"
+    : halloween ? "Halloween" : (catalog?.memoMomentEn ?? "little moment");
   return [
     `You write the short handwritten caption on a pet's ${captionKind}, in the pet's own first-person voice.`,
     `Return exactly one JSON object with exactly two fields: locale and lines. The locale field must be exactly "${locale}" (en or ko), matching the requested language.`,
     "lines must be an array of exactly four non-empty strings with no embedded newline characters.",
     `Line 1 is a short greeting that includes the supplied owner call name and pet name, like: ${greetingExample}`,
+    adoptionCaptionContext,
+    birthdayCaptionContext,
+    newYearCaptionContext,
+    valentineCaptionContext,
+    springCaptionContext,
+    summerCaptionContext,
+    mischiefGhostCaptionContext,
     locale === "ko"
       ? "Lines 2-4 are one small connected thought from the pet about this moment, in natural conversational Korean. Subject omission is natural; keep the grammar clearly in the pet's voice with warm endings such as -했어, -좋아, -기다려. Do not translate English phrasing word for word."
       : "Lines 2-4 are one small connected thought from the pet about this moment, in natural everyday English. Line 2 must speak as the pet (I, I'm, my, me).",
     "The photo is the moment. Write about what is actually pictured (pose, expression, light, setting) in the pet's words, and do not mention objects that are not in the photo as if they were there.",
-    `If the brief has a personalTouch, it is something the owner wrote about this pet; weave it in only when it fits naturally in one phrase. The brief's background is what this pet is known for off camera. It is NOT in the photo: never show it happening in the picture, and mention it at most as a passing feeling or not at all. Leaving both out is fine. Never add a second personal fact and never invent one. If no photo is attached, write about a warm ${halloween ? "Halloween" : (catalog?.memoMomentEn ?? "little")} moment with this pet without naming specific objects.`,
+    `If the brief has a personalTouch, it is something the owner wrote about this pet; weave it in only when it fits naturally in one phrase. The brief's background is what this pet is known for off camera. It is NOT in the photo: never show it happening in the picture, and mention it at most as a passing feeling or not at all. Leaving both out is fine. Never add a second personal fact and never invent one. If no photo is attached, write about a warm ${noPhotoMoment} moment with this pet without naming specific objects.`,
     "Lines 2-4 are a caption, not a letter: no requests, commands, promises, or sign-off; do not address the owner and do not repeat the pet's name after line 1. Let one line run into the next (a trailing comma, or a connector such as and, while, 그리고, -고) instead of writing three separate statements.",
     "Every line must be complete at its break: break only after a complete phrase, never on a word that needs the next one (and, with, my, feeling, this spooky, 그리고, 너무). Never cut a phrase to reach a length or add a connector or filler just to join lines; a shorter natural line is always better. Line 4 finishes the thought and ends with a period, exclamation mark, or question mark.",
     `Keep it short. The greeting must be ${MEMO_LINE_LIMITS[locale]} characters or fewer. Lines 2-4 have a hard maximum of ${MEMO_BODY_LINE_LIMITS[locale]} characters each; aim for ${locale === "ko" ? "14-18 characters" : "28-34 characters, about six to eight words"} so a line never has to wrap. A short natural line beats a full one. Use plain, warm, specific words: no poetry, filler, or clichés, and never split a sentence awkwardly just to make four lines.`,
@@ -925,8 +1130,12 @@ export function buildSeasonalPolaroidMemoSystemPrompt(
     halloween
       ? "Line 1 may be a short Halloween greeting with the supplied owner call name and pet name. Keep any greeting limited to line 1; lines 2-4 must be caption-style and must not address the owner."
       : "Line 1 may be a short greeting with the supplied owner call name and pet name. Keep any greeting limited to line 1; lines 2-4 must be caption-style and must not address the owner.",
-    "Prioritize details in this order when choosing what to keep: personal detail, habit or favorite treat, costume or personality, then scene or vibe. Lines 2-4 should weave in only one or two approved details; do not mechanically enumerate them and never invent facts.",
-    "The final line should complete the pictured memory with a warm seasonal feeling. It must not address the owner, give an instruction, make an always-promise, or become a generic letter closing.",
+    artStyleRequest
+      ? "For this year-round Polaroid, ignore the required legacy costume, scene, and vibe fields; they were not selected by the user. Use the actual image, pet personality, and optional occasion only. Do not invent clothing or props."
+      : "Prioritize details in this order when choosing what to keep: personal detail, habit or favorite treat, costume or personality, then scene or vibe. Lines 2-4 should weave in only one or two approved details; do not mechanically enumerate them and never invent facts.",
+    artStyleRequest
+      ? "The final line should complete the pictured memory with a warm feeling that fits the selected occasion, if any. With no occasion, keep it about this pictured moment."
+      : "The final line should complete the pictured memory with a warm seasonal feeling. It must not address the owner, give an instruction, make an always-promise, or become a generic letter closing.",
     `The greeting must be ${MEMO_LINE_LIMITS[locale]} characters or fewer; lines 2-4 must each be ${MEMO_BODY_LINE_LIMITS[locale]} characters or fewer.`,
     ...(retryReason === "memo_line_length"
       ? ["Retry correction: the previous draft exceeded a character limit. Rewrite all four lines within the exact limits now. Preserve the selected factual questionnaire details and premium, natural pet voice, but shorten or omit any detail that does not fit. Do not explain the correction or repeat the overlong wording."]

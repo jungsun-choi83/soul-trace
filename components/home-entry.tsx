@@ -74,7 +74,7 @@ export function HomeEntry({ children }: { children: ReactNode }) {
     <>
       <div aria-hidden={splashVisible}>{children}</div>
       {splashVisible ? (
-        <SplashScreen fading={phase === "leaving"} onDismiss={phase === "home" ? undefined : finish} />
+        <SplashScreen fading={phase === "leaving"} onDismiss={finish} />
       ) : null}
     </>
   );

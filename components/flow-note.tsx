@@ -11,6 +11,7 @@ export function FlowNote({
   title,
   body,
   links,
+  art,
   lifeStatus = "unspecified",
   tab = "home",
   signedIn = false,
@@ -19,6 +20,7 @@ export function FlowNote({
   title: string;
   body: string;
   links: { href: string; label: string }[];
+  art?: string;
   lifeStatus?: LifeStatus;
   tab?: "home" | "memories" | "create" | "pet";
   signedIn?: boolean;
@@ -29,6 +31,10 @@ export function FlowNote({
   return (
     <div className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
       <main className="mx-auto w-full max-w-xl flex-1 px-5 pb-8 pt-8">
+        {art ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={art} alt="" className="mb-5 aspect-[4/3] w-full rounded-[22px] bg-[#f6efe2] object-contain object-center" />
+        ) : null}
         <h1 className="st-headline text-[1.7rem] leading-snug text-[#2f3a28]">{title}</h1>
         <p className="mt-3 text-sm leading-6 text-[#6b5846]">{body}</p>
         <div className="mt-6 grid gap-3">

@@ -29,6 +29,10 @@ import type { Locale } from "@/lib/i18n";
 import { letterModePath, modeCopy, type LetterMode } from "@/lib/letter-mode";
 import Link from "next/link";
 import Image from "next/image";
+import {
+  isAiGenerationUnconfirmedError,
+  pollAiGenerationResult,
+} from "@/lib/ai-generation-polling";
 import { consumeLetterSseStream } from "@/lib/consume-letter-sse";
 import { readPartnerCode } from "@/lib/partner";
 import {
@@ -62,6 +66,11 @@ import {
   resolveRecipientAddress,
   type PetIntroProfile,
 } from "@/lib/pet-profile";
+import {
+  mergePetIntroFromContext,
+  petLetterContextFromPayload,
+  petLetterModeFromContext,
+} from "@/lib/pet-letter-context";
 import { getQuestionnairePetTheme } from "@/lib/pet-theme";
 import { resolveDefaultStampByPetType, resolveStampType } from "@/lib/stamp";
 import { resolveLetterLanguage } from "@/lib/letter-language";
@@ -137,28 +146,23 @@ const CAPTURE_PIXEL_RATIO = 2;
 const LETTER_THEME_STORAGE_KEY = "soul-trace-letter-theme";
 const ETERNAL_BEAM_YOUTUBE_URL = getEternalBeamYoutubeUrl();
 
+/**
+ * Watches an already-queued letter job. A failed status read no longer ends the
+ * wait: see lib/ai-generation-polling.ts. No new job is created here.
+ */
 async function waitForAiGenerationResult(
   kind: "letter",
   jobId: string,
   email: string | null,
   onStatus: (status: "queued" | "processing") => void,
 ): Promise<Record<string, unknown>> {
-  for (let attempt = 0; attempt < 240; attempt += 1) {
-    const params = new URLSearchParams({ kind, jobId });
-    if (email) params.set("email", email);
-    const response = await fetch(`/api/ai-generation/status?${params.toString()}`, { cache: "no-store" });
-    const payload = await response.json().catch(() => null) as {
-      status?: string;
-      result?: Record<string, unknown>;
-      error?: string;
-    } | null;
-    if (!response.ok) throw new Error(payload?.error ?? "Generation status could not be checked.");
-    if (payload?.status === "succeeded" && payload.result) return payload.result;
-    if (payload?.status === "failed") throw new Error(payload.error ?? "Generation could not be completed.");
-    if (payload?.status === "queued" || payload?.status === "processing") onStatus(payload.status);
-    await new Promise((resolve) => window.setTimeout(resolve, 3_000));
-  }
-  throw new Error("Generation is taking longer than expected. Please check again shortly.");
+  return pollAiGenerationResult({
+    kind,
+    jobId,
+    email,
+    onStatus,
+    sleep: (ms) => new Promise((resolve) => { window.setTimeout(resolve, ms); }),
+  });
 }
 
 function KakaoTalkMark() {
@@ -271,6 +275,7 @@ export function SoulTraceFlow({
   } | null>(null);
   const generationCreatedAtRef = useRef<string | null>(null);
   const [draftReady, setDraftReady] = useState(initialResult != null);
+  const petIntroTouchedFieldsRef = useRef(new Set<keyof PetIntroProfile>());
   /** 마지막으로 생성된 편지·분석이 맞는 UI 언어 (언어 토글 시 API로 다시 맞춤) */
   const [resultLocale, setResultLocale] = useState<Locale | null>(
     initialResult?.generationLocale ?? null,
@@ -287,6 +292,8 @@ export function SoulTraceFlow({
   const [letterDownloadFile, setLetterDownloadFile] = useState<File | null>(null);
   const authSession = useAuthSession();
   const letterSubmissionPendingRef = useRef(false);
+  /** Job id whose polling ended unconfirmed on this mount; not auto-resumed again here. */
+  const unconfirmedJobRef = useRef<string | null>(null);
   const [shareableFile, setShareableFile] = useState<File | null>(null);
   const shareUrlRef = useRef<{ key: string; url: string } | null>(null);
   const [letterThemeId, setLetterThemeId] = useState<LetterThemeId>(() => {
@@ -419,6 +426,51 @@ export function SoulTraceFlow({
       setDraftReady(true);
     }
   }, [draftStorageKey, initialResult, mode, resultStorageKey, serviceChannel, surveyStepCount]);
+
+  useEffect(() => {
+    if (
+      !initialPetId ||
+      initialResult ||
+      result ||
+      !draftReady ||
+      authSession.status !== "authenticated"
+    ) return;
+
+    const controller = new AbortController();
+    const requestedPetId = initialPetId;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/my/pets/${encodeURIComponent(requestedPetId)}`, {
+          credentials: "same-origin",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const payload = await response.json().catch(() => null);
+        const context = petLetterContextFromPayload(payload, requestedPetId);
+        if (!context || controller.signal.aborted) return;
+
+        const savedMode = petLetterModeFromContext(context);
+        if (savedMode && savedMode !== mode) {
+          const destination = new URL(window.location.href);
+          destination.pathname = letterModePath(savedMode);
+          window.location.replace(`${destination.pathname}${destination.search}${destination.hash}`);
+          return;
+        }
+
+        setPetIntro((current) => mergePetIntroFromContext(
+          current,
+          context,
+          mode,
+          petIntroTouchedFieldsRef.current,
+        ));
+      } catch {
+        // Keep the normal editable questionnaire available if profile lookup fails.
+      }
+    })();
+
+    return () => controller.abort();
+  }, [authSession.status, draftReady, initialPetId, initialResult, mode, result]);
 
   useEffect(() => {
     shareUrlRef.current = null;
@@ -624,6 +676,9 @@ export function SoulTraceFlow({
   }, [email, petIntro.petType, petPhotoFile, privacyConsent]);
 
   const patchPetIntro = useCallback((patch: Partial<PetIntroProfile>) => {
+    for (const field of Object.keys(patch) as (keyof PetIntroProfile)[]) {
+      petIntroTouchedFieldsRef.current.add(field);
+    }
     setPrivacyConsent(false);
     setPetIntro((prev) => ({ ...prev, ...patch }));
   }, []);
@@ -841,6 +896,10 @@ export function SoulTraceFlow({
       pending = null;
     }
     if (!pending?.jobId || !pending.email) return;
+    // The job stays in session storage after an unconfirmed result so it can be
+    // resumed, but this mount stops polling it; otherwise clearing isLoading
+    // would immediately re-enter here and loop while the network is down.
+    if (pending.jobId === unconfirmedJobRef.current) return;
     let cancelled = false;
     setIsLoading(true);
     setGenerationLoadingMessage(
@@ -874,6 +933,14 @@ export function SoulTraceFlow({
       window.sessionStorage.removeItem(pendingGenerationStorageKey);
     }).catch((err) => {
       if (!cancelled) {
+        // An unconfirmed result is not a failed one. Keep the pending job so
+        // reopening this page resumes polling the same generation, and never
+        // tell the customer the letter failed.
+        if (isAiGenerationUnconfirmedError(err)) {
+          unconfirmedJobRef.current = err.jobId;
+          setError(t("errors.generationUnconfirmed"));
+          return;
+        }
         try {
           window.sessionStorage.removeItem(pendingGenerationStorageKey);
         } catch {
@@ -1156,7 +1223,11 @@ export function SoulTraceFlow({
       setResult(null);
       setResultLocale(null);
       setAnimateFreshLetter(false);
-      setError(userFacingErrorMessage(err, t("errors.generateFailed")));
+      // The pending job id stays in session storage either way, so an
+      // unconfirmed generation resumes instead of being requested again.
+      setError(isAiGenerationUnconfirmedError(err)
+        ? t("errors.generationUnconfirmed")
+        : userFacingErrorMessage(err, t("errors.generateFailed")));
     } finally {
       letterSubmissionPendingRef.current = false;
       setIsLoading(false);

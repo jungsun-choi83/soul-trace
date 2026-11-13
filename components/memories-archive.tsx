@@ -12,6 +12,7 @@ import {
   type MemoryLibraryItem,
 } from "@/lib/memory-library";
 import type { LifeStatus } from "@/lib/pet-first-archive";
+import { POSE_ART } from "@/lib/pose-art";
 import { petFirstCopy } from "@/lib/storybook-copy";
 import { storyTabProps } from "@/lib/story-tabs";
 import Link from "next/link";
@@ -175,7 +176,7 @@ export function MemoriesArchive({
           </ul>
         ) : null}
 
-        {access === "guest" ? <GuestImport preview={localPreview} onPick={setLocalPreview} /> : null}
+        {access === "guest" ? <GuestImport preview={localPreview} petId={selectedPetId} onPick={setLocalPreview} /> : null}
         {access === "unavailable" ? (
           <p className="st-card mt-5 px-4 py-4 text-sm leading-6 text-[#6b5846]">이 환경에서는 계정 저장이 아직 준비되지 않았어요. 사진은 서버에 올리지 않아요.</p>
         ) : null}
@@ -215,9 +216,15 @@ export function MemoriesArchive({
         {loading ? <p className="mt-6 text-sm text-[#6b5846]">추억을 불러오는 중이에요.</p> : null}
 
         {access !== "owner" || !pet || loading || loadError ? null : visible.length === 0 ? (
-          <p data-testid="memories-empty" className="mt-6 text-sm leading-6 text-[#6b5846]">
-            {favoritesOnly && photos.length ? "즐겨찾기한 사진이 아직 없어요." : EMPTY_COPY}
-          </p>
+          <div className="mt-6">
+            {favoritesOnly && photos.length ? null : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={POSE_ART.shibaHome} alt="" className="aspect-[4/3] w-full rounded-[22px] bg-[#f6efe2] object-contain object-center" />
+            )}
+            <p data-testid="memories-empty" className="mt-4 text-sm leading-6 text-[#6b5846]">
+              {favoritesOnly && photos.length ? "즐겨찾기한 사진이 아직 없어요." : EMPTY_COPY}
+            </p>
+          </div>
         ) : (
           <section id="months" data-testid="memories-months" className="mt-6 grid gap-6">
             {groups.map((month) => (
@@ -249,7 +256,7 @@ export function MemoriesArchive({
             <img src={selected.url} alt={selected.item.title || pet.petName} className="aspect-square w-full rounded-[16px] object-contain bg-[#f8f2e5]" />
             <p className="mt-3 text-sm text-[#6b5846]">{selected.item.happenedOn || selected.item.createdAt.slice(0, 10)}{selected.item.favorite ? " · 즐겨찾기" : ""}</p>
             <div className="mt-3 grid gap-2">
-              <button type="button" onClick={() => void toggleFavorite(selected)} className="st-btn st-btn-quiet w-full">즐겨찾기</button>
+              {selected.item.deletable ? <button type="button" onClick={() => void toggleFavorite(selected)} className="st-btn st-btn-quiet w-full">{selected.item.favorite ? "즐겨찾기 해제" : "즐겨찾기"}</button> : null}
               <Link href={polaroidHrefFromArchive(pet.petId)} className="st-btn st-btn-forest w-full">폴라로이드 만들기</Link>
               <Link href={beamSceneHref(pet.petId, selected.item.entryId, selected.assetId)} className="st-btn st-btn-quiet w-full">Beam 장면 미리보기</Link>
               {selected.item.deletable ? <button type="button" onClick={() => void remove(selected)} className="st-btn st-btn-quiet w-full">삭제</button> : null}
@@ -265,13 +272,17 @@ export function MemoriesArchive({
 
 function GuestImport({
   preview,
+  petId,
   onPick,
 }: {
   preview: string | null;
+  petId: string | null;
   onPick: (url: string | null) => void;
 }) {
   return (
     <section className="mt-5 grid gap-3">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={POSE_ART.shibaHome} alt="" className="aspect-[4/3] w-full rounded-[22px] bg-[#f6efe2] object-contain object-center" />
       <p data-testid="memories-empty" className="text-sm leading-6 text-[#6b5846]">{EMPTY_COPY}</p>
       <label className="st-btn st-btn-forest w-full">
         사진 가져오기
@@ -291,7 +302,7 @@ function GuestImport({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={preview} alt="" className="aspect-square w-full rounded-[16px] object-contain bg-[#f8f2e5]" />
       ) : null}
-      <Link href={authEntryPath("/memories", "signin")} className="st-btn st-btn-quiet w-full">로그인하고 기록에 저장</Link>
+      <Link href={authEntryPath(memoriesHref(petId), "signin")} className="st-btn st-btn-quiet w-full">로그인하고 기록에 저장</Link>
     </section>
   );
 }

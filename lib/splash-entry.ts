@@ -1,4 +1,4 @@
-export const SPLASH_ART_SRC = "/images/uiux/garden-path.png";
+export const SPLASH_ART_SRC = "/images/poses/shiba-autumn.jpg";
 export const SPLASH_SESSION_KEY = "soultrace.splash.seen";
 export const SPLASH_HOLD_MS = 1100;
 export const SPLASH_FADE_MS = 400;

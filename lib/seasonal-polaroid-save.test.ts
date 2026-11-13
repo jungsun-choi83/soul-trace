@@ -51,7 +51,7 @@ test("Seasonal preview uses the stable decorative frame and bounded caption wind
   assert.match(readFileSync("lib/polaroid-frames.ts", "utf8"), /soul_trace_seasonal_polaroid_blank_caption_template\.png/);
   assert.match(frame, /layout\.templateSrc/);
   assert.match(frame, /aspect-\[2\/3\]/);
-  assert.match(frame, /bottom-\[19%\] left-\[19%\] right-\[19%\] top-\[70\.6%\]/);
+  assert.match(frame, /left: layout\.caption\.left,[\s\S]*right: layout\.caption\.right,[\s\S]*top: layout\.caption\.top,[\s\S]*bottom: layout\.caption\.bottom/);
   assert.match(frame, /overflow-hidden/);
   assert.match(frame, /memoLines\.slice\(0, 4\)/);
   assert.match(component, /SOUL TRACE/);

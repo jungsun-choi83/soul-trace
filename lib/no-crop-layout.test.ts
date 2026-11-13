@@ -34,8 +34,8 @@ test("main illustrations keep original ratio instead of cover-cropping", () => {
   assert.doesNotMatch(dashboard, /StoryScene[\s\S]{0,80}aspect-/);
   assert.doesNotMatch(home, /StoryScene[\s\S]{0,80}aspect-/);
   assert.doesNotMatch(memory, /aspect-\[16\/11\]|aspect-\[16\/7\]|-mt-14/);
-  assert.match(splashCss, /object-fit:cover/);
-  assert.match(splashCss, /object-position:center 18%/);
+  assert.match(splashCss, /object-fit:contain/);
+  assert.match(splashCss, /object-position:center bottom/);
 });
 
 test("high-resolution clean art exists and is not a phone screenshot", () => {

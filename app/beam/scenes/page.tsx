@@ -1,4 +1,5 @@
 import { FlowNote } from "@/components/flow-note";
+import { POSE_ART } from "@/lib/pose-art";
 import type { LifeStatus } from "@/lib/pet-first-archive";
 import type { ServerSearchParams } from "@/lib/search-params";
 import type { Metadata } from "next";
@@ -19,6 +20,7 @@ export default async function BeamScenesPage({
   const preview = pet ? `/beam/scenes/preview?pet=${encodeURIComponent(pet)}` : "/beam/scenes/preview";
   return (
     <FlowNote
+      art={POSE_ART.shibaSpring}
       lifeStatus={lifeStatus}
       tab="memories"
       title="Eternal Beam 장면 보관함"

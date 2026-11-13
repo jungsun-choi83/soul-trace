@@ -16,12 +16,12 @@ import { useLayoutEffect, useRef, useState, type RefObject, type ReactNode } fro
  * the fourth line box, so four maximum-length lines never wrap; a fifth,
  * wrapped line still fits above the SOUL TRACE divider (81.3%).
  */
-/** Base caption size: 2.5% of the frame width, the largest that fits four maximum-length lines. */
-export const CAPTION_FONT_SIZE = "2.5cqw";
+/** Base caption size: 2.9% of the frame width; long lines can shrink to stay inside the safe area. */
+export const CAPTION_FONT_SIZE = "2.9cqw";
 const CAPTION_FIT_STEP = 0.05;
 /**
- * Readability floor: a line may shrink to 80% of the base size (7 px on a
- * 350 px phone card, 8.6 px on the result page) and no further. A greeting
+ * Readability floor: a line may shrink to 80% of the base size (about 8 px on a
+ * 350 px phone card) and no further. A greeting
  * that still does not fit is split onto two explicit lines instead.
  */
 export const CAPTION_FIT_MIN = 0.8;
@@ -61,10 +61,11 @@ export function fitCaptionLines(memo: HTMLElement): boolean {
   let allFit = true;
   for (const paragraph of Array.from(memo.querySelectorAll<HTMLElement>("p"))) {
     paragraph.style.fontSize = "";
+    const baseFontPx = Number.parseFloat(getComputedStyle(paragraph).fontSize);
     let factor = 1;
     while (factor > CAPTION_FIT_MIN + 1e-9 && visualLineCount(paragraph) > 1) {
       factor = Math.round((factor - CAPTION_FIT_STEP) * 100) / 100;
-      paragraph.style.fontSize = `calc(${CAPTION_FONT_SIZE} * ${factor})`;
+      paragraph.style.fontSize = `${baseFontPx * factor}px`;
     }
     if (visualLineCount(paragraph) > 1) allFit = false;
   }
@@ -153,14 +154,17 @@ export function SeasonalPolaroidFrame({
   const displayLines = captionDisplayLines(memoLines, greetingSplit);
 
   return (
-    <div ref={polaroidRef} className={`@container ${frameClassName}`}>
-      <img data-seasonal-polaroid="template" src={layout.templateSrc} alt="" aria-hidden="true" className="absolute inset-0 z-0 h-full w-full object-fill" />
+    <div
+      ref={polaroidRef}
+      className={`@container ${frameClassName}`}
+      style={{ backgroundColor: layout.templateOverlay ? "#000000" : undefined }}
+      data-seasonal-polaroid-template-overlay={layout.templateOverlay ? "true" : undefined}
+    >
+      <img data-seasonal-polaroid="template" src={layout.templateSrc} alt="" aria-hidden="true" className={`absolute inset-0 h-full w-full ${layout.templateObjectFit === "contain" ? "object-contain" : "object-fill"} ${layout.templateOverlay ? "z-20" : "z-0"}`} />
       <div
         data-seasonal-polaroid="photo-window"
-        className={layout.halloweenDecor
-          ? "absolute left-[16.2%] top-[15.2%] z-10 h-[50.7%] w-[67.8%] overflow-hidden rounded-[4%] bg-[#E9E1D7] shadow-[inset_0_0_18px_rgba(53,38,26,0.18)]"
-          : "absolute z-10 overflow-hidden bg-[#E9E1D7]"}
-        style={layout.halloweenDecor ? undefined : {
+        className={`absolute z-10 overflow-hidden bg-[#E9E1D7] ${layout.halloweenDecor ? "shadow-[inset_0_0_18px_rgba(53,38,26,0.18)]" : ""}`}
+        style={{
           left: layout.photo.left,
           top: layout.photo.top,
           width: layout.photo.width,
@@ -171,32 +175,51 @@ export function SeasonalPolaroidFrame({
         {imageUrl && !placeholder ? <img data-seasonal-polaroid="photo" src={imageUrl} alt={imageAlt ?? t("polaroidPreviewAlt")} onError={onImageError} className="h-full w-full object-cover object-center" /> : imageFallback ?? null}
         <div className={`absolute inset-0 flex flex-col items-center justify-center px-7 text-center transition-opacity duration-1000 ${placeholder ? "opacity-100" : "opacity-0"} ${layout.halloweenDecor ? "bg-[linear-gradient(145deg,rgba(30,12,38,0.42),rgba(117,43,20,0.42))]" : "bg-[#E9E1D7]/80"}`}>
           {layout.halloweenDecor ? <span className="text-4xl" aria-hidden="true">🎃</span> : null}
-          <p className={`text-xs leading-6 ${layout.halloweenDecor ? "mt-4 text-[#F5D999]" : "text-[#806A56]"} ${bodyFont}`}>{t("seasonalPolaroid.generation.developingPhoto")}</p>
+          <p
+            className={`text-xs leading-6 ${layout.halloweenDecor ? "mt-4 text-[#F5D999]" : "text-[#806A56]"} ${bodyFont}`}
+            style={{ color: layout.photoPlaceholderTextColor }}
+          >
+            {t("seasonalPolaroid.generation.developingPhoto")}
+          </p>
         </div>
         {layout.halloweenDecor ? <span className="absolute right-4 top-4 text-2xl text-[#F7D47D]" aria-hidden="true">✦</span> : null}
       </div>
       <div
         data-seasonal-polaroid="caption"
-        className={layout.flowers
-          ? "absolute bottom-[19%] left-[19%] right-[19%] top-[70.6%] z-20 overflow-hidden text-center"
-          : "absolute z-20 overflow-hidden text-center"}
-        style={layout.flowers ? undefined : {
+        className={`absolute ${layout.templateOverlay ? "z-30" : "z-20"} overflow-hidden text-center ${layout.flowers ? "" : "flex items-center justify-center"}`}
+        style={{
           left: layout.caption.left,
           right: layout.caption.right,
           top: layout.caption.top,
           bottom: layout.caption.bottom,
+          backgroundColor: layout.captionSurface,
+          padding: layout.captionPadding,
+          borderRadius: layout.captionRadius,
         }}
       >
         {showMemo ? (
           <>
             {layout.flowers ? <span aria-hidden="true" className={`float-left h-full w-[18%] ${CAPTION_LEFT_FLOWER_SHAPE}`} /> : null}
             {layout.flowers ? <span aria-hidden="true" className={`float-right h-full w-[18%] ${CAPTION_RIGHT_FLOWER_SHAPE}`} /> : null}
-            <div ref={memoRef} className={`text-[2.5cqw] leading-[1.1] ${bodyFont}`}>
+            <div
+              ref={memoRef}
+              data-seasonal-polaroid="caption-text"
+              className={`w-full text-[2.9cqw] font-semibold leading-[1.1] text-[#49372A] ${bodyFont}`}
+              style={{
+                fontSize: layout.halloweenDecor ? "2.5cqw" : layout.captionFontSize ?? CAPTION_FONT_SIZE,
+                color: layout.captionTextColor ?? "#49372A",
+              }}
+            >
               {displayLines.map((line, index) => <p key={`${index}-${line.slice(0, 8)}`} className="break-words">{line}</p>)}
             </div>
           </>
         ) : (
-          <p className={`flex h-full items-center justify-center text-sm text-[#806A56]/75 ${bodyFont}`}>{t("seasonalPolaroid.generation.memoWaiting")}</p>
+          <p
+            className={`flex h-full items-center justify-center text-sm text-[#806A56]/75 ${bodyFont}`}
+            style={{ color: layout.captionTextColor }}
+          >
+            {t("seasonalPolaroid.generation.memoWaiting")}
+          </p>
         )}
       </div>
       {badge ? <p className={`absolute left-0 right-0 z-20 text-center font-display-en text-[8px] uppercase tracking-[0.28em] text-[#806A56] ${layout.halloweenDecor ? "bottom-[14%]" : "bottom-[3%]"}`}>{badge}</p> : null}

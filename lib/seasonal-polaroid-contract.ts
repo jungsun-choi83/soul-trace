@@ -1,5 +1,6 @@
 import { isLocale, type Locale } from "./i18n.ts";
 import { polaroidThemeById, POLAROID_THEME_IDS } from "./polaroid-themes.ts";
+import { polaroidOccasionItem } from "./polaroid-theme-catalog.ts";
 import type { PolaroidThemeId } from "./polaroid-theme-catalog.ts";
 import {
   optionsForStatus,
@@ -56,6 +57,7 @@ export type SeasonalPolaroidMemo = {
 
 export type SeasonalPolaroidGenerationMetadata = {
   themeId: SeasonalPolaroidThemeId;
+  occasionId: string | null;
   imageModel: string;
   textModel: string | null;
   generatedAt: string;
@@ -196,8 +198,9 @@ export function validateSeasonalPolaroidRequest(
   const theme = seasonalPolaroidTheme(String(answers.themeId ?? ""));
   if (!theme) addIssue(issues, "themeId", "unsupported");
   const occasionId = typeof answers.occasionId === "string" ? answers.occasionId.trim() : "";
-  const optionTheme = occasionId ? seasonalPolaroidTheme(occasionId) : theme;
-  if (occasionId && !optionTheme) addIssue(issues, "occasionId", "unsupported");
+  const occasionTheme = occasionId ? seasonalPolaroidTheme(occasionId) : undefined;
+  const optionTheme = occasionId ? occasionTheme ?? theme : theme;
+  if (occasionId && !polaroidOccasionItem(occasionId)?.implemented) addIssue(issues, "occasionId", "unsupported");
   if (!isLocale(String(answers.locale ?? ""))) addIssue(issues, "locale", "unsupported");
 
   const petName = typeof answers.petName === "string" ? answers.petName.trim() : "";

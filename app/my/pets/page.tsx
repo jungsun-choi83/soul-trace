@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { PetRoster } from "@/components/pet-roster";
+import { PetFirstUnavailable } from "@/components/pet-first-unavailable";
 import { authEntryPath } from "@/lib/auth-redirect";
 import { isPetFirstArchiveEnabled } from "@/lib/pet-first-archive";
 import { loadPetHome } from "@/lib/pet-first-archive-data";
 import { ensureOwnerRow } from "@/lib/pet-first-archive-server";
+import { loadPetRosterForUser } from "@/lib/pet-roster-loader";
 import { noIndexRobots } from "@/lib/site-url";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 
@@ -24,8 +26,11 @@ export default async function MyPetsPage() {
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
   if (!supabase || !user) redirect(authEntryPath("/my/pets"));
 
-  await ensureOwnerRow(supabase, user.id);
-
-  const home = await loadPetHome(supabase, user.id);
-  return <PetRoster pets={home?.pets ?? []} />;
+  const roster = await loadPetRosterForUser(
+    user.id,
+    async (userId) => (await ensureOwnerRow(supabase, userId)) === null,
+    (userId) => loadPetHome(supabase, userId),
+  );
+  if (roster.status === "unavailable") return <PetFirstUnavailable />;
+  return <PetRoster pets={roster.pets} />;
 }

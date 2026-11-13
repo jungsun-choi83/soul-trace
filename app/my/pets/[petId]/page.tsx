@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
-import { PetFirstMemory } from "@/components/pet-first-memory";
+import { PetFirstProfile } from "@/components/pet-first-profile";
 import { PetFirstUnavailable } from "@/components/pet-first-unavailable";
 import { authEntryPath } from "@/lib/auth-redirect";
 import { isPetFirstArchiveEnabled, isUuid, seoulToday } from "@/lib/pet-first-archive";
@@ -34,5 +34,5 @@ export default async function PetMemoryPage({
   if (result.status === "unavailable") return <PetFirstUnavailable />;
   if (result.status === "not_found") notFound();
 
-  return <PetFirstMemory profile={result.profile} today={seoulToday()} />;
+  return <PetFirstProfile profile={result.profile} today={seoulToday()} />;
 }
