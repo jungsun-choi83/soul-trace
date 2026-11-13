@@ -125,9 +125,9 @@ export function PetProfileForm({
       <fieldset id="status">
         <legend className="text-sm font-medium">{copy.status}</legend>
         <div className="mt-2 grid gap-2">
-          {(["living", "memorial", "unspecified"] as LifeStatus[]).map((value) => (
+          {(["living", "memorial"] as const).map((value) => (
             <label key={value} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-[color:var(--st-field-edge)] bg-[color:var(--st-field)] px-4 text-sm has-[:checked]:border-[color:var(--st-sage-deep)] has-[:checked]:bg-[color:var(--st-sage)]/15">
-              <input type="radio" name="lifeStatus" value={value} defaultChecked={(initial?.lifeStatus ?? "unspecified") === value} className="accent-[color:var(--st-sage-deep)]" />
+              <input type="radio" name="lifeStatus" value={value} defaultChecked={(initial?.lifeStatus === "memorial" ? "memorial" : "living") === value} className="accent-[color:var(--st-sage-deep)]" />
               {statusLabel(copy, value)}
             </label>
           ))}

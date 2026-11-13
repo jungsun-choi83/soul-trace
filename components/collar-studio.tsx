@@ -15,7 +15,6 @@ import {
   type OverlayMetric,
 } from "@/lib/collar-config";
 import { petFirstCopy } from "@/lib/pet-first-archive";
-import { POSE_ART } from "@/lib/pose-art";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -280,23 +279,21 @@ function HubPanel({ t, name, petId, faceHref }: { t: CollarCopy; name: string; p
   const album = petId ? `/my/pets/${petId}#album` : "/my/pets";
   return (
     <>
-      <article className="relative mt-5 overflow-hidden rounded-[22px]">
+      <div className="mt-6 flex flex-col items-center text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={POSE_ART.shibaHome} alt="" className="aspect-[16/9] w-full bg-[#f6efe2] object-contain object-center" />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#2f2618]/80 to-transparent px-5 pb-4 pt-12 text-[#fff7ea]">
-          <p className="text-lg font-medium">{t.screenCardTitle.replaceAll("%NAME%", name)}</p>
-          <p className="mt-1 text-xs text-[#fff7ea]/85">{t.screenCardBody}</p>
-        </div>
-      </article>
+        <img
+          src="/images/collar/face-photo-240.png"
+          alt=""
+          width={240}
+          height={240}
+          className="aspect-square w-[min(68vw,15rem)] rounded-full bg-[#1d1916] object-cover ring-4 ring-[#efe4d2]"
+        />
+        <p className="mt-4 text-lg font-medium text-[#3a3428]">{t.screenCardTitle.replaceAll("%NAME%", name)}</p>
+        <p className="mt-1 text-xs text-[color:var(--st-text-soft)]">{t.screenCardBody}</p>
+      </div>
 
-      <div className="mt-4 grid grid-cols-[7.5rem_1fr] items-center gap-3">
-        <img src="/images/collar/face-photo-240.png" alt="" width={240} height={240} className="aspect-square w-full rounded-full bg-[#1d1916] object-cover ring-4 ring-[#efe4d2]" />
-        <div className="min-w-0">
-          <p className="text-xs text-[#ad8655]">{t.beforeConnect}</p>
-          <p className="mt-1 font-medium">{t.deviceCardTitle.replaceAll("%NAME%", name)}</p>
-          <p className="mt-1 text-xs leading-5 text-[color:var(--st-text-soft)]">{t.beforeConnectBody}</p>
-          <Link href={faceHref} className="st-btn st-btn-primary mt-3 w-full text-sm">{t.howToConnect}</Link>
-        </div>
+      <div className="mt-6">
+        <Link href={faceHref} className="st-btn st-btn-primary w-full text-sm">{t.howToConnect}</Link>
       </div>
 
       <div className="mt-8 flex items-end justify-between gap-3">

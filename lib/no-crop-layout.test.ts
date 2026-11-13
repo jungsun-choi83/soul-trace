@@ -70,7 +70,8 @@ test("storybook pages scroll and do not clip under a fixed phone-height tab bar"
   assert.match(choose, /min-h-\[100svh\]/);
   assert.match(polaroid, /min-h-\[100svh\]/);
   assert.doesNotMatch(`${paper}${auth}${dashboard}${home}${memory}${settings}${petForm}${roster}${collar}`, /h-\[850px\]|h-screen overflow-hidden/);
-  assert.match(petForm, /StoryScene scene="portrait"/);
+  assert.match(petForm, /copy\.setupTitle/);
+  assert.doesNotMatch(petForm, /UiuxHero|POSE_ART|StoryScene/);
   assert.match(roster, /StoryScene/);
 });
 

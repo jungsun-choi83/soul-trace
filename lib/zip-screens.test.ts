@@ -39,7 +39,7 @@ test("implemented ZIP screens stay on distinct consumer routes", () => {
 
 test("추억 and 내 아이 are no longer the same screen", () => {
   assert.match(tabs, /pet: "\/my\/pets"/);
-  assert.match(tabs, /`\/my\/pets\/\$\{encodeURIComponent\(petId\)\}\/memories#album`/);
+  assert.match(tabs, /memoriesMonthHref\(petId\)/);
   assert.match(tabs, /createQuery\.set\("branch", status\)/);
   assert.match(tabs, /\/create\?\$\{createQuery/);
   assert.match(memory, /current="memories"/);

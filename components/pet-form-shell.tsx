@@ -2,12 +2,10 @@
 
 import { useLocale } from "@/components/locale-provider";
 import { storyTabProps } from "@/components/pet-first-home";
-import { StoryBrandHeader, UiuxHero } from "@/components/storybook/story-chrome";
-import { StoryScene } from "@/components/storybook/story-scene";
+import { StoryBrandHeader } from "@/components/storybook/story-chrome";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
 import { type LifeStatus } from "@/lib/pet-first-archive";
 import { petFirstCopy } from "@/lib/storybook-copy";
-import { POSE_ART } from "@/lib/pose-art";
 import type { ReactNode } from "react";
 
 export function StorybookShell({
@@ -31,11 +29,11 @@ export function StorybookShell({
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-5">
         <StoryBrandHeader backHref={backHref} />
         {creating ? (
-          <>
-            <UiuxHero src={POSE_ART.shibaSpring} title={copy.setupTitle} body={copy.setupBody} />
-            <p className="st-eyebrow mt-6">{copy.helloLittle}</p>
-            <StoryScene scene="portrait" className="mt-5 rounded-[15px]" />
-          </>
+          <header className="mt-6">
+            <p className="st-eyebrow">{copy.helloLittle}</p>
+            <h1 className="st-headline mt-2 whitespace-pre-line text-[1.7rem] leading-snug text-[#2f3a28]">{copy.setupTitle}</h1>
+            <p className="mt-2 text-sm leading-6 text-[#6b5846]">{copy.setupBody}</p>
+          </header>
         ) : (
           <h1 className="st-headline mt-6 text-3xl">{copy.editPet}</h1>
         )}

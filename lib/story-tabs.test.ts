@@ -23,16 +23,16 @@ test("four tabs stay home, memories, create, and pet", () => {
 
   assert.deepEqual(Object.keys(livingTabs), ["home", "memories", "create", "pet"]);
   assert.equal(livingTabs.home, "/dashboard/living?pet=pet-1");
-  assert.equal(livingTabs.memories, "/my/pets/pet-1/memories#album");
+  assert.equal(livingTabs.memories, "/memories?pet=pet-1&view=months");
   assert.equal(livingTabs.create, "/create?pet=pet-1&branch=living");
   assert.equal(livingTabs.pet, "/my/pets");
   assert.equal(memorialTabs.home, "/dashboard/memorial?pet=pet-1");
-  assert.equal(memorialTabs.memories, "/my/pets/pet-1/memories#album");
+  assert.equal(memorialTabs.memories, "/memories?pet=pet-1&view=months");
   assert.equal(memorialTabs.create, "/create?pet=pet-1&branch=memorial");
-  assert.equal(storyTabHrefs("pet-2", true, "living").memories, "/my/pets/pet-2/memories#album");
-  assert.equal(openTabs.memories, "/my/pets");
-  assert.equal(storyTabHrefs(null, false, "unspecified").memories, "/memories");
-  assert.equal(storyTabHrefs("pet-1", false, "living").memories, "/memories?pet=pet-1");
+  assert.equal(storyTabHrefs("pet-2", true, "living").memories, "/memories?pet=pet-2&view=months");
+  assert.equal(openTabs.memories, "/memories?view=months");
+  assert.equal(storyTabHrefs(null, false, "unspecified").memories, "/memories?view=months");
+  assert.equal(storyTabHrefs("pet-1", false, "living").memories, "/memories?pet=pet-1&view=months");
   assert.match(petRoster, /href="\/my\/pets\/new"/);
   assert.match(petMemory, /<StoryTabbar current="memories"/);
   assert.match(petMemory, /<section id="album"/);

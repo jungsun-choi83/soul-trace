@@ -2,7 +2,7 @@
 
 import { useLocale } from "@/components/locale-provider";
 import { storyTabProps } from "@/components/pet-first-home";
-import { StoryBrandHeader, UiuxHero } from "@/components/storybook/story-chrome";
+import { StoryBrandHeader } from "@/components/storybook/story-chrome";
 import { StoryState } from "@/components/storybook/story-state";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
 import {
@@ -97,9 +97,12 @@ export function BeamScenePreview({
     <div className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-5 sm:pt-8">
         <StoryBrandHeader backHref={`/my/pets/${petId}#album`} backLabel={copy.albumTitle} />
-        <UiuxHero src={POSE_ART.shibaAutumn} title={copy.beamSceneTitle} body={copy.beamSceneBody} />
-        <p className="st-eyebrow mt-4">{copy.beamSceneEyebrow}</p>
-        <p className="mt-2 text-xs text-[color:var(--st-text-soft)]">{copy.beamNoPlayback}</p>
+        <header className="mt-6">
+          <p className="st-eyebrow">{copy.beamSceneEyebrow}</p>
+          <h1 className="st-headline mt-2 text-[1.7rem] leading-snug text-[#2f3a28]">{copy.beamSceneTitle}</h1>
+          <p className="mt-2 text-sm leading-6 text-[#6b5846]">{copy.beamSceneBody}</p>
+          <p className="mt-2 text-xs text-[color:var(--st-text-soft)]">{copy.beamNoPlayback}</p>
+        </header>
 
         <figure className="st-card mt-6 overflow-hidden">
           <div className="relative aspect-[4/5] bg-[#1d1916]">

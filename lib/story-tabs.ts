@@ -1,4 +1,4 @@
-import { memoriesHref } from "./memory-library.ts";
+import { memoriesMonthHref } from "./memory-library.ts";
 import type { LifeStatus } from "@/lib/pet-first-archive";
 import type { PetFirstCopy } from "@/lib/storybook-copy";
 
@@ -21,7 +21,7 @@ export function storyTabHrefs(
         : status === "living"
           ? `/dashboard/living${petQuery}`
           : "/dashboard/living",
-    memories: memoriesHref(petId),
+    memories: memoriesMonthHref(petId),
     create: createQuery.size ? `/create?${createQuery.toString()}` : "/create",
     pet: "/my/pets",
   };

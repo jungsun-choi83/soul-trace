@@ -234,7 +234,8 @@ test("P1 customer home, profile, memories, and settings stay on existing auth an
   assert.match(editPet, /loadPetProfile/);
   assert.match(profileForm, /name="lifeStatus"/);
   assert.match(profileForm, /name="favorites"/);
-  assert.match(profileForm, /defaultChecked=\{\(initial\?\.lifeStatus \?\? "unspecified"\) === value\}/);
+  assert.match(profileForm, /defaultChecked=\{\(initial\?\.lifeStatus === "memorial" \? "memorial" : "living"\) === value\}/);
+  assert.doesNotMatch(profileForm, /\["living", "memorial", "unspecified"\]/);
 
   assert.match(memoryUi, /copy\.memoryTabRecord/);
   assert.match(memoryUi, /copy\.memoryTabCollection/);
@@ -257,7 +258,7 @@ test("P1 customer home, profile, memories, and settings stay on existing auth an
   assert.match(tabRoutes, /\/dashboard\/living\$\{petQuery\}/);
   assert.match(tabRoutes, /\/dashboard\/memorial\$\{petQuery\}/);
   assert.match(tabRoutes, /pet: "\/my\/pets"/);
-  assert.match(tabRoutes, /`\/my\/pets\/\$\{encodeURIComponent\(petId\)\}\/memories#album`/);
+  assert.match(tabRoutes, /memoriesMonthHref\(petId\)/);
   assert.match(readFileSync("app/memories/page.tsx", "utf8"), /loadPetHome/);
   assert.doesNotMatch(readFileSync("app/memories/page.tsx", "utf8"), /LifeArchiveAccessRequired|eternal-beam-access/);
   assert.match(petsPage, /PetRoster/);

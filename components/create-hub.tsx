@@ -32,41 +32,24 @@ export function CreateHub({
   const polaroidHref = petId ? polaroidHrefFromArchive(petId) : "/polaroid";
 
   return (
-    <div className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
-      <main className="mx-auto w-full max-w-xl flex-1 pb-8">
-        <section className="bg-[#f8f2e5]">
-          <div className="relative">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={POSE_ART.shibaSpring} alt="" className="aspect-[4/5] w-full bg-[#f6efe2] object-contain object-center sm:aspect-[5/4]" />
-            <div className="absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-[max(0.7rem,env(safe-area-inset-top))]">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff7ea]/92 px-3 py-1.5 text-[#6b4a2c] shadow-[0_8px_18px_-12px_rgba(90,61,39,0.45)]">
-                <BrandMark className="h-5 w-5" />
-                <span className="font-display-en text-sm tracking-[0.04em]">SoulTrace</span>
-              </span>
-              <LanguageToggle tone="paper" />
-            </div>
-          </div>
-          <div className="px-4 pb-4">
-            <div className="rounded-[22px] border border-[#e4d2b4] bg-[#fffaf1] px-5 py-5 text-center">
-              <h1 className="st-headline text-[1.7rem] leading-snug text-[#3a452f]">{copy.createTitle}</h1>
-              <p className="mt-2 text-sm leading-6 text-[#6b5846]">{copy.createBody}</p>
-            </div>
-          </div>
-        </section>
+    <div className={`flex h-[100svh] flex-col overflow-hidden bg-[#fffaf1] text-[#3a3428] ${lang === "ko" ? "break-keep" : ""}`}>
+      <main className="relative mx-auto flex min-h-0 w-full max-w-[430px] flex-1 flex-col">
+        <div className="absolute inset-x-0 top-0 z-[2] flex items-start justify-between px-4 pt-[max(0.7rem,env(safe-area-inset-top))]">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff7ea]/92 px-3 py-1.5 text-[#6b4a2c]">
+            <BrandMark className="h-5 w-5" />
+            <span className="font-display-en text-sm tracking-[0.04em]">SoulTrace</span>
+          </span>
+          <LanguageToggle tone="paper" compact />
+        </div>
 
-        <div className="mt-5 grid gap-3 px-4">
-          <CreateCard
-            href={letterHref}
-            src={POSE_ART.shibaHome}
-            title={copy.createLetterTitle}
-            body={copy.createLetterBody}
-          />
-          <CreateCard
-            href={polaroidHref}
-            src={POSE_ART.corgiSpring}
-            title={copy.createPolaroidTitle}
-            body={copy.createPolaroidBody}
-          />
+        <div className="shrink-0 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+3.25rem)]">
+          <h1 className="st-headline text-balance text-center text-[clamp(1.25rem,5.4vw,1.5rem)] leading-[1.3] !tracking-[-0.03em] text-[#2f3a28]">{copy.createTitle}</h1>
+          <p className="mx-auto mt-2 max-w-[22rem] text-center text-[13px] leading-5 text-[#6b5846]">{copy.createBody}</p>
+        </div>
+
+        <div className="mt-1 grid min-h-0 flex-1 grid-rows-2 gap-0 px-0 pb-0">
+          <CreateCard href={letterHref} src={POSE_ART.shibaHome} title={copy.createLetterTitle} body={copy.createLetterBody} />
+          <CreateCard href={polaroidHref} src={POSE_ART.corgiSpring} title={copy.createPolaroidTitle} body={copy.createPolaroidBody} />
         </div>
       </main>
       <StoryTabbar current="create" {...storyTabProps(copy, petId, signedIn, lifeStatus)} />
@@ -86,15 +69,12 @@ function CreateCard({
   body: string;
 }) {
   return (
-    <Link
-      href={href}
-      className="flex min-h-[6.5rem] items-center gap-3 rounded-[22px] border border-[#e4d2b4] bg-[#fffaf1] p-3 shadow-[0_10px_22px_-16px_rgba(90,61,39,0.4)]"
-    >
+    <Link href={href} className="relative min-h-0 overflow-hidden">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className="size-[4.6rem] shrink-0 rounded-[16px] bg-[#f6efe2] object-contain object-center" />
-      <span className="min-w-0">
-        <strong className="block text-[1.05rem] font-semibold text-[#3a452f]">{title}</strong>
-        <span className="mt-1 block text-sm leading-5 text-[#6b5846]">{body}</span>
+      <img src={src} alt="" className="absolute inset-0 h-full w-full scale-[1.12] object-cover object-[center_40%]" />
+      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#1c1914]/75 via-[#1c1914]/35 to-transparent px-4 pb-4 pt-10">
+        <strong className="block text-[1.05rem] font-semibold text-[#fffaf1]">{title}</strong>
+        <span className="mt-1 block text-sm leading-5 text-[#f0e6d6]">{body}</span>
       </span>
     </Link>
   );

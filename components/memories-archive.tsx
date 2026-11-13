@@ -28,13 +28,16 @@ export type MemoriesPet = {
   avatarUrl: string | null;
 };
 
-type PhotoHit = {
+type MediaHit = {
   item: MemoryLibraryItem;
   assetId: string;
   url: string;
+  kind: "image" | "video";
 };
 
-const EMPTY_COPY = "아직 기록한 추억이 없어요. 우리 아이의 첫 사진을 남겨보세요.";
+const EMPTY_COPY = "아직 기록한 추억이 없어요. 우리 아이의 첫 사진이나 영상을 남겨보세요.";
+const VIDEO_ACCEPT = "video/mp4,video/webm,video/quicktime";
+const IMAGE_ACCEPT = "image/jpeg,image/png,image/webp";
 
 export function MemoriesArchive({
   access,
@@ -56,8 +59,8 @@ export function MemoriesArchive({
   const [loading, setLoading] = useState(access === "owner" && Boolean(pet));
   const [loadError, setLoadError] = useState<"login" | "unavailable" | null>(null);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [selected, setSelected] = useState<PhotoHit | null>(null);
-  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [selected, setSelected] = useState<MediaHit | null>(null);
+  const [localPreview, setLocalPreview] = useState<{ url: string; kind: "image" | "video" } | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
 
@@ -90,17 +93,22 @@ export function MemoriesArchive({
 
   useEffect(() => {
     return () => {
-      if (localPreview) URL.revokeObjectURL(localPreview);
+      if (localPreview) URL.revokeObjectURL(localPreview.url);
     };
   }, [localPreview]);
 
-  const photos = items
+  const media = items
     .filter((item) => !isMoodJournalItem(item))
     .flatMap((item) => item.assets
-      .filter((asset) => asset.contentType.startsWith("image/"))
-      .map((asset) => ({ item, assetId: asset.assetId, url: asset.url })));
-  const visible = favoritesOnly ? photos.filter((photo) => photo.item.favorite) : photos;
-  const groups = groupLibraryByMonthAndDay(visible.map((photo) => photo.item).filter((item, index, list) => list.findIndex((other) => other.entryId === item.entryId) === index));
+      .filter((asset) => asset.contentType.startsWith("image/") || asset.contentType.startsWith("video/"))
+      .map((asset) => ({
+        item,
+        assetId: asset.assetId,
+        url: asset.url,
+        kind: asset.contentType.startsWith("video/") ? "video" as const : "image" as const,
+      })));
+  const visible = favoritesOnly ? media.filter((hit) => hit.item.favorite) : media;
+  const groups = groupLibraryByMonthAndDay(visible.map((hit) => hit.item).filter((item, index, list) => list.findIndex((other) => other.entryId === item.entryId) === index));
   const folderView = view === "months";
   const currentMonth = seoulToday().slice(0, 7);
   const folders = withCurrentMonth(groups, currentMonth);
@@ -128,49 +136,102 @@ export function MemoriesArchive({
     await load();
   }
 
-  async function toggleFavorite(photo: PhotoHit) {
-    if (!pet || !photo.item.deletable) return;
-    const favorite = !photo.item.favorite;
+  async function saveVideo(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pet) return;
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const file = data.get("video");
+    if (!(file instanceof File) || file.size === 0) return;
+    setSaving(true);
+    setSaveError(false);
+    try {
+      data.set("duration", String(await videoDuration(file)));
+    } catch {
+      setSaving(false);
+      setSaveError(true);
+      return;
+    }
+    const response = await fetch(`/api/my/pets/${pet.petId}/videos`, { method: "POST", body: data });
+    setSaving(false);
+    if (!response.ok) {
+      setSaveError(true);
+      return;
+    }
+    form.reset();
+    setSelected(null);
+    await load();
+  }
+
+  async function toggleFavorite(hit: MediaHit) {
+    if (!pet || !hit.item.deletable) return;
+    const favorite = !hit.item.favorite;
     const response = await fetch(`/api/my/pets/${pet.petId}/memories`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ entryId: photo.item.entryId, favorite }),
+      body: JSON.stringify({ entryId: hit.item.entryId, favorite }),
     });
     if (!response.ok) {
       setSaveError(true);
       return;
     }
-    setItems((current) => current.map((item) => (item.entryId === photo.item.entryId ? { ...item, favorite } : item)));
-    setSelected((current) => current && current.item.entryId === photo.item.entryId
+    setItems((current) => current.map((item) => (item.entryId === hit.item.entryId ? { ...item, favorite } : item)));
+    setSelected((current) => current && current.item.entryId === hit.item.entryId
       ? { ...current, item: { ...current.item, favorite } }
       : current);
   }
 
-  async function remove(photo: PhotoHit) {
-    if (!pet || !photo.item.deletable) return;
+  async function remove(hit: MediaHit) {
+    if (!pet || !hit.item.deletable) return;
     if (!window.confirm(copy.deleteConfirm)) return;
     const response = await fetch(`/api/my/pets/${pet.petId}/memories`, {
       method: "DELETE",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ entryId: photo.item.entryId }),
+      body: JSON.stringify({ entryId: hit.item.entryId }),
     });
     if (!response.ok) {
       setSaveError(true);
       return;
     }
-    setItems((current) => current.filter((item) => item.entryId !== photo.item.entryId));
+    setItems((current) => current.filter((item) => item.entryId !== hit.item.entryId));
     setSelected(null);
   }
 
+  const showLandingHero = !folderView && (access === "guest" || (access === "owner" && (!pet || (!loading && !loadError && visible.length === 0 && !favoritesOnly))));
+
   return (
-    <div data-testid="memories-archive" className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
-      <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-5">
+    <div data-testid="memories-archive" className={`flex h-[100svh] flex-col overflow-hidden bg-[#fffaf1] text-[#3a3428] ${lang === "ko" ? "break-keep" : ""}`}>
+      {showLandingHero ? (
+        <MemoriesHero
+          title="우리 아이의 추억"
+          body={EMPTY_COPY}
+          preview={localPreview}
+          onPick={(file) => {
+            if (localPreview) URL.revokeObjectURL(localPreview.url);
+            if (!file) {
+              setLocalPreview(null);
+              return;
+            }
+            setLocalPreview({
+              url: URL.createObjectURL(file),
+              kind: file.type.startsWith("video/") ? "video" : "image",
+            });
+          }}
+          pet={pet}
+          access={access}
+          saving={saving}
+          saveError={saveError}
+          onSavePhoto={savePhoto}
+          onSaveVideo={saveVideo}
+        />
+      ) : (
+      <main className={`min-h-0 w-full flex-1 overflow-y-auto pb-8 pt-5 ${folderView ? "mx-0 max-w-none px-0" : "mx-auto max-w-[430px] px-4"}`}>
         {folderView ? (
           <MonthFolders
             lang={folderLang}
             folders={folders}
             openKey={openKey}
-            photos={visible}
+            media={visible}
             petId={pet?.petId ?? null}
             petName={pet?.petName ?? ""}
             homeHref={homeHref}
@@ -204,29 +265,19 @@ export function MemoriesArchive({
           </ul>
         ) : null}
 
-        {!folderView && access === "guest" ? <GuestImport preview={localPreview} onPick={setLocalPreview} /> : null}
         {!folderView && access === "unavailable" ? (
-          <p className="st-card mt-5 px-4 py-4 text-sm leading-6 text-[#6b5846]">이 환경에서는 계정 저장이 아직 준비되지 않았어요. 사진은 서버에 올리지 않아요.</p>
-        ) : null}
-        {!folderView && access === "owner" && !pet ? (
-          <section className="mt-5">
-            <p data-testid="memories-empty" className="text-sm leading-6 text-[#6b5846]">{EMPTY_COPY}</p>
-          </section>
+          <p className="mt-5 px-1 text-sm leading-6 text-[#6b5846]">이 환경에서는 계정 저장이 아직 준비되지 않았어요. 사진은 서버에 올리지 않아요.</p>
         ) : null}
         {!folderView && access === "owner" && pet ? (
-          <form id="import" onSubmit={savePhoto} className="st-card mt-5 grid gap-3 px-4 py-4">
-            <label className="st-btn st-btn-forest w-full">
-              사진 가져오기
-              <input name="photos" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" />
-            </label>
-            <label className="grid gap-1 text-sm text-[#6b5846]">
-              촬영일
-              <input name="memoryDate" type="date" className="st-field" />
-            </label>
-            <button type="submit" disabled={saving} className="st-btn st-btn-quiet w-full">{saving ? "저장 중" : "이 아이 기록에 저장"}</button>
-          </form>
+          <MediaImportForms
+            id="import"
+            saving={saving}
+            saveError={saveError}
+            tone="paper"
+            onSavePhoto={savePhoto}
+            onSaveVideo={saveVideo}
+          />
         ) : null}
-        {!folderView && saveError ? <p role="alert" className="mt-3 text-sm text-[#8a4b32]">사진을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.</p> : null}
         {!folderView && loadError === "login" ? (
           <Link href="/dashboard/living" className="st-btn st-btn-forest mt-4 w-full">홈으로</Link>
         ) : null}
@@ -242,17 +293,7 @@ export function MemoriesArchive({
 
         {!folderView && loading ? <p className="mt-6 text-sm text-[#6b5846]">추억을 불러오는 중이에요.</p> : null}
 
-        {folderView || access !== "owner" || !pet || loading || loadError ? null : visible.length === 0 ? (
-          <div className="mt-6">
-            {favoritesOnly && photos.length ? null : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={POSE_ART.shibaHome} alt="" className="aspect-[4/3] w-full rounded-[22px] bg-[#f6efe2] object-contain object-center" />
-            )}
-            <p data-testid="memories-empty" className="mt-4 text-sm leading-6 text-[#6b5846]">
-              {favoritesOnly && photos.length ? "즐겨찾기한 사진이 아직 없어요." : EMPTY_COPY}
-            </p>
-          </div>
-        ) : (
+        {folderView || access !== "owner" || !pet || loading || loadError || visible.length === 0 ? null : (
           <section id="months" data-testid="memories-months" className="mt-6 grid gap-6">
             {groups.map((month) => (
               <div key={month.key}>
@@ -260,12 +301,11 @@ export function MemoriesArchive({
                 {month.days.map((day) => (
                   <div key={day.key} className="mt-3">
                     <h3 className="text-sm font-semibold text-[#6b5846]">{day.key}</h3>
-                    <ul className="mt-2 grid grid-cols-3 gap-2">
-                      {visible.filter((photo) => day.items.some((item) => item.entryId === photo.item.entryId)).map((photo) => (
-                        <li key={photo.assetId}>
-                          <button type="button" onClick={() => setSelected(photo)} className="block w-full overflow-hidden rounded-[14px] bg-[#f8f2e5]">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={photo.url} alt={photo.item.title || pet.petName} className="aspect-square w-full object-cover" />
+                    <ul className="mt-2 grid grid-cols-3 gap-1">
+                      {visible.filter((hit) => day.items.some((item) => item.entryId === hit.item.entryId)).map((hit) => (
+                        <li key={hit.assetId}>
+                          <button type="button" onClick={() => setSelected(hit)} className="relative block w-full overflow-hidden bg-[#f8f2e5]">
+                            <MediaThumb hit={hit} alt={hit.item.title || pet.petName} />
                           </button>
                         </li>
                       ))}
@@ -277,58 +317,188 @@ export function MemoriesArchive({
           </section>
         )}
 
+        {!folderView && access === "owner" && pet && !loading && !loadError && favoritesOnly && media.length && visible.length === 0 ? (
+          <p data-testid="memories-empty" className="mt-6 text-sm leading-6 text-[#6b5846]">즐겨찾기한 기록이 아직 없어요.</p>
+        ) : null}
+
         {selected && pet && (!folderView || openKey) ? (
-          <section aria-label="사진 상세" className="st-card mt-6 px-4 py-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={selected.url} alt={selected.item.title || pet.petName} className="aspect-square w-full rounded-[16px] object-contain bg-[#f8f2e5]" />
-            <p className="mt-3 text-sm text-[#6b5846]">{selected.item.happenedOn || selected.item.createdAt.slice(0, 10)}{selected.item.favorite ? " · 즐겨찾기" : ""}</p>
-            <div className="mt-3 grid gap-2">
-              <button type="button" onClick={() => void toggleFavorite(selected)} className="st-btn st-btn-quiet w-full">즐겨찾기</button>
-              <Link href={polaroidHrefFromArchive(pet.petId)} className="st-btn st-btn-forest w-full">폴라로이드 만들기</Link>
-              <Link href={beamSceneHref(pet.petId, selected.item.entryId, selected.assetId)} className="st-btn st-btn-quiet w-full">Beam 장면 미리보기</Link>
-              {selected.item.deletable ? <button type="button" onClick={() => void remove(selected)} className="st-btn st-btn-quiet w-full">삭제</button> : null}
-              <button type="button" onClick={() => setSelected(null)} className="min-h-11 text-sm text-[#6b5846]">닫기</button>
+          <section aria-label="기록 상세" className="mt-6 overflow-hidden">
+            {selected.kind === "video" ? (
+              <video src={selected.url} controls playsInline preload="metadata" className="aspect-square w-full bg-[#1d1916] object-contain" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={selected.url} alt={selected.item.title || pet.petName} className="aspect-square w-full object-cover bg-[#f8f2e5]" />
+            )}
+            <div className={folderView ? "px-4" : ""}>
+              <p className="mt-3 text-sm text-[#6b5846]">{selected.item.happenedOn || selected.item.createdAt.slice(0, 10)}{selected.kind === "video" ? " · 동영상" : ""}{selected.item.favorite ? " · 즐겨찾기" : ""}</p>
+              <div className="mt-3 grid gap-2">
+                <button type="button" onClick={() => void toggleFavorite(selected)} className="st-btn st-btn-quiet w-full">{selected.item.favorite ? "즐겨찾기 해제" : "즐겨찾기"}</button>
+                {selected.kind === "image" ? (
+                  <>
+                    <Link href={polaroidHrefFromArchive(pet.petId)} className="st-btn st-btn-forest w-full">폴라로이드 만들기</Link>
+                    <Link href={beamSceneHref(pet.petId, selected.item.entryId, selected.assetId)} className="st-btn st-btn-quiet w-full">Beam 장면 미리보기</Link>
+                  </>
+                ) : null}
+                {selected.item.deletable ? <button type="button" onClick={() => void remove(selected)} className="st-btn st-btn-quiet w-full">삭제</button> : null}
+                <button type="button" onClick={() => setSelected(null)} className="min-h-11 text-sm text-[#6b5846]">닫기</button>
+              </div>
             </div>
           </section>
         ) : null}
       </main>
+      )}
       <StoryTabbar current="memories" {...storyTabProps(copy, pet?.petId ?? null, access === "owner", pet?.lifeStatus ?? null)} />
     </div>
   );
 }
 
-function GuestImport({
+function MemoriesHero({
+  title,
+  body,
   preview,
   onPick,
+  pet,
+  access,
+  saving,
+  saveError,
+  onSavePhoto,
+  onSaveVideo,
 }: {
-  preview: string | null;
-  onPick: (url: string | null) => void;
+  title: string;
+  body: string;
+  preview: { url: string; kind: "image" | "video" } | null;
+  onPick: (file: File | null) => void;
+  pet: MemoriesPet | null;
+  access: "guest" | "owner" | "unavailable";
+  saving: boolean;
+  saveError: boolean;
+  onSavePhoto: (event: FormEvent<HTMLFormElement>) => void;
+  onSaveVideo: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const heroSrc = preview?.kind === "image" ? preview.url : pet?.avatarUrl || POSE_ART.shibaHome;
+
   return (
-    <section className="mt-5 grid gap-3">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={POSE_ART.shibaHome} alt="" className="aspect-[4/3] w-full rounded-[22px] bg-[#f6efe2] object-contain object-center" />
-      <p data-testid="memories-empty" className="text-sm leading-6 text-[#6b5846]">{EMPTY_COPY}</p>
-      <label className="st-btn st-btn-forest w-full">
-        사진 가져오기
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
-          onChange={(event) => {
-            const file = event.currentTarget.files?.[0];
-            if (!file) return;
-            onPick(URL.createObjectURL(file));
-          }}
-        />
-      </label>
-      <p className="text-xs leading-5 text-[#6b5846]">이 브라우저에만 잠시 보여요. 계정에는 저장되지 않아요.</p>
-      {preview ? (
+    <main className="relative min-h-0 w-full flex-1 overflow-hidden">
+      {preview?.kind === "video" ? (
+        <video src={preview.url} muted playsInline autoPlay loop className="absolute inset-0 h-full w-full scale-[1.06] object-cover object-center" />
+      ) : (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={preview} alt="" className="aspect-square w-full rounded-[16px] object-contain bg-[#f8f2e5]" />
+        <img src={heroSrc} alt="" className="absolute inset-0 h-full w-full scale-[1.14] object-cover object-[center_42%]" />
+      )}
+      <div className="absolute inset-x-0 bottom-0 h-[52%] bg-gradient-to-t from-[#1c1914]/88 via-[#1c1914]/45 to-transparent" />
+      <div className="relative z-[1] mx-auto flex h-full w-full max-w-[430px] flex-col justify-end px-4 pb-4 pt-[env(safe-area-inset-top)]">
+        <h1 className="st-headline text-balance text-[clamp(1.45rem,6vw,1.85rem)] leading-[1.25] text-[#fffaf1]">{title}</h1>
+        {pet ? <p className="mt-1 text-sm font-semibold text-[#f0e6d6]">{pet.petName}{pet.species ? ` · ${pet.species}` : ""}</p> : null}
+        <p data-testid="memories-empty" className="mt-2 max-w-[22rem] text-sm leading-5 text-[#f0e6d6]">{body}</p>
+
+        {access === "guest" ? (
+          <div className="mt-4 grid gap-2">
+            <label className="st-btn st-btn-forest w-full">
+              사진·동영상 가져오기
+              <input
+                type="file"
+                accept={`${IMAGE_ACCEPT},${VIDEO_ACCEPT}`}
+                className="sr-only"
+                onChange={(event) => onPick(event.currentTarget.files?.[0] ?? null)}
+              />
+            </label>
+            <p className="text-xs leading-5 text-[#e8dcc8]">이 브라우저에만 잠시 보여요. 계정에는 저장되지 않아요.</p>
+            <Link href="/dashboard/living" className="st-btn st-btn-quiet w-full !bg-[#fffaf1]/92">홈으로</Link>
+          </div>
+        ) : null}
+
+        {access === "owner" && pet ? (
+          <MediaImportForms
+            id="import"
+            saving={saving}
+            saveError={saveError}
+            tone="hero"
+            onSavePhoto={onSavePhoto}
+            onSaveVideo={onSaveVideo}
+          />
+        ) : null}
+
+        {access === "owner" && !pet ? (
+          <Link href="/dashboard/living" className="st-btn st-btn-forest mt-4 w-full">홈으로</Link>
+        ) : null}
+      </div>
+    </main>
+  );
+}
+
+function MediaImportForms({
+  id,
+  saving,
+  saveError,
+  tone,
+  onSavePhoto,
+  onSaveVideo,
+}: {
+  id?: string;
+  saving: boolean;
+  saveError: boolean;
+  tone: "paper" | "hero";
+  onSavePhoto: (event: FormEvent<HTMLFormElement>) => void;
+  onSaveVideo: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const hero = tone === "hero";
+  const labelClass = hero ? "text-xs text-[#e8dcc8]" : "text-sm text-[#6b5846]";
+  const hintClass = hero ? "text-xs text-[#e8dcc8]" : "text-xs text-[#6b5846]";
+  const fieldClass = hero ? "st-field !bg-[#fffaf1]/95" : "st-field";
+  const quietBtn = hero
+    ? "st-btn w-full border border-[#e8dcc8] !bg-[#fffaf1] font-semibold text-[#3a3428] transition-[background-color,border-color,color] duration-200 hover:!border-[#3a452f] hover:!bg-[#3a452f] hover:!text-[#fff5dc] active:!border-[#2f3a28] active:!bg-[#2f3a28] active:!text-[#fff5dc]"
+    : "st-btn w-full border border-[#e4d2b4] bg-[#fff8ec] font-semibold text-[#3a3428] transition-[background-color,border-color,color] duration-200 hover:border-[#3a452f] hover:bg-[#3a452f] hover:text-[#fff5dc] active:border-[#2f3a28] active:bg-[#2f3a28] active:text-[#fff5dc]";
+  const actionBtn = hero
+    ? "st-btn min-h-12 w-full border border-[#e8dcc8] !bg-[#fffaf1] text-sm font-semibold text-[#3a3428] transition-[background-color,border-color,color] duration-200 hover:!border-[#3a452f] hover:!bg-[#3a452f] hover:!text-[#fff5dc] active:!border-[#2f3a28] active:!bg-[#2f3a28] active:!text-[#fff5dc] has-[:focus]:!border-[#3a452f] has-[:focus]:!bg-[#3a452f] has-[:focus]:!text-[#fff5dc]"
+    : "st-btn min-h-12 w-full border border-[#e4d2b4] bg-[#fff8ec] text-sm font-semibold text-[#3a3428] transition-[background-color,border-color,color] duration-200 hover:border-[#3a452f] hover:bg-[#3a452f] hover:text-[#fff5dc] active:border-[#2f3a28] active:bg-[#2f3a28] active:text-[#fff5dc] has-[:focus]:border-[#3a452f] has-[:focus]:bg-[#3a452f] has-[:focus]:text-[#fff5dc]";
+  const shootBtn = actionBtn;
+  const pickBtn = actionBtn;
+
+  return (
+    <div id={id} className={`grid gap-4 ${hero ? "mt-4" : "mt-5"}`}>
+      <form onSubmit={onSavePhoto} className="grid gap-3">
+        <div className="grid grid-cols-2 gap-2">
+          <label className={shootBtn}>
+            사진 바로 찍기
+            <input name="photos" type="file" accept={IMAGE_ACCEPT} capture="environment" className="sr-only" />
+          </label>
+          <label className={pickBtn}>
+            사진 가져오기
+            <input name="photos" type="file" accept={IMAGE_ACCEPT} className="sr-only" />
+          </label>
+        </div>
+        <label className={`grid gap-1 ${labelClass}`}>
+          촬영일
+          <input name="memoryDate" type="date" className={fieldClass} />
+        </label>
+        <button type="submit" disabled={saving} className={quietBtn}>{saving ? "저장 중" : "사진 저장"}</button>
+      </form>
+
+      <form onSubmit={onSaveVideo} className="grid gap-3">
+        <div className="grid grid-cols-2 gap-2">
+          <label className={shootBtn}>
+            동영상 바로 찍기
+            <input name="video" type="file" accept={VIDEO_ACCEPT} capture="environment" className="sr-only" />
+          </label>
+          <label className={pickBtn}>
+            동영상 가져오기
+            <input name="video" type="file" accept={VIDEO_ACCEPT} className="sr-only" />
+          </label>
+        </div>
+        <label className={`grid gap-1 ${labelClass}`}>
+          촬영일
+          <input name="memoryDate" type="date" className={fieldClass} />
+        </label>
+        <p className={hintClass}>MP4 · WebM · MOV, 최대 30초 · 50MB</p>
+        <button type="submit" disabled={saving} className={quietBtn}>{saving ? "저장 중" : "동영상 저장"}</button>
+      </form>
+
+      {saveError ? (
+        <p role="alert" className={hero ? "text-sm text-[#ffd7c8]" : "text-sm text-[#8a4b32]"}>
+          기록을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.
+        </p>
       ) : null}
-      <Link href="/dashboard/living" className="st-btn st-btn-quiet w-full">홈으로</Link>
-    </section>
+    </div>
   );
 }
 
@@ -343,19 +513,19 @@ const FOLDER_COPY = {
     kicker: "함께 만든 이야기",
     back: "뒤로",
     loading: "추억을 불러오는 중이에요.",
-    emptyFolder: "아직 담긴 사진이 없어요",
-    emptyOpen: "사진을 가져오면 촬영일에 맞춰 이 폴더로 들어와요.",
-    importLabel: "사진 가져오기",
-    count: (count: number) => `${count}장의 사진`,
+    emptyFolder: "아직 담긴 기록이 없어요",
+    emptyOpen: "사진이나 동영상을 가져오면 촬영일에 맞춰 이 폴더로 들어와요.",
+    importLabel: "기록 가져오기",
+    count: (count: number) => `${count}개의 기록`,
   },
   en: {
     kicker: "Grouped by month",
     back: "Back",
     loading: "Gathering memories.",
-    emptyFolder: "No photos in this folder yet",
-    emptyOpen: "Imported photos land here by the day they were taken.",
-    importLabel: "Bring in photos",
-    count: (count: number) => (count === 1 ? "1 photo" : `${count} photos`),
+    emptyFolder: "No memories in this folder yet",
+    emptyOpen: "Imported photos and videos land here by the day they were taken.",
+    importLabel: "Bring in memories",
+    count: (count: number) => (count === 1 ? "1 memory" : `${count} memories`),
   },
 } as const;
 
@@ -363,7 +533,7 @@ function MonthFolders({
   lang,
   folders,
   openKey,
-  photos,
+  media,
   petId,
   petName,
   homeHref,
@@ -375,48 +545,51 @@ function MonthFolders({
   lang: "ko" | "en";
   folders: MonthGroup<MemoryLibraryItem>[];
   openKey: string | null;
-  photos: PhotoHit[];
+  media: MediaHit[];
   petId: string | null;
   petName: string;
   homeHref: string;
   loading: boolean;
   pets: MemoriesPet[];
   selectedPetId: string | null;
-  onOpen: (photo: PhotoHit) => void;
+  onOpen: (hit: MediaHit) => void;
 }) {
   const copy = FOLDER_COPY[lang];
   const open = openKey ? folders.find((folder) => folder.key === openKey) ?? { key: openKey, days: [] } : null;
-  const openPhotos = open ? photos.filter((photo) => timelineMonthKey(photo.item) === open.key) : [];
+  const openMedia = open ? media.filter((hit) => timelineMonthKey(hit.item) === open.key) : [];
 
   if (open) {
     return (
       <section data-testid="memory-folder" className="grid gap-4">
-        <div className="flex items-start gap-3">
-          <Link href={memoriesMonthHref(petId)} aria-label={copy.back} className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-[#c6a15a] bg-[#fffdf8] text-[#1c1a17]">
+        <div className="flex items-start gap-3 px-4">
+          <Link href={memoriesMonthHref(petId)} aria-label={copy.back} className="inline-flex size-11 shrink-0 items-center justify-center text-[#1c1a17]">
             <BackIcon />
           </Link>
           <div className="min-w-0 pt-0.5">
             <p className="text-sm text-[#6b5846]">{copy.kicker}</p>
-            <h1 className="mt-1 text-[1.65rem] font-semibold leading-tight text-[#161616] underline decoration-[#161616] underline-offset-[6px]">{folderTitle(open.key, lang)}</h1>
-            <p className="mt-2 text-sm text-[#8a7b6b]">{openPhotos.length === 0 ? copy.emptyFolder : copy.count(openPhotos.length)}</p>
+            <h1 className="mt-1 text-[1.55rem] font-semibold leading-tight text-[#161616]">{folderTitle(open.key, lang)}</h1>
+            <p className="mt-2 text-sm text-[#8a7b6b]">{openMedia.length === 0 ? copy.emptyFolder : copy.count(openMedia.length)}</p>
           </div>
         </div>
-        {openPhotos.length === 0 ? (
-          <div className="grid gap-3 pt-2">
-            <p className="text-sm leading-6 text-[#6b5846]">{copy.emptyOpen}</p>
-            <Link href={memoriesHref(petId)} className="st-btn st-btn-forest w-full">{copy.importLabel}</Link>
+        {openMedia.length === 0 ? (
+          <div className="relative mt-1 min-h-[52svh] overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={POSE_ART.shibaHome} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#1c1914]/75 via-[#1c1914]/35 to-transparent px-4 pb-5 pt-12">
+              <p className="text-sm leading-5 text-[#f0e6d6]">{copy.emptyOpen}</p>
+              <Link href={memoriesHref(petId)} className="st-btn st-btn-forest mt-3 w-full">{copy.importLabel}</Link>
+            </div>
           </div>
         ) : (
-          <div className="grid gap-5">
+          <div className="grid gap-5 px-4">
             {open.days.map((day) => (
               <div key={day.key}>
                 <h2 className="text-sm font-semibold text-[#6b5846]">{day.key}</h2>
-                <ul className="mt-2 grid grid-cols-3 gap-2">
-                  {photos.filter((photo) => day.items.some((item) => item.entryId === photo.item.entryId)).map((photo) => (
-                    <li key={photo.assetId}>
-                      <button type="button" onClick={() => onOpen(photo)} className="block w-full overflow-hidden rounded-[14px] bg-[#f8f2e5]">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={photo.url} alt={photo.item.title || petName} className="aspect-square w-full object-cover" />
+                <ul className="mt-2 grid grid-cols-3 gap-1">
+                  {media.filter((hit) => day.items.some((item) => item.entryId === hit.item.entryId)).map((hit) => (
+                    <li key={hit.assetId}>
+                      <button type="button" onClick={() => onOpen(hit)} className="relative block w-full overflow-hidden bg-[#f8f2e5]">
+                        <MediaThumb hit={hit} alt={hit.item.title || petName} />
                       </button>
                     </li>
                   ))}
@@ -430,44 +603,42 @@ function MonthFolders({
   }
 
   return (
-    <section data-testid="memory-folders">
-      <header>
-        <Link href={homeHref} aria-label={copy.back} className="inline-flex size-12 items-center justify-center rounded-full border border-[#c6a15a] bg-[#fffdf8] text-[#1c1a17]">
+    <section data-testid="memory-folders" className="mx-auto w-full max-w-[430px]">
+      <header className="px-4">
+        <Link href={homeHref} aria-label={copy.back} className="inline-flex size-11 items-center justify-center text-[#1c1a17]">
           <BackIcon />
         </Link>
-        <h1 className="mt-4 max-w-[15.5rem] text-[2.05rem] font-black uppercase leading-[0.92] tracking-[-0.045em] text-[#161616]">
+        <h1 className="mt-3 max-w-[16rem] text-[clamp(1.7rem,7vw,2.05rem)] font-black uppercase leading-[0.92] tracking-[-0.045em] text-[#161616]">
           Stories<br />we&apos;ve made<br />together
         </h1>
         <p className="mt-3 text-sm text-[#6b5846]">{copy.kicker}</p>
       </header>
       {pets.length > 1 ? (
-        <ul className="mt-4 flex gap-2 overflow-x-auto">
+        <ul className="mt-4 flex gap-2 overflow-x-auto px-4">
           {pets.map((item) => (
             <li key={item.petId}>
-              <Link href={memoriesMonthHref(item.petId)} aria-current={item.petId === selectedPetId ? "true" : undefined} className="inline-flex min-h-11 items-center rounded-full border border-[#e4d2b4] bg-[#fffaf1] px-4 text-sm font-semibold text-[#3a452f]">
+              <Link href={memoriesMonthHref(item.petId)} aria-current={item.petId === selectedPetId ? "true" : undefined} className="inline-flex min-h-11 items-center px-1 text-sm font-semibold text-[#3a452f] underline decoration-[#c6a15a] underline-offset-4">
                 {item.petName}
               </Link>
             </li>
           ))}
         </ul>
       ) : null}
-      {loading ? <p className="mt-6 text-sm text-[#6b5846]">{copy.loading}</p> : (
-        <ul className="mt-6 grid gap-1">
+      {loading ? <p className="mt-6 px-4 text-sm text-[#6b5846]">{copy.loading}</p> : (
+        <ul className="mt-5 grid gap-0">
           {folders.map((folder) => {
-            const count = photos.filter((photo) => timelineMonthKey(photo.item) === folder.key).length;
-            const featured = folder.key === folders[0]?.key;
+            const folderMedia = media.filter((hit) => timelineMonthKey(hit.item) === folder.key);
+            const count = folderMedia.length;
+            const cover = folderMedia.find((hit) => hit.kind === "image")?.url ?? POSE_ART.shibaHome;
             return (
               <li key={folder.key}>
-                <Link
-                  href={memoriesMonthHref(petId, folder.key)}
-                  className={featured
-                    ? "flex min-h-[4.75rem] items-center gap-4 rounded-[18px] border border-[#c6a15a] bg-[#fffdf8] px-4 py-3"
-                    : "flex min-h-[4.75rem] items-center gap-4 px-2 py-3"}
-                >
-                  <FolderIcon />
-                  <span className="min-w-0">
-                    <span className="block text-[1.05rem] font-semibold text-[#1c1a17] underline decoration-[#1c1a17] underline-offset-4">{folderTitle(folder.key, lang)}</span>
-                    <span className="mt-1 block text-sm text-[#8a7b6b]">{count === 0 ? copy.emptyFolder : copy.count(count)}</span>
+                <Link href={memoriesMonthHref(petId, folder.key)} className="relative block min-h-[9.5rem] w-full overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={cover} alt="" className="absolute inset-0 h-full w-full scale-[1.08] object-cover object-[center_40%]" />
+                  <span className="absolute inset-0 bg-gradient-to-r from-[#1c1914]/72 via-[#1c1914]/32 to-transparent" />
+                  <span className="relative z-[1] flex min-h-[9.5rem] flex-col justify-end px-4 py-4">
+                    <span className="text-[1.15rem] font-semibold text-[#fffaf1]">{folderTitle(folder.key, lang)}</span>
+                    <span className="mt-1 text-sm text-[#e8dcc8]">{count === 0 ? copy.emptyFolder : copy.count(count)}</span>
                   </span>
                 </Link>
               </li>
@@ -477,6 +648,40 @@ function MonthFolders({
       )}
     </section>
   );
+}
+
+function MediaThumb({ hit, alt }: { hit: MediaHit; alt: string }) {
+  if (hit.kind === "video") {
+    return (
+      <>
+        <video src={hit.url} muted playsInline preload="metadata" className="aspect-square w-full object-cover" />
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-[#1c1914]/55 px-1.5 py-1 text-[10px] font-semibold text-[#fffaf1]">동영상</span>
+      </>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={hit.url} alt={alt} className="aspect-square w-full object-cover" />
+  );
+}
+
+function videoDuration(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      const duration = video.duration;
+      URL.revokeObjectURL(url);
+      if (!Number.isFinite(duration)) reject(new Error("duration"));
+      else resolve(duration);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("duration"));
+    };
+    video.src = url;
+  });
 }
 
 function withCurrentMonth(groups: MonthGroup<MemoryLibraryItem>[], currentKey: string): MonthGroup<MemoryLibraryItem>[] {
@@ -490,15 +695,6 @@ function folderTitle(key: string, lang: "ko" | "en") {
   if (!year || !month) return key;
   if (lang === "ko") return `${year}년 ${Number(month)}월`;
   return new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(Number(year), Number(month) - 1, 1)));
-}
-
-function FolderIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 56 44" className="size-12 shrink-0">
-      <path d="M4 14h16.2l3.4-5.2A3 3 0 0 1 26.1 7H46a4 4 0 0 1 4 4v3H8.2" fill="#e8c98a" stroke="#b8893e" strokeWidth="1.7" strokeLinejoin="round" />
-      <path d="M4 16.5h48v17.2a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V16.5Z" fill="#f4e0b2" stroke="#b8893e" strokeWidth="1.7" strokeLinejoin="round" />
-    </svg>
-  );
 }
 
 function BackIcon() {

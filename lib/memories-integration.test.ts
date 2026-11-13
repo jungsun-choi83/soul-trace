@@ -65,6 +65,7 @@ test("the Memory Polaroid handoff uses an owner-checked private image response a
 test("a signed-out Memories link keeps a validated requested pet through authentication", () => {
   assert.match(memoriesPage, /const requestedPetId = requested && isUuid\(requested\) \? requested : null/);
   assert.match(memoriesPage, /access="guest" pets=\{\[\]\} selectedPetId=\{requestedPetId\}/);
-  assert.match(memoriesArchive, /GuestImport preview=\{localPreview\} petId=\{selectedPetId\}/);
-  assert.match(memoriesArchive, /authEntryPath\(memoriesHref\(petId\), "signin"\)/);
+  assert.match(memoriesArchive, /MemoriesHero/);
+  assert.match(memoriesArchive, /preview=\{localPreview\}/);
+  assert.match(memoriesArchive, /access === "guest"/);
 });

@@ -47,9 +47,9 @@ export function EntryChoice({ petId = null }: { petId?: string | null }) {
   };
 
   return (
-    <main className={`flex min-h-[100svh] flex-col overflow-x-clip bg-[#fffaf1] text-[#3a3428] ${body}`}>
-      <div className="mx-auto flex w-full max-w-[430px] flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[env(safe-area-inset-top)] sm:px-5">
-        <header className="grid h-14 grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-1">
+    <main className={`flex h-[100svh] flex-col overflow-hidden bg-[#fffaf1] text-[#3a3428] ${body}`}>
+      <div className="mx-auto flex h-full w-full max-w-[430px] flex-col px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[env(safe-area-inset-top)]">
+        <header className="grid h-12 shrink-0 grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-1">
           <Link href="/?splash=1" aria-label={copy.back} className="inline-flex size-11 items-center justify-center text-[#5a4636]">
             <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 5 8 12l7 7" />
@@ -62,11 +62,13 @@ export function EntryChoice({ petId = null }: { petId?: string | null }) {
           <LanguageToggle tone="paper" compact />
         </header>
 
-        <p className="mt-1 text-center text-[10px] font-semibold tracking-[0.08em] text-[#8a7358]">{copy.eyebrow}</p>
-        <h1 className="st-headline mt-1.5 text-balance text-center text-[clamp(1.15rem,5.2vw,1.35rem)] leading-[1.35] !tracking-[-0.03em] text-[#2f3a28]">{copy.question}</h1>
-        <p className="mx-auto mt-1.5 max-w-[22rem] whitespace-pre-line text-center text-[13px] leading-[1.45] tracking-[-0.01em] text-[#6b5846]">{copy.lead}</p>
+        <div className="shrink-0 pt-3">
+          <p className="text-center text-[10px] font-semibold tracking-[0.08em] text-[#8a7358]">{copy.eyebrow}</p>
+          <h1 className="st-headline mt-2 text-balance text-center text-[clamp(1.2rem,5.4vw,1.4rem)] leading-[1.3] !tracking-[-0.03em] text-[#2f3a28]">{copy.question}</h1>
+          <p className="mx-auto mt-2 max-w-[22rem] whitespace-pre-line text-center text-[13px] leading-[1.45] tracking-[-0.01em] text-[#6b5846]">{copy.lead}</p>
+        </div>
 
-        <div className="mt-4 grid w-full min-w-0 gap-3 [grid-template-columns:repeat(2,minmax(0,1fr))]">
+        <div className="mt-5 grid min-h-0 flex-1 grid-cols-2 gap-3">
           <ChoiceCard
             testId="living-choice"
             href={entryHomePath("living", petId)}
@@ -89,8 +91,8 @@ export function EntryChoice({ petId = null }: { petId?: string | null }) {
           />
         </div>
 
-        <div className="mt-auto pt-3">
-          <Link href="/auth?returnTo=%2Fdashboard&mode=signin" className="flex min-h-12 w-full items-center justify-center rounded-full border border-[#e4d2b4] bg-[#fffdf8] px-4 text-center text-sm font-semibold text-[#5a3d27]">
+        <div className="shrink-0 pt-3">
+          <Link href="/auth?returnTo=%2Fdashboard&mode=signin" className="flex min-h-11 w-full items-center justify-center rounded-full border border-[#e4d2b4] bg-[#fffdf8] px-4 text-center text-sm font-semibold text-[#5a3d27]">
             {copy.login}
           </Link>
         </div>
@@ -123,16 +125,18 @@ function ChoiceCard({
       data-testid={testId}
       href={href}
       onClick={onChoose}
-      className="flex h-full min-w-0 flex-col overflow-hidden rounded-[20px] border border-[#e4d2b4] bg-[#fffdf8]"
+      className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[20px] border border-[#e4d2b4] bg-[#fffdf8]"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className="block aspect-[1/1.05] w-full bg-[#f6efe2] object-contain object-center" />
-      <span className="flex flex-1 flex-col px-2.5 pb-3 pt-2.5">
-        <span className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-[-0.01em] ${tone === "spring" ? "bg-[#e5f0e2] text-[#3f6b45]" : "bg-[#ece7f3] text-[#5c5478]"}`}>
+      <span className="relative min-h-0 w-full flex-1 bg-[#f6efe2]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
+      </span>
+      <span className="grid h-[6.75rem] shrink-0 content-start gap-1.5 px-2.5 pb-2.5 pt-2">
+        <span className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[-0.01em] ${tone === "spring" ? "bg-[#e5f0e2] text-[#3f6b45]" : "bg-[#ece7f3] text-[#5c5478]"}`}>
           {badge}
         </span>
-        <span className="st-headline mt-2 text-[13px] leading-[1.35] !tracking-[-0.03em] text-[#2f3a28]">{title}</span>
-        <span className="mt-1 text-[12px] leading-[1.4] tracking-[-0.015em] text-[#6b5846]">{body}</span>
+        <span className="st-headline line-clamp-2 text-[12px] leading-[1.3] !tracking-[-0.03em] text-[#2f3a28]">{title}</span>
+        <span className="line-clamp-2 text-[11px] leading-[1.35] tracking-[-0.015em] text-[#6b5846]">{body}</span>
       </span>
     </Link>
   );
