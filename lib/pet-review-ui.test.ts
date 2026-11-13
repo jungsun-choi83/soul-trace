@@ -39,5 +39,7 @@ test("normal Welcome and Free Trial remain distinct from the Living and Memorial
   assert.match(welcome, /<HomeEntry>[\s\S]*<FreeTrialStart\s*\/>/);
   assert.match(trial, /href="\/try"/);
   assert.match(trial, /href="\/choose"/);
+  assert.match(trial, /absolute inset-0 h-full w-full object-cover/);
+  assert.doesNotMatch(trial, /aspect-\[3\/4\]|rounded-\[22px\]/);
   assert.match(choice, /<EntryChoice petId=\{petId\} \/>/);
 });
