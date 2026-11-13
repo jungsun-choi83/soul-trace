@@ -351,10 +351,35 @@ textarea.st-field {
   animation: st-breathe 1.8s ease-in-out infinite;
 }
 
+@keyframes st-card-sway {
+  0% {
+    transform: rotate(0deg);
+  }
+  40% {
+    transform: rotate(-1.5deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.st-card-sway {
+  transform-origin: center center;
+}
+
+.st-card-sway:hover,
+.st-card-sway:focus-visible {
+  animation: st-card-sway 0.7s ease-in-out 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .st-rise,
-  .st-breathe {
+  .st-breathe,
+  .st-card-sway,
+  .st-card-sway:hover,
+  .st-card-sway:focus-visible {
     animation: none;
+    transform: none;
   }
 
   .st-btn {

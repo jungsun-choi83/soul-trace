@@ -1,4 +1,5 @@
 export const PET_FIRST_ARCHIVE_FLAG = "NEXT_PUBLIC_PET_FIRST_ARCHIVE";
+export const GUEST_PREVIEW_PET_ID = "00000000-0000-4000-8000-000000000001";
 
 export const PET_PHOTO_MAX_COUNT = 5;
 export const PET_PHOTO_MAX_BYTES = 10 * 1024 * 1024;
@@ -49,6 +50,7 @@ export type PetSummary = {
   petName: string;
   lifeStatus: LifeStatus;
   species: string | null;
+  birthday?: string | null;
   createdAt: string;
 };
 

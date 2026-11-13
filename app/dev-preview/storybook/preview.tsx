@@ -89,8 +89,8 @@ export function StorybookPreview({ screen }: { screen: string }) {
     return (
       <CustomerDashboard
         selectedPetId={PET_ID}
-        initialPets={[{ petId: PET_ID, petName: "고야", lifeStatus: "memorial", species: "시바견", createdAt: "2026-01-01T00:00:00Z", entryDays: ["2026-10-29"], letterCount: 2, avatarUrl: null }]}
-        recent={timeline.slice(0, 3).map((item) => ({ entryId: item.entryId, petId: PET_ID, petName: "고야", kind: item.kind, title: item.title, story: item.story, happenedOn: item.happenedOn, createdAt: item.createdAt, imageUrl: item.assets[0]?.url ?? null }))}
+        initialPets={[{ petId: PET_ID, petName: "고야", lifeStatus: "memorial", species: "시바견", birthday: "2021-04-02", createdAt: "2026-01-01T00:00:00Z", entryDays: ["2026-10-29"], letterCount: 2, avatarUrl: null }]}
+        recent={timeline.slice(0, 3).map((item) => ({ entryId: item.entryId, petId: PET_ID, petName: "고야", kind: item.kind, title: item.title, story: item.story, happenedOn: item.happenedOn, createdAt: item.createdAt, imageUrl: item.assets[0]?.url ?? null, favorite: false }))}
       />
     );
   }
@@ -99,8 +99,8 @@ export function StorybookPreview({ screen }: { screen: string }) {
     return (
       <PetRoster
         pets={[
-          { petId: PET_ID, petName: "고야", lifeStatus: "living", species: "시바견", createdAt: "2026-01-01T00:00:00Z", entryDays: ["2026-10-29", "2026-10-20", "2026-10-15"], letterCount: 2, avatarUrl: null },
-          { petId: "00000000-0000-4000-8000-000000000002", petName: "나비", lifeStatus: "memorial", species: "고양이", createdAt: "2025-01-01T00:00:00Z", entryDays: [], letterCount: 1, avatarUrl: null },
+          { petId: PET_ID, petName: "고야", lifeStatus: "living", species: "시바견", birthday: "2021-04-02", createdAt: "2026-01-01T00:00:00Z", entryDays: ["2026-10-29", "2026-10-20", "2026-10-15"], letterCount: 2, avatarUrl: null },
+          { petId: "00000000-0000-4000-8000-000000000002", petName: "나비", lifeStatus: "memorial", species: "고양이", birthday: null, createdAt: "2025-01-01T00:00:00Z", entryDays: [], letterCount: 1, avatarUrl: null },
         ]}
       />
     );
@@ -111,8 +111,8 @@ export function StorybookPreview({ screen }: { screen: string }) {
       <CustomerDashboard
         selectedPetId={PET_ID}
         initialPets={[
-          { petId: PET_ID, petName: "고야", lifeStatus: "living", species: "시바견", createdAt: "2026-01-01T00:00:00Z", entryDays: ["2026-10-29", "2026-10-20", "2026-10-15"], letterCount: 2, avatarUrl: null },
-          { petId: "00000000-0000-4000-8000-000000000002", petName: "나비", lifeStatus: "memorial", species: "고양이", createdAt: "2025-01-01T00:00:00Z", entryDays: [], letterCount: 1, avatarUrl: null },
+          { petId: PET_ID, petName: "고야", lifeStatus: "living", species: "시바견", birthday: "2021-04-02", createdAt: "2026-01-01T00:00:00Z", entryDays: ["2026-10-29", "2026-10-20", "2026-10-15"], letterCount: 2, avatarUrl: null },
+          { petId: "00000000-0000-4000-8000-000000000002", petName: "나비", lifeStatus: "memorial", species: "고양이", birthday: null, createdAt: "2025-01-01T00:00:00Z", entryDays: [], letterCount: 1, avatarUrl: null },
         ]}
         recent={timeline.slice(0, 4).map((item) => ({
           entryId: item.entryId,
@@ -124,6 +124,7 @@ export function StorybookPreview({ screen }: { screen: string }) {
           happenedOn: item.happenedOn,
           createdAt: item.createdAt,
           imageUrl: item.assets[0]?.url ?? null,
+          favorite: false,
         }))}
       />
     );

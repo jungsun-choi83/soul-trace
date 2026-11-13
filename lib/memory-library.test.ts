@@ -17,6 +17,7 @@ import {
   groupLibraryByMonthAndDay,
   isMoodJournalItem,
   memorialSpaceHref,
+  memoriesMonthHref,
   memoryPatchRow,
   monthFolderCoverUrl,
   moodJournalHref,
@@ -55,6 +56,8 @@ test("photos group by capture month then the same calendar day", () => {
   assert.deepEqual(groups.map((month) => month.key), ["2026-10", "2026-09"]);
   assert.deepEqual(groups[0].days.map((day) => day.key), ["2026-10-03", "2026-10-02"]);
   assert.deepEqual(groups[0].days[1].items.map((entry) => entry.entryId), ["b", "a"]);
+  assert.equal(memoriesMonthHref("pet-1", "2026-10"), "/memories?pet=pet-1&view=months&month=2026-10");
+  assert.equal(memoriesMonthHref(null), "/memories?view=months");
 });
 
 test("memory folders group actual records by year and month and retain the saved-date fallback", () => {
@@ -241,7 +244,7 @@ test("archive, memorial-space, device and beam pages stay behind the pet-first f
     const source = readFileSync(path, "utf8");
     assert.match(source, /isPetFirstArchiveEnabled\(\)/);
     assert.match(source, /notFound\(\)/);
-    assert.match(source, /authEntryPath/);
+    assert.doesNotMatch(source, /authEntryPath/);
   }
   const memoryUi = readFileSync("components/pet-first-memory.tsx", "utf8");
   const petProfile = readFileSync("components/pet-first-profile.tsx", "utf8");

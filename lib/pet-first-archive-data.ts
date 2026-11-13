@@ -1,7 +1,6 @@
 import "server-only";
 
-import { isMissingRelationError, type LifeStatus } from "@/lib/pet-first-archive";
-import { takeRecentRowsPerPet } from "@/lib/home-memory-preview";
+import { GUEST_PREVIEW_PET_ID, isMissingRelationError, type LifeStatus } from "@/lib/pet-first-archive";
 import type { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 
 let timelineRelationMissing = false;
@@ -25,6 +24,7 @@ export type HomePet = {
   petName: string;
   lifeStatus: LifeStatus;
   species: string | null;
+  birthday: string | null;
   createdAt: string;
   entryDays: string[];
   letterCount: number;
@@ -41,6 +41,7 @@ export type HomeRecent = {
   happenedOn: string | null;
   createdAt: string;
   imageUrl: string | null;
+  favorite: boolean;
 };
 
 type EntryRow = {
@@ -51,17 +52,24 @@ type EntryRow = {
   story: string | null;
   happened_on: string | null;
   created_at: string;
+  favorite?: boolean | null;
   pet_timeline_assets: { storage_bucket: string; storage_path: string; content_type: string; asset_order: number }[] | null;
 };
 
 async function loadOwnedPetRows(supabase: AuthClient, userId: string) {
   const petsFull = await supabase
     .from("soul_trace_pets")
+    .select("pet_id, pet_name, life_status, species, birthday, created_at")
+    .eq("owner_user_id", userId)
+    .order("created_at", { ascending: false });
+  if (!petsFull.error || petsFull.error.code !== "42703") return petsFull;
+  const withoutBirthday = await supabase
+    .from("soul_trace_pets")
     .select("pet_id, pet_name, life_status, species, created_at")
     .eq("owner_user_id", userId)
     .order("created_at", { ascending: false });
-  return !petsFull.error || petsFull.error.code !== "42703"
-    ? petsFull
+  return !withoutBirthday.error || withoutBirthday.error.code !== "42703"
+    ? withoutBirthday
     : await supabase
       .from("soul_trace_pets")
       .select("pet_id, pet_name, created_at")
@@ -85,23 +93,26 @@ export async function loadPetHome(supabase: AuthClient, userId: string) {
       ? Promise.resolve({ data: [] as EntryRow[], error: null })
       : supabase
         .from("pet_timeline_entries")
-        .select("entry_id, pet_id, kind, title, story, happened_on, created_at, pet_timeline_assets(storage_bucket, storage_path, content_type, asset_order)")
+        .select("entry_id, pet_id, kind, title, story, happened_on, created_at, favorite, pet_timeline_assets(storage_bucket, storage_path, content_type, asset_order)")
         .eq("owner_user_id", userId)
         .order("created_at", { ascending: false })
         .limit(400),
   ]);
-  noteTimelineAvailability(entriesResult.error?.code);
-  if (lettersResult.error) {
-    console.error("[pet-first] letters unavailable", { code: lettersResult.error.code });
-    return null;
-  }
-  if (entriesResult.error && !isMissingRelationError(entriesResult.error.code)) {
-    console.error("[pet-first] timeline unavailable", { code: entriesResult.error.code });
-    return null;
+  const entriesResultResolved = entriesResult.error?.code === "42703" && !timelineRelationMissing
+    ? await supabase
+      .from("pet_timeline_entries")
+      .select("entry_id, pet_id, kind, title, story, happened_on, created_at, pet_timeline_assets(storage_bucket, storage_path, content_type, asset_order)")
+      .eq("owner_user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(400)
+    : entriesResult;
+  noteTimelineAvailability(entriesResultResolved.error?.code);
+  if (entriesResultResolved.error && !isMissingRelationError(entriesResultResolved.error.code)) {
+    console.error("[pet-first] timeline unavailable", { code: entriesResultResolved.error.code });
   }
 
-  const entries = (entriesResult.error ? [] : entriesResult.data ?? []) as EntryRow[];
-  const letters = lettersResult.data ?? [];
+  const entries = (entriesResultResolved.error ? [] : entriesResultResolved.data ?? []) as EntryRow[];
+  const letters = lettersResult.error ? [] : lettersResult.data ?? [];
   const pets: HomePet[] = await Promise.all((petsResult.data ?? []).map(async (pet) => {
     const image = entries
       .filter((entry) => entry.pet_id === pet.pet_id)
@@ -116,6 +127,7 @@ export async function loadPetHome(supabase: AuthClient, userId: string) {
       petName: pet.pet_name,
       lifeStatus: ((pet as { life_status?: LifeStatus }).life_status ?? "unspecified") as LifeStatus,
       species: (pet as { species?: string | null }).species ?? null,
+      birthday: (pet as { birthday?: string | null }).birthday ?? null,
       createdAt: pet.created_at,
       entryDays: entries
         .filter((entry) => entry.pet_id === pet.pet_id)
@@ -126,8 +138,17 @@ export async function loadPetHome(supabase: AuthClient, userId: string) {
   }));
   const names = new Map(pets.map((pet) => [pet.petId, pet.petName]));
 
-  const recentEntries = takeRecentRowsPerPet(entries, (entry) => entry.pet_id, 6);
-  const recent: HomeRecent[] = await Promise.all(recentEntries.map(async (entry) => {
+  const monthKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit" }).format(new Date());
+  const coverIds = new Set(pets.flatMap((pet) => {
+    const shots = entries.filter((entry) => entry.pet_id === pet.petId && entry.kind === "photo" && (entry.happened_on ?? entry.created_at).slice(0, 7) === monthKey && (entry.pet_timeline_assets ?? []).some((asset) => asset.content_type.startsWith("image/")));
+    const best = shots.find((entry) => entry.favorite) ?? shots[0];
+    return best ? [best.entry_id] : [];
+  }));
+  const shown = [
+    ...entries.filter((entry) => coverIds.has(entry.entry_id)),
+    ...entries.filter((entry) => !coverIds.has(entry.entry_id)).slice(0, 6),
+  ];
+  const recent: HomeRecent[] = await Promise.all(shown.map(async (entry) => {
     const image = [...(entry.pet_timeline_assets ?? [])]
       .sort((a, b) => a.asset_order - b.asset_order)
       .find((asset) => asset.content_type.startsWith("image/"));
@@ -144,6 +165,7 @@ export async function loadPetHome(supabase: AuthClient, userId: string) {
       happenedOn: entry.happened_on,
       createdAt: entry.created_at,
       imageUrl: signed?.data?.signedUrl ?? null,
+      favorite: Boolean(entry.favorite),
     };
   }));
 
@@ -193,6 +215,20 @@ export async function loadPetProfile(supabase: AuthClient, userId: string, petId
 }
 
 export type PetProfile = Extract<Awaited<ReturnType<typeof loadPetProfile>>, { status: "ok" }>["profile"];
+
+/** Layout-only pet so screens can open before a session exists. Not a database row. */
+export function guestPreviewProfile(lifeStatus: LifeStatus = "living"): PetProfile {
+  return {
+    petId: GUEST_PREVIEW_PET_ID,
+    petName: "우리 아이",
+    lifeStatus,
+    species: null,
+    birthday: null,
+    adoptedOn: null,
+    traits: null,
+    letterCount: 0,
+  };
+}
 
 export async function pickOwnedPet(
   supabase: AuthClient,

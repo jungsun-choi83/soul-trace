@@ -104,6 +104,16 @@ export function memoriesHref(petId?: string | null): string {
   return petId ? `/memories?pet=${encodeURIComponent(petId)}` : "/memories";
 }
 
+/** Month folders opened from "이번 달의 추억". Photos are grouped by capture month. */
+export function memoriesMonthHref(petId?: string | null, month?: string | null): string {
+  const query = new URLSearchParams();
+  if (petId) query.set("pet", petId);
+  query.set("view", "months");
+  if (month && /^\d{4}-\d{2}$/.test(month)) query.set("month", month);
+  const value = query.toString();
+  return value ? `/memories?${value}` : "/memories";
+}
+
 export function memorialSpaceHref(petId: string): string {
   return `/memorial-space?pet=${encodeURIComponent(petId)}`;
 }

@@ -15,7 +15,7 @@ import {
   type MemoryLibraryItem,
 } from "@/lib/memory-library";
 import type { PetProfile } from "@/lib/pet-first-archive-data";
-import { letterPathForLifeStatus, petFirstCopy, timelineMonthKey } from "@/lib/pet-first-archive";
+import { GUEST_PREVIEW_PET_ID, letterPathForLifeStatus, petFirstCopy, timelineMonthKey } from "@/lib/pet-first-archive";
 import { fill } from "@/lib/storybook-copy";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -31,6 +31,11 @@ export function MemorialSpace({ profile, today }: { profile: PetProfile; today: 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(false);
+    if (petId === GUEST_PREVIEW_PET_ID) {
+      setTimeline([]);
+      setLoading(false);
+      return;
+    }
     const response = await fetch(`/api/my/pets/${petId}/memories`);
     setLoading(false);
     if (!response.ok) {

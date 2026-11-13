@@ -155,7 +155,8 @@ test("new routes authenticate the session user and leave the legacy photo route 
   }
   assert.match(petsPage, /isPetFirstArchiveEnabled\(\)/);
   assert.match(petsPage, /notFound\(\)/);
-  assert.match(petsPage, /authEntryPath\("\/my\/pets"\)/);
+  assert.doesNotMatch(petsPage, /authEntryPath/);
+  assert.match(petsPage, /<PetRoster pets=\{\[\]\}/);
   assert.match(memoryPage, /notFound\(\)/);
   assert.doesNotMatch(petRoute, /soul_trace_submissions|\.delete\(/);
   assert.match(legacyPhotos, /submission_id/);
@@ -211,7 +212,7 @@ test("P1 customer home, profile, memories, and settings stay on existing auth an
   const tabRoutes = readFileSync("lib/story-tabs.ts", "utf8");
 
   assert.match(dashboardPage, /dashboardHomePath/);
-  assert.match(dashboardPage, /redirect\("\/choose"\)/);
+  assert.match(dashboardPage, /redirect\("\/dashboard\/living"\)/);
   assert.match(readFileSync("app/dashboard/living/page.tsx", "utf8"), /LivingHome/);
   assert.match(readFileSync("app/dashboard/memorial/page.tsx", "utf8"), /MemorialHome/);
   assert.match(readFileSync("components/living-home.tsx", "utf8"), /\/create\?/);

@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { AccountSettings } from "@/components/account-settings";
-import { authEntryPath } from "@/lib/auth-redirect";
 import { isPetFirstArchiveEnabled } from "@/lib/pet-first-archive";
 import { loadPetHome } from "@/lib/pet-first-archive-data";
 import { noIndexRobots } from "@/lib/site-url";
@@ -18,7 +16,7 @@ export const metadata: Metadata = {
 export default async function SettingsPage() {
   const supabase = await createSupabaseAuthServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
-  if (!supabase || !user) redirect(authEntryPath("/settings"));
+  if (!supabase || !user) return <AccountSettings email={null} petId={null} />;
 
   const petId = isPetFirstArchiveEnabled()
     ? (await loadPetHome(supabase, user.id))?.pets[0]?.petId ?? null

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { PetProfileForm } from "@/components/pet-profile-form";
 import { StorybookShell } from "@/components/pet-form-shell";
-import { authEntryPath } from "@/lib/auth-redirect";
 import { isPetFirstArchiveEnabled, isUuid } from "@/lib/pet-first-archive";
 import { loadPetProfile } from "@/lib/pet-first-archive-data";
 import type { ServerSearchParams } from "@/lib/search-params";
@@ -32,7 +31,17 @@ export default async function EditPetPage({
   if (!isUuid(petId)) notFound();
   const supabase = await createSupabaseAuthServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
-  if (!supabase || !user) redirect(authEntryPath(`/my/pets/${petId}/edit`));
+  if (!supabase || !user) {
+    return (
+      <StorybookShell backHref="/my/pets" titleKey="editPet">
+        <PetProfileForm
+          mode="edit"
+          petId={petId}
+          initial={{ petName: "", lifeStatus: "unspecified", species: null, birthday: null, adoptedOn: null, traits: null }}
+        />
+      </StorybookShell>
+    );
+  }
 
   const result = await loadPetProfile(supabase, user.id, petId);
   if (result.status === "unavailable") notFound();

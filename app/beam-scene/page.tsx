@@ -3,9 +3,8 @@ import { notFound, redirect } from "next/navigation";
 
 import { BeamScenePreview } from "@/components/beam-scene-preview";
 import { PetFirstUnavailable } from "@/components/pet-first-unavailable";
-import { authEntryPath } from "@/lib/auth-redirect";
 import { isPetFirstArchiveEnabled, isUuid } from "@/lib/pet-first-archive";
-import { loadPetProfile, pickOwnedPet } from "@/lib/pet-first-archive-data";
+import { guestPreviewProfile, loadPetProfile, pickOwnedPet } from "@/lib/pet-first-archive-data";
 import type { ServerSearchParams } from "@/lib/search-params";
 import { noIndexRobots } from "@/lib/site-url";
 import { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
@@ -33,7 +32,15 @@ export default async function BeamScenePage({
 
   const supabase = await createSupabaseAuthServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
-  if (!supabase || !user) redirect(authEntryPath(petId ? `/beam-scene?pet=${petId}` : "/beam-scene"));
+  if (!supabase || !user) {
+    return (
+      <BeamScenePreview
+        profile={guestPreviewProfile()}
+        initialEntryId={Array.isArray(rawEntry) ? rawEntry[0] : rawEntry}
+        initialAssetId={Array.isArray(rawAsset) ? rawAsset[0] : rawAsset}
+      />
+    );
+  }
   if (!petId || !isUuid(petId)) {
     const pet = await pickOwnedPet(supabase, user.id);
     if (!pet) redirect("/my/pets/new");

@@ -73,12 +73,10 @@ test("the two homes stay separate from the letter pages", () => {
   const choose = readFileSync("app/choose/page.tsx", "utf8");
   assert.match(living, /우리 아이와 함께하는 오늘/);
   assert.match(memorial, /우리 아이와 함께했던 소중한 순간들/);
-  assert.match(living, /우리 아이 사진 가져오기/);
-  // The month card was replaced by the approved Memories layout: a year/month
-  // album plus a recent-memories preview.
-  assert.match(living, /월별 추억 앨범/);
-  assert.match(living, /최근 추억/);
-  assert.match(living, /특별한 추억 만들기/);
+  assert.match(living, /우리아이의 여정/);
+  assert.match(living, /이번 달의 추억/);
+  assert.match(living, /우리의 특별한 추억/);
+  assert.match(living, /우리아이의 목걸이/);
   assert.match(living, /\/create\?/);
   assert.match(memorial, /추모관 들어가기/);
   assert.match(memorial, /memorial-space/);
