@@ -150,7 +150,7 @@ export function ResultAmbientAudio({ active, audioRef }: ResultAmbientAudioProps
     <button
       type="button"
       onClick={() => void onBottomClick()}
-      className={`fixed bottom-5 right-4 z-[450] rounded-full border border-[rgba(212,175,55,0.45)] bg-[rgba(8,8,8,0.72)] px-3.5 py-2 text-[11px] font-extralight text-[#E8DCC8] shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-sm transition hover:bg-[rgba(212,175,55,0.1)] sm:bottom-6 sm:right-6 sm:text-xs ${font}`}
+      className={`fixed bottom-5 right-4 z-[450] rounded-full border border-[rgba(143, 180, 200,0.45)] bg-[rgba(8,8,8,0.72)] px-3.5 py-2 text-[11px] font-extralight text-[#d9c2b0] shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-sm transition hover:bg-[rgba(143, 180, 200,0.1)] sm:bottom-6 sm:right-6 sm:text-xs ${font}`}
       aria-pressed={playing && !muted}
       aria-label={label}
     >

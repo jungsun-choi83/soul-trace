@@ -1,6 +1,7 @@
 import {
   letterPathForLifeStatus,
   type LifeStatus,
+  seoulToday,
   timelineDay,
   timelineMonthKey,
   type PetTimelineDate,
@@ -9,7 +10,7 @@ import {
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export type MemoryKind = "photo" | "video" | "text";
-export type MemoryOrigin = "pet_first" | "legacy";
+export type MemoryOrigin = "pet_first" | "legacy" | "polaroid";
 
 export type MemoryAsset = {
   assetId: string;
@@ -72,6 +73,42 @@ export type MemoryLibraryItem = PetTimelineDate & {
   assets: MemoryAsset[];
 };
 
+export type SavedPolaroidMemory = {
+  resultId: string;
+  petName: string;
+  createdAt: string;
+  imageUrl: string;
+};
+
+/** Saved gallery polaroids become month-folder memories, dated in Seoul. */
+export function polaroidLibraryItems(polaroids: readonly SavedPolaroidMemory[]): MemoryLibraryItem[] {
+  return polaroids.flatMap((polaroid) => {
+    const createdAt = polaroid.createdAt.trim();
+    const imageUrl = polaroid.imageUrl.trim();
+    const resultId = polaroid.resultId.trim();
+    const created = new Date(createdAt);
+    if (!resultId || !imageUrl || !createdAt || Number.isNaN(created.getTime())) return [];
+    return [{
+      entryId: `polaroid:${resultId}`,
+      kind: "photo" as const,
+      title: polaroid.petName.trim() || null,
+      story: null,
+      place: null,
+      favorite: false,
+      happenedOn: seoulToday(created),
+      createdAt,
+      origin: "polaroid" as const,
+      deletable: false,
+      assets: [{
+        assetId: `polaroid:${resultId}`,
+        url: imageUrl,
+        contentType: "image/png",
+        order: 0,
+      }],
+    }];
+  });
+}
+
 export type DayGroup<T extends PetTimelineDate = MemoryLibraryItem> = {
   key: string;
   items: T[];
@@ -100,16 +137,33 @@ export function isBeamPlace(value: unknown): value is BeamPlace {
   return typeof value === "string" && (BEAM_PLACES as readonly string[]).includes(value);
 }
 
-export function memoriesHref(petId?: string | null): string {
-  return petId ? `/memories?pet=${encodeURIComponent(petId)}` : "/memories";
+export function memoriesHref(petId?: string | null, branch?: "living" | "memorial" | null): string {
+  const query = new URLSearchParams();
+  if (petId) query.set("pet", petId);
+  if (branch === "living" || branch === "memorial") query.set("branch", branch);
+  const value = query.toString();
+  return value ? `/memories?${value}` : "/memories";
+}
+
+export type MemoryFolderCategory = "photo" | "video" | "polaroid" | "letter";
+
+/** Four journey folders. Inside each folder, records stay grouped by the month they were made. */
+export function memoriesCategoryHref(petId: string | null | undefined, category: MemoryFolderCategory, branch?: "living" | "memorial" | null): string {
+  const query = new URLSearchParams();
+  if (petId) query.set("pet", petId);
+  query.set("view", "months");
+  query.set("category", category);
+  if (branch === "living" || branch === "memorial") query.set("branch", branch);
+  return `/memories?${query.toString()}`;
 }
 
 /** Month folders opened from "이번 달의 추억". Photos are grouped by capture month. */
-export function memoriesMonthHref(petId?: string | null, month?: string | null): string {
+export function memoriesMonthHref(petId?: string | null, month?: string | null, branch?: "living" | "memorial" | null): string {
   const query = new URLSearchParams();
   if (petId) query.set("pet", petId);
   query.set("view", "months");
   if (month && /^\d{4}-\d{2}$/.test(month)) query.set("month", month);
+  if (branch === "living" || branch === "memorial") query.set("branch", branch);
   const value = query.toString();
   return value ? `/memories?${value}` : "/memories";
 }

@@ -72,7 +72,9 @@ test("storybook pages scroll and do not clip under a fixed phone-height tab bar"
   assert.doesNotMatch(`${paper}${auth}${dashboard}${home}${memory}${settings}${petForm}${roster}${collar}`, /h-\[850px\]|h-screen overflow-hidden/);
   assert.match(petForm, /copy\.setupTitle/);
   assert.doesNotMatch(petForm, /UiuxHero|POSE_ART|StoryScene/);
+  assert.doesNotMatch(roster, /UiuxHero/);
   assert.match(roster, /StoryScene/);
+  assert.match(roster, /copy\.myPets/);
 });
 
 test("letter and polaroid generation routes stay in place", () => {

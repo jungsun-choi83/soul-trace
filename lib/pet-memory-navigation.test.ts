@@ -97,7 +97,7 @@ test("the Album uses real month-folder data in an accessible responsive carousel
   assert.match(memory, /-ml-\d+/);
   assert.match(memory, /scale-\[1\.\d+\]/);
   assert.match(memory, /absolute left-\d+ top-\d+ [^"]*rounded-t-/);
-  assert.match(memory, /bg-\[#fffaf0\]\/90/);
+  assert.match(memory, /bg-\[#e7f0f4\]\/90/);
   // The month and count sit on the cover photo itself.
   assert.match(memory, /monthShortLabel\(folder\.key, lang\)/);
   assert.match(memory, /folderMemoryCount\(lang, folder\.count\)/);

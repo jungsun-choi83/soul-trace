@@ -99,8 +99,8 @@ export function BeamScenePreview({
         <StoryBrandHeader backHref={`/my/pets/${petId}#album`} backLabel={copy.albumTitle} />
         <header className="mt-6">
           <p className="st-eyebrow">{copy.beamSceneEyebrow}</p>
-          <h1 className="st-headline mt-2 text-[1.7rem] leading-snug text-[#2f3a28]">{copy.beamSceneTitle}</h1>
-          <p className="mt-2 text-sm leading-6 text-[#6b5846]">{copy.beamSceneBody}</p>
+          <h1 className="st-headline mt-2 text-[1.7rem] leading-snug text-[#163e2e]">{copy.beamSceneTitle}</h1>
+          <p className="mt-2 text-sm leading-6 text-[#3e6274]">{copy.beamSceneBody}</p>
           <p className="mt-2 text-xs text-[color:var(--st-text-soft)]">{copy.beamNoPlayback}</p>
         </header>
 
@@ -163,7 +163,7 @@ export function BeamScenePreview({
                     <li key={item.entryId}>
                       <button type="button" onClick={() => setEntryId(item.entryId)} className={`block w-full overflow-hidden rounded-[12px] ${item.entryId === selected?.entryId ? "ring-2 ring-[color:var(--st-sage-deep)]" : ""}`}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={image.url} alt={item.title || profile.petName} className="aspect-square w-full object-contain bg-[#f8f2e5]" />
+                        <img src={image.url} alt={item.title || profile.petName} className="aspect-square w-full object-contain bg-[#dce8ef]" />
                       </button>
                     </li>
                   );

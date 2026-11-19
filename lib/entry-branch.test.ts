@@ -7,6 +7,7 @@ import {
   entryHomePath,
   petsOnBranch,
   readEntryBranch,
+  fallbackHomePath,
   redirectForSelectedPet,
   writeEntryBranch,
   ENTRY_BRANCH_KEY,
@@ -65,6 +66,48 @@ test("dashboard routing uses life_status and ignores letter history", () => {
     "open-1",
   );
   assert.deepEqual(visible.map((pet) => pet.petId), ["live-1", "open-1"]);
+  const livingOnly = [{ petId: "live-1", lifeStatus: "living" as const }];
+  const memorialOnly = [{ petId: "memo-1", lifeStatus: "memorial" as const }];
+  const severalLiving = [
+    { petId: "live-1", lifeStatus: "living" as const },
+    { petId: "live-2", lifeStatus: "living" as const },
+    { petId: "live-3", lifeStatus: "living" as const },
+    { petId: "live-4", lifeStatus: "living" as const },
+  ];
+  assert.equal(fallbackHomePath("living", [], null), null);
+  assert.equal(fallbackHomePath("living", livingOnly, null), "/dashboard/living?pet=live-1");
+  assert.equal(fallbackHomePath("living", livingOnly, livingOnly[0]), null);
+  assert.equal(fallbackHomePath("memorial", memorialOnly, null), "/dashboard/memorial?pet=memo-1");
+  assert.equal(fallbackHomePath("living", memorialOnly, null), "/dashboard/memorial?pet=memo-1");
+  assert.equal(fallbackHomePath("memorial", livingOnly, null), "/dashboard/living?pet=live-1");
+  assert.equal(fallbackHomePath("living", severalLiving, null), null);
+  assert.equal(
+    fallbackHomePath("living", [
+      { petId: "live-1", lifeStatus: "living" },
+      { petId: "live-2", lifeStatus: "living" },
+      { petId: "memo-1", lifeStatus: "memorial" },
+    ], null),
+    null,
+  );
+  assert.equal(
+    fallbackHomePath("memorial", [
+      { petId: "live-1", lifeStatus: "living" },
+      { petId: "memo-1", lifeStatus: "memorial" },
+      { petId: "memo-2", lifeStatus: "memorial" },
+    ], null),
+    null,
+  );
+  assert.equal(dashboardHomePath(severalLiving, "live-4"), "/dashboard/living?pet=live-4");
+  assert.equal(dashboardHomePath([
+    { petId: "live-1", lifeStatus: "living" },
+    { petId: "live-2", lifeStatus: "living" },
+    { petId: "memo-1", lifeStatus: "memorial" },
+  ], "memo-1"), "/dashboard/memorial?pet=memo-1");
+  assert.equal(dashboardHomePath([
+    { petId: "live-1", lifeStatus: "living" },
+    { petId: "memo-1", lifeStatus: "memorial" },
+    { petId: "memo-2", lifeStatus: "memorial" },
+  ], "live-1"), "/dashboard/living?pet=live-1");
 });
 
 test("the two homes stay separate from the letter pages", () => {
@@ -74,7 +117,7 @@ test("the two homes stay separate from the letter pages", () => {
   assert.match(living, /우리 아이와 함께하는 오늘/);
   assert.match(memorial, /우리 아이와 함께했던 소중한 순간들/);
   assert.match(living, /우리아이의 여정/);
-  assert.match(living, /이번 달의 추억/);
+  assert.match(living, /우리아이의 추억/);
   assert.match(living, /우리의 특별한 추억/);
   assert.match(living, /우리아이의 목걸이/);
   assert.match(living, /\/create\?/);

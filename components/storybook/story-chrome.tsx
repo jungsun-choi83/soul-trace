@@ -24,11 +24,11 @@ export function StoryBrandHeader({
 }) {
   const { t } = useLocale();
   const back = onBack ? (
-    <button type="button" onClick={onBack} aria-label={backLabel || t("landing.navBack")} className="inline-flex min-h-11 items-center text-lg text-[#594b3c]">
+    <button type="button" onClick={onBack} aria-label={backLabel || t("landing.navBack")} className="inline-flex min-h-11 items-center text-lg text-[#3e6554]">
       ←
     </button>
   ) : backHref ? (
-    <Link href={backHref} aria-label={backLabel || t("landing.navBack")} className="inline-flex min-h-11 items-center text-lg text-[#594b3c]">
+    <Link href={backHref} aria-label={backLabel || t("landing.navBack")} className="inline-flex min-h-11 items-center text-lg text-[#3e6554]">
       ←
     </Link>
   ) : (
@@ -38,13 +38,13 @@ export function StoryBrandHeader({
   return (
     <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
       {back}
-      <Link href={homeHref} className="flex flex-col items-center text-[#6b4a2c]">
+      <Link href={homeHref} className="flex flex-col items-center text-[#1e4d3a]">
         <BrandMark className="h-8 w-8" />
         <span className="font-display-en text-lg !tracking-[0.04em]">SoulTrace</span>
       </Link>
       <div className="flex items-center justify-end gap-1">
         {settingsHref ? (
-          <Link href={settingsHref} aria-label={settingsLabel || t("landing.navBack")} className="inline-flex size-11 items-center justify-center rounded-full text-[#6b4a2c]">
+          <Link href={settingsHref} aria-label={settingsLabel || t("landing.navBack")} className="inline-flex size-11 items-center justify-center rounded-full text-[#1e4d3a]">
             <SettingsGearIcon />
           </Link>
         ) : null}
@@ -67,13 +67,13 @@ export function UiuxHero({
 }) {
   const pose = src.includes("/images/poses/");
   return (
-    <section className="relative mt-4 overflow-hidden rounded-[22px] bg-[#f8f2e5]">
+    <section className="relative mt-4 overflow-hidden rounded-[22px] bg-[#dce8ef]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className={`${pose ? "aspect-[3/4]" : "aspect-[16/9]"} w-full bg-[#f6efe2] object-contain object-center`} />
+      <img src={src} alt="" className={`${pose ? "aspect-[3/4]" : "aspect-[16/9]"} w-full bg-[#f6ebe3] object-contain object-center`} />
       {title || body || children ? (
-        <div className="px-5 py-4 text-[#3a3428]">
+        <div className="px-5 py-4 text-[#1e4d3a]">
           {title ? <h1 className="st-headline text-[1.7rem] leading-snug">{title}</h1> : null}
-          {body ? <p className="mt-1 text-sm leading-6 text-[#6b5846]">{body}</p> : null}
+          {body ? <p className="mt-1 text-sm leading-6 text-[#3e6274]">{body}</p> : null}
           {children}
         </div>
       ) : null}
@@ -92,7 +92,7 @@ export function SettingsGearIcon() {
 
 export function StatusPill({ children, tone = "quiet" }: { children: ReactNode; tone?: "living" | "quiet" }) {
   return (
-    <span className={`inline-flex min-h-8 items-center rounded-full px-3 text-xs ${tone === "living" ? "bg-[#3a452f] text-[#fff5dc]" : "border border-[#d8c7a8] bg-[#fff8ec] text-[#5c4633]"}`}>
+    <span className={`inline-flex min-h-8 items-center rounded-full px-3 text-xs ${tone === "living" ? "bg-[#1e4d3a] text-[#f6ebe3]" : "border border-[#c9ad99] bg-[#f6ebe3] text-[#1e4d3a]"}`}>
       {children}
     </span>
   );

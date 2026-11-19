@@ -31,6 +31,9 @@ export default async function PolaroidPage({
 
   const rawPet = params.petId ?? params.pet;
   const initialPetId = Array.isArray(rawPet) ? rawPet[0] : rawPet;
+  const rawBranch = params.branch;
+  const branchValue = Array.isArray(rawBranch) ? rawBranch[0] : rawBranch;
+  const entryBranch = branchValue === "living" || branchValue === "memorial" ? branchValue : null;
   const rawResumeDraft = params.resumeDraft;
   const resumeDraft = (Array.isArray(rawResumeDraft) ? rawResumeDraft[0] : rawResumeDraft) === "1";
   const rawMemoryEntryId = params.memoryEntryId;
@@ -44,6 +47,7 @@ export default async function PolaroidPage({
       christmasEnabled={isChristmasPolaroidEnabled()}
       artAllEnabled={isPolaroidArtAllEnabled()}
       initialPetId={initialPetId}
+      entryBranch={entryBranch}
       resumeDraft={resumeDraft}
       initialMemoryEntryId={initialMemoryEntryId}
       initialMemoryAssetId={initialMemoryAssetId}

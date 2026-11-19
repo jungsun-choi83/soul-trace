@@ -66,7 +66,7 @@ export function ResultRewardSheet({ open, onClose }: ResultRewardSheetProps) {
             role="dialog"
             aria-modal
             aria-labelledby="reward-sheet-title"
-            className="fixed inset-x-0 bottom-0 z-[303] mx-auto flex max-h-[min(92dvh,880px)] w-full max-w-lg flex-col rounded-t-2xl border border-[#D4AF37]/55 bg-[rgba(16,14,12,0.96)] shadow-[0_-28px_120px_rgba(0,0,0,0.72)] backdrop-blur-xl"
+            className="fixed inset-x-0 bottom-0 z-[303] mx-auto flex max-h-[min(92dvh,880px)] w-full max-w-lg flex-col rounded-t-2xl border border-[#8fb4c8]/55 bg-[rgba(16,14,12,0.96)] shadow-[0_-28px_120px_rgba(0,0,0,0.72)] backdrop-blur-xl"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -76,7 +76,7 @@ export function ResultRewardSheet({ open, onClose }: ResultRewardSheetProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(212,175,55,0.45)] bg-black/50 text-lg leading-none text-[#D4AF37] transition hover:bg-[rgba(212,175,55,0.12)]"
+                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(143, 180, 200,0.45)] bg-black/50 text-lg leading-none text-[#8fb4c8] transition hover:bg-[rgba(143, 180, 200,0.12)]"
                 aria-label="Close"
               >
                 ×
@@ -84,18 +84,18 @@ export function ResultRewardSheet({ open, onClose }: ResultRewardSheetProps) {
 
               <p
                 id="reward-sheet-title"
-                className={`${bodyFont} pr-11 text-center text-[0.7rem] font-medium uppercase tracking-[0.28em] text-[#D4AF37]/95 sm:text-xs`}
+                className={`${bodyFont} pr-11 text-center text-[0.7rem] font-medium uppercase tracking-[0.28em] text-[#8fb4c8]/95 sm:text-xs`}
               >
                 {t("result.rewardFlow.kicker")}
               </p>
               <h2
-                className={`${bodyFont} mt-4 text-center text-[1.35rem] font-light leading-snug text-[#F5E6B8] sm:text-2xl sm:leading-snug`}
+                className={`${bodyFont} mt-4 text-center text-[1.35rem] font-light leading-snug text-[#f6ebe3] sm:text-2xl sm:leading-snug`}
               >
                 {t("result.rewardFlow.title")}
               </h2>
 
               <ul
-                className={`${bodyFont} mt-8 list-outside list-disc space-y-4 pl-5 text-[15px] font-extralight leading-[1.8] text-[#EDE4D3] marker:text-[#D4AF37]/70 sm:text-base`}
+                className={`${bodyFont} mt-8 list-outside list-disc space-y-4 pl-5 text-[15px] font-extralight leading-[1.8] text-[#e7f0f4] marker:text-[#8fb4c8]/70 sm:text-base`}
               >
                 {bullets.map((line, idx) => (
                   <li key={idx} className="pl-1">

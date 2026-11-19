@@ -1,62 +1,62 @@
 /* SoulTrace storybook design system.
-   Two surfaces of one system: "paper" (cream album) and "night" (warm charcoal + gold).
+   Four hues: cloudy blue, nude, army green, hunter green.
    Components opt in with .st-paper or .st-night on a wrapper. */
 
 :root {
-  --st-ivory: #fffaf0;
-  --st-cream: #f8f2e5;
-  --st-beige: #eadcc6;
-  --st-sage: #778469;
-  --st-sage-deep: #5f6f58;
+  --st-ivory: #e7f0f4;
+  --st-cream: #f6ebe3;
+  --st-beige: #d9cebf;
+  --st-sage: #55603a;
+  --st-sage-deep: #46502f;
   --st-rose: #b97064;
-  --st-rose-soft: #ead2cc;
-  --st-charcoal: #2b2622;
-  --st-charcoal-deep: #1d1916;
-  --st-brown: #9e774c;
-  --st-gold: #9e774c;
-  --st-gold-soft: #ad8655;
-  --st-ink: #393129;
-  --st-ink-soft: #857666;
+  --st-rose-soft: #f3e4d8;
+  --st-charcoal: #14352c;
+  --st-charcoal-deep: #10281f;
+  --st-brown: #1a332c;
+  --st-gold: #1a332c;
+  --st-gold-soft: #c4b49a;
+  --st-ink: #1e4d3a;
+  --st-ink-soft: #1e4d3a;
   --st-radius-card: 1.5rem;
   --st-radius-soft: 1rem;
-  --st-shadow-paper: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 14px 34px -18px rgba(74, 52, 30, 0.38);
-  --st-shadow-night: 0 1px 0 rgba(255, 244, 220, 0.05) inset, 0 22px 50px -24px rgba(0, 0, 0, 0.7);
+  --st-shadow-paper: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 14px 34px -18px rgba(30, 77, 58, 0.28);
+  --st-shadow-night: 0 1px 0 rgba(232, 242, 246, 0.05) inset, 0 22px 50px -24px rgba(0, 0, 0, 0.7);
   --st-tabbar-height: 4.75rem;
 }
 
 .st-paper {
   --st-surface: var(--st-ivory);
-  --st-card: #fbf6ec;
-  --st-card-edge: rgba(122, 95, 72, 0.16);
+  --st-card: #f6ebe3;
+  --st-card-edge: rgba(20, 18, 16, 0.12);
   --st-text: var(--st-ink);
   --st-text-soft: var(--st-ink-soft);
   --st-accent: var(--st-brown);
-  --st-field: #fffaf1;
-  --st-field-edge: rgba(122, 95, 72, 0.22);
+  --st-field: #f6ebe3;
+  --st-field-edge: rgba(26, 51, 44, 0.35);
   --st-focus: var(--st-sage-deep);
   color: var(--st-text);
+  color-scheme: light;
   background-color: var(--st-surface);
   background-image:
-    radial-gradient(circle at 12% 8%, rgba(216, 191, 138, 0.22), transparent 38%),
-    radial-gradient(circle at 92% 30%, rgba(201, 154, 148, 0.14), transparent 34%),
-    radial-gradient(circle at 30% 96%, rgba(143, 159, 134, 0.16), transparent 40%);
+    radial-gradient(circle at 12% 0%, rgba(196, 180, 154, 0.28), transparent 36%),
+    radial-gradient(circle at 100% 20%, rgba(143, 164, 176, 0.16), transparent 32%);
 }
 
 .st-night {
   --st-surface: var(--st-charcoal-deep);
-  --st-card: rgba(46, 40, 35, 0.86);
-  --st-card-edge: rgba(216, 191, 138, 0.2);
-  --st-text: #f3e9d8;
-  --st-text-soft: #c9bba6;
+  --st-card: rgba(20, 53, 44, 0.9);
+  --st-card-edge: rgba(234, 214, 196, 0.28);
+  --st-text: #e7f0f4;
+  --st-text-soft: #ead6c4;
   --st-accent: var(--st-gold-soft);
-  --st-field: rgba(29, 25, 22, 0.75);
-  --st-field-edge: rgba(216, 191, 138, 0.28);
+  --st-field: rgba(16, 40, 31, 0.78);
+  --st-field-edge: rgba(143, 180, 200, 0.32);
   --st-focus: var(--st-gold-soft);
   color: var(--st-text);
   background-color: var(--st-surface);
   background-image:
-    radial-gradient(circle at 50% -10%, rgba(216, 191, 138, 0.16), transparent 45%),
-    radial-gradient(circle at 8% 90%, rgba(143, 159, 134, 0.1), transparent 36%);
+    radial-gradient(circle at 50% -10%, rgba(143, 180, 200, 0.2), transparent 45%),
+    radial-gradient(circle at 8% 90%, rgba(234, 214, 196, 0.12), transparent 36%);
 }
 
 /* Paper grain. Pure CSS so it never blocks layout when images fail. */
@@ -73,8 +73,8 @@
   pointer-events: none;
   opacity: 0.35;
   background-image:
-    repeating-radial-gradient(circle at 17% 23%, rgba(122, 95, 72, 0.05) 0 1px, transparent 1px 3px),
-    repeating-radial-gradient(circle at 71% 64%, rgba(122, 95, 72, 0.04) 0 1px, transparent 1px 4px);
+    repeating-radial-gradient(circle at 17% 23%, rgba(74, 85, 48, 0.05) 0 1px, transparent 1px 3px),
+    repeating-radial-gradient(circle at 71% 64%, rgba(92, 132, 152, 0.05) 0 1px, transparent 1px 4px);
 }
 
 .st-night.st-grain::before {
@@ -83,7 +83,7 @@
 
 .st-headline {
   font-family: var(--font-noto-serif-kr), var(--font-cormorant), serif;
-  font-weight: 300;
+  font-weight: 500;
   letter-spacing: -0.015em;
   line-height: 1.3;
   word-break: keep-all;
@@ -123,9 +123,9 @@
 
 .st-polaroid {
   border-radius: 0.75rem;
-  background: #fffaf1;
+  background: #f6ebe3;
   padding: 0.5rem 0.5rem 1.75rem;
-  box-shadow: 0 10px 24px -14px rgba(74, 52, 30, 0.5);
+  box-shadow: 0 10px 24px -14px rgba(36, 62, 78, 0.45);
 }
 
 .st-btn {
@@ -159,32 +159,32 @@
 }
 
 .st-btn-primary {
-  background: #9e774c;
-  color: #fffaf2;
-  box-shadow: 0 8px 18px -10px rgba(122, 86, 40, 0.35);
+  background: #55603a;
+  color: #f6ebe3;
+  box-shadow: none;
 }
 
 .st-btn-primary:hover:not(:disabled) {
-  background: #8d6a43;
+  background: #46502f;
 }
 
 .st-btn-forest {
-  background: #3a452f;
-  color: #fff5dc;
-  box-shadow: 0 10px 20px -12px rgba(58, 69, 47, 0.55);
+  background: #55603a;
+  color: #f6ebe3;
+  box-shadow: none;
 }
 
 .st-btn-forest:hover:not(:disabled) {
-  background: #4a563c;
+  background: #46502f;
 }
 
 .st-btn-sage {
   background: var(--st-sage);
-  color: #1f251c;
+  color: #f6ebe3;
 }
 
 .st-btn-sage:hover:not(:disabled) {
-  background: #9cab93;
+  background: #46502f;
 }
 
 .st-btn-quiet {
@@ -211,7 +211,7 @@
   border: 1px solid var(--st-field-edge);
   background: var(--st-field);
   padding: 0.8rem 1rem;
-  color: var(--st-text);
+  color: var(--st-text, #141210);
   font-family: var(--font-noto-sans-kr), var(--font-inter), sans-serif;
   font-size: 1rem;
   line-height: 1.6;
@@ -257,7 +257,7 @@ textarea.st-field {
 .st-scene {
   position: relative;
   overflow: visible;
-  background: #f8f2e5;
+  background: #dce8ef;
 }
 
 .st-card > .st-scene {
@@ -266,15 +266,15 @@ textarea.st-field {
 
 .st-night .st-scene {
   background:
-    radial-gradient(circle at 30% 30%, rgba(216, 191, 138, 0.25), transparent 55%),
-    linear-gradient(160deg, #3b322a 0%, #2a241f 60%, #1d1916 100%);
+    radial-gradient(circle at 30% 30%, rgba(143, 180, 200, 0.22), transparent 55%),
+    linear-gradient(160deg, #1e4d3a 0%, #14352c 60%, #10281f 100%);
 }
 
 .st-scene-fade {
   position: absolute;
   inset: 40% 0 0;
   pointer-events: none;
-  background: linear-gradient(transparent, #362f2260);
+  background: linear-gradient(transparent, #1c282460);
 }
 
 .st-tabbar {
@@ -284,8 +284,8 @@ textarea.st-field {
   margin-top: auto;
   min-height: var(--st-tabbar-height);
   padding: 6px max(8px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
-  border-top: 1px solid #dfcfb6;
-  background: #f9f1e4;
+  border-top: 1px solid #d9c2b0;
+  background: #e7f0f4;
 }
 
 .st-tab {
@@ -298,7 +298,7 @@ textarea.st-field {
   justify-content: center;
   gap: 0.2rem;
   border-radius: 1.1rem;
-  color: #685443;
+  color: #1e4d3a;
   font-family: var(--font-noto-sans-kr), var(--font-inter), sans-serif;
   font-size: 0.75rem;
   line-height: 1.1;
@@ -311,8 +311,8 @@ textarea.st-field {
 }
 
 .st-tab[aria-current="page"] {
-  color: #2c3928;
-  background: #e8d7ac;
+  color: #f6ebe3;
+  background: #55603a;
   font-weight: 700;
 }
 

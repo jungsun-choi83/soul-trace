@@ -9,7 +9,7 @@ import { memorialSpaceHref } from "@/lib/memory-library";
 import type { PetProfile } from "@/lib/pet-first-archive-data";
 import { GUEST_PREVIEW_PET_ID, petFirstCopy } from "@/lib/pet-first-archive";
 import Link from "next/link";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
 type MoodEntry = { entryId: string; story: string; createdAt: string; visibility: "private" };
 
@@ -22,9 +22,13 @@ export function MoodJournal({ profile }: { profile: PetProfile }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const requestRef = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++requestRef.current;
+    const requestedPetId = petId;
     setLoading(true);
+    setEntries([]);
     if (petId === GUEST_PREVIEW_PET_ID) {
       setEntries([]);
       setLoading(false);
@@ -32,12 +36,14 @@ export function MoodJournal({ profile }: { profile: PetProfile }) {
       return;
     }
     const response = await fetch(`/api/my/pets/${petId}/mood-journal`);
+    if (requestId !== requestRef.current || requestedPetId !== petId) return;
     setLoading(false);
     if (!response.ok) {
       setError(true);
       return;
     }
     const body = await response.json() as { entries?: MoodEntry[] };
+    if (requestId !== requestRef.current) return;
     setEntries(body.entries ?? []);
     setError(false);
   }, [petId]);
@@ -90,7 +96,6 @@ export function MoodJournal({ profile }: { profile: PetProfile }) {
         <aside className="mt-4 space-y-2 text-xs text-[color:var(--st-text-soft)]">
           <p>{copy.moodShareDisabled}</p>
           <p>{copy.moodAlertDisabled}</p>
-          <p>{copy.noReminder}</p>
         </aside>
         <div className="mt-3" aria-disabled="true">
           <button type="button" disabled className="st-btn st-btn-quiet w-full opacity-60">{copy.settingsFamily}</button>

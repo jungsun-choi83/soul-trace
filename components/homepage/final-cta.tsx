@@ -43,10 +43,10 @@ export function FinalCta({ choiceHref }: { choiceHref: string }) {
     <section
       ref={sectionRef}
       id="create"
-      className={`relative scroll-mt-20 overflow-hidden bg-[#0b0a09] pb-8 pt-10 text-[#f8f2e7] md:pb-14 md:pt-16 ${environmentVisible ? styles.finalCtaEnvironmentVisible : ""}`}
+      className={`relative scroll-mt-20 overflow-hidden bg-[#10281f] pb-8 pt-10 text-[#e7f0f4] md:pb-14 md:pt-16 ${environmentVisible ? styles.finalCtaEnvironmentVisible : ""}`}
     >
       <div
-        className={`pointer-events-none absolute left-1/2 top-0 z-0 h-[500px] w-[700px] max-w-[130%] -translate-x-1/2 rounded-full bg-[#c8a24a]/15 blur-[150px] ${styles.glow}`}
+        className={`pointer-events-none absolute left-1/2 top-0 z-0 h-[500px] w-[700px] max-w-[130%] -translate-x-1/2 rounded-full bg-[#8fb4c8]/15 blur-[150px] ${styles.glow}`}
       />
       <div className={styles.finalCtaCreamLight} aria-hidden="true" />
       <Image
@@ -60,7 +60,7 @@ export function FinalCta({ choiceHref }: { choiceHref: string }) {
       />
       <div className="relative z-10 mx-auto max-w-3xl px-3 text-center sm:px-8">
         <div>
-          <p className={`${styles.mobileGoldHeading} mb-4 text-[0.65rem] uppercase tracking-[0.24em] text-[#c8a24a] sm:mb-6 sm:text-xs sm:tracking-[0.32em]`}>
+          <p className={`${styles.mobileGoldHeading} mb-4 text-[0.65rem] uppercase tracking-[0.24em] text-[#8fb4c8] sm:mb-6 sm:text-xs sm:tracking-[0.32em]`}>
             Soul Trace × Eternal Beam
           </p>
         </div>
@@ -88,7 +88,7 @@ export function FinalCta({ choiceHref }: { choiceHref: string }) {
             {petFirst ? (
               <Link
                 href={recordHref}
-                className={`${display} group inline-flex min-h-11 w-auto max-w-full items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-5 py-3 text-xs font-medium text-[#0b0a09] transition hover:bg-[#d8b463] sm:min-h-12 sm:px-8 sm:py-4 sm:text-sm`}
+                className={`${display} group inline-flex min-h-11 w-auto max-w-full items-center justify-center gap-2 rounded-full bg-[#55603a] px-5 py-3 text-xs font-medium text-[#f6ebe3] transition hover:bg-[#46502f] sm:min-h-12 sm:px-8 sm:py-4 sm:text-sm`}
               >
                 {recordCopy.recordCta}
                 <ArrowRightIcon className="size-4 shrink-0 transition-transform group-hover:translate-x-1" />
@@ -98,7 +98,7 @@ export function FinalCta({ choiceHref }: { choiceHref: string }) {
               href={choiceHref}
               className={petFirst
                 ? `${display} ${styles.finalCtaSecondaryButton} inline-flex min-h-11 w-auto max-w-full items-center justify-center rounded-full px-5 py-3 text-xs sm:min-h-12 sm:px-8 sm:py-4 sm:text-sm`
-                : `${display} group inline-flex min-h-11 w-auto max-w-full items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-5 py-3 text-xs font-medium text-[#0b0a09] transition hover:bg-[#d8b463] sm:min-h-12 sm:px-8 sm:py-4 sm:text-sm`}
+                : `${display} group inline-flex min-h-11 w-auto max-w-full items-center justify-center gap-2 rounded-full bg-[#55603a] px-5 py-3 text-xs font-medium text-[#f6ebe3] transition hover:bg-[#46502f] sm:min-h-12 sm:px-8 sm:py-4 sm:text-sm`}
             >
               {petFirst ? recordCopy.letterCta : t("homepage.finalCta.primary")}
               {petFirst ? null : <ArrowRightIcon className="size-4 shrink-0 transition-transform group-hover:translate-x-1" />}

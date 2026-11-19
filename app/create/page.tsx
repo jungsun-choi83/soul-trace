@@ -26,6 +26,7 @@ export default async function CreatePage({
   const requested = Array.isArray(rawPet) ? rawPet[0] : rawPet;
 
   let petId: string | null = requested && isUuid(requested) ? requested : null;
+  let petName: string | null = null;
   let lifeStatus: LifeStatus = "unspecified";
   let signedIn = false;
   const rawBranch = params.branch;
@@ -41,6 +42,7 @@ export default async function CreatePage({
         const result = await loadPetProfile(supabase, user.id, petId);
         if (result.status === "ok") {
           lifeStatus = result.profile.lifeStatus;
+          petName = result.profile.petName;
         } else {
           petId = null;
         }
@@ -48,6 +50,7 @@ export default async function CreatePage({
         const pet = await pickOwnedPet(supabase, user.id);
         if (pet) {
           petId = pet.petId;
+          petName = pet.petName;
           lifeStatus = pet.lifeStatus;
         }
       }
@@ -56,5 +59,5 @@ export default async function CreatePage({
 
   if (lifeStatus === "unspecified" && branch) lifeStatus = branch;
 
-  return <CreateHub petId={petId} lifeStatus={lifeStatus} signedIn={signedIn} />;
+  return <CreateHub petId={petId} petName={petName} lifeStatus={lifeStatus} signedIn={signedIn} />;
 }

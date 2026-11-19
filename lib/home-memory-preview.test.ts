@@ -51,25 +51,25 @@ test("home preview dates are formatted for the locale instead of rendered as raw
   assert.notEqual(formatted, "2021-08-07");
 });
 
-test("Living and Memorial Home link to the pet-scoped album and no longer build monthly lists from recent records", () => {
+test("Living and Memorial homes keep each pet's memories and do not rebuild a month list on the home", () => {
   const living = readFileSync("components/living-home.tsx", "utf8");
   const memorial = readFileSync("components/memorial-home.tsx", "utf8");
   const data = readFileSync("lib/pet-first-archive-data.ts", "utf8");
-  for (const source of [living, memorial]) {
-    assert.match(source, /recentMemoriesForPet\(recent, petId\)/);
-    assert.match(source, /\/my\/pets\/\$\{encodeURIComponent\(petId\)\}\/memories#album/);
-    assert.match(source, /<HomeRecentMemories/);
-    assert.doesNotMatch(source, /groupMonths|item\.title \|\| item\.happenedOn \|\| item\.petName/);
-  }
-  assert.match(data, /takeRecentRowsPerPet\(entries, \(entry\) => entry\.pet_id, 6\)/);
-  assert.doesNotMatch(data, /entries\.slice\(0, 6\)/);
+  assert.match(living, /memoriesMonthHref\(petId\)/);
+  assert.match(memorial, /recentMemoriesForPet\(recent, petId\)/);
+  assert.match(memorial, /\/my\/pets\/\$\{encodeURIComponent\(petId\)\}\/memories#album/);
+  assert.match(memorial, /언제든 다시 꺼내는 추억/);
+  assert.doesNotMatch(living, /groupMonths|item\.title \|\| item\.happenedOn \|\| item\.petName/);
+  assert.doesNotMatch(memorial, /groupMonths|item\.title \|\| item\.happenedOn \|\| item\.petName/);
+  assert.match(data, /coverIds/);
+  assert.doesNotMatch(data, /groupMonths/);
 });
 
-test("Home photo-import shortcuts open the selected pet's Record flow", () => {
+test("Home photo-import shortcuts stay on the selected pet", () => {
   const living = readFileSync("components/living-home.tsx", "utf8");
   const memorial = readFileSync("components/memorial-home.tsx", "utf8");
-  for (const source of [living, memorial]) {
-    assert.match(source, /\/my\/pets\/\$\{encodeURIComponent\(petId\)\}\/memories\/record/);
-    assert.doesNotMatch(source, /\/memories\/import\?pet=/);
-  }
+  assert.match(living, /\/memories\?pet=\$\{encodeURIComponent\(petId\)\}/);
+  assert.match(memorial, /\/my\/pets\/\$\{encodeURIComponent\(petId\)\}\/memories\/record/);
+  assert.doesNotMatch(living, /\/memories\/import\?pet=/);
+  assert.doesNotMatch(memorial, /\/memories\/import\?pet=/);
 });

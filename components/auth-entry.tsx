@@ -1,7 +1,6 @@
 "use client";
 
 import { useLocale } from "@/components/locale-provider";
-import { EternalBeamLogo } from "@/components/storybook/eternal-beam-logo";
 import { PaperShell } from "@/components/storybook/paper-shell";
 import { UIUX_AUTH_ART } from "@/lib/uiux-art";
 import Image from "next/image";
@@ -73,6 +72,16 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
 
   const confirmationRedirectTo = (destination: string) =>
     authCallbackUrl(window.location.origin, destination, lang);
+
+  const runLocalPreviewLogin = async () => {
+    setLocalPreviewError(false);
+    const response = await fetch("/api/auth/local-preview", { method: "POST" });
+    if (!response.ok) {
+      setLocalPreviewError(true);
+      return;
+    }
+    window.location.assign(continueAfterAuth(confirmationDestination ?? returnTo));
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -242,15 +251,10 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
         <div className="relative mt-1 aspect-[16/9] overflow-hidden rounded-[22px] bg-[#f3e6cf]">
           <Image src={UIUX_AUTH_ART} alt="" fill sizes="430px" className="object-cover object-[center_12%]" priority />
         </div>
-        <div className="mt-5 flex flex-col items-center text-center">
-          <EternalBeamLogo className="h-auto w-32" />
-          <p className="mt-2 font-display-en text-3xl tracking-[0.04em] text-[#3a452f]">SoulTrace</p>
-          <p className={`mt-2 text-sm text-[#7a6c5c] ${bodyFont}`}>{t("splash.tagline")}</p>
-        </div>
-        <h1 className={`st-headline mt-6 text-center text-[1.85rem] text-[#393129] ${lang === "ko" ? "break-keep" : "tracking-[0.01em]"}`}>
+        <h1 className={`st-headline mt-6 text-center text-[1.85rem] text-[#1e4d3a] ${lang === "ko" ? "break-keep" : "tracking-[0.01em]"}`}>
           {t(recoveryOpen ? "auth.recovery.requestTitle" : mode === "signup" ? "auth.signupTitle" : "auth.signinTitle")}
         </h1>
-        {passwordUpdated && !recoveryOpen ? <p role="status" className={`mt-6 rounded-xl border border-[#eadcc6] bg-[#fff8ec] px-5 py-4 text-center text-sm text-[#594b3c] ${bodyFont}`}>{t("auth.recovery.updated")}</p> : null}
+        {passwordUpdated && !recoveryOpen ? <p role="status" className={`mt-6 rounded-xl border border-[#d9c2b0] bg-[#f6ebe3] px-5 py-4 text-center text-sm text-[#3e6554] ${bodyFont}`}>{t("auth.recovery.updated")}</p> : null}
         {recoveryOpen ? (
           recoveryStatus === "sent" ? <Status title={t("auth.checkEmailTitle")} body={t("auth.recovery.checkEmail")} className={bodyFont} /> :
           <form className="mt-6 space-y-4" onSubmit={handleRecoverySubmit} noValidate>
@@ -289,6 +293,14 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
               {resendSeconds > 0 ? t("auth.resendCodeWait").replace("%SECONDS%", String(resendSeconds)) : t("auth.resendCode")}
             </button>
             <button type="button" onClick={() => { setStatus("idle"); setMode("signin"); setOtp(""); setAuthError(null); }} className={`st-link w-full text-center ${bodyFont}`}>{t("auth.signInButton")}</button>
+            {localPreview ? (
+              <div className="rounded-[18px] border border-[#d9c2b0] bg-[#f6ebe3] px-4 py-4 text-center">
+                <p className={`text-sm leading-6 text-[#3e6554] ${bodyFont}`}>로컬에서는 인증 메일·문자가 오지 않아요. 아래 버튼으로 바로 이어서 테스트하세요.</p>
+                <button type="button" onClick={() => { void runLocalPreviewLogin(); }} className={`st-btn st-btn-forest mt-3 w-full ${bodyFont}`}>
+                  이 컴퓨터에서 시험 로그인
+                </button>
+              </div>
+            ) : null}
           </div>
         ) :
         <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
@@ -299,13 +311,20 @@ export function AuthEntry({ returnTo, initialAuthError = null, passwordUpdated =
           {showErrors && passwordError ? <p role="alert" className="text-xs text-[#b97064]">{t(`auth.passwordValidation.${passwordError}`)}</p> : null}
           {mode === "signup" ? <div className="space-y-2"><PrivacyConsentTrigger agreed={privacyConsent} onOpen={() => setPrivacySheetOpen(true)} labelPath="form.privacyConsentLink" />{showErrors && !privacyConsent ? <p role="alert" className={`text-xs text-[#b97064] ${bodyFont}`}>{t("form.validation.privacyRequired")}</p> : null}</div> : null}
           <PrimaryButton disabled={status !== "idle"} className={bodyFont}>{t(status === "submitting" ? "auth.submitting" : mode === "signup" ? "auth.signUpButton" : "auth.signInButton")}</PrimaryButton>
-          {mode === "signin" ? <button type="button" onClick={switchMode} className={`st-btn min-h-14 w-full rounded-full border-2 border-[#3a452f] bg-transparent px-5 py-4 text-base text-[#3a452f] ${bodyFont}`}>{t("auth.createAccount")}</button> : null}
+          {mode === "signin" ? <button type="button" onClick={switchMode} className={`st-btn min-h-14 w-full rounded-full border-2 border-[#55603a] bg-[#f6ebe3] px-5 py-4 text-base text-[#1e4d3a] ${bodyFont}`}>{t("auth.createAccount")}</button> : null}
           {authError ? <div role="alert" className={`text-center text-xs font-light leading-6 text-[#b97064] ${bodyFont}`}><p>{t(`auth.errors.${authError}`)}</p></div> : null}
         </form>}
-        {!recoveryOpen && status !== "check_email" && mode === "signup" ? <div className={`mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm ${bodyFont}`}><span className="text-[#857666]">{t("auth.registered")}</span><button type="button" onClick={switchMode} className="st-link">{t("auth.signIn")}</button></div> : null}
+        {!recoveryOpen && status !== "check_email" && mode === "signup" ? <div className={`mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm ${bodyFont}`}><span className="text-[#5d7c88]">{t("auth.registered")}</span><button type="button" onClick={switchMode} className="st-link">{t("auth.signIn")}</button></div> : null}
         {mode === "signin" && !recoveryOpen && status !== "check_email" ? <div className={`mt-4 flex flex-wrap justify-center gap-x-4 gap-y-3 text-sm ${bodyFont}`}><button type="button" onClick={openRecovery} className="st-link">{t("auth.forgotPassword")}</button><span className="text-[#cbb58e]" aria-hidden="true">|</span><a href="/terms-of-service" className="st-link">{t("homepage.footer.termsOfService")}</a></div> : null}
         {recoveryOpen ? <button type="button" onClick={() => { setRecoveryOpen(false); setRecoveryStatus("idle"); setShowErrors(false); }} className={`st-link mt-5 w-full text-center text-sm ${bodyFont}`}>{t("auth.recovery.back")}</button> : null}
-        {localPreview && !recoveryOpen ? <button type="button" onClick={() => { void (async () => { setLocalPreviewError(false); const response = await fetch("/api/auth/local-preview", { method: "POST" }); if (!response.ok) { setLocalPreviewError(true); return; } window.location.assign(continueAfterAuth(returnTo)); })(); }} className={`st-btn mt-6 min-h-14 w-full rounded-full border-2 border-[#3a452f] bg-transparent px-5 py-4 text-base text-[#3a452f] ${bodyFont}`}>이 컴퓨터에서 시험 로그인</button> : null}
+        {!recoveryOpen && status !== "check_email" && status !== "verifying" && status !== "resending" ? (
+          <div className="mt-6 space-y-2">
+            <p className={`text-center text-xs leading-5 text-[#3e6274] ${bodyFont}`}>이메일 없이 테스트 계정으로 들어갑니다.</p>
+            <button type="button" onClick={() => { void runLocalPreviewLogin(); }} className={`st-btn min-h-14 w-full rounded-full border-2 border-[#55603a] bg-[#55603a] px-5 py-4 text-base text-[#f6ebe3] ${bodyFont}`}>
+              테스트로 들어가기
+            </button>
+          </div>
+        ) : null}
         {localPreviewError ? <p role="alert" className="mt-2 text-center text-xs text-[#b97064]">시험 로그인을 열지 못했어요.</p> : null}
       </main>
       <PrivacyConsentSheet open={privacySheetOpen} onClose={() => setPrivacySheetOpen(false)} titlePath="form.privacyConsentTitle" bodyPath="form.privacyConsentBody" agreePath="form.privacyConsentAgree" checked={privacyConsent} onConfirm={() => setPrivacyConsent(true)} />
@@ -317,7 +336,7 @@ function Field({ id, label, type, autoComplete, value, onChange, className, plac
   return <div className="space-y-2"><label htmlFor={id} className="text-sm font-light">{label}</label><input id={id} type={type} inputMode={type === "email" ? "email" : type === "text" ? "numeric" : undefined} autoComplete={autoComplete} placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} className={`${className} min-h-14 rounded-full px-5`} /></div>;
 }
 function PasswordField({ id, label, autoComplete, value, onChange, className, visible, onToggle, toggleLabel }: { id: string; label: string; autoComplete: string; value: string; onChange: (value: string) => void; className: string; visible: boolean; onToggle: () => void; toggleLabel: string }) {
-  return <div className="space-y-2"><label htmlFor={id} className="text-sm font-light">{label}</label><div className="relative"><input id={id} type={visible ? "text" : "password"} autoComplete={autoComplete} value={value} onChange={(event) => onChange(event.target.value)} className={`${className} min-h-14 rounded-full px-5 pr-14`} /><button type="button" onClick={onToggle} aria-label={toggleLabel} aria-pressed={visible} className="absolute inset-y-0 right-1 flex min-h-11 min-w-11 items-center justify-center rounded-full text-[#9e774c] transition hover:text-[#7a5f48] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#9e774c]"><PasswordVisibilityIcon visible={visible} /></button></div></div>;
+  return <div className="space-y-2"><label htmlFor={id} className="text-sm font-light">{label}</label><div className="relative"><input id={id} type={visible ? "text" : "password"} autoComplete={autoComplete} value={value} onChange={(event) => onChange(event.target.value)} className={`${className} min-h-14 rounded-full px-5 pr-14`} /><button type="button" onClick={onToggle} aria-label={toggleLabel} aria-pressed={visible} className="absolute inset-y-0 right-1 flex min-h-11 min-w-11 items-center justify-center rounded-full text-[#3e6274] transition hover:text-[#2f5568] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#55603a]"><PasswordVisibilityIcon visible={visible} /></button></div></div>;
 }
 function PasswordVisibilityIcon({ visible }: { visible: boolean }) {
   return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-5">{visible ? <><path d="M3 3l18 18" /><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" /><path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c5.5 0 9 8 9 8a16 16 0 0 1-2.1 3.3" /><path d="M6.6 6.6C4.2 8.2 3 12 3 12s3.5 8 9 8a9.7 9.7 0 0 0 4-.9" /></> : <><path d="M3 12s3.5-8 9-8 9 8 9 8-3.5 8-9 8-9-8-9-8Z" /><circle cx="12" cy="12" r="2.5" /></>}</svg>;
@@ -326,5 +345,5 @@ function PrimaryButton({ disabled, className, children }: { disabled: boolean; c
   return <button type="submit" disabled={disabled} className={`st-btn st-btn-forest min-h-14 w-full rounded-full px-5 py-4 text-base disabled:cursor-not-allowed disabled:opacity-55 ${className}`}>{children}</button>;
 }
 function Status({ title, body, className }: { title: string; body: string; className: string }) {
-  return <div role="status" className={`mt-8 rounded-2xl border border-[#eadcc6] bg-[#fff8ec] px-5 py-6 text-center ${className}`}><p className="st-headline text-lg text-[#393129]">{title}</p><p className="mt-2 text-sm leading-7 text-[#857666]">{body}</p></div>;
+  return <div role="status" className={`mt-8 rounded-2xl border border-[#d9c2b0] bg-[#f6ebe3] px-5 py-6 text-center ${className}`}><p className="st-headline text-lg text-[#1e4d3a]">{title}</p><p className="mt-2 text-sm leading-7 text-[#5d7c88]">{body}</p></div>;
 }

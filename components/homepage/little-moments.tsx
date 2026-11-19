@@ -19,11 +19,11 @@ export function LittleMoments() {
   ] as const;
 
   return (
-    <section className="bg-[#f3ebda] py-14 text-[#1a1512] md:py-20">
+    <section className="bg-[#ead6c4] py-14 text-[#1e4d3a] md:py-20">
       <div className="mx-auto grid max-w-7xl grid-cols-[45%_55%] items-center gap-3 px-3 sm:grid-cols-[42%_58%] sm:gap-8 sm:px-8 lg:gap-12">
         <div className="min-w-0">
           <Reveal className={styles.momentsTextEntrance}>
-            <p className="mb-3 text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#c8a24a] sm:mb-4 sm:text-xs sm:tracking-[0.28em]">
+            <p className="mb-3 text-[0.6rem] font-medium uppercase tracking-[0.16em] text-[#8fb4c8] sm:mb-4 sm:text-xs sm:tracking-[0.28em]">
               {t("homepage.moments.label")}
             </p>
             <h2
@@ -32,7 +32,7 @@ export function LittleMoments() {
               {t("homepage.moments.title")}
             </h2>
             <p
-              className={`${display} mt-4 max-w-sm whitespace-pre-line text-xs leading-relaxed text-[#1a1512]/65 sm:mt-5 sm:text-sm lg:text-base`}
+              className={`${display} mt-4 max-w-sm whitespace-pre-line text-xs leading-relaxed text-[#1e4d3a]/65 sm:mt-5 sm:text-sm lg:text-base`}
             >
               {t("homepage.moments.body")}
             </p>
@@ -47,7 +47,7 @@ export function LittleMoments() {
               className={`group absolute ${width} ${position} ${layer} ${styles.momentPhotoEntrance}`}
             >
               <div className={rotation}>
-                <div className="relative rounded-sm bg-[#f8f2e7] p-1.5 pb-6 shadow-[0_10px_24px_rgba(67,48,29,0.18)] sm:p-3 sm:pb-10">
+                <div className="relative rounded-sm bg-[#e7f0f4] p-1.5 pb-6 shadow-[0_10px_24px_rgba(67,48,29,0.18)] sm:p-3 sm:pb-10">
                   <div className="relative aspect-square overflow-hidden">
                     <Image
                       src={src}
@@ -64,7 +64,7 @@ export function LittleMoments() {
               </div>
             </Reveal>
           ))}
-          <span className="absolute bottom-[8%] right-[24%] z-30 rotate-12 font-serif text-xl text-[#c8a24a]/70 sm:text-3xl">
+          <span className="absolute bottom-[8%] right-[24%] z-30 rotate-12 font-serif text-xl text-[#8fb4c8]/70 sm:text-3xl">
             ♡
           </span>
         </div>

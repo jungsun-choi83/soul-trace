@@ -38,7 +38,7 @@ export function LetterPostageStamp({ photoUrl, defaultStamp, accentColor, inkCol
             ))}
           </mask>
           <linearGradient id={`${maskId}-paper`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#fffaf0" />
+            <stop offset="0" stopColor="#e7f0f4" />
             <stop offset="0.52" stopColor="#f4e5c8" />
             <stop offset="1" stopColor="#ddc292" />
           </linearGradient>

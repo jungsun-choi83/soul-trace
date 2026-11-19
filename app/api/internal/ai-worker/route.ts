@@ -7,6 +7,10 @@ import {
 import OpenAI from "openai";
 import { randomUUID } from "node:crypto";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
+import { trialPlateSrc } from "@/components/trial-theme-scene";
 import {
   generateSeasonalPolaroidImage,
   generateSeasonalPolaroidMemo,
@@ -33,6 +37,9 @@ import {
   releaseSeasonalGuestTrial,
 } from "@/lib/seasonal-polaroid-guest-trial";
 import { completeSeasonalPolaroidJob } from "@/lib/seasonal-polaroid-persistence";
+import { isMemberPolaroidArtStyle, memberPolaroidUsesTrialPlate } from "@/lib/polaroid-member-flow";
+import { isFreeStyle } from "@/lib/pet-free-trial";
+import type { TrialThemeId } from "@/lib/trial-polaroid-ai";
 
 export const runtime = "nodejs";
 // One cron invocation claims at most the configured worker capacity. The OpenAI
@@ -202,14 +209,28 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
   const existingImage = await downloadSeasonalPolaroidResultImage({ storage, objectKey: resultPath });
   let imageBytes: ArrayBuffer;
   let imageModel = "stored-retry";
-  const imageReferenceCount = 1;
+  let imageReferenceCount: 1 | 2 = 1;
   if (existingImage) {
     imageBytes = await existingImage.arrayBuffer();
   } else {
+    const styleId = String(promptAnswers.themeId ?? "");
+    const occasionId = String(promptAnswers.occasionId ?? "").trim();
+    let plate: { bytes: ArrayBuffer; name: string; type: string } | null = null;
+    if (isMemberPolaroidArtStyle(styleId) && isFreeStyle(styleId) && memberPolaroidUsesTrialPlate(occasionId)) {
+      const src = trialPlateSrc(styleId, occasionId as TrialThemeId);
+      if (src) {
+        const file = path.join(process.cwd(), "public", ...src.split("/").filter(Boolean));
+        const bytes = await readFile(file);
+        const copy = new ArrayBuffer(bytes.byteLength);
+        new Uint8Array(copy).set(bytes);
+        plate = { bytes: copy, name: path.basename(file), type: "image/jpeg" };
+      }
+    }
     const imageResult = await generateSeasonalPolaroidImage({
       openai,
-      answers: validated.answers as SeasonalPolaroidPromptAnswers,
+      answers: promptAnswers,
       primary: { bytes: primaryBytes, name: primaryName, type: primaryType },
+      plate,
     });
     if (!imageResult.imageBase64) {
       await requeueSeasonalJob(job, "seasonal_image_failed");
@@ -222,6 +243,7 @@ async function processSeasonalPolaroidJob(job: AiGenerationJob): Promise<void> {
     }
     imageBytes = decoded.buffer.slice(decoded.byteOffset, decoded.byteOffset + decoded.byteLength) as ArrayBuffer;
     imageModel = imageResult.modelUsed;
+    imageReferenceCount = imageResult.referenceCount;
     const uploaded = await uploadSeasonalPolaroidResultImage({ storage, objectKey: resultPath, bytes: imageBytes });
     if (!uploaded.ok) {
       await requeueSeasonalJob(job, uploaded.code);

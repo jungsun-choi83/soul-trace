@@ -6,6 +6,7 @@ import {
   splashAlreadySeen,
   SPLASH_FADE_MS,
   SPLASH_HOLD_MS,
+  SPLASH_SESSION_KEY,
 } from "@/lib/splash-entry";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 
@@ -27,6 +28,12 @@ export function HomeEntry({ children }: { children: ReactNode }) {
     }
     if (replay) {
       try {
+        window.sessionStorage.removeItem("soultrace.splash.started");
+        window.sessionStorage.removeItem(SPLASH_SESSION_KEY);
+      } catch {
+        // Replay still shows splash even if storage is blocked.
+      }
+      try {
         window.history.replaceState(null, "", "/");
       } catch {
         // Showing splash still works if the query cannot be stripped.
@@ -34,7 +41,7 @@ export function HomeEntry({ children }: { children: ReactNode }) {
     }
     const startedKey = "soultrace.splash.started";
     let started = Number(window.sessionStorage.getItem(startedKey));
-    if (!Number.isFinite(started) || started <= 0) {
+    if (replay || !Number.isFinite(started) || started <= 0) {
       started = Date.now();
       try {
         window.sessionStorage.setItem(startedKey, String(started));

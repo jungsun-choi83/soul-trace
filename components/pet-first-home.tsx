@@ -38,7 +38,7 @@ export function PetFirstHome({
     <div className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-5 sm:pt-8">
         <header className="flex items-center justify-between">
-          <Link href="/" className="inline-flex min-h-11 flex-col items-center text-[#6b4a2c]">
+          <Link href="/" className="inline-flex min-h-11 flex-col items-center text-[#1e4d3a]">
             <EternalBeamLogo className="h-8 w-auto" />
             <span className="font-display-en text-sm tracking-[0.06em]">SoulTrace</span>
           </Link>
@@ -126,7 +126,6 @@ export function PetFirstHome({
                   <p className="st-pen text-xl leading-snug text-[color:var(--st-brown)]">{copy.quietBody}</p>
                   <Link href={`${petHref}#memorial`} className="st-btn st-btn-quiet mt-4 w-full">{copy.quietCta}</Link>
                 </div>
-                <p className="mt-3 text-xs text-[color:var(--st-text-soft)]">{copy.noReminder}</p>
               </section>
             ) : null}
 

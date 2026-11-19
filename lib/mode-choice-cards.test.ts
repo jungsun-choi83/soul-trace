@@ -56,7 +56,7 @@ test("back and card destinations preserve validated query parameters", () => {
 test("letter entry keeps cream paper chrome and accessible controls", () => {
   assert.match(component, /min-h-\[100svh\]/);
   assert.match(component, /overflow-x-hidden/);
-  assert.match(component, /bg-\[#fffaf0\]/);
+  assert.match(component, /bg-\[#e7f0f4\]/);
   assert.match(component, /rounded-\[13px\]/);
   assert.match(component, /current="create"/);
   assert.match(component, /StoryTabbar/);

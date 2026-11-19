@@ -19,6 +19,14 @@
 /tmp-38pages/
 .tmp-uiux-38/
 .tmp-uiux-38-final/
+.tmp-preview/
+.tmp-ui56/
+.preview-shots/
+/e2e/screenshots/
+/SoulTrace_Cursor_*/
+/SoulTrace_Standalone_Splash_*/
+/SoulTrace_UIUX_*/
+/tmp-verify/
 
 # production
 /build

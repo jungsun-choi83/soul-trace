@@ -30,7 +30,7 @@ export function PaperShell({
   void title;
 
   return (
-    <div className="st-paper st-grain flex min-h-[100svh] flex-col overflow-x-clip text-[#393129]">
+    <div className="st-paper st-grain flex min-h-[100svh] flex-col overflow-x-clip text-[#1e4d3a]">
       <div className="relative z-10 px-5 pt-[max(0.35rem,env(safe-area-inset-top))]">
         <StoryBrandHeader backHref={backHref} onBack={onBack} homeHref="/" />
       </div>

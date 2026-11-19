@@ -27,7 +27,7 @@ export default async function PetMemoryPage({
   if (!isUuid(petId)) notFound();
   const supabase = await createSupabaseAuthServerClient();
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
-  if (!supabase || !user) return <PetFirstMemory profile={guestPreviewProfile()} today={seoulToday()} />;
+  if (!supabase || !user) return <PetFirstProfile profile={guestPreviewProfile()} today={seoulToday()} />;
 
   const result = await loadPetProfile(supabase, user.id, petId);
   if (result.status === "unavailable") return <PetFirstUnavailable />;

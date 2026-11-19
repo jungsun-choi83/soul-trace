@@ -209,14 +209,14 @@
         "emailCodeExpired": "That code has expired. Request a new one.",
         "emailUnavailable": "Email verification is temporarily unavailable. Please try again.",
         "eyebrow": "SEASONAL POLAROID",
-        "developingTitle": "Developing your little keepsake",
+        "developingTitle": "Your child is coming to us in a new look",
         "readyTitle": "Your Polaroid is ready",
         "cardTitleLiving": "%NAME%'s Halloween keepsake",
         "cardTitlePassed": "%NAME%'s Halloween memory",
-        "developingPhoto": "A little seasonal magic is taking shape...",
+        "developingPhoto": "Your child is coming to us in a new look",
         "memoWaiting": "Your little note will appear here.",
         "queued": "Your place is saved in the queue.",
-        "processing": "The studio is bringing every detail together.",
+        "processing": "Your child is coming to us in a new look",
         "inProgress": "Generation in progress",
         "failed": "We couldn't finish this Polaroid. Your answers are safe.",
         "pollingError": "We lost the live update briefly. We'll keep trying.",
@@ -248,12 +248,12 @@
         "mockOwner": "you",
         "viewMyPolaroids": "View My Polaroids",
         "messages": {
-          "livingOne": "%NAME% is trying on a costume...",
-          "livingTwo": "Finding the perfect pumpkin light...",
-          "livingThree": "Writing you a little note...",
-          "passedOne": "Holding %NAME%'s familiar light close...",
-          "passedTwo": "Finding a gentle place for this memory...",
-          "passedThree": "Writing a little note from the heart..."
+          "livingOne": "Your child is coming to us in a new look",
+          "livingTwo": "%NAME% is walking into the artwork",
+          "livingThree": "A little longer, and that look will come into focus",
+          "passedOne": "Your child is coming to us in a new look",
+          "passedTwo": "%NAME% is arriving as a warm illustration",
+          "passedThree": "A little longer, and that memory will come into focus"
         }
       },
       "photoLimit": "JPG, PNG, or WebP · up to 15 MB",
@@ -540,7 +540,7 @@
         },
         "treats": {
           "dog": {
-            "pumpkinBiscuit": "Pumpkin biscuit",
+            "pumpkinBiscuit": "Homemade treat",
             "jerky": "Jerky",
             "cheese": "Cheese"
           },

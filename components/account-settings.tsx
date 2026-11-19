@@ -44,7 +44,6 @@ export function AccountSettings({ email, petId }: { email: string | null; petId:
           <SettingsRow label={copy.settingsNotifyMonthly} value={copy.off} />
           <SettingsRow label={copy.settingsNotifyMemorial} value={copy.off} />
         </ul>
-        <p className="mt-3 text-xs text-[color:var(--st-text-soft)]">{copy.noReminder}</p>
 
         <h2 className="st-headline mt-8 text-xl">{copy.settingsMine}</h2>
         <ul className="mt-3 grid gap-2">

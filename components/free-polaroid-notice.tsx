@@ -23,5 +23,5 @@ export function FreePolaroidNotice({ petId }: { petId: string }) {
   if (remaining > 0) {
     return <Link href="/try" className="mt-3 block text-sm font-semibold tracking-[-0.03em] text-[#3f5c45]">우리아이 첫 폴라로이드 만들기</Link>;
   }
-  return <Link href="/premium" className="mt-3 block text-sm font-semibold text-[#5a3d27]">추가 콘텐츠 만들기</Link>;
+  return <Link href="/premium" className="mt-3 block text-sm font-semibold text-[#1e4d3a]">추가 콘텐츠 만들기</Link>;
 }

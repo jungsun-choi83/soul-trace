@@ -34,7 +34,9 @@ export default async function MemorialSpacePage({
   if (!supabase || !user) return <MemorialSpace profile={guestPreviewProfile("memorial")} today={seoulToday()} />;
   if (!petId || !isUuid(petId)) {
     const memorialPet = await pickOwnedPet(supabase, user.id, "memorial");
-    if (!memorialPet) return <MemorialSpaceClosed reason="not_memorial" />;
+    // From the "above the clouds" home, still open the quiet room as a preview
+    // until a memorial pet is registered.
+    if (!memorialPet) return <MemorialSpace profile={guestPreviewProfile("memorial")} today={seoulToday()} />;
     redirect(`/memorial-space?pet=${memorialPet.petId}`);
   }
 
@@ -43,7 +45,10 @@ export default async function MemorialSpacePage({
   if (result.status === "not_found") return <MemorialSpaceClosed reason="not_found" />;
 
   const access = decideMemorialSpaceAccess(user.id, user.id, result.profile.lifeStatus);
-  if (access === "not_memorial") return <MemorialSpaceClosed reason="not_memorial" />;
+  if (access === "not_memorial") {
+    // Living/unspecified pet query → quiet-room preview instead of a hard stop.
+    return <MemorialSpace profile={guestPreviewProfile("memorial")} today={seoulToday()} />;
+  }
 
   return <MemorialSpace profile={result.profile} today={seoulToday()} />;
 }

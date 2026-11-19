@@ -46,18 +46,18 @@ export function PasswordUpdateForm({ returnTo }: { returnTo: string }) {
 
   return (
     <main className="relative isolate flex min-h-[100svh] items-center justify-center overflow-x-clip overflow-y-auto bg-black px-6 py-10 text-[#F3EAD8] sm:px-8">
-      <section className="w-full max-w-[460px] rounded-[22px] border border-[#D4AF37]/30 bg-[rgba(16,14,11,0.86)] px-5 py-8 shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:px-8 sm:py-10">
+      <section className="w-full max-w-[460px] rounded-[22px] border border-[#8fb4c8]/30 bg-[rgba(16,14,11,0.86)] px-5 py-8 shadow-[0_24px_90px_rgba(0,0,0,0.65)] sm:px-8 sm:py-10">
         <div className="flex justify-end"><LanguageToggle /></div>
         <h1 className={`mt-5 text-center text-3xl font-light text-[#FFF6E5] ${bodyFont}`}>{t("auth.recovery.updateTitle")}</h1>
-        <p className={`mt-3 text-center text-sm leading-7 text-[#EDE4D3]/72 ${bodyFont}`}>{t("auth.recovery.updateBody")}</p>
+        <p className={`mt-3 text-center text-sm leading-7 text-[#e7f0f4]/72 ${bodyFont}`}>{t("auth.recovery.updateBody")}</p>
         <form className="mt-8 space-y-5" onSubmit={submit} noValidate>
           <div className="space-y-2">
             <label htmlFor="new-password" className={bodyFont}>{t("auth.recovery.newPassword")}</label>
-            <input id="new-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full rounded-xl border border-[#D4AF37]/35 bg-black/35 px-4 py-3.5 text-white ${bodyFont}`} />
+            <input id="new-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full rounded-xl border border-[#8fb4c8]/35 bg-black/35 px-4 py-3.5 text-white ${bodyFont}`} />
           </div>
           <div className="space-y-2">
             <label htmlFor="confirm-new-password" className={bodyFont}>{t("auth.recovery.confirmPassword")}</label>
-            <input id="confirm-new-password" type="password" autoComplete="new-password" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} className={`w-full rounded-xl border border-[#D4AF37]/35 bg-black/35 px-4 py-3.5 text-white ${bodyFont}`} />
+            <input id="confirm-new-password" type="password" autoComplete="new-password" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} className={`w-full rounded-xl border border-[#8fb4c8]/35 bg-black/35 px-4 py-3.5 text-white ${bodyFont}`} />
           </div>
           {showErrors && validation ? <p role="alert" className={`text-sm text-red-200 ${bodyFont}`}>{t(`auth.recovery.${validation}`)}</p> : null}
           {status === "policy_failed" || status === "request_failed" ? <p role="alert" className={`text-sm text-red-200 ${bodyFont}`}>{t(`auth.recovery.${status}`)}</p> : null}

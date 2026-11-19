@@ -66,7 +66,7 @@ export function ResultEmailModal({
             role="dialog"
             aria-modal
             aria-labelledby="result-email-title"
-            className={`fixed inset-x-4 top-[18%] z-[301] mx-auto max-h-[min(70dvh,560px)] w-full max-w-md overflow-y-auto rounded-2xl border border-[rgba(212,175,55,0.35)] bg-[rgba(14,12,10,0.96)] px-6 py-7 shadow-[0_24px_80px_rgba(0,0,0,0.65)] sm:inset-x-auto sm:left-1/2 sm:top-[22%] sm:-translate-x-1/2 ${bodyFont}`}
+            className={`fixed inset-x-4 top-[18%] z-[301] mx-auto max-h-[min(70dvh,560px)] w-full max-w-md overflow-y-auto rounded-2xl border border-[rgba(143, 180, 200,0.35)] bg-[rgba(14,12,10,0.96)] px-6 py-7 shadow-[0_24px_80px_rgba(0,0,0,0.65)] sm:inset-x-auto sm:left-1/2 sm:top-[22%] sm:-translate-x-1/2 ${bodyFont}`}
             initial={{ opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -75,14 +75,14 @@ export function ResultEmailModal({
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(212,175,55,0.4)] bg-black/40 text-lg leading-none text-[#D4AF37] transition hover:bg-[rgba(212,175,55,0.1)]"
+              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(143, 180, 200,0.4)] bg-black/40 text-lg leading-none text-[#8fb4c8] transition hover:bg-[rgba(143, 180, 200,0.1)]"
               aria-label="Close"
             >
               ×
             </button>
             <h2
               id="result-email-title"
-              className="pr-10 text-lg font-light leading-snug tracking-wide text-[#F5E6B8] sm:text-xl"
+              className="pr-10 text-lg font-light leading-snug tracking-wide text-[#f6ebe3] sm:text-xl"
             >
               {intent === "continue"
                 ? t("result.emailFlow.titleContinue")
@@ -99,10 +99,10 @@ export function ResultEmailModal({
                 onChange={(e) => setValue(e.target.value)}
                 autoComplete="email"
                 placeholder={t("result.emailFlow.placeholder")}
-                className={`w-full rounded-xl border bg-black/40 px-4 py-3.5 text-base font-extralight text-[#F3EAD8] outline-none transition placeholder:text-[#6b6560] focus:border-[#D4AF37] ${
+                className={`w-full rounded-xl border bg-black/40 px-4 py-3.5 text-base font-extralight text-[#F3EAD8] outline-none transition placeholder:text-[#6b6560] focus:border-[#8fb4c8] ${
                   shake
                     ? "border-amber-500/70 ring-1 ring-amber-500/40"
-                    : "border-[rgba(212,175,55,0.35)]"
+                    : "border-[rgba(143, 180, 200,0.35)]"
                 }`}
               />
             </label>

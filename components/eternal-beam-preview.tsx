@@ -19,18 +19,18 @@ export function EternalBeamPreview({ lang }: EternalBeamPreviewProps) {
 
   return (
     <section
-      className={`mx-auto mt-10 max-w-xl rounded-2xl border border-[rgba(212,175,55,0.28)] bg-[rgba(12,10,8,0.65)] px-5 py-8 shadow-[inset_0_1px_0_rgba(255,248,220,0.04)] sm:px-7 sm:py-9 ${bodyFont}`}
+      className={`mx-auto mt-10 max-w-xl rounded-2xl border border-[rgba(143, 180, 200,0.28)] bg-[rgba(12,10,8,0.65)] px-5 py-8 shadow-[inset_0_1px_0_rgba(255,248,220,0.04)] sm:px-7 sm:py-9 ${bodyFont}`}
       aria-labelledby="eternal-beam-preview-title"
     >
       <h2
         id="eternal-beam-preview-title"
-        className="text-center text-[10px] font-light uppercase tracking-[0.32em] text-[#D4AF37]/95 sm:text-xs"
+        className="text-center text-[10px] font-light uppercase tracking-[0.32em] text-[#8fb4c8]/95 sm:text-xs"
       >
         {t("result.eternalBeamPreview.kicker")}
       </h2>
 
       {/* 패딩 상쇄: 카드 내 가로 풀 너비 · 16:9 */}
-      <div className="relative mt-7 -mx-5 aspect-video w-[calc(100%+2.5rem)] overflow-hidden rounded-xl border border-[rgba(212,175,55,0.22)] bg-black shadow-[0_12px_40px_rgba(0,0,0,0.45)] sm:-mx-7 sm:w-[calc(100%+3.5rem)]">
+      <div className="relative mt-7 -mx-5 aspect-video w-[calc(100%+2.5rem)] overflow-hidden rounded-xl border border-[rgba(143, 180, 200,0.22)] bg-black shadow-[0_12px_40px_rgba(0,0,0,0.45)] sm:-mx-7 sm:w-[calc(100%+3.5rem)]">
         <video
           className="h-full w-full object-cover object-center"
           autoPlay
@@ -45,7 +45,7 @@ export function EternalBeamPreview({ lang }: EternalBeamPreviewProps) {
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
       </div>
 
-      <p className="mx-auto mt-6 max-w-md text-center text-sm font-extralight leading-relaxed text-[#E8DCC8] sm:text-[15px]">
+      <p className="mx-auto mt-6 max-w-md text-center text-sm font-extralight leading-relaxed text-[#d9c2b0] sm:text-[15px]">
         {t("result.eternalBeamPreview.body")}
       </p>
     </section>

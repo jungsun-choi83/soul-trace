@@ -190,21 +190,21 @@ export function TemporaryVideoMemories({
   if (!formOpen && memories.length === 0) return null;
 
   return (
-    <section className={`rounded-3xl border border-[#D4AF37]/25 bg-[#12100E]/80 p-6 shadow-[0_0_50px_rgba(212,175,55,0.06)] sm:p-8 ${isKorean ? "font-ko" : "font-display-en"}`}>
+    <section className={`rounded-3xl border border-[#8fb4c8]/25 bg-[#12100E]/80 p-6 shadow-[0_0_50px_rgba(143, 180, 200,0.06)] sm:p-8 ${isKorean ? "font-ko" : "font-display-en"}`}>
       {formOpen ? (
-        <form onSubmit={saveVideo} className="rounded-2xl border border-[#D4AF37]/25 bg-black/35 p-5 sm:p-7">
+        <form onSubmit={saveVideo} className="rounded-2xl border border-[#8fb4c8]/25 bg-black/35 p-5 sm:p-7">
           <h2 className="text-lg font-light text-[#F5E6C8]">{t("lifeArchive.videos.add")}</h2>
           {storageMode === "temporary" ? <p className="mt-2 text-xs leading-relaxed text-[#A99B87]">{t("lifeArchive.videos.temporaryWarning")}</p> : null}
           <label className="mt-5 block text-sm font-light text-[#D9C6A4]">
             {t("lifeArchive.videos.select")}
-            <input ref={inputRef} type="file" accept="video/*" onChange={(event) => chooseVideo(event.target.files?.[0])} className="mt-2 block min-h-12 w-full cursor-pointer rounded-xl border border-dashed border-[#D4AF37]/35 bg-[#11100F] px-4 py-3 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-[#b89a2e] file:px-4 file:py-2 file:text-black" />
+            <input ref={inputRef} type="file" accept="video/*" onChange={(event) => chooseVideo(event.target.files?.[0])} className="mt-2 block min-h-12 w-full cursor-pointer rounded-xl border border-dashed border-[#8fb4c8]/35 bg-[#11100F] px-4 py-3 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-[#b89a2e] file:px-4 file:py-2 file:text-black" />
           </label>
           <p className="mt-2 text-xs text-[#8F8578]">{t("lifeArchive.videos.help")}</p>
           {selected ? (
             <div className="mt-5">
               <video src={selected.url} controls playsInline preload="metadata" className="max-h-[28rem] w-full rounded-xl bg-black object-contain" onError={rejectSelectedPreview} />
               <div className="mt-3 flex gap-3">
-                <button type="button" onClick={() => inputRef.current?.click()} className="min-h-11 rounded-lg border border-[#D4AF37]/30 px-4 text-sm text-[#D9C6A4]">{t("lifeArchive.videos.replace")}</button>
+                <button type="button" onClick={() => inputRef.current?.click()} className="min-h-11 rounded-lg border border-[#8fb4c8]/30 px-4 text-sm text-[#D9C6A4]">{t("lifeArchive.videos.replace")}</button>
                 <button type="button" onClick={removeSelected} className="min-h-11 rounded-lg border border-white/15 px-4 text-sm text-[#C4B8A8]">{t("lifeArchive.videos.remove")}</button>
               </div>
             </div>
@@ -220,10 +220,10 @@ export function TemporaryVideoMemories({
         {memories.map((memory) => <article key={memory.memoryId} className="overflow-hidden rounded-2xl border border-white/10 bg-black/35 p-3 sm:p-5">
           {storageMode === "temporary" ? <p className="mb-3 text-xs leading-relaxed text-[#A99B87]">{t("lifeArchive.videos.temporaryWarning")}</p> : null}
           <video id={`video-memory-${memory.memoryId}`} src={memory.url} controls playsInline preload="metadata" className="max-h-[32rem] w-full rounded-xl bg-black object-contain" />
-          <div className="mt-4 border-t border-[#D4AF37]/20 pt-4">
+          <div className="mt-4 border-t border-[#8fb4c8]/20 pt-4">
             {memory.memoryDate ? <p className="text-xs text-[#A99B87]">{new Intl.DateTimeFormat(isKorean ? "ko-KR" : "en-US", { dateStyle: "long" }).format(new Date(`${memory.memoryDate}T00:00:00`))}</p> : null}
             {memory.caption ? <p className="mt-2 whitespace-pre-wrap text-sm leading-[1.75] text-[#CFC5B6]">{memory.caption}</p> : null}
-            <div className="mt-3 flex flex-wrap gap-2 text-xs text-[#D9C6A4]"><button type="button" aria-pressed={memory.isFavorite} onClick={() => void toggleFavorite(memory)} className="min-h-11 rounded-lg px-3 hover:bg-[#D4AF37]/10">{memory.isFavorite ? "★" : "☆"} {t("lifeArchive.videos.favorite")}</button><button type="button" onClick={() => void document.getElementById(`video-memory-${memory.memoryId}`)?.requestFullscreen?.()} className="min-h-11 rounded-lg px-3 hover:bg-[#D4AF37]/10">{t("lifeArchive.videos.fullScreen")}</button><button type="button" onClick={() => void deleteVideo(memory.memoryId)} className="min-h-11 rounded-lg px-3 text-red-200 hover:bg-red-950/30">{t("lifeArchive.videos.delete")}</button></div>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-[#D9C6A4]"><button type="button" aria-pressed={memory.isFavorite} onClick={() => void toggleFavorite(memory)} className="min-h-11 rounded-lg px-3 hover:bg-[#8fb4c8]/10">{memory.isFavorite ? "★" : "☆"} {t("lifeArchive.videos.favorite")}</button><button type="button" onClick={() => void document.getElementById(`video-memory-${memory.memoryId}`)?.requestFullscreen?.()} className="min-h-11 rounded-lg px-3 hover:bg-[#8fb4c8]/10">{t("lifeArchive.videos.fullScreen")}</button><button type="button" onClick={() => void deleteVideo(memory.memoryId)} className="min-h-11 rounded-lg px-3 text-red-200 hover:bg-red-950/30">{t("lifeArchive.videos.delete")}</button></div>
           </div>
         </article>)}
       </div> : null}

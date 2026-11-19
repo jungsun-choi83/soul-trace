@@ -63,6 +63,33 @@ export function dashboardHomePath(pets: BranchPetRef[], selectedPetId?: string |
   return "/choose";
 }
 
+/**
+ * When the requested pet is gone, open the one remaining confirmed pet.
+ * Several pets stay on the home the user opened so they can choose.
+ */
+export function fallbackHomePath(
+  branch: EntryBranch,
+  pets: BranchPetRef[],
+  selected: BranchPetRef | null,
+): string | null {
+  if (selected) return null;
+  const living = pets.filter((pet) => pet.lifeStatus === "living");
+  const memorial = pets.filter((pet) => pet.lifeStatus === "memorial");
+  if (branch === "living" && living.length === 1 && memorial.length === 0) {
+    return entryHomePath("living", living[0].petId);
+  }
+  if (branch === "memorial" && memorial.length === 1 && living.length === 0) {
+    return entryHomePath("memorial", memorial[0].petId);
+  }
+  if (living.length === 0 && memorial.length === 1) return entryHomePath("memorial", memorial[0].petId);
+  if (memorial.length === 0 && living.length === 1) return entryHomePath("living", living[0].petId);
+  const unspecified = pets.filter((pet) => pet.lifeStatus !== "living" && pet.lifeStatus !== "memorial");
+  if (living.length === 0 && memorial.length === 0 && unspecified.length === 1) {
+    return `/choose?pet=${encodeURIComponent(unspecified[0].petId)}`;
+  }
+  return null;
+}
+
 /** A confirmed pet status moves the open home. Unspecified stays on the home the user opened. */
 export function redirectForSelectedPet(
   branch: EntryBranch,

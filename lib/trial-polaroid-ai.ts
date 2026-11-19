@@ -74,10 +74,11 @@ export function buildTrialPolaroidPrompt(style: FreeStyle, theme: TrialThemeId):
     `The full pet must be visible: head, ears, tail, and paws are not cropped. Fit the pet inside about ${width}% of the frame width and ${height}% of the frame height, scaled to the scene's perspective. A small pet stays smaller; a large pet may be larger, but it must not cover important background elements.`,
     "Keep the posture anatomically natural for this individual pet, with paws or body visibly supported by the ground. Add a soft contact shadow that matches the background light. Match the background's perspective and color temperature.",
     preset.snowContact ? "This is a snowy path. Add a light natural snow contact around the paws. Do not bury the pet." : "Do not add snow.",
-    "Preserve this individual pet: breed and build, coat colors and markings, ear shape, eye and nose character, face, body proportions, and a collar or other clear accessory if the photo shows one.",
+    "Preserve this individual pet: breed and build, coat colors and markings, ear shape, eye and nose character, face, and body proportions.",
+    "ACCESSORIES: Do not draw a collar, leash, harness, ID tag, bandana, scarf, or any neck accessory from the reference photo. Leave the neck bare. Do not invent clothing.",
     "Do not swap the breed, invent a smile, add a hat, or add a costume. No Christmas outfit unless it is already in the photo.",
     "Identity matters more than cuteness. The result is the same pet, redrawn into the background, not a different cute animal and not the original photo laid on top.",
-    "FINAL CHECK: Fur, eyes, nose, ears, paws, and any leash must be drawn with the same marks as the background. A photographic animal standing inside an illustration is a failed image. Repaint the whole pet in that medium until no camera texture remains.",
+    "FINAL CHECK: Fur, eyes, nose, ears, and paws must be drawn with the same marks as the background. No collar or leash. A photographic animal standing inside an illustration is a failed image. Repaint the whole pet in that medium until no camera texture remains.",
   ].join("\n");
 }
 

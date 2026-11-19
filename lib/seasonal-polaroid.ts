@@ -135,7 +135,7 @@ export const HALLOWEEN_POLAROID_THEME: SeasonalPolaroidTheme = {
   },
   treatsBySpecies: {
     dog: [
-      option("pumpkin-biscuit", "🎃", "options.treats.dog.pumpkinBiscuit"),
+      option("pumpkin-biscuit", "🍪", "options.treats.dog.pumpkinBiscuit"),
       option("jerky", "🥓", "options.treats.dog.jerky"),
       option("cheese", "🧀", "options.treats.dog.cheese"),
       option("custom", "✍️", "options.treats.custom"),

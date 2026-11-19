@@ -44,15 +44,15 @@ function halloweenVoice(answers: Pick<SeasonalPolaroidPromptAnswers, "themeId" |
 }
 
 export const POLAROID_ART_STYLE_LEADS: Record<PolaroidArtStyleKey, string> = {
-  felt: "Create one square studio photograph of a handmade needle-felted wool miniature of the exact individual pet. The pet AND every background object — trees, clouds, furniture, books, toys — are physical wool-felt sculptures with visible fibers, rounded stuffed forms, and needle-punched texture. Warm craft-table lighting. This is a photographed needle-felt diorama, never a live animal, never a photo with a fur filter, never gouache, never crayon, and never an oil painting.",
-  gouache: "Create one square 2D gouache storybook illustration of the exact individual pet. Opaque gouache paint, natural visible brushstrokes, rich flowers and trees, warm picture-book color, and clean flat shapes. This is SoulTrace's original painted 2D fairy-tale look — not needle felt, not oil impasto, not a photograph, and not a child's crayon drawing.",
-  crayon: "Create one square child's crayon diary drawing of the exact individual pet on textured paper. Rough wax crayon strokes, uneven handmade coloring, visible paper grain, bright and cute, slightly naive proportions. It must look like a child drew it by hand — not refined gouache illustration, not felt sculpture, and not a photograph.",
+  felt: "Create one square studio photograph of a handmade needle-felted wool miniature of the exact individual pet. The pet AND every background object — trees, clouds, furniture, books, toys — are physical wool-felt sculptures with visible fibers, rounded stuffed forms, and needle-punched texture. Warm craft-table lighting. This is a photographed needle-felt diorama, never a live animal, never a photo with a fur filter, never gouache, never crayon, and never an oil painting. Do not draw a collar, leash, harness, tag, bandana, scarf, or any neck accessory — bare neck only unless an explicit costume was selected.",
+  gouache: "Create one square 2D gouache storybook illustration of the exact individual pet. Opaque gouache paint, natural visible brushstrokes, rich flowers and trees, warm picture-book color, and clean flat shapes. This is SoulTrace's original painted 2D fairy-tale look — not needle felt, not oil impasto, not a photograph, and not a child's crayon drawing. Do not draw a collar, leash, harness, tag, bandana, scarf, or any neck accessory — bare neck only unless an explicit costume was selected.",
+  crayon: "Create one square pastel vintage travel-poster illustration of the exact individual pet. Crisp delicate outlines, restrained pastel color, flat color with refined shading on vintage paper. No watercolor bleed, no anime, no photographic texture, no child's crayon diary drawing, not refined gouache illustration, and not felt sculpture. Do not draw a collar, leash, harness, tag, bandana, scarf, or any neck accessory — bare neck only unless an explicit costume was selected.",
 };
 
 export const POLAROID_ART_STYLE_RENDER: Record<PolaroidArtStyleKey, string> = {
-  felt: "RENDER: Photograph a handmade needle-felted wool miniature. Every object is wool felt. Visible fibers, rounded stuffed forms, needle-punched texture. No live-animal fur filter, no photoreal living pet, no gouache, no crayon, no oil painting.",
-  gouache: "RENDER: Flat 2D gouache illustration with opaque paint and natural brush marks. No felt sculpture, no crayon scribble, no photoreal photograph, no 3D render.",
-  crayon: "RENDER: Childlike crayon-on-paper drawing with rough wax strokes and paper grain. Naive and cute, not refined gouache, not felt, not a photograph.",
+  felt: "RENDER: Photograph a handmade needle-felted wool miniature. Every object is wool felt. Visible fibers, rounded stuffed forms, needle-punched texture. No live-animal fur filter, no photoreal living pet, no gouache, no crayon, no oil painting. No collar, leash, harness, tag, bandana, or neck accessory unless an explicit costume was selected.",
+  gouache: "RENDER: Flat 2D gouache illustration with opaque paint and natural brush marks. No felt sculpture, no crayon scribble, no photoreal photograph, no 3D render. No collar, leash, harness, tag, bandana, or neck accessory unless an explicit costume was selected.",
+  crayon: "RENDER: Pastel vintage poster illustration with crisp outlines and restrained pastel color. Not a child's crayon diary, not refined gouache, not felt, not a photograph. No collar, leash, harness, tag, bandana, or neck accessory unless an explicit costume was selected.",
 };
 
 export function resolveSeasonalPolaroidCostume(answers: SeasonalPolaroidPromptAnswers): string {
@@ -132,7 +132,7 @@ const DESCRIPTIONS: Record<string, { en: string; ko: string }> = {
   "favorite-routine": { en: "following a favorite little routine", ko: "좋아하는 작은 일상을 따르는 모습" },
   "snack-seeker": { en: "always searching for snacks", ko: "늘 간식을 찾는 모습" },
   "cozy-cuddler": { en: "finding the coziest spot", ko: "가장 포근한 자리를 찾는 모습" },
-  "pumpkin-biscuit": { en: "a pumpkin biscuit", ko: "호박 비스킷" },
+  "pumpkin-biscuit": { en: "a homemade treat", ko: "홈메이드 간식" },
   jerky: { en: "jerky", ko: "육포" },
   cheese: { en: "cheese", ko: "치즈" },
   tuna: { en: "tuna", ko: "참치" },
@@ -307,7 +307,7 @@ export function buildSeasonalPolaroidImagePrompt(
     "IDENTITY VISIBILITY: Keep the eyes, muzzle, nose, coat boundaries, and distinctive markings unobstructed and sharply readable. The artwork and any explicitly selected occasion must support the pet, never cover or reshape those features.",
     "POSE AND SCENE FIT: Treat the supplied photo as the identity reference, not as a pose template. Choose one natural, anatomically plausible pose for this species that belongs in this setting — sitting, standing, lying, walking, or pausing to look toward something in the scene — and keep the photo's original pose when it already suits the setting. Adapt body orientation, head turn, and placement so the pet reads as part of the setting — match its perspective, lighting direction, colour temperature, and scale, and keep the paws or body visibly resting on the ground with a soft contact shadow. A natural side or three-quarter view is welcome when it suits the scene, as long as enough of the face stays visible to preserve identity.",
     "INTEGRATION: The pet must be rendered in the same medium as the rest of the image and belong to the scene. Never produce a cutout pasted onto a background, a rectangle or photo edge around the pet, extra or missing limbs, duplicated features, or distorted anatomy.",
-    "IDENTITY THROUGH POSE CHANGE: While the pose changes, preserve this individual pet's breed and build, coat colours and markings, ear shape and carriage, eye and nose character, face, and body proportions, plus a collar or other clear accessory if the photo shows one. Do not swap the breed, invent a smile, or add a hat or costume that the questionnaire did not supply.",
+    "IDENTITY THROUGH POSE CHANGE: While the pose changes, preserve this individual pet's breed and build, coat colours and markings, ear shape and carriage, eye and nose character, face, and body proportions. Do not copy a collar, leash, harness, ID tag, bandana, scarf, or any neck accessory from the reference photo — leave the neck bare unless the questionnaire explicitly selected a costume. Do not swap the breed, invent a smile, or add a hat or costume that the questionnaire did not supply.",
     legacyHalloweenFlow
       ? `COSTUME: ${costume}. SCENE: ${scene}. VIBE: ${vibe}. PERSONALITY: ${personality}.`
       : `PET PERSONALITY: ${personality}. Do not add a costume or scene from hidden legacy questionnaire values.`,
@@ -568,6 +568,69 @@ const KOREAN_HABIT_VOICE: Record<string, string> = {
   "cozy-cuddler": "포근히 기대고",
 };
 
+const KOREAN_HABIT_LINE: Record<string, { living: string; passed: string }> = {
+  "toy-carrier": { living: "장난감 물고 놀아,", passed: "장난감 물고 놀았어," },
+  "head-tilt": { living: "고개 살짝 갸웃해,", passed: "고개 살짝 갸웃했어," },
+  "whole-body-wiggle": { living: "온몸을 살랑 흔들어,", passed: "온몸을 살랑 흔들었어," },
+  "doorway-watcher": { living: "문 앞에서 기다려,", passed: "문 앞에서 기다렸어," },
+  "sunbeam-napper": { living: "햇살 아래 낮잠 자,", passed: "햇살 아래 낮잠 잤어," },
+  "midnight-zoomies": { living: "밤마다 신나게 뛰어,", passed: "밤마다 신나게 뛰었어," },
+  "box-inspector": { living: "상자 안을 살펴,", passed: "상자 안을 살폈어," },
+  "tiny-judge": { living: "가만히 바라봐,", passed: "가만히 바라봤어," },
+  binky: { living: "깡충깡충 뛰어,", passed: "깡충깡충 뛰었어," },
+  "nose-boop": { living: "코를 살살 대,", passed: "코를 살살 댔어," },
+  "hay-rearranger": { living: "건초를 정리해,", passed: "건초를 정리했어," },
+  "happy-flop": { living: "기분 좋게 누워,", passed: "기분 좋게 누웠어," },
+  "wheel-runner": { living: "쳇바퀴를 돌아,", passed: "쳇바퀴를 돌았어," },
+  "cheek-stuffer": { living: "볼을 빵빵 채워,", passed: "볼을 빵빵 채웠어," },
+  "tiny-burrower": { living: "작은 굴을 파,", passed: "작은 굴을 팠어," },
+  "night-explorer": { living: "밤이면 탐험해,", passed: "밤이면 탐험했어," },
+  "morning-singer": { living: "아침마다 노래해,", passed: "아침마다 노래했어," },
+  "head-cock": { living: "고개 살짝 기울여,", passed: "고개 살짝 기울였어," },
+  "shiny-thief": { living: "반짝이는 걸 모아,", passed: "반짝이는 걸 모았어," },
+  "shoulder-perch": { living: "어깨에 살포시 앉아,", passed: "어깨에 살포시 앉았어," },
+  "favorite-routine": { living: "늘 하던 대로 해,", passed: "늘 하던 대로 했어," },
+  "curious-explorer": { living: "구석구석 살펴,", passed: "구석구석 살폈어," },
+  "snack-seeker": { living: "간식 냄새를 찾아,", passed: "간식 냄새를 찾았어," },
+  "cozy-cuddler": { living: "옆에 살포시 기대,", passed: "옆에 살포시 기댔어," },
+};
+
+function koreanSentence(clause: string): string {
+  const bare = clause.replace(/[,\s.!?]+$/u, "").trim();
+  const sentence = `${bare}.`;
+  return sentence.length <= MEMO_BODY_LINE_LIMITS.ko ? sentence : `${compactMemoValue(bare, 20)}.`;
+}
+
+function koreanSpokenHabit(habitId: string, fallback: string, memorial: boolean): string {
+  const known = KOREAN_HABIT_LINE[habitId]?.[memorial ? "passed" : "living"];
+  const plain = known
+    ? known.replace(/[,.]+$/u, "")
+    : compactMemoValue(fallback.replace(/[.!?]+$/u, ""), 14);
+  const unsafe = !known && (MEMO_KOREAN_DANGLING_ENDING.test(plain) || MEMO_KOREAN_UNFINISHED_ENDING.test(plain));
+  const sentence = koreanSentence(unsafe ? "평소처럼 지내는 게 좋아" : plain);
+  const linked = `또 ${sentence}`;
+  return linked.length <= MEMO_BODY_LINE_LIMITS.ko ? linked : sentence;
+}
+
+function koreanSpokenTreat(treat: string, memorial: boolean, variation: number): string {
+  const name = compactMemoValue(treat.replace(/[.!?]+$/u, ""), 10);
+  const options = memorial
+    ? [`${name}도 좋았어.`, `${name} 생각이 나.`, `${name}도 그리워.`]
+    : [`${name}도 기다려.`, `${name} 먹고 싶어.`, `${name} 생각이 나.`];
+  return firstFitting([options[variation] ?? options[0]!, ...options], MEMO_BODY_LINE_LIMITS.ko);
+}
+
+function koreanSpokenCostume(costume: string, variation: number): string {
+  const word = costume.replace(/[.!?]+$/u, "").trim();
+  const object = `${word}${particle(word, "object")}`;
+  const options = [
+    `오늘은 ${object} 입었어.`,
+    `${object} 입고 있어.`,
+    `오늘은 ${object} 골랐어.`,
+  ];
+  return firstFitting([options[variation] ?? options[0]!, ...options, "오늘 모습이 마음에 들어."], MEMO_BODY_LINE_LIMITS.ko);
+}
+
 const KOREAN_COSTUME_VOICE: Record<string, string> = {
   vampire: "작은 뱀파이어 옷",
   witch: "마녀 모자",
@@ -665,11 +728,11 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
   const artStyle = polaroidArtStyleKey(String(answers.themeId));
   const occasionId = String(answers.occasionId ?? "").trim();
   const adoptionDay = occasionId === "adoption-day";
-  const birthdayStar = occasionId === "birthday-star";
+  const birthdayStar = occasionId === "birthday-star" || occasionId === "birthday-room";
   const newYearBlessing = occasionId === "newyear-blessing";
   const valentineLetter = occasionId === "valentine-letter";
-  const springGarden = occasionId === "spring-secret-garden";
-  const summerHarbor = occasionId === "summer-seaside";
+  const springGarden = occasionId === "spring-secret-garden" || occasionId === "spring-picnic";
+  const summerHarbor = occasionId === "summer-seaside" || occasionId === "summer-beach";
   const mischiefGhost = occasionId === "halloween-mischief-ghost";
   const costumeId = artStyle ? "" : resolveSeasonalPolaroidCostume(answers);
   const treat = resolvedTreat(answers, locale);
@@ -693,35 +756,29 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
       Math.max(MEMO_LINE_LIMITS.en, callName.length + petName.length + 8));
 
     if (locale === "ko") {
-      const habit = KOREAN_HABIT_VOICE[answers.habit] ?? compactMemoValue(resolvedHabit(answers, locale), 8);
-      const treatShort = compactMemoValue(treat, 8);
-      const body = firstFitting(
-        [`${habit} ${treatShort} \uC88B\uC544\uD574`, `${habit} \uC88B\uC544\uD574`],
-        MEMO_BODY_LINE_LIMITS.ko,
-      );
+      const habitLine = koreanSpokenHabit(answers.habit, resolvedHabit(answers, locale), memorial);
+      const treatLine = memoLineWithDetail(koreanSpokenTreat(treat, memorial, variation).replace(/\.$/u, ""), detail, locale);
       return {
         locale,
         lines: [
           greeting,
-          "\uC774 \uADF8\uB9BC \uC18D\uC5D0\uC11C \uB0B4\uAC00 \uCC38 \uC88B\uC544,",
-          memoLineWithDetail(body, detail, locale),
+          "이 그림 속 모습이 좋아.",
+          habitLine,
           adoptionDay
-            ? memorial ? "\uCC98\uC74C \uB9CC\uB09C \uB0A0\uC758 \uC628\uAE30\uAC00 \uB0A8\uC544." : "\uCC98\uC74C \uB9CC\uB09C \uB0A0\uCC98\uB7FC \uB530\uB73B\uD574."
+            ? memorial ? "처음 만난 날의 온기가 남아." : "처음 만난 날처럼 따뜻해."
             : birthdayStar
-              ? memorial ? "\uAE30\uC05C \uB0A0\uC758 \uC628\uAE30\uAC00 \uAE30\uC5B5\uC5D0 \uB0A8\uC544." : "\uC624\uB298\uC740 \uC791\uC740 \uCD95\uD558\uCC98\uB7FC \uB530\uB73B\uD574."
+              ? memorial ? "기쁜 날의 온기가 기억에 남아." : "오늘은 작은 축하처럼 따뜻해."
             : newYearBlessing
-              ? memorial ? "\uB530\uB73B\uD55C \uC0C8\uD574 \uB9C8\uC74C\uC774 \uB0A8\uC544." : "\uC0C8\uD574\uC758 \uD76C\uB9DD\uC774 \uCC38 \uB530\uB73B\uD574."
+              ? memorial ? "따뜻한 새해 마음이 남아." : "새해의 희망이 참 따뜻해."
             : valentineLetter
-              ? memorial ? "\uB530\uB73B\uD55C \uC0AC\uB791\uC774 \uAC00\uAE4C\uC774 \uB0A8\uC544." : "\uC791\uC740 \uC0AC\uB791\uC774 \uC624\uB298\uC744 \uBE5B\uB0B4."
+              ? memorial ? "따뜻한 사랑이 가까이 남아." : "작은 사랑이 오늘을 빛내."
             : springGarden
-              ? memorial ? "\uBD04\uC758 \uB530\uC2A4\uD568\uC774 \uAE30\uC5B5\uC5D0 \uB0A8\uC544." : "\uBD04\uBE5B\uCC98\uB7FC \uB9C8\uC74C\uC774 \uD3EC\uADFC\uD574."
+              ? memorial ? "봄의 따스함이 기억에 남아." : "봄빛처럼 마음이 포근해."
             : summerHarbor
-              ? memorial ? "\uC5EC\uB984\uC758 \uACE0\uC694\uD55C \uBE5B\uC774 \uB0A8\uC544." : "\uC794\uC794\uD55C \uBC14\uB78C\uC774 \uCC38 \uC88B\uC544."
+              ? memorial ? "여름의 고요한 빛이 남아." : "잔잔한 바바람이 참 좋아."
             : mischiefGhost
-              ? memorial ? "\uB2E4\uC815\uD55C \uC720\uB839 \uC7A5\uBA74\uC774 \uD3EC\uADFC\uD574." : "\uC7A5\uB09C\uC2A4\uB7EC\uC6B4 \uC7A5\uBA74\uC774 \uC990\uAC70\uC6CC."
-            : memorial
-              ? "\uB530\uB73B\uD55C \uAE30\uC5B5\uC73C\uB85C \uB0A8\uC544."
-              : "\uC774 \uC21C\uAC04\uC774 \uCC38 \uC88B\uC544.",
+              ? memorial ? "다정한 유령 장면이 포근해." : "장난스러운 장면이 즐거워."
+            : treatLine,
         ],
       };
     }
@@ -774,8 +831,6 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
 
   if (locale === "ko") {
     const costume = KOREAN_COSTUME_VOICE[costumeId] ?? POLAROID_COSTUME_VOICE[costumeId]?.ko ?? compactMemoValue(description(costumeId, locale), 8);
-    const habit = KOREAN_HABIT_VOICE[answers.habit] ?? compactMemoValue(resolvedHabit(answers, locale), 8);
-    const treatShort = compactMemoValue(treat, 8);
     const vocative = hasBatchim(petName) ? "아" : "야";
     const halloween = halloweenVoice(answers);
     const greeting = firstFitting(halloween
@@ -789,37 +844,13 @@ export function fallbackSeasonalPolaroidMemo(answers: SeasonalPolaroidPromptAnsw
           `${callName}, ${petName}${vocative}!`,
           `${callName}, ${petName}${vocative}!`,
         ], Math.max(MEMO_LINE_LIMITS.ko, callName.length + petName.length + 8));
-    // A remembered pet speaks about what it loved; a living pet about tonight.
-    const body = variation === 0
-      ? memorial
-        ? firstFitting([`${habit} ${treatShort} 좋아했어`, `${habit} 좋아했어`], MEMO_BODY_LINE_LIMITS.ko)
-        : firstFitting([`${habit} ${treatShort} 기다려`, `${habit} 기다려`], MEMO_BODY_LINE_LIMITS.ko)
-      : variation === 1
-        ? memorial
-          ? firstFitting([`${habit} ${treatShort}도 좋아했어`, `${treatShort}도 좋아했어`], MEMO_BODY_LINE_LIMITS.ko)
-          : firstFitting([`${habit} ${treatShort}도 좋아해`, `${treatShort}도 좋아해`], MEMO_BODY_LINE_LIMITS.ko)
-        : firstFitting([`${habit} ${treatShort} 생각나`, `${treatShort} 생각나`], MEMO_BODY_LINE_LIMITS.ko);
     return {
       locale,
       lines: [
         greeting,
-        variation === 0
-          ? `나는 ${costume} 입고,`
-          : variation === 1
-            ? `오늘은 ${costume} 입었어,`
-            : `내 ${costume} 모습 어때,`,
-        memoLineWithDetail(body, detail, locale),
-        memorial
-          ? variation === 0
-            ? "따뜻한 기억이 곁에 남아."
-            : variation === 1
-              ? "작은 추억이 따뜻하게 남아."
-              : "사랑스러운 순간 하나를 담았어."
-          : variation === 0
-            ? (halloween ? "포근한 할로윈 밤이야." : "여기 참 따뜻하고 좋아.")
-            : variation === 1
-              ? "오늘 밤이 참 포근해."
-              : "사랑스러운 순간 하나를 담았어.",
+        koreanSpokenCostume(costume, variation),
+        koreanSpokenHabit(answers.habit, resolvedHabit(answers, locale), memorial),
+        memoLineWithDetail(koreanSpokenTreat(treat, memorial, variation).replace(/\.$/u, ""), detail, locale),
       ],
     };
   }
@@ -1027,11 +1058,11 @@ export function buildSeasonalPolaroidMemoSystemPrompt(
   const selectedOccasionId = String(occasionId ?? "").trim();
   const artStyleRequest = polaroidArtStyleKey(themeId) !== null;
   const adoptionDay = selectedOccasionId === "adoption-day";
-  const birthdayStar = selectedOccasionId === "birthday-star";
+  const birthdayStar = selectedOccasionId === "birthday-star" || selectedOccasionId === "birthday-room";
   const newYearBlessing = selectedOccasionId === "newyear-blessing";
   const valentineLetter = selectedOccasionId === "valentine-letter";
-  const springGarden = selectedOccasionId === "spring-secret-garden";
-  const summerHarbor = selectedOccasionId === "summer-seaside";
+  const springGarden = selectedOccasionId === "spring-secret-garden" || selectedOccasionId === "spring-picnic";
+  const summerHarbor = selectedOccasionId === "summer-seaside" || selectedOccasionId === "summer-beach";
   const mischiefGhost = selectedOccasionId === "halloween-mischief-ghost";
   const catalog = selectedOccasionId
     ? polaroidThemeCatalogEntry(selectedOccasionId)
@@ -1044,8 +1075,8 @@ export function buildSeasonalPolaroidMemoSystemPrompt(
     ? "Mom, happy Halloween from Tuli!"
     : "Mom, it's Tuli!";
   const koreanExample = halloween
-    ? '["엄마, 뚜리야! 해피 할로윈!", "오늘은 호박 옷 입고,", "낙엽 위에서 코 킁킁,", "이런 할로윈이 제일 좋아."]'
-    : '["엄마, 나 코코야!", "오늘은 포근한 인형이 돼서,", "작은 의자에 앉아 있었어,", "여기 참 따뜻하고 좋아."]';
+    ? '["엄마, 뚜리야! 해피 할로윈!", "오늘은 호박 옷을 입었어.", "또 낙엽 위를 걸어.", "이런 할로윈이 제일 좋아."]'
+    : '["엄마, 나 코코야!", "오늘은 포근한 인형이야.", "또 작은 의자에 앉았어.", "여기 참 따뜻하고 좋아."]';
   const englishExample = halloween
     ? '["Mom, happy Halloween from Tuli!", "I\'m all pumpkin and grins tonight,", "nose in the leaves, tail going,", "and this is my kind of spooky."]'
     : '["Mom, it\'s Coco!", "I\'m cozy in my little scarf,", "sitting on the tiny chair,", "and this quiet day feels like home."]';
@@ -1113,7 +1144,7 @@ export function buildSeasonalPolaroidMemoSystemPrompt(
     summerCaptionContext,
     mischiefGhostCaptionContext,
     locale === "ko"
-      ? "Lines 2-4 are one small connected thought from the pet about this moment, in natural conversational Korean. Subject omission is natural; keep the grammar clearly in the pet's voice with warm endings such as -했어, -좋아, -기다려. Do not translate English phrasing word for word."
+      ? "Lines 2-4 are one small connected thought from the pet, in natural conversational Korean. Every line is a finished sentence that can be read aloud by itself, and it ends with ., !, or ?. Never stop on -고, -서, 입고, or a bare noun. Bad: '오늘은 호박 옷을 입고'. Good: '오늘은 호박 옷을 입었어.' Bad: '장난감을 물고 홈메이드 간식 기다려'. Good: '또 장난감 물고 놀아. 홈메이드 간식도 기다려.' Do not translate English phrasing word for word."
       : "Lines 2-4 are one small connected thought from the pet about this moment, in natural everyday English. Line 2 must speak as the pet (I, I'm, my, me).",
     "The photo is the moment. Write about what is actually pictured (pose, expression, light, setting) in the pet's words, and do not mention objects that are not in the photo as if they were there.",
     `If the brief has a personalTouch, it is something the owner wrote about this pet; weave it in only when it fits naturally in one phrase. The brief's background is what this pet is known for off camera. It is NOT in the photo: never show it happening in the picture, and mention it at most as a passing feeling or not at all. Leaving both out is fine. Never add a second personal fact and never invent one. If no photo is attached, write about a warm ${noPhotoMoment} moment with this pet without naming specific objects.`,
@@ -1134,7 +1165,13 @@ export function buildSeasonalPolaroidMemoSystemPrompt(
       ? "For this year-round Polaroid, ignore the required legacy costume, scene, and vibe fields; they were not selected by the user. Use the actual image, pet personality, and optional occasion only. Do not invent clothing or props."
       : "Prioritize details in this order when choosing what to keep: personal detail, habit or favorite treat, costume or personality, then scene or vibe. Lines 2-4 should weave in only one or two approved details; do not mechanically enumerate them and never invent facts.",
     artStyleRequest
-      ? "The final line should complete the pictured memory with a warm feeling that fits the selected occasion, if any. With no occasion, keep it about this pictured moment."
+      ? [
+          "Write like a short human note on a Polaroid, not a checklist of selected questionnaire words.",
+          "Never paste tags, option labels, or keyword fragments side by side. If you use habit, treat, or personality, fold them into one natural spoken sentence.",
+          "Bad: 'sunbeam napper tuna close by'. Good: 'I love a quiet sunbeam nap, with a little tuna nearby.'",
+          "Bad Korean: '햇살 낮잠 참치 좋아해'. Good Korean: '햇살 아래서 낮잠 자고, 참치도 살짝 생각나.'",
+          "The final line should complete the pictured memory with a warm feeling that fits the selected occasion, if any. With no occasion, keep it about this pictured moment.",
+        ].join(" ")
       : "The final line should complete the pictured memory with a warm seasonal feeling. It must not address the owner, give an instruction, make an always-promise, or become a generic letter closing.",
     `The greeting must be ${MEMO_LINE_LIMITS[locale]} characters or fewer; lines 2-4 must each be ${MEMO_BODY_LINE_LIMITS[locale]} characters or fewer.`,
     ...(retryReason === "memo_line_length"

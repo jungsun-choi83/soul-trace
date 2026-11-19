@@ -17,11 +17,11 @@ export function LivingMemorial() {
   ] as const;
 
   return (
-    <section className="bg-[#f8f2e7] pb-10 pt-14 text-[#1a1512] md:pb-14 md:pt-20">
+    <section className="bg-[#e7f0f4] pb-10 pt-14 text-[#1e4d3a] md:pb-14 md:pt-20">
       <div className="mx-auto max-w-6xl px-2 sm:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <Reveal>
-            <p className="mb-3 text-[0.6rem] uppercase tracking-[0.2em] text-[#c8a24a] sm:mb-4 sm:text-xs sm:tracking-[0.28em]">
+            <p className="mb-3 text-[0.6rem] uppercase tracking-[0.2em] text-[#8fb4c8] sm:mb-4 sm:text-xs sm:tracking-[0.28em]">
               {t("homepage.livingMemorial.label")}
             </p>
           </Reveal>
@@ -41,11 +41,11 @@ export function LivingMemorial() {
               delay={index * 80}
               className={`min-w-0 overflow-hidden rounded-2xl p-3 sm:rounded-3xl sm:p-10 ${
                 dark
-                  ? "bg-[#1a1512] text-[#f8f2e7]"
-                  : "border border-[#1a1512]/10 bg-[#f3ebda]"
+                  ? "bg-[#1e4d3a] text-[#e7f0f4]"
+                  : "border border-[#1e4d3a]/10 bg-[#ead6c4]"
               }`}
             >
-              <div className="grid size-9 place-items-center rounded-full bg-[#c8a24a]/10 text-[#c8a24a] sm:size-12">
+              <div className="grid size-9 place-items-center rounded-full bg-[#8fb4c8]/10 text-[#8fb4c8] sm:size-12">
                 <Icon aria-hidden="true" strokeWidth={1.8} className="size-5 sm:size-[1.375rem]" />
               </div>
               <h3
@@ -55,7 +55,7 @@ export function LivingMemorial() {
               </h3>
               <p
                 className={`${display} mt-2 text-[clamp(0.7rem,2.3vw,1rem)] leading-relaxed sm:mt-3 ${
-                  dark ? "text-white/70" : "text-[#1a1512]/65"
+                  dark ? "text-white/70" : "text-[#1e4d3a]/65"
                 }`}
               >
                 {t(`homepage.livingMemorial.${key}Body`)}

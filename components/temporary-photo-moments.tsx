@@ -411,10 +411,10 @@ export function TemporaryPhotoMoments({
   );
 
   return (
-    <section className="rounded-3xl border border-[#D4AF37]/25 bg-[#0F0E0D]/90 p-6 shadow-[0_0_60px_rgba(212,175,55,0.06)] sm:p-8 md:p-10">
+    <section className="rounded-3xl border border-[#8fb4c8]/25 bg-[#0F0E0D]/90 p-6 shadow-[0_0_60px_rgba(143, 180, 200,0.06)] sm:p-8 md:p-10">
       {showHeader ? <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-display-en text-[11px] font-medium uppercase tracking-[0.26em] text-[#D4AF37] sm:text-xs">{t("lifeArchive.archive.title")}</h2>
+          <h2 className="font-display-en text-[11px] font-medium uppercase tracking-[0.26em] text-[#8fb4c8] sm:text-xs">{t("lifeArchive.archive.title")}</h2>
           <p className={`mt-2 text-sm font-light text-[#8F8578] ${isKorean ? "font-ko" : "font-display-en"}`}>
             {t("lifeArchive.photos.summary")
               .replace("%MOMENTS%", String(moments.length))
@@ -427,10 +427,10 @@ export function TemporaryPhotoMoments({
       </div> : null}
 
       {formOpen ? (
-        <form onSubmit={saveMoment} className={`mt-8 rounded-2xl border border-[#D4AF37]/25 bg-black/35 p-5 sm:p-7 ${isKorean ? "font-ko" : "font-display-en"}`}>
+        <form onSubmit={saveMoment} className={`mt-8 rounded-2xl border border-[#8fb4c8]/25 bg-black/35 p-5 sm:p-7 ${isKorean ? "font-ko" : "font-display-en"}`}>
           <label className="block text-sm font-light text-[#D9C6A4]">
             {t("lifeArchive.photos.select")}
-            <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => void choosePhotos(event.target.files)} className="mt-2 block min-h-12 w-full cursor-pointer rounded-xl border border-dashed border-[#D4AF37]/35 bg-[#11100F] px-4 py-3 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-[#b89a2e] file:px-4 file:py-2 file:text-black" />
+            <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => void choosePhotos(event.target.files)} className="mt-2 block min-h-12 w-full cursor-pointer rounded-xl border border-dashed border-[#8fb4c8]/35 bg-[#11100F] px-4 py-3 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-[#b89a2e] file:px-4 file:py-2 file:text-black" />
           </label>
           <p className="mt-2 text-xs font-light text-[#8F8578]">{t("lifeArchive.photos.help").replace("%COUNT%", String(MAX_PHOTOS_PER_MOMENT))}</p>
 
@@ -465,14 +465,14 @@ export function TemporaryPhotoMoments({
                         type="button"
                         onClick={() => setCenterPhotoId(photo.id)}
                         aria-pressed={centerPhotoId === photo.id}
-                        className="mt-1 min-h-9 w-full rounded-lg border border-[#D4AF37]/30 px-1 text-[10px] text-[#D9C6A4] aria-pressed:bg-[#D4AF37] aria-pressed:text-black"
+                        className="mt-1 min-h-9 w-full rounded-lg border border-[#8fb4c8]/30 px-1 text-[10px] text-[#D9C6A4] aria-pressed:bg-[#8fb4c8] aria-pressed:text-black"
                       >
                         {centerPhotoId === photo.id ? t("lifeArchive.photos.centrePhoto") : t("lifeArchive.photos.chooseCentre")}
                       </button>
                     ) : null}
                     <div className="hidden">
                       {(["fit", "fill"] as PhotoDisplayMode[]).map((mode) => (
-                        <button key={mode} type="button" aria-pressed={(photoSettings[photo.id]?.mode ?? "fit") === mode} onClick={() => updatePhotoSetting(photo.id, { mode })} className="min-h-9 rounded-lg border border-[#D4AF37]/25 px-1 text-[10px] text-[#D9C6A4] aria-pressed:bg-[#D4AF37] aria-pressed:text-black">
+                        <button key={mode} type="button" aria-pressed={(photoSettings[photo.id]?.mode ?? "fit") === mode} onClick={() => updatePhotoSetting(photo.id, { mode })} className="min-h-9 rounded-lg border border-[#8fb4c8]/25 px-1 text-[10px] text-[#D9C6A4] aria-pressed:bg-[#8fb4c8] aria-pressed:text-black">
                           {t(`lifeArchive.photos.${mode === "fit" ? "fitFull" : "fillFrame"}`)}
                         </button>
                       ))}
@@ -497,7 +497,7 @@ export function TemporaryPhotoMoments({
                     <button
                       type="button"
                       onClick={() => inputRef.current?.click()}
-                      className="flex h-20 w-20 flex-col items-center justify-center rounded-xl border border-dashed border-[#D4AF37]/40 bg-[#11100F] px-2 text-center text-xs font-light text-[#D9C6A4] transition hover:border-[#D4AF37]/70 hover:bg-[#D4AF37]/10 sm:h-24 sm:w-24"
+                      className="flex h-20 w-20 flex-col items-center justify-center rounded-xl border border-dashed border-[#8fb4c8]/40 bg-[#11100F] px-2 text-center text-xs font-light text-[#D9C6A4] transition hover:border-[#8fb4c8]/70 hover:bg-[#8fb4c8]/10 sm:h-24 sm:w-24"
                     >
                       <span aria-hidden className="mb-1 text-xl">＋</span>
                       {t("lifeArchive.photos.addMore")}
@@ -521,11 +521,11 @@ export function TemporaryPhotoMoments({
 
           <label className="mt-6 block text-sm font-light text-[#D9C6A4]">
             {t("lifeArchive.photos.caption")}
-            <textarea maxLength={500} rows={3} value={caption} onChange={(event) => setCaption(event.target.value)} className="mt-2 w-full resize-y rounded-xl border border-white/15 bg-[#11100F] px-4 py-3 leading-relaxed text-[#F3EAD8] outline-none focus:border-[#D4AF37]/70" />
+            <textarea maxLength={500} rows={3} value={caption} onChange={(event) => setCaption(event.target.value)} className="mt-2 w-full resize-y rounded-xl border border-white/15 bg-[#11100F] px-4 py-3 leading-relaxed text-[#F3EAD8] outline-none focus:border-[#8fb4c8]/70" />
           </label>
           <label className="mt-5 block max-w-sm text-sm font-light text-[#D9C6A4]">
             {t("lifeArchive.memoryForm.date")}
-            <input type="date" value={memoryDate} onChange={(event) => setMemoryDate(event.target.value)} className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-[#11100F] px-4 py-3 text-[#F3EAD8] outline-none focus:border-[#D4AF37]/70" />
+            <input type="date" value={memoryDate} onChange={(event) => setMemoryDate(event.target.value)} className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-[#11100F] px-4 py-3 text-[#F3EAD8] outline-none focus:border-[#8fb4c8]/70" />
           </label>
           <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button type="button" onClick={resetForm} className="min-h-12 rounded-xl border border-white/15 px-5 py-3 text-sm text-[#C4B8A8]">{t("lifeArchive.memoryForm.cancel")}</button>
@@ -537,8 +537,8 @@ export function TemporaryPhotoMoments({
       {error ? <p role="alert" className={`mt-5 text-sm text-red-200 ${isKorean ? "font-ko" : "font-display-en"}`}>{error}</p> : null}
 
       {moments.length === 0 && legacyMemories.length === 0 ? (
-        <div className="mt-8 rounded-2xl border border-dashed border-[#D4AF37]/20 bg-black/25 px-5 py-12 text-center sm:px-8 sm:py-16">
-          <div className="mx-auto h-px w-12 bg-[#D4AF37]/55" aria-hidden />
+        <div className="mt-8 rounded-2xl border border-dashed border-[#8fb4c8]/20 bg-black/25 px-5 py-12 text-center sm:px-8 sm:py-16">
+          <div className="mx-auto h-px w-12 bg-[#8fb4c8]/55" aria-hidden />
           <h3 className={`mt-6 text-lg font-light text-[#F3EAD8] sm:text-xl ${isKorean ? "font-ko" : "font-display-en"}`}>{t("lifeArchive.photos.emptyTitle")}</h3>
           <p className={`mx-auto mt-4 max-w-xl text-sm font-extralight leading-[1.9] text-[#AFA598] sm:text-base ${isKorean ? "font-ko" : "font-display-en"}`}>{t("lifeArchive.photos.emptyBody")}</p>
         </div>
@@ -550,16 +550,16 @@ export function TemporaryPhotoMoments({
             <article key={moment.momentId} className="overflow-hidden rounded-2xl border border-white/10 bg-black/35">
               <div className="p-3 sm:p-5">
                 <PhotoCollage urls={moment.urls} photoIds={moment.photoIds} layout={moment.layout} photoSettings={moment.photoSettings} onOpen={(index, element) => { galleryReturnFocus.current = element; setGallery({ moment, index }); }} />
-                <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-t border-[#D4AF37]/20 pt-4">
+                <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-t border-[#8fb4c8]/20 pt-4">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-[#A99B87]">{new Intl.DateTimeFormat(isKorean ? "ko-KR" : "en-US", { dateStyle: "long" }).format(new Date(`${moment.memoryDate ?? moment.createdAt.slice(0, 10)}T00:00:00`))}</p>
                     {moment.caption ? <p className="mt-2 whitespace-pre-wrap text-sm leading-[1.75] text-[#CFC5B6]">{moment.caption}</p> : null}
                   </div>
                   <div className="relative flex items-center gap-1 text-xs text-[#D9C6A4]">
-                    <button type="button" disabled={busy} onClick={() => void toggleFavorite(moment)} className="min-h-11 rounded-lg px-2.5 transition hover:bg-[#D4AF37]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37]" aria-pressed={moment.isFavorite} aria-label={moment.isFavorite ? t("lifeArchive.photos.unfavorite") : t("lifeArchive.photos.favorite")}>{moment.isFavorite ? "♥" : "♡"} <span className="hidden sm:inline">{moment.isFavorite ? t("lifeArchive.photos.unfavorite") : t("lifeArchive.photos.favorite")}</span></button>
-                    <button type="button" onClick={(event) => { galleryReturnFocus.current = event.currentTarget; setGallery({ moment, index: 0 }); }} className="min-h-11 rounded-lg px-2.5 transition hover:bg-[#D4AF37]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37]" aria-label={t("lifeArchive.photos.fullScreen")}>⛶ <span className="hidden sm:inline">{t("lifeArchive.photos.fullScreen")}</span></button>
-                    <button type="button" disabled={busy} onClick={() => void downloadMoment(moment)} className="min-h-11 rounded-lg px-2.5 transition hover:bg-[#D4AF37]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37]" aria-label={t("lifeArchive.photos.downloadCollage")}>↓ <span className="hidden sm:inline">{t("lifeArchive.photos.downloadCollage")}</span></button>
-                    <button type="button" onClick={() => setDeleteTarget(moment)} className="min-h-11 rounded-lg px-2.5 text-lg text-[#D9C6A4] transition hover:bg-red-950/30 hover:text-red-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37]" aria-label={t("lifeArchive.photos.deleteMoment")}>🗑</button>
+                    <button type="button" disabled={busy} onClick={() => void toggleFavorite(moment)} className="min-h-11 rounded-lg px-2.5 transition hover:bg-[#8fb4c8]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#8fb4c8]" aria-pressed={moment.isFavorite} aria-label={moment.isFavorite ? t("lifeArchive.photos.unfavorite") : t("lifeArchive.photos.favorite")}>{moment.isFavorite ? "♥" : "♡"} <span className="hidden sm:inline">{moment.isFavorite ? t("lifeArchive.photos.unfavorite") : t("lifeArchive.photos.favorite")}</span></button>
+                    <button type="button" onClick={(event) => { galleryReturnFocus.current = event.currentTarget; setGallery({ moment, index: 0 }); }} className="min-h-11 rounded-lg px-2.5 transition hover:bg-[#8fb4c8]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#8fb4c8]" aria-label={t("lifeArchive.photos.fullScreen")}>⛶ <span className="hidden sm:inline">{t("lifeArchive.photos.fullScreen")}</span></button>
+                    <button type="button" disabled={busy} onClick={() => void downloadMoment(moment)} className="min-h-11 rounded-lg px-2.5 transition hover:bg-[#8fb4c8]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#8fb4c8]" aria-label={t("lifeArchive.photos.downloadCollage")}>↓ <span className="hidden sm:inline">{t("lifeArchive.photos.downloadCollage")}</span></button>
+                    <button type="button" onClick={() => setDeleteTarget(moment)} className="min-h-11 rounded-lg px-2.5 text-lg text-[#D9C6A4] transition hover:bg-red-950/30 hover:text-red-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#8fb4c8]" aria-label={t("lifeArchive.photos.deleteMoment")}>🗑</button>
                   </div>
                 </div>
               </div>
@@ -571,16 +571,16 @@ export function TemporaryPhotoMoments({
       {favoriteMoments.length ? (
         <section aria-labelledby="favorite-moments-heading" className="mt-10">
           <div className="flex items-center justify-between gap-3">
-            <h2 id="favorite-moments-heading" className={`text-[11px] font-medium uppercase tracking-[0.26em] text-[#D4AF37] sm:text-xs ${isKorean ? "font-ko" : "font-display-en"}`}>{t("lifeArchive.favorites.title")}</h2>
+            <h2 id="favorite-moments-heading" className={`text-[11px] font-medium uppercase tracking-[0.26em] text-[#8fb4c8] sm:text-xs ${isKorean ? "font-ko" : "font-display-en"}`}>{t("lifeArchive.favorites.title")}</h2>
             <div className="hidden gap-2 sm:flex">
-              <button type="button" disabled={!favoriteScroll.left} onClick={() => favoriteScrollRef.current?.scrollBy({ left: -280, behavior: "smooth" })} className="min-h-9 min-w-9 rounded-full border border-[#D4AF37]/30 text-[#D9C6A4] disabled:opacity-30" aria-label={t("lifeArchive.favorites.previous")}>‹</button>
-              <button type="button" disabled={!favoriteScroll.right} onClick={() => favoriteScrollRef.current?.scrollBy({ left: 280, behavior: "smooth" })} className="min-h-9 min-w-9 rounded-full border border-[#D4AF37]/30 text-[#D9C6A4] disabled:opacity-30" aria-label={t("lifeArchive.favorites.next")}>›</button>
+              <button type="button" disabled={!favoriteScroll.left} onClick={() => favoriteScrollRef.current?.scrollBy({ left: -280, behavior: "smooth" })} className="min-h-9 min-w-9 rounded-full border border-[#8fb4c8]/30 text-[#D9C6A4] disabled:opacity-30" aria-label={t("lifeArchive.favorites.previous")}>‹</button>
+              <button type="button" disabled={!favoriteScroll.right} onClick={() => favoriteScrollRef.current?.scrollBy({ left: 280, behavior: "smooth" })} className="min-h-9 min-w-9 rounded-full border border-[#8fb4c8]/30 text-[#D9C6A4] disabled:opacity-30" aria-label={t("lifeArchive.favorites.next")}>›</button>
             </div>
           </div>
           <div ref={favoriteScrollRef} className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 [scrollbar-width:thin]">
             {favoriteMoments.map((moment) => (
-              <article key={moment.momentId} className="w-[min(78vw,16rem)] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#D4AF37]/20 bg-[#12100E]/90 sm:w-[15rem]">
-                <button type="button" onClick={(event) => { galleryReturnFocus.current = event.currentTarget; setGallery({ moment, index: 0 }); }} className="block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37]" aria-label={t("lifeArchive.favorites.open")}>
+              <article key={moment.momentId} className="w-[min(78vw,16rem)] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#8fb4c8]/20 bg-[#12100E]/90 sm:w-[15rem]">
+                <button type="button" onClick={(event) => { galleryReturnFocus.current = event.currentTarget; setGallery({ moment, index: 0 }); }} className="block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#8fb4c8]" aria-label={t("lifeArchive.favorites.open")}>
                   <img src={moment.urls[0]} alt="" className="aspect-[4/3] w-full object-cover" />
                   <div className="p-4">
                     <p className="text-xs text-[#A99B87]">{new Intl.DateTimeFormat(isKorean ? "ko-KR" : "en-US", { dateStyle: "medium" }).format(new Date(`${moment.memoryDate ?? moment.createdAt.slice(0, 10)}T00:00:00`))}</p>
@@ -588,8 +588,8 @@ export function TemporaryPhotoMoments({
                     <p className="mt-3 text-xs text-[#D9C6A4]">{moment.photos.length} {t("lifeArchive.favorites.photos")}</p>
                   </div>
                 </button>
-                <div className="border-t border-[#D4AF37]/15 px-4 py-2">
-                  <button type="button" disabled={busy} onClick={() => void toggleFavorite(moment)} className="min-h-10 text-sm text-[#D4AF37] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37]" aria-pressed="true" aria-label={t("lifeArchive.photos.unfavorite")}>♥ <span className="ml-1">{t("lifeArchive.photos.unfavorite")}</span></button>
+                <div className="border-t border-[#8fb4c8]/15 px-4 py-2">
+                  <button type="button" disabled={busy} onClick={() => void toggleFavorite(moment)} className="min-h-10 text-sm text-[#8fb4c8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#8fb4c8]" aria-pressed="true" aria-label={t("lifeArchive.photos.unfavorite")}>♥ <span className="ml-1">{t("lifeArchive.photos.unfavorite")}</span></button>
                 </div>
               </article>
             ))}
@@ -599,10 +599,10 @@ export function TemporaryPhotoMoments({
 
       {showAllMemories ? (
         <section aria-labelledby="all-memories-heading" className="mt-10">
-          <h2 id="all-memories-heading" className={`text-[11px] font-medium uppercase tracking-[0.26em] text-[#D4AF37] sm:text-xs ${isKorean ? "font-ko" : "font-display-en"}`}>{t("lifeArchive.allMemories.title")}</h2>
+          <h2 id="all-memories-heading" className={`text-[11px] font-medium uppercase tracking-[0.26em] text-[#8fb4c8] sm:text-xs ${isKorean ? "font-ko" : "font-display-en"}`}>{t("lifeArchive.allMemories.title")}</h2>
           <p className={`mt-2 text-sm font-light text-[#A99B87] ${isKorean ? "font-ko" : "font-display-en"}`}>{t("lifeArchive.allMemories.subtitle")}</p>
           <div className="mt-4 flex max-w-full gap-2 overflow-x-auto pb-1">
-            {(["all", "favorites"] as const).map((filter) => <button key={filter} type="button" aria-pressed={memoryFilter === filter} onClick={() => setMemoryFilter(filter)} className={`min-h-10 shrink-0 rounded-full border px-4 text-xs ${memoryFilter === filter ? "border-[#D4AF37] bg-[#D4AF37]/15 text-[#F5E6C8]" : "border-white/15 text-[#A99B87]"}`}>{filter === "all" ? t("lifeArchive.allMemories.allMoments") : t("lifeArchive.allMemories.favorites")}</button>)}
+            {(["all", "favorites"] as const).map((filter) => <button key={filter} type="button" aria-pressed={memoryFilter === filter} onClick={() => setMemoryFilter(filter)} className={`min-h-10 shrink-0 rounded-full border px-4 text-xs ${memoryFilter === filter ? "border-[#8fb4c8] bg-[#8fb4c8]/15 text-[#F5E6C8]" : "border-white/15 text-[#A99B87]"}`}>{filter === "all" ? t("lifeArchive.allMemories.allMoments") : t("lifeArchive.allMemories.favorites")}</button>)}
             <label className="sr-only" htmlFor="life-archive-year-filter">{t("lifeArchive.allMemories.yearLabel")}</label>
             <select id="life-archive-year-filter" value={yearFilter} onChange={(event) => setYearFilter(event.target.value)} className="min-h-10 shrink-0 rounded-full border border-white/15 bg-[#11100F] px-3 text-xs text-[#D9C6A4]">
               <option value="all">{t("lifeArchive.allMemories.allYears")}</option>
@@ -616,15 +616,15 @@ export function TemporaryPhotoMoments({
                 {items.map((moment) => (
                   <article key={moment.momentId} className="overflow-hidden rounded-2xl border border-white/10 bg-black/35 p-3 sm:p-4">
                     <PhotoCollage urls={moment.urls} photoIds={moment.photoIds} layout={moment.layout} photoSettings={moment.photoSettings} onOpen={(index, element) => { galleryReturnFocus.current = element; setGallery({ moment, index }); }} />
-                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#D4AF37]/20 pt-3">
+                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#8fb4c8]/20 pt-3">
                       <div className="min-w-0"><p className="text-xs text-[#A99B87]">{new Intl.DateTimeFormat(isKorean ? "ko-KR" : "en-US", { dateStyle: "medium" }).format(new Date(`${moment.memoryDate ?? moment.createdAt.slice(0, 10)}T00:00:00`))}</p>{moment.caption ? <p className="mt-1 truncate text-sm text-[#CFC5B6]">{moment.caption}</p> : null}<p className="mt-1 text-xs text-[#D9C6A4]">{moment.photos.length} {t("lifeArchive.allMemories.photos")}</p></div>
-                      <div className="flex shrink-0 gap-1"><button type="button" disabled={busy} onClick={() => void toggleFavorite(moment)} className="min-h-10 rounded-lg px-2 text-[#D4AF37] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37]" aria-pressed={moment.isFavorite} aria-label={moment.isFavorite ? t("lifeArchive.photos.unfavorite") : t("lifeArchive.photos.favorite")}>{moment.isFavorite ? "♥" : "♡"}</button><button type="button" onClick={(event) => { galleryReturnFocus.current = event.currentTarget; setGallery({ moment, index: 0 }); }} className="min-h-10 rounded-lg px-2 text-[#D9C6A4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37]" aria-label={t("lifeArchive.photos.fullScreen")}>⛶</button><button type="button" onClick={() => setDeleteTarget(moment)} className="min-h-10 rounded-lg px-2 text-[#D9C6A4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37]" aria-label={t("lifeArchive.photos.deleteMoment")}>🗑</button></div>
+                      <div className="flex shrink-0 gap-1"><button type="button" disabled={busy} onClick={() => void toggleFavorite(moment)} className="min-h-10 rounded-lg px-2 text-[#8fb4c8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#8fb4c8]" aria-pressed={moment.isFavorite} aria-label={moment.isFavorite ? t("lifeArchive.photos.unfavorite") : t("lifeArchive.photos.favorite")}>{moment.isFavorite ? "♥" : "♡"}</button><button type="button" onClick={(event) => { galleryReturnFocus.current = event.currentTarget; setGallery({ moment, index: 0 }); }} className="min-h-10 rounded-lg px-2 text-[#D9C6A4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#8fb4c8]" aria-label={t("lifeArchive.photos.fullScreen")}>⛶</button><button type="button" onClick={() => setDeleteTarget(moment)} className="min-h-10 rounded-lg px-2 text-[#D9C6A4] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#8fb4c8]" aria-label={t("lifeArchive.photos.deleteMoment")}>🗑</button></div>
                     </div>
                   </article>
                 ))}
               </div>
             </div>
-          )) : <div className="mt-5 rounded-xl border border-dashed border-[#D4AF37]/20 px-5 py-8 text-center"><p className="text-sm text-[#AFA598]">{t("lifeArchive.allMemories.noMatch")}</p><button type="button" onClick={() => { setMemoryFilter("all"); setYearFilter("all"); }} className="mt-3 text-xs text-[#D4AF37] underline underline-offset-4">{t("lifeArchive.allMemories.clear")}</button></div>}
+          )) : <div className="mt-5 rounded-xl border border-dashed border-[#8fb4c8]/20 px-5 py-8 text-center"><p className="text-sm text-[#AFA598]">{t("lifeArchive.allMemories.noMatch")}</p><button type="button" onClick={() => { setMemoryFilter("all"); setYearFilter("all"); }} className="mt-3 text-xs text-[#8fb4c8] underline underline-offset-4">{t("lifeArchive.allMemories.clear")}</button></div>}
         </section>
       ) : null}
 
@@ -651,7 +651,7 @@ export function TemporaryPhotoMoments({
       {gallery ? <PhotoGallery gallery={gallery} setGallery={setGallery} returnFocus={galleryReturnFocus.current} /> : null}
       {deleteTarget ? (
         <div role="dialog" aria-modal="true" aria-labelledby="delete-moment-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-5">
-          <div className="w-full max-w-md rounded-2xl border border-[#D4AF37]/30 bg-[#171411] p-6 shadow-2xl sm:p-8">
+          <div className="w-full max-w-md rounded-2xl border border-[#8fb4c8]/30 bg-[#171411] p-6 shadow-2xl sm:p-8">
             <h2 id="delete-moment-title" className="text-lg text-[#F3EAD8]">{t("lifeArchive.photos.deleteMoment")}</h2>
             <p className="mt-3 text-sm leading-relaxed text-[#CFC5B6]">{t("lifeArchive.photos.deleteConfirm")}</p>
             <div className="mt-6 flex justify-end gap-3">
@@ -675,15 +675,15 @@ function PhotoCollage({ urls, photoIds, layout, photoSettings, onOpen }: {
   const tile = (url: string, index: number, className = "") => (
     <div key={`${url}-${index}`} className={`relative rounded-sm bg-[#E9DDC8] p-2.5 shadow-[0_8px_18px_rgba(0,0,0,0.3)] sm:p-3 ${index % 2 ? "rotate-[1deg]" : "-rotate-[1deg]"} ${className}`}>
       <span className="pointer-events-none absolute -top-2 left-1/2 z-10 h-4 w-12 -translate-x-1/2 rotate-[-2deg] bg-[#C4A66A]/60" aria-hidden />
-      <button type="button" onClick={(event) => onOpen(index, event.currentTarget)} className="block w-full overflow-hidden bg-[#241F1A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D4AF37]" aria-label={`Open photo ${index + 1}`}>
+      <button type="button" onClick={(event) => onOpen(index, event.currentTarget)} className="block w-full overflow-hidden bg-[#241F1A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#8fb4c8]" aria-label={`Open photo ${index + 1}`}>
         <CollageImage url={url} setting={photoSettings[photoIds[index]]} className="w-full" />
       </button>
     </div>
   );
 
   const adaptiveLayout = photoCollageLayoutForCount(urls.length);
-  const boardClass = "relative mx-auto w-full max-w-[700px] overflow-hidden rounded-xl border border-[#D4AF37]/20 bg-[#33251D] p-4 sm:p-8";
-  const decoration = <span className="pointer-events-none absolute right-3 top-2 text-sm text-[#D4AF37]/55 sm:right-5 sm:top-4" aria-hidden>✦ ♡</span>;
+  const boardClass = "relative mx-auto w-full max-w-[700px] overflow-hidden rounded-xl border border-[#8fb4c8]/20 bg-[#33251D] p-4 sm:p-8";
+  const decoration = <span className="pointer-events-none absolute right-3 top-2 text-sm text-[#8fb4c8]/55 sm:right-5 sm:top-4" aria-hidden>✦ ♡</span>;
 
   if (adaptiveLayout === "empty") return null;
   if (adaptiveLayout === "hero-frame") return <div data-collage-layout={adaptiveLayout} data-stored-layout={layout} className={boardClass}>{decoration}<div className="mx-auto w-[92%] max-w-[480px] sm:w-[76%]">{tile(urls[0], 0, "sm:-rotate-[1.5deg]")}</div></div>;

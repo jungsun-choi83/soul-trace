@@ -15,7 +15,7 @@ export function WelcomeExperience({ choiceHref }: { choiceHref: string }) {
   const body = lang === "ko" ? "font-ko break-keep" : "font-display-en";
 
   return (
-    <div className="relative min-h-[100svh] overflow-hidden bg-[#3a2c1e] text-[#463021]">
+    <div className="relative min-h-[100svh] overflow-hidden bg-[#3a2c1e] text-[#1e4d3a]">
       <Image
         src={UIUX_WELCOME_ART}
         alt=""
@@ -28,14 +28,14 @@ export function WelcomeExperience({ choiceHref }: { choiceHref: string }) {
         <LanguageToggle tone="paper" />
       </div>
       <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-[max(1.2rem,env(safe-area-inset-bottom))]">
-        <section className="mx-auto w-full max-w-[400px] rounded-[28px] border border-[#e4d2b4] bg-[#fff7ea]/96 px-6 py-7 text-center shadow-[0_18px_40px_rgba(70,48,33,0.22)]">
+        <section className="mx-auto w-full max-w-[400px] rounded-[28px] border border-[#d9c2b0] bg-[#f6ebe3]/96 px-6 py-7 text-center shadow-[0_18px_40px_rgba(70,48,33,0.22)]">
           <EternalBeamLogo className="mx-auto h-auto w-[9.5rem]" />
-          <p className="mt-3 font-display-en text-[2rem] leading-none tracking-[0.04em] text-[#463021]">SoulTrace</p>
-          <h1 className={`mt-4 text-[15px] leading-7 text-[#5c4633] ${body}`}>{copy.welcomeKeep}</h1>
-          <Link href="/dashboard" className={`mt-6 flex min-h-14 w-full items-center justify-center rounded-full bg-[#5a3d27] text-base text-[#fff7ea] ${body}`}>
+          <p className="mt-3 font-display-en text-[2rem] leading-none tracking-[0.04em] text-[#1e4d3a]">SoulTrace</p>
+          <h1 className={`mt-4 text-[15px] leading-7 text-[#1e4d3a] ${body}`}>{copy.welcomeKeep}</h1>
+          <Link href="/dashboard" className={`mt-6 flex min-h-14 w-full items-center justify-center rounded-full bg-[#1e4d3a] text-base text-[#f6ebe3] ${body}`}>
             {copy.welcomeStartCta}
           </Link>
-          <Link href="/auth?returnTo=/dashboard&mode=signin" className={`mt-4 inline-flex min-h-11 items-center text-sm text-[#5a3d27] underline decoration-[#cbb58e] underline-offset-4 ${body}`}>
+          <Link href="/auth?returnTo=/dashboard&mode=signin" className={`mt-4 inline-flex min-h-11 items-center text-sm text-[#1e4d3a] underline decoration-[#cbb58e] underline-offset-4 ${body}`}>
             {copy.welcomeLogin}
           </Link>
           <Link href="/create" className={`mt-2 block text-xs text-[#8a7460] ${body}`}>

@@ -40,9 +40,9 @@ const RECIPIENTS: SelectableLetterRecipient[] = [
 ];
 
 function fieldClass(lang: Locale, invalid = false) {
-  return `w-full rounded-xl border bg-[#fffaf0] px-4 py-3 text-base font-extralight text-[#393129] outline-none transition placeholder:text-[#857666]/70 md:text-sm ${
+  return `w-full rounded-xl border bg-[#e7f0f4] px-4 py-3 text-base font-extralight text-[#1e4d3a] outline-none transition placeholder:text-[#5d7c88]/70 md:text-sm ${
     lang === "ko" ? "font-ko" : "font-display-en"
-  } ${invalid ? "border-red-300/75 focus:border-red-300" : "border-[#dfceb6] focus:border-[#9e774c]"}`;
+  } ${invalid ? "border-red-300/75 focus:border-red-300" : "border-[#d9c2b0] focus:border-[#55603a]"}`;
 }
 
 function chipClass(selected: boolean, lang: Locale) {
@@ -50,8 +50,8 @@ function chipClass(selected: boolean, lang: Locale) {
     lang === "ko" ? "font-ko" : "font-display-en"
   } ${
     selected
-      ? "border-[#9e774c] bg-[#9e774c] text-[#fffaf2]"
-      : "border-[#eadcc6] bg-[#fff8ec] text-[#393129] hover:border-[#9e774c]/55 hover:bg-[#f1e5cf]"
+      ? "border-[#55603a] bg-[#55603a] text-[#f6ebe3]"
+      : "border-[#d9c2b0] bg-[#f6ebe3] text-[#1e4d3a] hover:border-[#55603a]/55 hover:bg-[#ead6c4]"
   }`;
 }
 
@@ -100,7 +100,7 @@ export function PetIntroForm({
       </p>
 
       {questionId === "name" ? <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#594b3c]">{copy.q1Label}</label>
+        <label className="text-sm font-extralight text-[#3e6554]">{copy.q1Label}</label>
         <input
           id="pet-name"
           type="text"
@@ -115,7 +115,7 @@ export function PetIntroForm({
       </div> : null}
 
       {questionId === "gender" ? <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#594b3c]">{t("form.step1.petGenderLabel")}</label>
+        <label className="text-sm font-extralight text-[#3e6554]">{t("form.step1.petGenderLabel")}</label>
         <div className="flex flex-wrap gap-2">
           {(["male", "female"] as PetGender[]).map((gender) => (
             <button
@@ -132,7 +132,7 @@ export function PetIntroForm({
       </div> : null}
 
       {questionId === "type" ? <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#594b3c]">{copy.q2Label}</label>
+        <label className="text-sm font-extralight text-[#3e6554]">{copy.q2Label}</label>
         <div className="flex flex-wrap gap-2">
           {PET_TYPES.map((type) => (
             <button
@@ -152,7 +152,7 @@ export function PetIntroForm({
       </div> : null}
 
       {questionId === "breed" ? <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#594b3c]">{t("form.step1.q2bLabel")}</label>
+        <label className="text-sm font-extralight text-[#3e6554]">{t("form.step1.q2bLabel")}</label>
         <div className="flex flex-wrap gap-2">
           {breedOptions.map((breed) => (
             <button
@@ -194,7 +194,7 @@ export function PetIntroForm({
       </div> : null}
 
       {questionId === "years" ? <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#594b3c]">{t("form.step1.q3Label")}</label>
+        <label className="text-sm font-extralight text-[#3e6554]">{t("form.step1.q3Label")}</label>
         <input
           id="pet-age"
           type="number"
@@ -215,7 +215,7 @@ export function PetIntroForm({
       </div> : null}
 
       {questionId === "recipient" ? <div className="space-y-2">
-        <label className="text-sm font-extralight text-[#594b3c]">{t("form.step1.q4Label")}</label>
+        <label className="text-sm font-extralight text-[#3e6554]">{t("form.step1.q4Label")}</label>
         <div className="flex flex-wrap gap-2">
           {RECIPIENTS.map((recipient) => (
             <button

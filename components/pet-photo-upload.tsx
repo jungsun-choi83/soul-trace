@@ -79,10 +79,10 @@ export function PetPhotoUpload({
           {t("survey.video.photoKicker")}
         </p>
       ) : null}
-      {showGuidance ? <><p className={`text-sm font-extralight leading-relaxed text-[#EDE4D3] sm:text-[15px] ${showKicker ? "mt-3" : ""}`}>
+      {showGuidance ? <><p className={`text-sm font-extralight leading-relaxed text-[#e7f0f4] sm:text-[15px] ${showKicker ? "mt-3" : ""}`}>
         {hint}
       </p>
-      <p className="survey-hint mt-3 font-extralight text-[#D4AF37]/88">
+      <p className="survey-hint mt-3 font-extralight text-[#8fb4c8]/88">
         {t("survey.video.photoGuideline")}
       </p></> : null}
 
@@ -96,18 +96,18 @@ export function PetPhotoUpload({
       />
 
       {previewUrl ? (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-[rgba(212,175,55,0.28)] bg-[rgba(8,8,8,0.45)]">
+        <div className="mt-4 overflow-hidden rounded-2xl border border-[rgba(143, 180, 200,0.28)] bg-[rgba(8,8,8,0.45)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewUrl}
             alt={t("survey.video.photoPreviewAlt").replace(/○○/g, petDisplayName.trim())}
             className="mx-auto max-h-64 w-full object-contain object-center"
           />
-          <div className="flex flex-wrap gap-2 border-t border-[rgba(212,175,55,0.18)] px-4 py-3">
+          <div className="flex flex-wrap gap-2 border-t border-[rgba(143, 180, 200,0.18)] px-4 py-3">
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="min-h-[40px] rounded-xl border border-[rgba(212,175,55,0.35)] px-3 py-2 text-sm font-light text-[#EDE4D3]/90 transition hover:border-[rgba(212,175,55,0.55)] hover:bg-[rgba(212,175,55,0.06)]"
+              className="min-h-[40px] rounded-xl border border-[rgba(143, 180, 200,0.35)] px-3 py-2 text-sm font-light text-[#e7f0f4]/90 transition hover:border-[rgba(143, 180, 200,0.55)] hover:bg-[rgba(143, 180, 200,0.06)]"
             >
               {t("survey.video.photoChange")}
             </button>
@@ -131,14 +131,14 @@ export function PetPhotoUpload({
           onDrop={onDrop}
           className={`mt-4 flex min-h-[168px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-5 py-8 text-center transition ${
             dragOver
-              ? "border-[rgba(212,175,55,0.65)] bg-[rgba(212,175,55,0.1)]"
-              : "border-[rgba(212,175,55,0.35)] bg-[rgba(212,175,55,0.03)] hover:border-[rgba(212,175,55,0.55)] hover:bg-[rgba(212,175,55,0.06)]"
+              ? "border-[rgba(143, 180, 200,0.65)] bg-[rgba(143, 180, 200,0.1)]"
+              : "border-[rgba(143, 180, 200,0.35)] bg-[rgba(143, 180, 200,0.03)] hover:border-[rgba(143, 180, 200,0.55)] hover:bg-[rgba(143, 180, 200,0.06)]"
           }`}
         >
-          <span className="text-2xl text-[#D4AF37]/75" aria-hidden>
+          <span className="text-2xl text-[#8fb4c8]/75" aria-hidden>
             +
           </span>
-          <span className="mt-3 text-sm font-light text-[#EDE4D3]">{t("survey.video.photoDrop")}</span>
+          <span className="mt-3 text-sm font-light text-[#e7f0f4]">{t("survey.video.photoDrop")}</span>
           <span className="mt-2 text-xs font-extralight text-[#A8A29E]">
             {t("survey.video.photoFormats")}
           </span>

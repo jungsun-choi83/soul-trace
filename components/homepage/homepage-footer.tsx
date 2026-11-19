@@ -10,7 +10,7 @@ import {
 import { FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa6";
 
 const linkClassName =
-  "transition-colors hover:text-[#d4af37] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0a09]";
+  "transition-colors hover:text-[#8fb4c8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fb4c8] focus-visible:ring-offset-2 focus-visible:ring-offset-[#10281f]";
 
 export function HomepageFooter() {
   const { lang, t } = useLocale();
@@ -19,14 +19,14 @@ export function HomepageFooter() {
       ? "font-ko break-keep"
       : "font-display-en !tracking-normal";
   const socialLinkClass =
-    "flex size-8 items-center justify-center rounded-full text-white/65 transition hover:bg-white/10 hover:text-[#d4af37] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d4af37] motion-reduce:transform-none";
+    "flex size-8 items-center justify-center rounded-full text-white/65 transition hover:bg-white/10 hover:text-[#8fb4c8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8fb4c8] motion-reduce:transform-none";
 
   return (
-    <footer className="border-t border-white/10 bg-[#0b0a09] py-4 text-[#f8f2e7] md:py-6">
+    <footer className="border-t border-white/10 bg-[#10281f] py-4 text-[#e7f0f4] md:py-6">
       <div className="mx-auto grid max-w-7xl grid-cols-2 items-center gap-x-4 gap-y-2 px-4 sm:gap-y-3 sm:px-8 md:flex md:justify-between md:gap-6">
         <div className="min-w-0 md:order-1">
           <div className="flex items-center gap-2.5">
-            <span className="size-2 shrink-0 rounded-full bg-[#c8a24a] shadow-[0_0_12px_rgba(200,162,74,0.7)]" />
+            <span className="size-2 shrink-0 rounded-full bg-[#8fb4c8] shadow-[0_0_12px_rgba(143, 180, 200,0.7)]" />
             <div className="min-w-0">
               <span className="font-display-en block whitespace-nowrap text-sm uppercase !tracking-[0.2em] sm:text-base">
                 Soul Trace

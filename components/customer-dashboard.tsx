@@ -154,7 +154,6 @@ export function CustomerDashboard({
                 <section className="st-card mt-6 px-5 py-5">
                   <p className="st-pen text-2xl text-[color:var(--st-brown)]">{copy.quietBody}</p>
                 </section>
-                <p className="mt-4 text-xs text-[color:var(--st-text-soft)]">{copy.noReminder}</p>
               </>
             ) : null}
             </>
@@ -171,7 +170,7 @@ export function CustomerDashboard({
                 <ul className="mt-4 grid grid-cols-3 gap-2">
                   {petRecent.slice(0, 6).map((item) => (
                     <li key={item.entryId}>
-                      <Link href={`${albumHref}#album`} className="block overflow-hidden rounded-[12px] bg-[#f8f2e5]">
+                      <Link href={`${albumHref}#album`} className="block overflow-hidden rounded-[12px] bg-[#dce8ef]">
                         {item.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={item.imageUrl} alt={item.title || item.petName} className="aspect-square w-full object-cover" />
@@ -194,7 +193,7 @@ export function CustomerDashboard({
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <Link href={`${albumHref}#album`} className="st-card overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={POSE_ART.shibaHome} alt="" className="aspect-[5/3] w-full bg-[#f6efe2] object-contain object-center" />
+                    <img src={POSE_ART.shibaHome} alt="" className="aspect-[5/3] w-full bg-[#f6ebe3] object-contain object-center" />
                     <div className="px-4 py-3">
                       <h3 className="font-medium">{copy.tidyMemories}</h3>
                       <p className="mt-1 text-sm text-[color:var(--st-text-soft)]">{copy.tidyMemoriesBody}</p>
@@ -202,7 +201,7 @@ export function CustomerDashboard({
                   </Link>
                   <Link href={`${albumHref}#album`} className="st-card overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={POSE_ART.corgiSpring} alt="" className="aspect-[5/3] w-full bg-[#f6efe2] object-contain object-center" />
+                    <img src={POSE_ART.corgiSpring} alt="" className="aspect-[5/3] w-full bg-[#f6ebe3] object-contain object-center" />
                     <div className="px-4 py-3">
                       <h3 className="font-medium">{copy.monthBest}</h3>
                       <p className="mt-1 text-sm text-[color:var(--st-text-soft)]">{fill(copy.monthBestBody, { NAME: active.petName })}</p>
@@ -266,7 +265,7 @@ function HomeBranch({
 function PetHero({ pet }: { pet: HomePet }) {
   const src = pet.avatarUrl || POSE_ART.shibaHome;
   return (
-    <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-[22px] bg-[#f8f2e5]">
+    <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-[22px] bg-[#dce8ef]">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt="" className={`h-full w-full object-center ${pet.avatarUrl ? "object-cover" : "object-contain"}`} />
     </div>
@@ -276,11 +275,11 @@ function PetHero({ pet }: { pet: HomePet }) {
 
 function DashTile({ href, label, icon }: { href: string; label: string; icon: "archive" | "letter" | "polaroid" | "pet" }) {
   return (
-    <Link href={href} className="flex min-h-[5.5rem] flex-col items-center justify-center gap-1.5 rounded-[18px] bg-[#fff7ea] px-1 py-3 text-center shadow-[0_8px_18px_-14px_rgba(90,61,39,0.5)]">
-      <span className="flex size-11 items-center justify-center rounded-2xl bg-[#f4e6cf] text-[#6b4a2c]">
+    <Link href={href} className="flex min-h-[5.5rem] flex-col items-center justify-center gap-1.5 rounded-[18px] bg-[#f6ebe3] px-1 py-3 text-center shadow-[0_8px_18px_-14px_rgba(90,61,39,0.5)]">
+      <span className="flex size-11 items-center justify-center rounded-2xl bg-[#ead6c4] text-[#1e4d3a]">
         <DashIcon icon={icon} />
       </span>
-      <span className="text-[11px] font-medium leading-4 text-[#463021]">{label}</span>
+      <span className="text-[11px] font-medium leading-4 text-[#1e4d3a]">{label}</span>
     </Link>
   );
 }

@@ -218,7 +218,7 @@ export function CollarStudio({ step }: { step: CollarStep }) {
         />
         {step === "hub" ? (
           <section className="st-rise mt-4">
-            <p className="text-[11px] font-semibold tracking-[0.16em] text-[#ad8655]">{t.hubEyebrow}</p>
+            <p className="text-[11px] font-semibold tracking-[0.16em] text-[#3e6274]">{t.hubEyebrow}</p>
             <h1 id="collar-title" className="st-headline mt-2 text-[1.7rem]">{t.hubTitle.replaceAll("%NAME%", name)}</h1>
             <p className="mt-2 text-sm text-[color:var(--st-text-soft)]">{t.hubBody}</p>
           </section>
@@ -288,7 +288,7 @@ function HubPanel({ t, name, petId, faceHref }: { t: CollarCopy; name: string; p
           height={240}
           className="aspect-square w-[min(68vw,15rem)] rounded-full bg-[#1d1916] object-cover ring-4 ring-[#efe4d2]"
         />
-        <p className="mt-4 text-lg font-medium text-[#3a3428]">{t.screenCardTitle.replaceAll("%NAME%", name)}</p>
+        <p className="mt-4 text-lg font-medium text-[#1e4d3a]">{t.screenCardTitle.replaceAll("%NAME%", name)}</p>
         <p className="mt-1 text-xs text-[color:var(--st-text-soft)]">{t.screenCardBody}</p>
       </div>
 

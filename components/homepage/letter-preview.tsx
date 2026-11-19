@@ -14,12 +14,12 @@ export function LetterPreview() {
       : "font-display-en !tracking-normal";
 
   return (
-    <section className="relative overflow-hidden bg-[#1a1512] py-14 text-[#f8f2e7] md:py-20">
-      <div className="pointer-events-none absolute left-1/2 top-1/2 size-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#c8a24a]/10 blur-[130px]" />
+    <section className="relative overflow-hidden bg-[#1e4d3a] py-14 text-[#e7f0f4] md:py-20">
+      <div className="pointer-events-none absolute left-1/2 top-1/2 size-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#8fb4c8]/10 blur-[130px]" />
       <div className="relative mx-auto grid max-w-6xl grid-cols-[56%_44%] items-center gap-2 px-2 sm:grid-cols-[54%_46%] sm:gap-6 sm:px-8 lg:grid-cols-2 lg:gap-12">
         <div className="min-w-0">
           <Reveal className={styles.letterTextEntrance}>
-            <p className="mb-2 text-[0.55rem] uppercase tracking-[0.16em] text-[#c8a24a] sm:mb-3 sm:text-[0.625rem] sm:tracking-[0.22em] lg:mb-4 lg:text-xs lg:tracking-[0.28em]">
+            <p className="mb-2 text-[0.55rem] uppercase tracking-[0.16em] text-[#8fb4c8] sm:mb-3 sm:text-[0.625rem] sm:tracking-[0.22em] lg:mb-4 lg:text-xs lg:tracking-[0.28em]">
               {t("homepage.letter.label")}
             </p>
             <h2
@@ -33,7 +33,7 @@ export function LetterPreview() {
               ))}
             </h2>
             <p
-              className={`${display} mt-3 max-w-md text-[0.68rem] leading-relaxed text-[#f8f2e7]/70 sm:mt-4 sm:text-sm lg:mt-5 lg:text-base`}
+              className={`${display} mt-3 max-w-md text-[0.68rem] leading-relaxed text-[#e7f0f4]/70 sm:mt-4 sm:text-sm lg:mt-5 lg:text-base`}
             >
               {t("homepage.letter.body").split("\n").map((line, index) => (
                 <span key={line}>
@@ -58,12 +58,12 @@ export function LetterPreview() {
             </Reveal>
             <Reveal delay={500} className={styles.letterArrowEntrance}>
               <div className="flex justify-center">
-                <ArrowRightIcon className="size-3 rotate-90 text-[#c8a24a] sm:size-4 lg:size-5" />
+                <ArrowRightIcon className="size-3 rotate-90 text-[#8fb4c8] sm:size-4 lg:size-5" />
               </div>
             </Reveal>
             <Reveal delay={680} className={styles.letterResultEntrance}>
-              <div className="rounded-lg border border-[#c8a24a]/25 bg-[#c8a24a]/5 p-2 sm:rounded-xl sm:p-3 lg:p-4">
-                <p className="text-[0.5rem] uppercase tracking-[0.14em] text-[#c8a24a] sm:text-[0.6rem] sm:tracking-[0.18em] lg:text-[0.7rem] lg:tracking-[0.22em]">
+              <div className="rounded-lg border border-[#8fb4c8]/25 bg-[#8fb4c8]/5 p-2 sm:rounded-xl sm:p-3 lg:p-4">
+                <p className="text-[0.5rem] uppercase tracking-[0.14em] text-[#8fb4c8] sm:text-[0.6rem] sm:tracking-[0.18em] lg:text-[0.7rem] lg:tracking-[0.22em]">
                   {t("homepage.letter.letterLabel")}
                 </p>
                 <p
@@ -77,7 +77,7 @@ export function LetterPreview() {
         </div>
 
         <Reveal delay={180} className={`flex min-w-0 justify-center ${styles.letterPaperEntrance}`}>
-          <div className="relative aspect-[617/862] w-full max-w-sm rotate-1 overflow-hidden rounded-sm bg-[#f3ebda] shadow-2xl transition-transform duration-500 hover:rotate-0">
+          <div className="relative aspect-[617/862] w-full max-w-sm rotate-1 overflow-hidden rounded-sm bg-[#ead6c4] shadow-2xl transition-transform duration-500 hover:rotate-0">
             <div className={`${styles.letterPaperContent} absolute inset-0`}>
               <Image
                 src={lang === "ko" ? "/images/letter.png" : "/images/letter english.png"}

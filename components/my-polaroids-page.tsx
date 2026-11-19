@@ -58,7 +58,7 @@ function SavedPolaroidCard({ item, lang, t }: {
   };
 
   return (
-    <article className="rounded-2xl border border-[#D4AF37]/25 bg-[#17130f]/80 p-4 shadow-[0_20px_60px_rgba(0,0,0,.25)] sm:p-5">
+    <article className="rounded-2xl border border-[#8fb4c8]/25 bg-[#17130f]/80 p-4 shadow-[0_20px_60px_rgba(0,0,0,.25)] sm:p-5">
       <SeasonalPolaroidFrame
         polaroidRef={frameRef}
         lang={lang}
@@ -154,14 +154,14 @@ export function MyPolaroidsPage() {
       </header>
       <section className="mx-auto w-full max-w-7xl px-5 pb-16 pt-8 sm:px-8 sm:pt-12">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#D4AF37]">{t("myPolaroids.eyebrow")}</p>
+          <p className="font-display-en text-[10px] uppercase tracking-[0.32em] text-[#8fb4c8]">{t("myPolaroids.eyebrow")}</p>
           <h1 className={`mt-3 text-3xl font-light text-[#FFF0D0] sm:text-5xl ${bodyFont}`}>{t("myPolaroids.title")}</h1>
           <p className={`mt-3 text-sm leading-7 text-[#C9BDAE] ${bodyFont}`}>{t("myPolaroids.description")}</p>
         </div>
         {authStatus === "authenticated" && pets.length > 0 ? (
           <div className="mx-auto mt-8 flex max-w-md flex-col gap-2">
             <label htmlFor="my-polaroids-pet-filter" className={`text-left text-xs text-[#C9BDAE] ${bodyFont}`}>{t("myPolaroids.petFilterLabel")}</label>
-            <select id="my-polaroids-pet-filter" value={petFilter} onChange={(event) => setPetFilter(event.target.value)} className={`min-h-11 rounded-xl border border-[#D4AF37]/30 bg-[#17130f] px-3 text-sm text-[#F3EAD8] ${bodyFont}`}>
+            <select id="my-polaroids-pet-filter" value={petFilter} onChange={(event) => setPetFilter(event.target.value)} className={`min-h-11 rounded-xl border border-[#8fb4c8]/30 bg-[#17130f] px-3 text-sm text-[#F3EAD8] ${bodyFont}`}>
               <option value="">{t("myPolaroids.allPetsFilter")}</option>
               {pets.map((pet) => <option key={pet.petId} value={pet.petId}>{pet.petName}</option>)}
             </select>
@@ -170,7 +170,7 @@ export function MyPolaroidsPage() {
         {authStatus === "loading" ? <p className={`mx-auto mt-12 text-center text-sm text-[#B6AA99] ${bodyFont}`}>{t("myPolaroids.loading")}</p> : null}
         {authStatus === "anonymous" ? <p className={`mx-auto mt-12 max-w-md text-center text-sm leading-7 text-[#B6AA99] ${bodyFont}`}>{t("myPolaroids.empty")}</p> : null}
         {authStatus === "authenticated" && loading ? <p className={`mx-auto mt-12 text-center text-sm text-[#B6AA99] ${bodyFont}`}>{t("myPolaroids.loading")}</p> : null}
-        {error ? <div className="mx-auto mt-10 max-w-lg rounded-2xl border border-red-300/25 bg-red-950/20 p-6 text-center"><p className={`text-sm leading-7 text-red-100 ${bodyFont}`}>{error}</p><button type="button" onClick={() => void load()} className={`mt-4 rounded-xl border border-[#D4AF37]/50 px-5 py-2 text-sm text-[#F0CF71] ${bodyFont}`}>{t("myPolaroids.retry")}</button></div> : null}
+        {error ? <div className="mx-auto mt-10 max-w-lg rounded-2xl border border-red-300/25 bg-red-950/20 p-6 text-center"><p className={`text-sm leading-7 text-red-100 ${bodyFont}`}>{error}</p><button type="button" onClick={() => void load()} className={`mt-4 rounded-xl border border-[#8fb4c8]/50 px-5 py-2 text-sm text-[#F0CF71] ${bodyFont}`}>{t("myPolaroids.retry")}</button></div> : null}
         {authStatus === "authenticated" && !loading && !error && items.length === 0 ? <p className={`mx-auto mt-12 max-w-md text-center text-sm leading-7 text-[#B6AA99] ${bodyFont}`}>{t("myPolaroids.empty")}</p> : null}
         {items.length > 0 ? <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">{items.map((item) => <SavedPolaroidCard key={item.resultId} item={item} lang={lang} t={t} />)}</div> : null}
       </section>

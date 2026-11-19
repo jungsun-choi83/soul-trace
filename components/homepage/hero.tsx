@@ -23,10 +23,10 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
   return (
     <section
       id="top"
-      className="relative scroll-mt-20 overflow-hidden bg-[#0b0a09] text-[#f8f2e7]"
+      className="relative scroll-mt-20 overflow-hidden bg-[#10281f] text-[#e7f0f4]"
     >
       <div
-        className={`pointer-events-none absolute -right-32 top-0 size-[600px] rounded-full bg-[#c8a24a]/15 blur-[140px] ${styles.glow}`}
+        className={`pointer-events-none absolute -right-32 top-0 size-[600px] rounded-full bg-[#8fb4c8]/15 blur-[140px] ${styles.glow}`}
         aria-hidden="true"
       />
       <div
@@ -59,9 +59,9 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
         <div className="min-w-0 max-w-[72%] sm:max-w-none">
           <Reveal className={styles.heroEyebrowEntrance} delay={200}>
             <p
-              className={`mb-[clamp(0.875rem,3vw,1.5rem)] flex min-w-0 items-center gap-[clamp(0.5rem,2vw,0.75rem)] text-xs font-medium uppercase text-[#c8a24a] ${lang === "ko" ? "tracking-normal" : "tracking-[0.12em] lg:tracking-[0.28em]"}`}
+              className={`mb-[clamp(0.875rem,3vw,1.5rem)] flex min-w-0 items-center gap-[clamp(0.5rem,2vw,0.75rem)] text-xs font-medium uppercase text-[#8fb4c8] ${lang === "ko" ? "tracking-normal" : "tracking-[0.12em] lg:tracking-[0.28em]"}`}
             >
-              <span className="h-px w-[clamp(1.25rem,5vw,2rem)] shrink-0 bg-[#c8a24a]/60" />
+              <span className="h-px w-[clamp(1.25rem,5vw,2rem)] shrink-0 bg-[#8fb4c8]/60" />
               {t("homepage.hero.label")}
             </p>
           </Reveal>
@@ -101,7 +101,7 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
           </Reveal>
           <Reveal className={styles.heroDescriptionEntrance} delay={750}>
             <p
-              className={`mt-[clamp(1rem,4vw,1.75rem)] max-w-md whitespace-pre-line text-[clamp(0.78rem,3.5vw,0.9rem)] leading-relaxed text-[#f8f2e7]/90 sm:text-base lg:text-lg ${styles.heroDescription} ${body}`}
+              className={`mt-[clamp(1rem,4vw,1.75rem)] max-w-md whitespace-pre-line text-[clamp(0.78rem,3.5vw,0.9rem)] leading-relaxed text-[#e7f0f4]/90 sm:text-base lg:text-lg ${styles.heroDescription} ${body}`}
             >
               {t("homepage.hero.body").split("\n").map((line) => (
                 <span key={line} className="block">
@@ -115,7 +115,7 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
               {petFirst ? (
                 <Link
                   href={recordHref}
-                  className={`${styles.heroPrimaryCta} group inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-4 py-3 text-center text-xs font-medium leading-tight text-[#0b0a09] transition hover:bg-[#d8b463] sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${body}`}
+                  className={`${styles.heroPrimaryCta} group inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#55603a] px-4 py-3 text-center text-xs font-medium leading-tight text-[#f6ebe3] transition hover:bg-[#46502f] sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${body}`}
                 >
                   {recordCopy.recordCta}
                   <ArrowRightIcon className="size-3.5 shrink-0 transition-transform group-hover:translate-x-1 lg:size-4" />
@@ -125,7 +125,7 @@ export function Hero({ choiceHref }: { choiceHref: string }) {
                 href={choiceHref}
                 className={petFirst
                   ? `inline-flex min-h-11 items-center justify-center rounded-full px-4 py-3 text-center text-xs leading-tight sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${styles.heroSecondaryCta} ${body}`
-                  : `${styles.heroPrimaryCta} group inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#c8a24a] px-4 py-3 text-center text-xs font-medium leading-tight text-[#0b0a09] transition hover:bg-[#d8b463] sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${body}`}
+                  : `${styles.heroPrimaryCta} group inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#55603a] px-4 py-3 text-center text-xs font-medium leading-tight text-[#f6ebe3] transition hover:bg-[#46502f] sm:px-5 sm:text-sm lg:min-h-12 lg:px-7 lg:py-4 ${body}`}
               >
                 {petFirst ? recordCopy.letterCta : t("homepage.hero.primary")}
                 {petFirst ? null : <ArrowRightIcon className="size-3.5 shrink-0 transition-transform group-hover:translate-x-1 lg:size-4" />}

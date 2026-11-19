@@ -75,7 +75,7 @@ export function BenefitBottomSheet({ open, onClose, petDisplayName }: BenefitBot
             role="dialog"
             aria-modal
             aria-labelledby="benefit-modal-title"
-            className="fixed inset-x-0 bottom-0 z-[301] mx-auto flex max-h-[min(92dvh,920px)] w-full max-w-lg flex-col rounded-t-2xl border border-[#D4AF37]/60 bg-[rgba(18,16,14,0.92)] shadow-[0_-28px_120px_rgba(0,0,0,0.72)] backdrop-blur-xl"
+            className="fixed inset-x-0 bottom-0 z-[301] mx-auto flex max-h-[min(92dvh,920px)] w-full max-w-lg flex-col rounded-t-2xl border border-[#8fb4c8]/60 bg-[rgba(18,16,14,0.92)] shadow-[0_-28px_120px_rgba(0,0,0,0.72)] backdrop-blur-xl"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -85,7 +85,7 @@ export function BenefitBottomSheet({ open, onClose, petDisplayName }: BenefitBot
               <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(212,175,55,0.45)] bg-black/50 text-lg leading-none text-[#D4AF37] transition hover:bg-[rgba(212,175,55,0.12)]"
+                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(143, 180, 200,0.45)] bg-black/50 text-lg leading-none text-[#8fb4c8] transition hover:bg-[rgba(143, 180, 200,0.12)]"
                 aria-label="닫기"
               >
                 ×
@@ -93,13 +93,13 @@ export function BenefitBottomSheet({ open, onClose, petDisplayName }: BenefitBot
 
               <h2
                 id="benefit-modal-title"
-                className={`${bodyFont} pr-11 text-[1.35rem] font-light leading-snug tracking-tight text-[#F5E6B8] sm:text-2xl sm:leading-snug`}
+                className={`${bodyFont} pr-11 text-[1.35rem] font-light leading-snug tracking-tight text-[#f6ebe3] sm:text-2xl sm:leading-snug`}
               >
                 {t("result.benefitModal.title")}
               </h2>
 
               <p
-                className={`${bodyFont} mt-4 border-l-2 border-[#D4AF37]/70 pl-4 text-[15px] font-light leading-[1.75] text-[#EDE4D3] sm:text-base sm:leading-[1.8]`}
+                className={`${bodyFont} mt-4 border-l-2 border-[#8fb4c8]/70 pl-4 text-[15px] font-light leading-[1.75] text-[#e7f0f4] sm:text-base sm:leading-[1.8]`}
               >
                 {t("result.benefitModal.productOneLiner")}
               </p>
@@ -111,7 +111,7 @@ export function BenefitBottomSheet({ open, onClose, petDisplayName }: BenefitBot
               </p>
 
               <div
-                className={`${bodyFont} mt-7 rounded-2xl border border-[#f0e4c4]/55 bg-gradient-to-br from-[#e8d5a8] via-[#d4af37] to-[#c9a84d] px-5 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_12px_40px_rgba(0,0,0,0.35)] sm:px-6 sm:py-6`}
+                className={`${bodyFont} mt-7 rounded-2xl border border-[#f0e4c4]/55 bg-gradient-to-br from-[#e8d5a8] via-[#8fb4c8] to-[#c9a84d] px-5 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_12px_40px_rgba(0,0,0,0.35)] sm:px-6 sm:py-6`}
               >
                 <p className="text-center text-[0.95rem] font-semibold leading-snug tracking-tight text-[#1c140c] sm:text-base">
                   {t("result.benefitModal.perkBoxTitle")}
@@ -129,7 +129,7 @@ export function BenefitBottomSheet({ open, onClose, petDisplayName }: BenefitBot
                 href={getEternalBeamMainUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`${bodyFont} mt-9 flex w-full items-center justify-center rounded-2xl bg-[#1a1510] px-5 py-4 text-center text-[15px] font-medium leading-snug tracking-wide text-[#F5E6B8] shadow-[inset_0_0_0_1px_rgba(212,175,55,0.5),0_16px_48px_rgba(0,0,0,0.45)] transition hover:bg-[#241f18] hover:text-white sm:text-lg`}
+                className={`${bodyFont} mt-9 flex w-full items-center justify-center rounded-2xl bg-[#14352c] px-5 py-4 text-center text-[15px] font-medium leading-snug tracking-wide text-[#f6ebe3] shadow-[inset_0_0_0_1px_rgba(143, 180, 200,0.5),0_16px_48px_rgba(0,0,0,0.45)] transition hover:bg-[#1e4d3a] hover:text-white sm:text-lg`}
                 onClick={onClose}
               >
                 {t("result.benefitModal.reserveCta")}

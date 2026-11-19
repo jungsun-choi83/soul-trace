@@ -234,7 +234,7 @@ export function LifeArchivePreview({
         <header className="flex min-w-0 items-center justify-between gap-3">
           <Link
             href={backHref}
-            className={`inline-flex min-h-11 items-center rounded-lg px-1 text-left text-sm font-light text-[#C4B8A8] transition hover:text-[#D4AF37] ${isKorean ? "font-ko" : "font-display-en"}`}
+            className={`inline-flex min-h-11 items-center rounded-lg px-1 text-left text-sm font-light text-[#C4B8A8] transition hover:text-[#8fb4c8] ${isKorean ? "font-ko" : "font-display-en"}`}
           >
             <span aria-hidden>← </span>{navigationOrigin === "letter" ? t("lifeArchive.back") : t("landing.navBack")}
           </Link>
@@ -246,7 +246,7 @@ export function LifeArchivePreview({
         ) : (
           <>
             <section className="mx-auto max-w-3xl pb-10 pt-14 text-center sm:pb-14 sm:pt-20">
-              <p className="font-display-en text-[11px] font-medium uppercase tracking-[0.34em] text-[#D4AF37] sm:text-xs">FOUNDER&apos;S JOURNEY</p>
+              <p className="font-display-en text-[11px] font-medium uppercase tracking-[0.34em] text-[#8fb4c8] sm:text-xs">FOUNDER&apos;S JOURNEY</p>
               <h1 className={`mt-5 text-[2rem] font-normal tracking-[0.08em] text-white sm:text-5xl sm:tracking-normal md:text-6xl ${isKorean ? "font-ko" : "font-display-en"}`}>
                 {t("lifeArchive.title")}
               </h1>
@@ -255,10 +255,10 @@ export function LifeArchivePreview({
                 {t("lifeArchive.introduction").replace(/%NAME%/g, archive.petName)}
               </p>
               <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-                <button type="button" aria-pressed={selectedMemoryType === "photos"} onClick={openPhotoSection} className={`min-h-12 rounded-xl border px-6 py-3 text-sm font-light transition ${selectedMemoryType === "photos" ? "border-[#D4AF37] bg-[#b89a2e] text-black" : "border-[#D4AF37]/45 bg-black/45 text-[#F5E6C8] hover:bg-[#D4AF37]/10"} ${isKorean ? "font-ko" : "font-display-en"}`}>
+                <button type="button" aria-pressed={selectedMemoryType === "photos"} onClick={openPhotoSection} className={`min-h-12 rounded-xl border px-6 py-3 text-sm font-light transition ${selectedMemoryType === "photos" ? "border-[#8fb4c8] bg-[#b89a2e] text-black" : "border-[#8fb4c8]/45 bg-black/45 text-[#F5E6C8] hover:bg-[#8fb4c8]/10"} ${isKorean ? "font-ko" : "font-display-en"}`}>
                   + {t("lifeArchive.photos.add")}
                 </button>
-                <button type="button" aria-pressed={selectedMemoryType === "video"} onClick={openVideoSection} className={`min-h-12 rounded-xl border px-6 py-3 text-sm font-light transition ${selectedMemoryType === "video" ? "border-[#D4AF37] bg-[#b89a2e] text-black" : "border-[#D4AF37]/45 bg-black/45 text-[#F5E6C8] hover:bg-[#D4AF37]/10"} ${isKorean ? "font-ko" : "font-display-en"}`}>
+                <button type="button" aria-pressed={selectedMemoryType === "video"} onClick={openVideoSection} className={`min-h-12 rounded-xl border px-6 py-3 text-sm font-light transition ${selectedMemoryType === "video" ? "border-[#8fb4c8] bg-[#b89a2e] text-black" : "border-[#8fb4c8]/45 bg-black/45 text-[#F5E6C8] hover:bg-[#8fb4c8]/10"} ${isKorean ? "font-ko" : "font-display-en"}`}>
                   + {t("lifeArchive.videos.add")}
                 </button>
               </div>
@@ -266,20 +266,20 @@ export function LifeArchivePreview({
 
             <div className="space-y-8 sm:space-y-10">
               {storageMode === "secure" && accountPets.length ? (
-                <nav aria-label={isKorean ? "내 반려동물과 편지" : "My pets and letters"} className="rounded-3xl border border-[#D4AF37]/25 bg-[#2e2823]/85 p-5 sm:p-7">
+                <nav aria-label={isKorean ? "내 반려동물과 편지" : "My pets and letters"} className="rounded-3xl border border-[#8fb4c8]/25 bg-[#2e2823]/85 p-5 sm:p-7">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <SectionLabel>{isKorean ? "내 반려동물" : "My Pets"}</SectionLabel>
-                    {selectedPetId ? <a href={`/choose?petId=${encodeURIComponent(selectedPetId)}`} className="text-sm text-[#D4AF37] underline underline-offset-4">{isKorean ? "이 반려동물의 새 편지" : "New letter for this pet"}</a> : null}
+                    {selectedPetId ? <a href={`/choose?petId=${encodeURIComponent(selectedPetId)}`} className="text-sm text-[#8fb4c8] underline underline-offset-4">{isKorean ? "이 반려동물의 새 편지" : "New letter for this pet"}</a> : null}
                   </div>
                   <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
-                    {accountPets.map((pet) => <a key={pet.petId} href={archiveHref(pet.petId)} aria-current={pet.petId === selectedPetId ? "page" : undefined} className={`min-h-11 shrink-0 rounded-full border px-4 py-2.5 text-sm ${pet.petId === selectedPetId ? "border-[#D4AF37] bg-[#D4AF37]/15 text-[#F5E6C8]" : "border-white/15 text-[#AFA598]"}`}>{pet.petName}</a>)}
+                    {accountPets.map((pet) => <a key={pet.petId} href={archiveHref(pet.petId)} aria-current={pet.petId === selectedPetId ? "page" : undefined} className={`min-h-11 shrink-0 rounded-full border px-4 py-2.5 text-sm ${pet.petId === selectedPetId ? "border-[#8fb4c8] bg-[#8fb4c8]/15 text-[#F5E6C8]" : "border-white/15 text-[#AFA598]"}`}>{pet.petName}</a>)}
                   </div>
                   <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                    {(accountPets.find((pet) => pet.petId === selectedPetId)?.letters ?? []).map((letter) => <a key={letter.submissionId} href={archiveHref(selectedPetId ?? "", letter.submissionId)} aria-current={letter.submissionId === selectedSubmissionId ? "page" : undefined} className={`rounded-xl border p-4 ${letter.submissionId === selectedSubmissionId ? "border-[#D4AF37]/70 bg-[#D4AF37]/10" : "border-white/10 bg-black/25"}`}><span className="block text-sm text-[#F3EAD8]">{letter.title || (isKorean ? "마음이 담긴 편지" : "A letter from the heart")}</span><span className="mt-1 block text-xs text-[#A99B87]">{t("lifeArchive.visualMemories.original")} · {new Intl.DateTimeFormat(isKorean ? "ko-KR" : "en-US", { dateStyle: "medium" }).format(new Date(letter.createdAt))}{letter.channel ? ` · ${letter.channel}` : letter.mode ? ` · ${letter.mode}` : ""}</span></a>)}
+                    {(accountPets.find((pet) => pet.petId === selectedPetId)?.letters ?? []).map((letter) => <a key={letter.submissionId} href={archiveHref(selectedPetId ?? "", letter.submissionId)} aria-current={letter.submissionId === selectedSubmissionId ? "page" : undefined} className={`rounded-xl border p-4 ${letter.submissionId === selectedSubmissionId ? "border-[#8fb4c8]/70 bg-[#8fb4c8]/10" : "border-white/10 bg-black/25"}`}><span className="block text-sm text-[#F3EAD8]">{letter.title || (isKorean ? "마음이 담긴 편지" : "A letter from the heart")}</span><span className="mt-1 block text-xs text-[#A99B87]">{t("lifeArchive.visualMemories.original")} · {new Intl.DateTimeFormat(isKorean ? "ko-KR" : "en-US", { dateStyle: "medium" }).format(new Date(letter.createdAt))}{letter.channel ? ` · ${letter.channel}` : letter.mode ? ` · ${letter.mode}` : ""}</span></a>)}
                   </div>
                 </nav>
               ) : null}
-              <section className={`rounded-3xl border border-[#D4AF37]/25 bg-[#2e2823]/85 p-6 shadow-[0_0_50px_rgba(212,175,55,0.06)] sm:p-8 ${isKorean ? "font-ko" : "font-display-en"}`}>
+              <section className={`rounded-3xl border border-[#8fb4c8]/25 bg-[#2e2823]/85 p-6 shadow-[0_0_50px_rgba(143, 180, 200,0.06)] sm:p-8 ${isKorean ? "font-ko" : "font-display-en"}`}>
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <SectionLabel>{t("lifeArchive.archive.title")}</SectionLabel>
                   <p className="text-sm font-light text-[#D9C6A4]">
@@ -311,8 +311,8 @@ export function LifeArchivePreview({
                 </>
               ) : null}
 
-              <section className="grid gap-6 rounded-3xl border border-[#D4AF37]/25 bg-[#2e2823]/85 p-6 shadow-[0_0_50px_rgba(212,175,55,0.06)] sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-8">
-                <div className="lg:border-r lg:border-[#D4AF37]/25 lg:pr-8">
+              <section className="grid gap-6 rounded-3xl border border-[#8fb4c8]/25 bg-[#2e2823]/85 p-6 shadow-[0_0_50px_rgba(143, 180, 200,0.06)] sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-8">
+                <div className="lg:border-r lg:border-[#8fb4c8]/25 lg:pr-8">
                   <SectionLabel>{t("lifeArchive.origin.label")}</SectionLabel>
                   <h2 className="mt-5 text-xl text-[#F5E6C8]">{t("lifeArchive.letter.title")}</h2>
                   <p className="mt-4 text-sm font-light leading-relaxed text-[#CFC5B6]">{t("lifeArchive.origin.createdFrom").replace("%COUNT%", String(archive.soulTraceMemoryCount))}</p>
@@ -321,11 +321,11 @@ export function LifeArchivePreview({
                   </p>
                 </div>
                 <div>
-                  <div className={`${englishLetterBodyFont.variable} ${koreanLetterFont.variable} mt-6 border-l border-[#D4AF37]/35 pl-5 sm:pl-6`}>
+                  <div className={`${englishLetterBodyFont.variable} ${koreanLetterFont.variable} mt-6 border-l border-[#8fb4c8]/35 pl-5 sm:pl-6`}>
                     {paragraphs.map((paragraph, index) => index === 0 || fullLetterOpen ? (
                       <p
                         key={`${index}-${paragraph.slice(0, 20)}`}
-                        className={`${index > 0 ? "mt-5 border-t border-white/10 pt-5" : ""} text-[17px] font-normal leading-[1.9] text-[#EDE4D3] sm:text-[19px] ${archive.generationLocale === "ko" ? "break-keep" : ""}`}
+                        className={`${index > 0 ? "mt-5 border-t border-white/10 pt-5" : ""} text-[17px] font-normal leading-[1.9] text-[#e7f0f4] sm:text-[19px] ${archive.generationLocale === "ko" ? "break-keep" : ""}`}
                         style={{
                           fontFamily: archive.generationLocale === "ko"
                             ? "var(--font-letter-ko), var(--font-noto-serif-kr), var(--font-nanum-myeongjo), serif"
@@ -341,7 +341,7 @@ export function LifeArchivePreview({
                       type="button"
                       aria-expanded={fullLetterOpen}
                       onClick={() => setFullLetterOpen((open) => !open)}
-                      className={`mt-6 min-h-11 rounded-xl border border-[#D4AF37]/40 px-4 py-2.5 text-sm font-light text-[#F5E6C8] transition hover:border-[#D4AF37]/70 hover:bg-[#D4AF37]/10 ${isKorean ? "font-ko" : "font-display-en"}`}
+                      className={`mt-6 min-h-11 rounded-xl border border-[#8fb4c8]/40 px-4 py-2.5 text-sm font-light text-[#F5E6C8] transition hover:border-[#8fb4c8]/70 hover:bg-[#8fb4c8]/10 ${isKorean ? "font-ko" : "font-display-en"}`}
                     >
                       {fullLetterOpen ? t("lifeArchive.letter.closeFull") : t("lifeArchive.letter.readFull")}
                     </button>
@@ -350,7 +350,7 @@ export function LifeArchivePreview({
               </section>
 
               {storageMode !== "temporary" ? (
-              <section className="rounded-3xl border border-[#D4AF37]/25 bg-[#0F0E0D]/90 p-6 shadow-[0_0_60px_rgba(212,175,55,0.06)] sm:p-8 md:p-10">
+              <section className="rounded-3xl border border-[#8fb4c8]/25 bg-[#0F0E0D]/90 p-6 shadow-[0_0_60px_rgba(143, 180, 200,0.06)] sm:p-8 md:p-10">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <SectionLabel>{t("lifeArchive.archive.title")}</SectionLabel>
@@ -370,7 +370,7 @@ export function LifeArchivePreview({
                 </div>
 
                 {formOpen ? (
-                  <form onSubmit={saveMemory} className={`mt-8 rounded-2xl border border-[#D4AF37]/25 bg-black/35 p-5 sm:p-7 ${isKorean ? "font-ko" : "font-display-en"}`}>
+                  <form onSubmit={saveMemory} className={`mt-8 rounded-2xl border border-[#8fb4c8]/25 bg-black/35 p-5 sm:p-7 ${isKorean ? "font-ko" : "font-display-en"}`}>
                     <div className="grid gap-5 sm:grid-cols-2">
                       <label className="text-sm font-light text-[#D9C6A4]">
                         {t("lifeArchive.memoryForm.title")}
@@ -380,7 +380,7 @@ export function LifeArchivePreview({
                           value={title}
                           onChange={(event) => setTitle(event.target.value)}
                           placeholder={t("lifeArchive.memoryForm.titlePlaceholder")}
-                          className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-[#11100F] px-4 py-3 text-[#F3EAD8] outline-none placeholder:text-[#6F675D] focus:border-[#D4AF37]/70"
+                          className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-[#11100F] px-4 py-3 text-[#F3EAD8] outline-none placeholder:text-[#6F675D] focus:border-[#8fb4c8]/70"
                         />
                       </label>
                       <label className="text-sm font-light text-[#D9C6A4]">
@@ -389,7 +389,7 @@ export function LifeArchivePreview({
                           type="date"
                           value={memoryDate}
                           onChange={(event) => setMemoryDate(event.target.value)}
-                          className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-[#11100F] px-4 py-3 text-[#F3EAD8] outline-none focus:border-[#D4AF37]/70"
+                          className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-[#11100F] px-4 py-3 text-[#F3EAD8] outline-none focus:border-[#8fb4c8]/70"
                         />
                       </label>
                     </div>
@@ -402,7 +402,7 @@ export function LifeArchivePreview({
                         value={story}
                         onChange={(event) => setStory(event.target.value)}
                         placeholder={t("lifeArchive.memoryForm.storyPlaceholder")}
-                        className="mt-2 w-full resize-y rounded-xl border border-white/15 bg-[#11100F] px-4 py-3 leading-[1.8] text-[#F3EAD8] outline-none placeholder:text-[#6F675D] focus:border-[#D4AF37]/70"
+                        className="mt-2 w-full resize-y rounded-xl border border-white/15 bg-[#11100F] px-4 py-3 leading-[1.8] text-[#F3EAD8] outline-none placeholder:text-[#6F675D] focus:border-[#8fb4c8]/70"
                       />
                     </label>
                     <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -419,8 +419,8 @@ export function LifeArchivePreview({
                 {memoryError ? <p role="alert" className={`mt-5 text-sm text-red-200 ${isKorean ? "font-ko" : "font-display-en"}`}>{memoryError}</p> : null}
 
                 {memories.length === 0 ? (
-                  <div className="mt-8 rounded-2xl border border-dashed border-[#D4AF37]/20 bg-black/25 px-5 py-12 text-center sm:px-8 sm:py-16">
-                    <div className="mx-auto h-px w-12 bg-[#D4AF37]/55" aria-hidden />
+                  <div className="mt-8 rounded-2xl border border-dashed border-[#8fb4c8]/20 bg-black/25 px-5 py-12 text-center sm:px-8 sm:py-16">
+                    <div className="mx-auto h-px w-12 bg-[#8fb4c8]/55" aria-hidden />
                     <h3 className={`mt-6 text-lg font-light text-[#F3EAD8] sm:text-xl ${isKorean ? "font-ko" : "font-display-en"}`}>{t("lifeArchive.empty.title")}</h3>
                     <p className={`mx-auto mt-4 max-w-xl whitespace-pre-line text-sm font-extralight leading-[1.9] text-[#AFA598] sm:text-base ${isKorean ? "font-ko break-keep" : "font-display-en"}`}>{t("lifeArchive.empty.body")}</p>
                   </div>
@@ -470,7 +470,7 @@ function ArchiveUnavailable({ status, isKorean }: { status: ArchiveStatus; isKor
   }
   const key = status === "authentication-required" ? "authenticationRequired" : status === "selection-required" ? "selectionRequired" : "error";
   return (
-    <section role="alert" className={`mx-auto mt-24 max-w-2xl rounded-3xl border border-[#D4AF37]/20 bg-[#2e2823]/85 px-6 py-14 text-center ${isKorean ? "font-ko" : "font-display-en"}`}>
+    <section role="alert" className={`mx-auto mt-24 max-w-2xl rounded-3xl border border-[#8fb4c8]/20 bg-[#2e2823]/85 px-6 py-14 text-center ${isKorean ? "font-ko" : "font-display-en"}`}>
       <h1 className="text-2xl font-light text-[#F3EAD8]">{t(`lifeArchive.${key}.title`)}</h1>
       <p className="mt-4 whitespace-pre-line text-sm font-extralight leading-[1.9] text-[#AFA598] sm:text-base">{t(`lifeArchive.${key}.body`)}</p>
     </section>
@@ -478,7 +478,7 @@ function ArchiveUnavailable({ status, isKorean }: { status: ArchiveStatus; isKor
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <h2 className="font-display-en text-[11px] font-medium uppercase tracking-[0.26em] text-[#D4AF37] sm:text-xs">{children}</h2>;
+  return <h2 className="font-display-en text-[11px] font-medium uppercase tracking-[0.26em] text-[#8fb4c8] sm:text-xs">{children}</h2>;
 }
 
 // Kept for compatibility with older saved layouts; the front page now presents a compact summary.
@@ -486,7 +486,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function JourneyRow({ label, complete = false }: { label: string; complete?: boolean }) {
   return (
     <div className="flex items-start gap-3 text-sm font-extralight leading-relaxed text-[#D8CFC1] sm:text-base">
-      <span className={complete ? "text-[#D4AF37]" : "text-[#6F675D]"} aria-hidden>{complete ? "●" : "○"}</span>
+      <span className={complete ? "text-[#8fb4c8]" : "text-[#6F675D]"} aria-hidden>{complete ? "●" : "○"}</span>
       <span>{label}</span>
     </div>
   );

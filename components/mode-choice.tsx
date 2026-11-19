@@ -48,21 +48,21 @@ export function ModeChoice({
   };
 
   return (
-    <main className="flex min-h-[100svh] flex-col overflow-x-hidden bg-[#fffaf0] text-[#393129]">
+    <main className="flex min-h-[100svh] flex-col overflow-x-hidden bg-[#e7f0f4] text-[#1e4d3a]">
       <div className="px-5 pt-[max(0.35rem,env(safe-area-inset-top))]">
         <StoryBrandHeader backHref={`/${querySuffix}` || "/"} homeHref="/" />
       </div>
 
       <LetterArt src={UIUX_GARDEN_HERO} imageAlt="" priority />
       <section className="mx-auto w-full max-w-md px-[21px] pb-8 pt-4">
-        <p className="text-[10px] font-bold tracking-[0.15em] text-[#ad8655]">{copy.letterLivingEyebrow}</p>
-        <h1 className={`mt-2 whitespace-pre-line text-[21px] font-semibold leading-[1.55] tracking-[-0.065em] text-[#393129] ${bodyFont}`}>
+        <p className="text-[10px] font-bold tracking-[0.15em] text-[#3e6274]">{copy.letterLivingEyebrow}</p>
+        <h1 className={`mt-2 whitespace-pre-line text-[21px] font-semibold leading-[1.55] tracking-[-0.065em] text-[#1e4d3a] ${bodyFont}`}>
           {copy.letterLivingTitle}
         </h1>
-        <p className={`mt-2 text-[11px] leading-[1.9] text-[#857666] ${bodyFont}`}>{copy.letterLivingBody}</p>
-        <div className="mt-4 rounded-[18px] border border-[#eadcc6] bg-[#fffbf3] px-4 py-3.5 shadow-[0_3px_16px_#7f5c3810]">
-          <p className={`text-[13px] font-semibold text-[#393129] ${bodyFont}`}>{copy.letterLivingGuest}</p>
-          <p className={`mt-1.5 text-[11px] leading-6 text-[#857666] ${bodyFont}`}>{copy.letterLivingGuestBody}</p>
+        <p className={`mt-2 text-[11px] leading-[1.9] text-[#5d7c88] ${bodyFont}`}>{copy.letterLivingBody}</p>
+        <div className="mt-4 rounded-[18px] border border-[#d9c2b0] bg-[#f6ebe3] px-4 py-3.5 shadow-[0_3px_16px_#1e4d3a10]">
+          <p className={`text-[13px] font-semibold text-[#1e4d3a] ${bodyFont}`}>{copy.letterLivingGuest}</p>
+          <p className={`mt-1.5 text-[11px] leading-6 text-[#5d7c88] ${bodyFont}`}>{copy.letterLivingGuestBody}</p>
         </div>
         <Link
           href={hrefFor("living")}
@@ -73,7 +73,7 @@ export function ModeChoice({
         </Link>
         <Link
           href={polaroidHref}
-          className={`mt-2.5 flex min-h-[46px] w-full items-center justify-center rounded-[13px] border border-[#b7a38b] bg-transparent text-[12px] font-bold text-[#393129] ${bodyFont}`}
+          className={`mt-2.5 flex min-h-[46px] w-full items-center justify-center rounded-[13px] border border-[#8aabbc] bg-transparent text-[12px] font-bold text-[#1e4d3a] ${bodyFont}`}
         >
           {copy.letterLivingPolaroid}
         </Link>
@@ -81,14 +81,14 @@ export function ModeChoice({
 
       <LetterArt src={UIUX_ROOM_ART} imageAlt="" />
       <section className="mx-auto w-full max-w-md px-[21px] pb-10 pt-4">
-        <p className="text-[10px] font-bold tracking-[0.15em] text-[#ad8655]">{copy.letterMemorialEyebrow}</p>
-        <h2 className={`mt-2 whitespace-pre-line text-[21px] font-semibold leading-[1.55] tracking-[-0.065em] text-[#393129] ${bodyFont}`}>
+        <p className="text-[10px] font-bold tracking-[0.15em] text-[#3e6274]">{copy.letterMemorialEyebrow}</p>
+        <h2 className={`mt-2 whitespace-pre-line text-[21px] font-semibold leading-[1.55] tracking-[-0.065em] text-[#1e4d3a] ${bodyFont}`}>
           {copy.letterMemorialTitle}
         </h2>
-        <p className={`mt-2 text-[11px] leading-[1.9] text-[#857666] ${bodyFont}`}>{copy.letterMemorialBody}</p>
-        <div className="mt-4 rounded-[18px] border border-[#eadcc6] bg-[#fffbf3] px-4 py-3.5 shadow-[0_3px_16px_#7f5c3810]">
-          <p className={`text-[13px] font-semibold text-[#393129] ${bodyFont}`}>{copy.letterMemorialNote}</p>
-          <p className={`mt-1.5 text-[11px] leading-6 text-[#857666] ${bodyFont}`}>{copy.letterMemorialNoteBody}</p>
+        <p className={`mt-2 text-[11px] leading-[1.9] text-[#5d7c88] ${bodyFont}`}>{copy.letterMemorialBody}</p>
+        <div className="mt-4 rounded-[18px] border border-[#d9c2b0] bg-[#f6ebe3] px-4 py-3.5 shadow-[0_3px_16px_#1e4d3a10]">
+          <p className={`text-[13px] font-semibold text-[#1e4d3a] ${bodyFont}`}>{copy.letterMemorialNote}</p>
+          <p className={`mt-1.5 text-[11px] leading-6 text-[#5d7c88] ${bodyFont}`}>{copy.letterMemorialNoteBody}</p>
         </div>
         <Link
           href={hrefFor("memorial")}
@@ -99,7 +99,7 @@ export function ModeChoice({
         </Link>
         <Link
           href={memorySpaceHref}
-          className={`mt-2.5 flex min-h-[46px] w-full items-center justify-center rounded-[13px] border border-[#b7a38b] bg-transparent text-[12px] font-bold text-[#393129] ${bodyFont}`}
+          className={`mt-2.5 flex min-h-[46px] w-full items-center justify-center rounded-[13px] border border-[#8aabbc] bg-transparent text-[12px] font-bold text-[#1e4d3a] ${bodyFont}`}
         >
           {copy.letterMemorialSpace}
         </Link>
@@ -130,7 +130,7 @@ function LetterArt({
         priority={priority}
         quality={90}
         sizes="(max-width: 600px) 100vw, 480px"
-        className="block h-auto w-full rounded-[15px] bg-[#f8f2e5] object-contain"
+        className="block h-auto w-full rounded-[15px] bg-[#dce8ef] object-contain"
       />
     </div>
   );

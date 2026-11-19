@@ -26,13 +26,6 @@ import {
   attachSeasonalPolaroidJobOwner,
   detachSeasonalPolaroidJobOwner,
 } from "./seasonal-polaroid-persistence";
-import {
-  bindSeasonalGuestTrial,
-  finalizeSeasonalGuestTrial,
-  releaseSeasonalGuestTrial,
-  reserveSeasonalAccountTrial,
-} from "./seasonal-polaroid-guest-trial";
-
 export type SeasonalPolaroidQueuePayload = {
   version: 1;
   /** Canonical pet selected by an authenticated owner; null for general flow. */
@@ -224,25 +217,11 @@ export async function admitSeasonalPolaroidInternally(args: {
   guestHash?: string;
   developerTestMode?: boolean;
 }): Promise<AiGuardDecision> {
-  const idempotencyKey = await aiGenerationIdempotencyKey("seasonal_polaroid", args.requestHash);
+  void aiGenerationIdempotencyKey;
   const developerTestMode = args.developerTestMode === true && seasonalPolaroidDeveloperTestMode();
   const accountHash = args.accountHash ?? args.guestHash;
   if (!developerTestMode && !accountHash) return { decision: "unavailable" };
-  const trial = developerTestMode
-    ? null
-    : await reserveSeasonalAccountTrial({ accountHash: accountHash!, idempotencyKey, requestHash: args.requestHash });
-  if (trial?.decision === "unavailable") return { decision: "unavailable" };
-  if (trial?.decision === "exhausted") return { decision: "guest_trial_exhausted", trialRemaining: 0 };
 
-  const withTrialRemaining = (decision: AiGuardDecision): AiGuardDecision => {
-    if (decision.decision === "guest_trial_exhausted") return decision;
-    return trial ? { ...decision, trialRemaining: trial.remaining } as AiGuardDecision : decision;
-  };
-  const releaseIfOwner = async () => {
-    if (trial?.owner) {
-      await releaseSeasonalGuestTrial(trial.reservationId, trial.reservationVersion);
-    }
-  };
   const ownerIdentityHash = args.identity ? aiGenerationIdentityHash(args.identity) : null;
   const attachOwner = async (jobId: string): Promise<boolean> => {
     if (!args.identity || !ownerIdentityHash) return !args.identity;
@@ -261,19 +240,7 @@ export async function admitSeasonalPolaroidInternally(args: {
     ...(developerTestMode ? { rateLimitIsolationKey: args.requestHash } : {}),
   });
   if ((decision.decision !== "acquired" && decision.decision !== "queued") || !decision.jobId) {
-    if (decision.decision === "succeeded" && trial?.owner) {
-      const bound = await bindSeasonalGuestTrial({
-        reservationId: trial.reservationId,
-        reservationVersion: trial.reservationVersion,
-        jobId: decision.jobId!,
-        requestHash: args.requestHash,
-      });
-      if (bound) await finalizeSeasonalGuestTrial(trial.reservationId, trial.reservationVersion);
-      else await releaseIfOwner();
-    } else {
-      await releaseIfOwner();
-    }
-    return withTrialRemaining(decision);
+    return decision;
   }
 
   // A duplicate queued request must not upload or overwrite the first
@@ -283,28 +250,20 @@ export async function admitSeasonalPolaroidInternally(args: {
   if (decision.decision === "queued") {
     const existing = await readAiGenerationJob(jobId);
     if (existing?.input_ready) {
-      if (!(await attachOwner(jobId))) {
-        await releaseIfOwner();
-        return { decision: "unavailable" };
-      }
-      if (trial?.owner && !(await bindSeasonalGuestTrial({ reservationId: trial.reservationId, reservationVersion: trial.reservationVersion, jobId, requestHash: args.requestHash }))) {
-        await releaseIfOwner();
-        return { decision: "unavailable" };
-      }
+      if (!(await attachOwner(jobId))) return { decision: "unavailable" };
       // A duplicate request can safely wake a queued job whose earlier
       // after()-trigger was missed. The queue claim RPC still owns the lease.
       scheduleAiGenerationWorker(args.request, { queuedKnown: true });
-      return withTrialRemaining(decision);
+      return decision;
     }
-    // A duplicate request must not race the reservation owner while its
+    // A duplicate request must not race the first request while its
     // private objects are being attached. The owner will wake the worker.
-    if (!trial?.owner) return withTrialRemaining(decision);
+    return decision;
   }
   const attempt = createSeasonalPolaroidInputAttempt(jobId);
   const supabase = createSupabaseServerClient() as SeasonalPolaroidStorage | null;
   if (!supabase) {
     await failAiGeneration("seasonal_polaroid", args.requestHash, "storage_unavailable");
-    await releaseIfOwner();
     return { decision: "unavailable" };
   }
   const uploaded = await uploadSeasonalPolaroidInputs({
@@ -315,7 +274,6 @@ export async function admitSeasonalPolaroidInternally(args: {
   });
   if (!uploaded.ok) {
     await failAiGeneration("seasonal_polaroid", args.requestHash, uploaded.code);
-    await releaseIfOwner();
     return { decision: "unavailable" };
   }
   // Associate the verified owner before input_ready can become true. The
@@ -324,13 +282,12 @@ export async function admitSeasonalPolaroidInternally(args: {
   if (!(await attachOwner(jobId))) {
     await cleanupSeasonalPolaroidInputs(supabase, uploaded.paths);
     await failAiGeneration("seasonal_polaroid", args.requestHash, "seasonal_owner_attach_failed");
-    await releaseIfOwner();
     return { decision: "unavailable" };
   }
   const payload = seasonalPolaroidQueuePayload(args.answers, uploaded.paths, {
     primary: { name: args.primary.name, contentType: args.primary.contentType },
     secondary: null,
-  }, trial?.reservationId, trial?.reservationVersion, args.petId);
+  }, undefined, undefined, args.petId);
   const attached = await attachAiGenerationInput({
     kind: "seasonal_polaroid",
     requestHash: args.requestHash,
@@ -340,17 +297,8 @@ export async function admitSeasonalPolaroidInternally(args: {
   });
   if (!attached) {
     await cleanupSeasonalPolaroidInputs(supabase, uploaded.paths);
-    if (decision.decision === "queued" && (await readAiGenerationJob(jobId))?.input_ready) return decision;
     await detachSeasonalPolaroidJobOwner(jobId);
     await failAiGeneration("seasonal_polaroid", args.requestHash, "queue_input_failed");
-    await releaseIfOwner();
-    return { decision: "unavailable" };
-  }
-  if (trial && !(await bindSeasonalGuestTrial({ reservationId: trial.reservationId, reservationVersion: trial.reservationVersion, jobId, requestHash: args.requestHash }))) {
-    await detachSeasonalPolaroidJobOwner(jobId);
-    await cleanupSeasonalPolaroidInputs(supabase, uploaded.paths);
-    await failAiGeneration("seasonal_polaroid", args.requestHash, "guest_trial_bind_failed");
-    await releaseIfOwner();
     return { decision: "unavailable" };
   }
 
@@ -373,5 +321,5 @@ export async function admitSeasonalPolaroidInternally(args: {
   // Newly admitted Seasonal work is now queued, and duplicate triggers are
   // harmless because claim_ai_generation_jobs uses row locks and leases.
   scheduleAiGenerationWorker(args.request, { queuedKnown: true });
-  return withTrialRemaining(decision);
+  return decision;
 }

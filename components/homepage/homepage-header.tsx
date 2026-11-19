@@ -51,35 +51,35 @@ export function HomepageHeader({ choiceHref }: { choiceHref: string }) {
   }, [open]);
 
   const mobileMenu = (
-    <div className={`fixed inset-0 z-[60] h-[100dvh] w-full overflow-y-auto bg-[#0b0a09]/98 pt-[env(safe-area-inset-top)] backdrop-blur-lg transition-opacity duration-300 xl:hidden ${open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`} aria-hidden={!open}>
+    <div className={`fixed inset-0 z-[60] h-[100dvh] w-full overflow-y-auto bg-[#10281f]/98 pt-[env(safe-area-inset-top)] backdrop-blur-lg transition-opacity duration-300 xl:hidden ${open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`} aria-hidden={!open}>
       <div className="flex h-16 items-center justify-between px-5">
         <span className="font-display-en text-lg uppercase !tracking-[0.2em]">Soul Trace</span>
         <button type="button" onClick={() => setOpen(false)} aria-label={t("homepage.nav.close")} className="grid size-11 place-items-center rounded-full hover:bg-white/10"><CloseIcon className="size-5" /></button>
       </div>
       <nav className="flex flex-col gap-1 px-6 pb-10 pt-8" aria-label={t("homepage.accessibility.mobileNav")}>
-        {links.map(([label, href]) => <a key={href} href={href} onClick={() => setOpen(false)} className={`border-b border-white/10 py-5 text-3xl text-[#f8f2e7]/90 hover:text-[#c8a24a] ${displayFont}`}>{label}</a>)}
-        <Link href={choiceHref} onClick={() => setOpen(false)} className={`mt-8 rounded-full bg-[#c8a24a] px-6 py-4 text-center text-base font-medium text-[#0b0a09] ${displayFont}`}>{t("homepage.nav.createLetter")}</Link>
+        {links.map(([label, href]) => <a key={href} href={href} onClick={() => setOpen(false)} className={`border-b border-white/10 py-5 text-3xl text-[#e7f0f4]/90 hover:text-[#8fb4c8] ${displayFont}`}>{label}</a>)}
+        <Link href={choiceHref} onClick={() => setOpen(false)} className={`mt-8 rounded-full bg-[#55603a] px-6 py-4 text-center text-base font-medium text-[#f6ebe3] ${displayFont}`}>{t("homepage.nav.createLetter")}</Link>
       </nav>
     </div>
   );
 
   return (
     <>
-    <header className={`fixed inset-x-0 top-0 z-50 border-b pt-[env(safe-area-inset-top)] transition-colors duration-500 ${scrolled ? "border-[#f8f2e7]/10 bg-[#0b0a09]/85 backdrop-blur-md" : "border-[#f8f2e7]/15 bg-[#0b0a09]/55 backdrop-blur-sm"}`}>
+    <header className={`fixed inset-x-0 top-0 z-50 border-b pt-[env(safe-area-inset-top)] transition-colors duration-500 ${scrolled ? "border-[#e7f0f4]/10 bg-[#10281f]/85 backdrop-blur-md" : "border-[#e7f0f4]/15 bg-[#10281f]/55 backdrop-blur-sm"}`}>
       <div className="relative flex h-16 w-full items-center justify-between px-4 sm:px-8 xl:h-20 xl:px-10">
         <a href="#top" className="flex min-w-0 items-center gap-2.5" aria-label={t("homepage.accessibility.home")}>
-          <span className="size-2 shrink-0 rounded-full bg-[#c8a24a] shadow-[0_0_12px_rgba(200,162,74,0.7)]" aria-hidden="true" />
-          <span className="font-display-en truncate text-[0.95rem] uppercase !tracking-[0.14em] text-[#f8f2e7] sm:text-lg sm:!tracking-[0.2em] xl:text-xl">Soul Trace</span>
+          <span className="size-2 shrink-0 rounded-full bg-[#8fb4c8] shadow-[0_0_12px_rgba(143, 180, 200,0.7)]" aria-hidden="true" />
+          <span className="font-display-en truncate text-[0.95rem] uppercase !tracking-[0.14em] text-[#e7f0f4] sm:text-lg sm:!tracking-[0.2em] xl:text-xl">Soul Trace</span>
         </a>
         <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 xl:flex" aria-label={t("homepage.accessibility.primaryNav")}>
-          {links.map(([label, href]) => <a key={href} href={href} className={`whitespace-nowrap text-sm text-[#f8f2e7]/70 transition-colors hover:text-[#f8f2e7] ${displayFont}`}>{label}</a>)}
+          {links.map(([label, href]) => <a key={href} href={href} className={`whitespace-nowrap text-sm text-[#e7f0f4]/70 transition-colors hover:text-[#e7f0f4] ${displayFont}`}>{label}</a>)}
         </nav>
         <div className="ml-auto hidden items-center gap-5 xl:flex">
           <LanguageToggle />
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2 xl:hidden">
           <LanguageToggle />
-          <button type="button" onClick={() => setOpen(true)} aria-label={t("homepage.nav.menu")} aria-expanded={open} className="grid size-11 place-items-center rounded-full text-[#f8f2e7] hover:bg-white/10"><MenuIcon className="size-5" /></button>
+          <button type="button" onClick={() => setOpen(true)} aria-label={t("homepage.nav.menu")} aria-expanded={open} className="grid size-11 place-items-center rounded-full text-[#e7f0f4] hover:bg-white/10"><MenuIcon className="size-5" /></button>
         </div>
       </div>
     </header>

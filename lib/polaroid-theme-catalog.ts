@@ -70,14 +70,14 @@ export const POLAROID_THEME_CATALOG: readonly PolaroidThemeCatalogEntry[] = [
   {
     id: "felt-doll",
     category: "art-style",
-    titleKo: "펠트형",
+    titleKo: "펠트풍",
     titleEn: "Felt",
     hintKo: "부드러운 양모 섬유와 수공예 인형 질감",
     hintEn: "Soft wool fibers and handmade doll texture",
     enabled: true,
     seasonal: false,
     thumb: "/images/polaroid/style-felt.jpg",
-    imageStyleEn: "Create one square studio photograph of a handmade needle-felted wool miniature of the exact individual pet. The pet AND every background object — trees, clouds, furniture, books, toys — are physical wool-felt sculptures with visible fibers, rounded stuffed forms, and needle-punched texture. Warm craft-table lighting. This is a photographed needle-felt diorama, never a live animal, never a photo with a fur filter, never gouache, never crayon, and never an oil painting.",
+    imageStyleEn: "Create one square studio photograph of a handmade needle-felted wool miniature of the exact individual pet. The pet AND every background object — trees, clouds, furniture, books, toys — are physical wool-felt sculptures with visible fibers, rounded stuffed forms, and needle-punched texture. Warm craft-table lighting. This is a photographed needle-felt diorama, never a live animal, never a photo with a fur filter, never gouache, never crayon, and never an oil painting. Do not draw a collar, leash, harness, tag, bandana, scarf, or any neck accessory — bare neck only unless an explicit costume was selected.",
     greetingKo: "",
     greetingEn: "",
     memoMomentKo: "포근한 인형 세상",
@@ -86,14 +86,14 @@ export const POLAROID_THEME_CATALOG: readonly PolaroidThemeCatalogEntry[] = [
   {
     id: "gouache-story",
     category: "art-style",
-    titleKo: "과슈형",
+    titleKo: "과슈풍",
     titleEn: "Gouache",
     hintKo: "선명한 2D 과슈 그림",
     hintEn: "Clear 2D gouache illustration",
     enabled: true,
     seasonal: false,
     thumb: "/images/polaroid/style-gouache.jpg",
-    imageStyleEn: "Create one square 2D gouache storybook illustration of the exact individual pet. Opaque gouache paint, natural visible brushstrokes, rich flowers and trees, warm picture-book color, and clean flat shapes. This is SoulTrace's original painted 2D fairy-tale look — not needle felt, not oil impasto, not a photograph, and not a child's crayon drawing.",
+    imageStyleEn: "Create one square 2D gouache storybook illustration of the exact individual pet. Opaque gouache paint, natural visible brushstrokes, rich flowers and trees, warm picture-book color, and clean flat shapes. This is SoulTrace's original painted 2D fairy-tale look — not needle felt, not oil impasto, not a photograph, and not a child's crayon drawing. Do not draw a collar, leash, harness, tag, bandana, scarf, or any neck accessory — bare neck only unless an explicit costume was selected.",
     greetingKo: "",
     greetingEn: "",
     memoMomentKo: "그림책 같은 하루",
@@ -150,18 +150,18 @@ export const POLAROID_THEME_CATALOG: readonly PolaroidThemeCatalogEntry[] = [
   {
     id: "crayon-diary",
     category: "art-style",
-    titleKo: "파스텔 빈티지형",
-    titleEn: "Pastel Vintage",
-    hintKo: "빛바랜 파스텔과 빈티지 종이 질감",
-    hintEn: "Faded pastel on vintage paper",
+    titleKo: "파스텔빈티지",
+    titleEn: "Pastel vintage",
+    hintKo: "빛바랜 파스텔과 빈티지 포스터 질감",
+    hintEn: "Faded pastel vintage poster texture",
     enabled: true,
     seasonal: false,
-    thumb: "/images/polaroid/style-crayon.jpg",
-    imageStyleEn: "Create one square child's crayon diary drawing of the exact individual pet on textured paper. Rough wax crayon strokes, uneven handmade coloring, visible paper grain, bright and cute, slightly naive proportions. It must look like a child drew it by hand — not refined gouache illustration, not felt sculpture, and not a photograph.",
+    thumb: "/images/polaroid/style-pastel-vintage.jpg",
+    imageStyleEn: "Create one square pastel vintage travel-poster illustration of the exact individual pet. Crisp delicate outlines, restrained pastel color, flat color with refined shading on vintage paper. No watercolor bleed, no anime, no photographic texture, no child's crayon diary drawing, not refined gouache illustration, and not felt sculpture. Do not draw a collar, leash, harness, tag, bandana, scarf, or any neck accessory — bare neck only unless an explicit costume was selected.",
     greetingKo: "",
     greetingEn: "",
-    memoMomentKo: "그림일기 같은 하루",
-    memoMomentEn: "this crayon-diary day",
+    memoMomentKo: "파스텔 빈티지 하루",
+    memoMomentEn: "this pastel-vintage day",
   },
   {
     id: "christmas-little-ghost",
@@ -275,97 +275,24 @@ const ADOPTION_DAY_OCCASION: PolaroidOccasionItem = {
   implemented: true,
 };
 
-const BIRTHDAY_OCCASION: PolaroidOccasionItem = {
-  ...plannedOccasion("birthday-star"),
-  hintEn: "A warm celebration with this pet as the star",
-  implemented: true,
-};
-
-const NEW_YEAR_OCCASION: PolaroidOccasionItem = {
-  ...plannedOccasion("newyear-blessing"),
-  hintKo: "새해의 따뜻한 소망과 희망찬 시작",
-  hintEn: "A hopeful New Year keepsake with a little blessing",
-  implemented: true,
-};
-
-const VALENTINE_OCCASION: PolaroidOccasionItem = {
-  ...plannedOccasion("valentine-letter"),
-  hintKo: "반려동물의 실제 정보만 담은 따뜻한 사랑의 편지",
-  hintEn: "A sweet little love note grounded in the pet's supplied details",
-  implemented: true,
-};
-
-const SPRING_OCCASION: PolaroidOccasionItem = {
-  ...plannedOccasion("spring-secret-garden"),
-  hintKo: "꽃잎과 부드러운 봄빛이 머무는 작은 정원",
-  hintEn: "A quiet garden of petals and soft spring light",
-  implemented: true,
-};
-
-const SUMMER_OCCASION: PolaroidOccasionItem = {
-  ...plannedOccasion("summer-seaside"),
-  hintKo: "바닷바람이 부는 잔잔한 작은 항구",
-  hintEn: "A tiny calm harbor with a gentle sea breeze",
-  implemented: true,
-};
-
-const MISCHIEF_GHOST_OCCASION: PolaroidOccasionItem = {
-  ...plannedOccasion("halloween-mischief-ghost"),
-  hintKo: "무섭지 않고 장난기 많은 다정한 유령 장면",
-  hintEn: "A playful, friendly ghostly scene—gentle, never scary",
-  implemented: true,
-};
-
+/**
+ * Signed-in polaroid special days match the home free-trial plates,
+ * plus birthday (already in the trial set) and adoption day.
+ */
 export const POLAROID_OCCASION_GROUPS: readonly PolaroidOccasionGroup[] = [
   {
-    id: "christmas",
-    titleKo: "크리스마스",
-    titleEn: "Christmas",
+    id: "special-days",
+    titleKo: "특별한 날",
+    titleEn: "Special days",
     items: [
-      { id: "christmas-little-ghost", titleKo: "크리스마스의 작은 유령", titleEn: "A Little Christmas Ghost", hintKo: "작은 유령과 함께하는 포근한 크리스마스 밤", hintEn: "A gentle Christmas night with a tiny ghost", implemented: true },
-      { id: "christmas-santa-workshop", titleKo: "산타의 비밀 작업실", titleEn: "Santa's Secret Workshop", hintKo: "장난감과 리본이 있는 따뜻한 작업실", hintEn: "A warm workshop of toys and ribbons", implemented: true },
-      { id: "christmas-first-snow-post", titleKo: "첫눈의 우체국", titleEn: "First-Snow Post Office", hintKo: "첫눈을 따라 걷는 작은 우체국", hintEn: "A tiny post office after the first snow", implemented: true },
-      { id: "christmas-snow-globe", titleKo: "스노우볼 속 하루", titleEn: "A Day in a Snow Globe", hintKo: "유리구 안에서 보내는 작은 겨울", hintEn: "A tiny winter inside a snow globe", implemented: true },
+      { id: "christmas-village", titleKo: "크리스마스 빌리지", titleEn: "Christmas village", hintKo: "따뜻한 크리스마스 마을", hintEn: "A warm Christmas village", implemented: true },
+      { id: "spring-picnic", titleKo: "봄 피크닉", titleEn: "Spring picnic", hintKo: "꽃과 피크닉이 있는 봄날", hintEn: "A spring day with flowers and a picnic", implemented: true },
+      { id: "summer-beach", titleKo: "여름 해변 리조트", titleEn: "Summer beach resort", hintKo: "햇살과 바닷바람이 있는 해변", hintEn: "A sunny beach with a sea breeze", implemented: true },
+      { id: "autumn-walk", titleKo: "가을 산책길", titleEn: "Autumn walk", hintKo: "낙엽이 깔린 가을 산책", hintEn: "An autumn walk among fallen leaves", implemented: true },
+      { id: "birthday-room", titleKo: "생일 파티 룸", titleEn: "Birthday party room", hintKo: "오늘만큼은 내가 주인공인 생일", hintEn: "A birthday room where this pet is the star", implemented: true },
+      { id: "first-snow-street", titleKo: "첫눈 오는 거리", titleEn: "First-snow street", hintKo: "첫눈이 내리는 포근한 거리", hintEn: "A cozy street in the first snow", implemented: true },
+      ADOPTION_DAY_OCCASION,
     ],
-  },
-  {
-    id: "newyear",
-    titleKo: "새해·설날",
-    titleEn: "New Year",
-    items: [NEW_YEAR_OCCASION],
-  },
-  {
-    id: "valentine",
-    titleKo: "밸런타인데이",
-    titleEn: "Valentine's Day",
-    items: [VALENTINE_OCCASION],
-  },
-  {
-    id: "spring",
-    titleKo: "봄",
-    titleEn: "Spring",
-    items: [SPRING_OCCASION],
-  },
-  {
-    id: "summer",
-    titleKo: "여름",
-    titleEn: "Summer",
-    items: [SUMMER_OCCASION],
-  },
-  {
-    id: "halloween",
-    titleKo: "핼러윈",
-    titleEn: "Halloween",
-    items: [
-      { id: "halloween", titleKo: "호박마을의 밤", titleEn: "Pumpkin Village Night", hintKo: "호박등이 빛나는 포근한 밤", hintEn: "A cozy night of pumpkin lanterns", implemented: true },
-      MISCHIEF_GHOST_OCCASION,
-    ],
-  },
-  {
-    id: "milestone",
-    titleKo: "우리 아이의 기념일",
-    titleEn: "Our child's day",
-    items: [BIRTHDAY_OCCASION, ADOPTION_DAY_OCCASION],
   },
 ];
 
@@ -382,18 +309,16 @@ function plannedOccasion(id: (typeof PLANNED_POLAROID_THEMES)[number]["id"]): Po
 }
 
 export const POLAROID_OCCASION_SCENE_EN: Record<string, string> = {
-  halloween: "A cozy pumpkin-village night with warm lanterns and autumn leaves. Gentle Halloween mood only — no horror, no graves, and no Rainbow Bridge.",
-  "christmas-little-ghost": "A gentle Christmas night meeting a small friendly ghost. Soft winter light, no horror, no graves, and no brand names.",
-  "christmas-santa-workshop": "A cozy toy workshop with wooden benches, ribbons, wrapped gifts, and warm lamp light. No brand names and no copyrighted Santa likeness.",
-  "christmas-first-snow-post": "A tiny snowy post office after the first snow, with a small letter bag and warm window light. No brand names.",
-  "christmas-snow-globe": "A handmade snow globe holding a tiny winter village, soft falling snow, and glass-curved light. No brand names.",
+  "christmas-village": "A warm Christmas village path with lit shop windows and decorated trees. Keep the supplied pet as the only subject on the open path. No brand names, no text, and no Polaroid frame.",
+  "spring-picnic": "A spring picnic meadow with blossoms, a blanket, and soft daylight. Keep the supplied pet in the open meadow near the picnic clearing, paws off the food. No people, dates, text, or logos.",
+  "summer-beach": "A sunny summer beach resort with dry sand, distant waves, and a lighthouse feeling. Keep the supplied pet on dry sand only, out of the water. No people, dates, text, or logos.",
+  "autumn-walk": "A leaf-strewn autumn path beside a quiet lake and fence. Keep the supplied pet strolling or pausing on the path. No people, dates, text, or logos.",
+  "birthday-room": "A warm birthday party room with soft festive colors and decorations kept safely away from the pet. Keep the supplied pet as the only subject on the open floor. Do not invent people, candles on the pet, age numbers, dates, written text, or memories. No logos.",
+  "first-snow-street": "A cozy first-snow street with warm windows and soft snowfall on the path. Keep the supplied pet walking or pausing on the open street. No people, dates, text, or logos.",
   "adoption-day": "A quiet welcome-home keepsake for the pet's first day together, shown through a softly lit doorway or a calm, familiar home interior. Keep the supplied pet as the only subject; do not invent people, another pet, an adoption event, a shelter, paperwork, a date, or any detail not supplied. No text or logos.",
-  "birthday-star": "A warm, gentle birthday celebration centered on the supplied pet, with soft festive colors, balanced celebratory light, and simple paper garlands or confetti kept safely away from the pet. Keep the supplied pet as the only subject. Do not add people, candles, cake, age numbers, dates, written text, or invented memories. No logos.",
-  "newyear-blessing": "A warm, hopeful New Year keepsake centered on the supplied pet, with soft golden morning light, calm festive colors, and a small unmarked blessing envelope as a symbolic prop beside the pet. Keep the supplied pet as the only subject. Do not depict a delivery event or invent people, places, dates, written messages, resolutions, or personal memories. No text, numbers, or logos.",
-  "valentine-letter": "A tender Valentine's keepsake centered on the supplied pet, with soft rose and cream colors and one small unmarked folded note or heart-shaped paper detail nearby. Keep it a decorative scene, not a claimed event or relationship. Do not add people, dates, written messages, names, or invented personal memories. No text or logos.",
-  "spring-secret-garden": "A quiet secret garden of fresh spring leaves, a few drifting petals, and soft dappled daylight around the supplied pet. Keep the pet as the only animal and clear focal subject. This is an illustrative setting, not a claimed visit or memory; do not add people, dates, text, or invented events. No logos.",
-  "summer-seaside": "A tiny, peaceful summer harbor setting with pale blue light and a gentle sea-breeze feeling. Keep the supplied pet on a dry, safe boardwalk well away from water, with the pet as the only animal and clear focal subject. Do not imply a real trip or voyage, or invent people, dates, events, or memories. No text or logos.",
-  "halloween-mischief-ghost": "A playful, gentle Halloween-mischief scene: keep the supplied pet as the clear focal subject, with one tiny friendly ghost peeking playfully nearby in a softly moonlit setting. The ghost is a scene companion, not a costume; do not dress the pet in a ghost sheet. Keep the mood cute and safe, never frightening. Do not add people, graves, death imagery, dates, text, or invented personal memories. No logos.",
+  // Legacy ids retained so older saved results still resolve a scene brief.
+  halloween: "A cozy pumpkin-village night with warm lanterns and autumn leaves. Gentle Halloween mood only — no horror, no graves, and no Rainbow Bridge.",
+  "birthday-star": "A warm, gentle birthday celebration centered on the supplied pet, with soft festive colors and simple paper garlands kept safely away from the pet. No people, candles, cake, age numbers, dates, written text, or invented memories. No logos.",
 };
 
 export function polaroidArtStyleKey(themeId: string): PolaroidArtStyleKey | null {
@@ -466,7 +391,17 @@ export function isPolaroidOccasionAdmitted(
 ): boolean {
   const item = polaroidOccasionItem(occasionId);
   if (!item?.implemented) return false;
-  if (["halloween", "adoption-day", "birthday-star", "newyear-blessing", "valentine-letter", "spring-secret-garden", "summer-seaside", "halloween-mischief-ghost"].includes(occasionId)) return true;
+  if ([
+    "christmas-village",
+    "spring-picnic",
+    "summer-beach",
+    "autumn-walk",
+    "birthday-room",
+    "first-snow-street",
+    "adoption-day",
+    "halloween",
+    "birthday-star",
+  ].includes(occasionId)) return true;
   return isPolaroidThemeSelectable(occasionId, Date.now(), flags);
 }
 

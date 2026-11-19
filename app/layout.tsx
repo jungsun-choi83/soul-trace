@@ -165,7 +165,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${marcellus.variable} ${playfair.variable} ${cormorant.variable} ${inter.variable} ${courierPrime.variable} ${notoSerifKr.variable} ${nanumMyeongjo.variable} ${notoSansKr.variable} ${nanumPen.variable} notranslate h-full antialiased [text-size-adjust:100%]`}
     >
-      <body className="font-ko min-h-full flex flex-col bg-black text-[#FFFFFF]">
+      <body className="font-ko min-h-full flex flex-col bg-[#e7f0f4] text-[#1e4d3a]">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

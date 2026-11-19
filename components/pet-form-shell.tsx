@@ -31,8 +31,8 @@ export function StorybookShell({
         {creating ? (
           <header className="mt-6">
             <p className="st-eyebrow">{copy.helloLittle}</p>
-            <h1 className="st-headline mt-2 whitespace-pre-line text-[1.7rem] leading-snug text-[#2f3a28]">{copy.setupTitle}</h1>
-            <p className="mt-2 text-sm leading-6 text-[#6b5846]">{copy.setupBody}</p>
+            <h1 className="st-headline mt-2 whitespace-pre-line text-[1.7rem] leading-snug text-[#163e2e]">{copy.setupTitle}</h1>
+            <p className="mt-2 text-sm leading-6 text-[#3e6274]">{copy.setupBody}</p>
           </header>
         ) : (
           <h1 className="st-headline mt-6 text-3xl">{copy.editPet}</h1>

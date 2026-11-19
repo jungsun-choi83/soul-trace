@@ -71,7 +71,7 @@ export function MemorialSpace({ profile, today }: { profile: PetProfile; today: 
             <div className="mt-2">
               <StatusPill>{statusLabel(copy, "memorial")}</StatusPill>
             </div>
-            <p className="mt-3 text-xs text-[color:var(--st-text-soft)]">{copy.memorialQuiet} {copy.noReminder}</p>
+            <p className="mt-3 text-xs text-[color:var(--st-text-soft)]">{copy.memorialQuiet}</p>
           </div>
         </section>
 
@@ -91,9 +91,9 @@ export function MemorialSpace({ profile, today }: { profile: PetProfile; today: 
           ) : null}
           <ul className="mt-4 grid grid-cols-2 gap-3">
             {photos.flatMap((item) => item.assets.filter((asset) => asset.contentType.startsWith("image/")).map((asset) => (
-              <li key={asset.assetId} className="overflow-hidden rounded-[15px] bg-[#f8f2e5]">
+              <li key={asset.assetId} className="overflow-hidden rounded-[15px] bg-[#dce8ef]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={asset.url} alt={item.title || profile.petName} className="aspect-square w-full object-contain bg-[#f8f2e5]" />
+                <img src={asset.url} alt={item.title || profile.petName} className="aspect-square w-full object-contain bg-[#dce8ef]" />
               </li>
             )))}
           </ul>
@@ -111,7 +111,7 @@ export function MemorialSpace({ profile, today }: { profile: PetProfile; today: 
                   <ul className="mt-2 grid grid-cols-3 gap-2">
                     {day.items.flatMap((item) => item.assets.filter((asset) => asset.contentType.startsWith("image/")).slice(0, 3).map((asset) => (
                       <li key={asset.assetId}>
-                        <Link href={beamSceneHref(petId, item.entryId, asset.assetId)} className="block overflow-hidden rounded-[12px] bg-[#f8f2e5]">
+                        <Link href={beamSceneHref(petId, item.entryId, asset.assetId)} className="block overflow-hidden rounded-[12px] bg-[#dce8ef]">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={asset.url} alt={item.title || profile.petName} className="aspect-square w-full object-contain" />
                         </Link>

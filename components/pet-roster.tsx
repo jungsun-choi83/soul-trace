@@ -2,7 +2,7 @@
 
 import { useLocale } from "@/components/locale-provider";
 import { statusLabel, storyTabProps } from "@/components/pet-first-home";
-import { StatusPill, StoryBrandHeader, UiuxHero } from "@/components/storybook/story-chrome";
+import { StatusPill, StoryBrandHeader } from "@/components/storybook/story-chrome";
 import { StoryScene } from "@/components/storybook/story-scene";
 import { StoryTabbar } from "@/components/storybook/story-tabbar";
 import { letterPathForLifeStatus } from "@/lib/pet-first-archive";
@@ -22,7 +22,7 @@ export function PetRoster({ pets }: { pets: HomePet[] }) {
     <div className={`st-paper st-grain st-body flex min-h-[100svh] flex-col overflow-x-clip ${lang === "ko" ? "break-keep" : ""}`}>
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 pt-5 sm:pt-8">
         <StoryBrandHeader backHref="/dashboard" settingsHref="/settings" settingsLabel={copy.settingsTitle} />
-        <UiuxHero src={POSE_ART.shibaAutumn} title={copy.myPets} body={copy.emptyPets} />
+        <h1 className="st-headline mt-4 text-[1.7rem] leading-snug text-[#1e4d3a]">{copy.myPets}</h1>
 
         {!pets.length ? (
           <section className="st-card mt-6 px-5 py-6">
@@ -42,7 +42,7 @@ export function PetRoster({ pets }: { pets: HomePet[] }) {
                       <img src={pet.avatarUrl} alt="" className="size-14 rounded-full object-cover" />
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={POSE_ART.shibaSpring} alt="" className="size-14 rounded-full bg-[#f6efe2] object-contain object-center" />
+                      <img src={POSE_ART.shibaSpring} alt="" className="size-14 rounded-full bg-[#f6ebe3] object-contain object-center" />
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block font-medium">{pet.petName}</span>
@@ -68,21 +68,16 @@ export function PetRoster({ pets }: { pets: HomePet[] }) {
             <Link href="/my/pets/new" className="st-btn st-btn-forest mt-5 w-full">{copy.addAnother}</Link>
 
             {active ? (
-              <section className="st-card mt-6 px-5 py-5">
-                <p className="font-medium">{copy.profileSpace}</p>
-                <p className="mt-2 text-sm text-[color:var(--st-text-soft)]">{copy.chooseStatusBody}</p>
-              </section>
+              <nav className="mt-5 grid gap-3">
+                <RosterLink href={`/my/pets/${active.petId}`} title={copy.timelineCardTitle} body={copy.timelineCardBody} />
+                <RosterLink href={letterPathForLifeStatus(active.lifeStatus, active.petId)} title={copy.quickLetter} body={copy.letterCardBody} />
+                <RosterLink href={`/polaroid?petId=${encodeURIComponent(active.petId)}`} title={copy.quickPolaroid} body={copy.polaroidCardBody} />
+                <RosterLink href={`/beam-scene?pet=${encodeURIComponent(active.petId)}`} title={copy.makeBeamScene} body={copy.beamSceneBody} />
+                {active.lifeStatus === "living" ? <RosterLink href={`/my/device?pet=${encodeURIComponent(active.petId)}`} title={copy.collarCardTitle} body={copy.collarCardBody} /> : null}
+                {active.lifeStatus === "memorial" ? <RosterLink href={`/memorial-space?pet=${encodeURIComponent(active.petId)}`} title={copy.openMemorialSpace} body={copy.memorialSpaceBody} /> : null}
+                <RosterLink href="/settings" title={copy.settingsTitle} body={copy.settingsBody} />
+              </nav>
             ) : null}
-
-            {active ? <nav className="mt-6 grid gap-3">
-              <RosterLink href={`/my/pets/${active.petId}`} title={copy.timelineCardTitle} body={copy.timelineCardBody} />
-              <RosterLink href={letterPathForLifeStatus(active.lifeStatus, active.petId)} title={copy.quickLetter} body={copy.letterCardBody} />
-              <RosterLink href={`/polaroid?petId=${encodeURIComponent(active.petId)}`} title={copy.quickPolaroid} body={copy.polaroidCardBody} />
-              <RosterLink href={`/beam-scene?pet=${encodeURIComponent(active.petId)}`} title={copy.makeBeamScene} body={copy.beamSceneBody} />
-              {active.lifeStatus === "living" ? <RosterLink href={`/my/device?pet=${encodeURIComponent(active.petId)}`} title={copy.collarCardTitle} body={copy.collarCardBody} /> : null}
-              {active.lifeStatus === "memorial" ? <RosterLink href={`/memorial-space?pet=${encodeURIComponent(active.petId)}`} title={copy.openMemorialSpace} body={copy.memorialSpaceBody} /> : null}
-              <RosterLink href="/settings" title={copy.settingsTitle} body={copy.settingsBody} />
-            </nav> : null}
           </>
         )}
       </main>

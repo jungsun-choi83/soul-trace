@@ -29,7 +29,7 @@ export function VideoMotionPicker({
   const content = (
     <>
       <p className="step-kicker">{t("survey.video.kicker")}</p>
-      <p className="mt-3 text-sm font-extralight leading-relaxed text-[#EDE4D3] sm:text-[15px]">
+      <p className="mt-3 text-sm font-extralight leading-relaxed text-[#e7f0f4] sm:text-[15px]">
         {prompt}
       </p>
       {disabled ? (
@@ -46,8 +46,8 @@ export function VideoMotionPicker({
             onClick={() => onChange(motion)}
             className={`min-h-[40px] rounded-xl border px-3 py-2 text-sm font-light transition ${
               value === motion
-                ? "border-[rgba(212,175,55,0.65)] bg-[rgba(212,175,55,0.14)] text-[#F5E6B8]"
-                : "border-[rgba(212,175,55,0.28)] bg-transparent text-[#EDE4D3]/88 hover:border-[rgba(212,175,55,0.45)] hover:bg-[rgba(212,175,55,0.06)]"
+                ? "border-[rgba(143, 180, 200,0.65)] bg-[rgba(143, 180, 200,0.14)] text-[#f6ebe3]"
+                : "border-[rgba(143, 180, 200,0.28)] bg-transparent text-[#e7f0f4]/88 hover:border-[rgba(143, 180, 200,0.45)] hover:bg-[rgba(143, 180, 200,0.06)]"
             }`}
           >
             {t(`survey.video.motions.${motion}`)}
@@ -60,7 +60,7 @@ export function VideoMotionPicker({
   if (embedded) {
     return (
       <div
-        className={`mt-6 border-t border-[rgba(212,175,55,0.18)] pt-6 ${bodyFont}`}
+        className={`mt-6 border-t border-[rgba(143, 180, 200,0.18)] pt-6 ${bodyFont}`}
       >
         {content}
       </div>
@@ -69,7 +69,7 @@ export function VideoMotionPicker({
 
   return (
     <section
-      className={`mx-auto mt-8 max-w-xl rounded-2xl border border-[rgba(212,175,55,0.22)] bg-[rgba(12,10,8,0.55)] px-5 py-6 sm:px-7 ${bodyFont}`}
+      className={`mx-auto mt-8 max-w-xl rounded-2xl border border-[rgba(143, 180, 200,0.22)] bg-[rgba(12,10,8,0.55)] px-5 py-6 sm:px-7 ${bodyFont}`}
     >
       {content}
     </section>

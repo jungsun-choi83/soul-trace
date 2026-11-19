@@ -35,7 +35,7 @@ export function ConnectionJourney() {
             <div
               className={`grid size-6 shrink-0 place-items-center rounded-full border sm:size-8 ${
                 highlight
-                  ? "border-[#c8a24a] bg-[#c8a24a]/15 text-[#c8a24a] shadow-[0_0_18px_rgba(200,162,74,0.2)]"
+                  ? "border-[#8fb4c8] bg-[#8fb4c8]/15 text-[#8fb4c8] shadow-[0_0_18px_rgba(143, 180, 200,0.2)]"
                   : "border-white/20 bg-black/20 text-white/70"
               }`}
             >

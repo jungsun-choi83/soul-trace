@@ -15,8 +15,11 @@ import {
   flattenYearFoldersNewestFirst,
   groupLibraryIntoYearFolders,
   groupLibraryByMonthAndDay,
+  polaroidLibraryItems,
   isMoodJournalItem,
   memorialSpaceHref,
+  memoriesHref,
+  memoriesCategoryHref,
   memoriesMonthHref,
   memoryPatchRow,
   monthFolderCoverUrl,
@@ -58,6 +61,9 @@ test("photos group by capture month then the same calendar day", () => {
   assert.deepEqual(groups[0].days[1].items.map((entry) => entry.entryId), ["b", "a"]);
   assert.equal(memoriesMonthHref("pet-1", "2026-10"), "/memories?pet=pet-1&view=months&month=2026-10");
   assert.equal(memoriesMonthHref(null), "/memories?view=months");
+  assert.equal(memoriesMonthHref(null, null, "memorial"), "/memories?view=months&branch=memorial");
+  assert.equal(memoriesHref(null, "memorial"), "/memories?branch=memorial");
+  assert.equal(memoriesCategoryHref("pet-1", "letter", "living"), "/memories?pet=pet-1&view=months&category=letter&branch=living");
 });
 
 test("memory folders group actual records by year and month and retain the saved-date fallback", () => {
@@ -203,6 +209,38 @@ test("mood journal stays private and beam scenes keep originals apart from deriv
   assert.equal(dual.originalPreserved, true);
   assert.deepEqual(splitBeamAssets("/orig.jpg", "/orig.jpg"), { original: "/orig.jpg", derivative: null });
   assert.equal(NATIVE_PHOTO_SYNC.web, "manual_picker_only");
+});
+
+test("saved polaroids join the month folder for the Seoul month they were made, including later months", () => {
+  const items = polaroidLibraryItems([
+    {
+      resultId: "nov",
+      petName: "rhdi",
+      createdAt: "2026-11-18T02:00:00.000Z",
+      imageUrl: "/api/account-result/seasonal-polaroid?resultId=nov",
+    },
+    {
+      resultId: "oct",
+      petName: "chlrhdi",
+      createdAt: "2026-10-24T15:00:00.000Z",
+      imageUrl: "/api/account-result/seasonal-polaroid?resultId=oct",
+    },
+    {
+      resultId: "next",
+      petName: "rhdi",
+      createdAt: "2027-01-02T15:00:00.000Z",
+      imageUrl: "/api/account-result/seasonal-polaroid?resultId=next",
+    },
+  ]);
+  const months = groupLibraryByMonthAndDay(items);
+  assert.deepEqual(months.map((month) => month.key), ["2027-01", "2026-11", "2026-10"]);
+  assert.equal(items[0]?.origin, "polaroid");
+  assert.equal(items[0]?.deletable, false);
+  assert.equal(items[0]?.happenedOn, "2026-11-18");
+  assert.equal(items[0]?.assets[0]?.url, "/api/account-result/seasonal-polaroid?resultId=nov");
+  assert.match(readFileSync("components/memories-archive.tsx", "utf8"), /polaroidLibraryItems\(body\.polaroids/);
+  assert.match(readFileSync("components/pet-first-memory.tsx", "utf8"), /polaroidLibraryItems\(body\.polaroids/);
+  assert.match(readFileSync("lib/pet-first-archive-data.ts", "utf8"), /seasonal_polaroid_results/);
 });
 
 test("new SQL and routes stay additive and do not replace /memorial letter generation", () => {

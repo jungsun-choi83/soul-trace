@@ -23,7 +23,7 @@ test("implemented ZIP screens stay on distinct consumer routes", () => {
   assert.match(form, /helloLittle|setupTitle/);
   assert.match(dashboard, /CustomerDashboard|walkTitle/);
   assert.match(memory, /memoryTabRecord/);
-  assert.match(roster, /profileSpace/);
+  assert.doesNotMatch(roster, /profileSpace/);
   assert.match(roster, /StoryBrandHeader/);
   assert.match(settings, /settingsNotifyMemorial/);
   assert.match(settings, /StoryBrandHeader/);

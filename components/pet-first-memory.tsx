@@ -16,7 +16,9 @@ import {
   memorialSpaceHref,
   moodJournalHref,
   polaroidHrefFromArchive,
+  polaroidLibraryItems,
   type MemoryLibraryItem,
+  type SavedPolaroidMemory,
 } from "@/lib/memory-library";
 import {
   daysTogether,
@@ -46,7 +48,21 @@ function withoutEmptyFiles(data: FormData) {
   return next;
 }
 
-export function PetFirstMemory({ profile, today }: { profile: PetProfile; today: string }) {
+export function PetFirstMemory({
+  profile,
+  today,
+  view: _view = "album",
+  entryId: _entryId = null,
+  returnPane: _returnPane = "album",
+  folderKey: _folderKey = null,
+}: {
+  profile: PetProfile;
+  today: string;
+  view?: "album" | "detail" | "record";
+  entryId?: string | null;
+  returnPane?: "album" | "collection" | "together";
+  folderKey?: string | null;
+}) {
   const { lang } = useLocale();
   const copy = petFirstCopy(lang);
   const petId = profile.petId;
@@ -80,12 +96,13 @@ export function PetFirstMemory({ profile, today }: { profile: PetProfile; today:
       setLoadError(true);
       return;
     }
-    const body = await response.json() as { timeline?: TimelineItem[] };
-    setTimeline((body.timeline ?? []).map((item) => ({
+    const body = await response.json() as { timeline?: TimelineItem[]; polaroids?: SavedPolaroidMemory[] };
+    const timeline = (body.timeline ?? []).map((item) => ({
       ...item,
       place: item.place ?? null,
       favorite: Boolean(item.favorite),
-    })));
+    }));
+    setTimeline([...timeline, ...polaroidLibraryItems(body.polaroids ?? [])]);
   }, [petId]);
 
   useEffect(() => {
@@ -383,12 +400,12 @@ export function PetFirstMemory({ profile, today }: { profile: PetProfile; today:
             {!favorites.length ? <p className="mt-3 text-sm text-[color:var(--st-text-soft)]">{copy.favoriteEmpty}</p> : null}
             <ul className="mt-4 grid grid-cols-2 gap-3">
               {(favorites.length ? favorites : album).flatMap((item) => item.assets.filter((asset) => asset.contentType.startsWith("image/") || asset.contentType.startsWith("video/")).map((asset) => (
-                <li key={asset.assetId} className="overflow-hidden rounded-[15px] bg-[#f8f2e5]">
+                <li key={asset.assetId} className="overflow-hidden rounded-[15px] bg-[#dce8ef]">
                   {asset.contentType.startsWith("video/") ? (
-                    <video src={asset.url} controls className="aspect-square w-full object-contain bg-[#f8f2e5]" />
+                    <video src={asset.url} controls className="aspect-square w-full object-contain bg-[#dce8ef]" />
                   ) : (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={asset.url} alt={item.title || petName} className="aspect-square w-full object-contain bg-[#f8f2e5]" />
+                    <img src={asset.url} alt={item.title || petName} className="aspect-square w-full object-contain bg-[#dce8ef]" />
                   )}
                 </li>
               )))}
@@ -680,7 +697,7 @@ function AlbumEntry({
             <div key={asset.assetId} className="st-polaroid">
               {/* Signed storage URLs expire and are outside the image optimizer allowlist. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={asset.url} alt={item.title || petName} loading="lazy" className="aspect-square w-full rounded-md object-contain bg-[#f8f2e5]" />
+              <img src={asset.url} alt={item.title || petName} loading="lazy" className="aspect-square w-full rounded-md object-contain bg-[#dce8ef]" />
             </div>
           ))}
         </div>
@@ -969,7 +986,7 @@ function LiveCamera({
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[#2a2118]/55 p-4 sm:items-center" role="dialog" aria-modal="true" aria-label={mode === "photo" ? copy.photoCapture : copy.videoLibrary}>
-      <div className="w-full max-w-md overflow-hidden rounded-[22px] bg-[#fffaf0] text-[#393129] shadow-[0_18px_40px_-24px_rgba(42,33,24,0.7)]">
+      <div className="w-full max-w-md overflow-hidden rounded-[22px] bg-[#e7f0f4] text-[#1e4d3a] shadow-[0_18px_40px_-24px_rgba(42,33,24,0.7)]">
         <video ref={videoRef} autoPlay playsInline muted className="aspect-[4/3] w-full bg-[#1c1612] object-contain" />
         <div className="space-y-3 px-4 py-4">
           {error ? <p className="text-sm text-[#8a4b32]">{copy.cameraDenied}</p> : null}

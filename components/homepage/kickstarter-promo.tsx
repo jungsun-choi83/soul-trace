@@ -46,7 +46,7 @@ export function KickstarterPromo({ fullBleed = false, compact = false }: { fullB
   return (
     <section
       aria-label="Eternal Beam Kickstarter"
-      className={`${fullBleed ? "w-screen [margin-inline:calc(50%_-_50vw)]" : ""} bg-[#0b0a09] ${compact ? "pb-0" : "pb-2 md:pb-4"}`}
+      className={`${fullBleed ? "w-screen [margin-inline:calc(50%_-_50vw)]" : ""} bg-[#10281f] ${compact ? "pb-0" : "pb-2 md:pb-4"}`}
     >
       <div className="w-full">
         <div className="bg-black py-2 md:hidden">
@@ -129,7 +129,7 @@ export function KickstarterPromo({ fullBleed = false, compact = false }: { fullB
             if (event.target === event.currentTarget) setDialogOpen(false);
           }}
         >
-          <div role="dialog" aria-modal="true" aria-labelledby="kickstarter-dialog-title" className="relative w-full max-w-md rounded-3xl border border-[#D8B84C]/30 bg-[#17130f] p-6 text-[#f8f2e7] shadow-2xl sm:p-8">
+          <div role="dialog" aria-modal="true" aria-labelledby="kickstarter-dialog-title" className="relative w-full max-w-md rounded-3xl border border-[#D8B84C]/30 bg-[#14352c] p-6 text-[#e7f0f4] shadow-2xl sm:p-8">
             <button type="button" onClick={() => setDialogOpen(false)} aria-label={t("homepage.kickstarter.close")} className="absolute right-4 top-4 grid size-9 place-items-center rounded-full text-xl text-white/60 transition hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D8B84C]">×</button>
             {status === "success" ? (
               <div className="py-6 text-center" aria-live="polite">

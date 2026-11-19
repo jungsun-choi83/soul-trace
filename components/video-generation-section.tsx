@@ -31,7 +31,7 @@ export function VideoGenerationSection({
 
   return (
     <section className="mx-auto mt-8 max-w-xl space-y-0">
-      <div className="rounded-2xl border border-[rgba(212,175,55,0.22)] bg-[rgba(12,10,8,0.55)] px-5 py-6 sm:px-7">
+      <div className="rounded-2xl border border-[rgba(143, 180, 200,0.22)] bg-[rgba(12,10,8,0.55)] px-5 py-6 sm:px-7">
         <PetPhotoUpload
           petDisplayName={petDisplayName}
           previewUrl={petPhotoPreviewUrl}

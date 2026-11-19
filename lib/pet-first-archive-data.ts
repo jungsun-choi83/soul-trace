@@ -1,6 +1,6 @@
 import "server-only";
 
-import { GUEST_PREVIEW_PET_ID, isMissingRelationError, type LifeStatus } from "@/lib/pet-first-archive";
+import { GUEST_PREVIEW_PET_ID, isMissingRelationError, seoulToday, type LifeStatus } from "@/lib/pet-first-archive";
 import type { createSupabaseAuthServerClient } from "@/lib/supabase-auth-server";
 
 let timelineRelationMissing = false;
@@ -84,7 +84,7 @@ export async function loadPetHome(supabase: AuthClient, userId: string) {
     return null;
   }
 
-  const [lettersResult, entriesResult] = await Promise.all([
+  const [lettersResult, entriesResult, polaroidResult] = await Promise.all([
     supabase
       .from("soul_trace_submissions")
       .select("pet_id")
@@ -97,6 +97,12 @@ export async function loadPetHome(supabase: AuthClient, userId: string) {
         .eq("owner_user_id", userId)
         .order("created_at", { ascending: false })
         .limit(400),
+    supabase
+      .from("seasonal_polaroid_results")
+      .select("result_id, pet_id, pet_name, created_at")
+      .eq("owner_user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(100),
   ]);
   const entriesResultResolved = entriesResult.error?.code === "42703" && !timelineRelationMissing
     ? await supabase
@@ -169,7 +175,28 @@ export async function loadPetHome(supabase: AuthClient, userId: string) {
     };
   }));
 
-  return { pets, recent };
+  if (polaroidResult.error && !isMissingRelationError(polaroidResult.error.code) && polaroidResult.error.code !== "42703" && polaroidResult.error.code !== "PGRST204") {
+    console.error("[pet-first] optional Polaroid home read failed", { code: polaroidResult.error.code });
+  }
+  const polaroidRecent: HomeRecent[] = (polaroidResult.error ? [] : polaroidResult.data ?? []).flatMap((row) => {
+    if (!row.pet_id || !row.result_id || !row.created_at) return [];
+    const created = new Date(row.created_at);
+    if (Number.isNaN(created.getTime())) return [];
+    return [{
+      entryId: `polaroid:${row.result_id}`,
+      petId: row.pet_id,
+      petName: row.pet_name ?? names.get(row.pet_id) ?? "",
+      kind: "photo" as const,
+      title: row.pet_name ?? null,
+      story: null,
+      happenedOn: seoulToday(created),
+      createdAt: row.created_at,
+      imageUrl: `/api/account-result/seasonal-polaroid?resultId=${encodeURIComponent(row.result_id)}`,
+      favorite: false,
+    }];
+  });
+
+  return { pets, recent: [...recent, ...polaroidRecent] };
 }
 
 export async function loadPetProfile(supabase: AuthClient, userId: string, petId: string) {

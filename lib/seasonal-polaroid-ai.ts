@@ -19,32 +19,60 @@ import {
   type SeasonalPolaroidPromptAnswers,
 } from "./seasonal-polaroid-prompts.ts";
 import type { SeasonalPolaroidMemo } from "./seasonal-polaroid-contract.ts";
+import { isMemberPolaroidArtStyle, memberPolaroidUsesTrialPlate } from "./polaroid-member-flow.ts";
+import { buildTrialPolaroidPrompt, type TrialThemeId } from "./trial-polaroid-ai.ts";
+import { isFreeStyle, type FreeStyle } from "./pet-free-trial.ts";
 
 export type SeasonalPolaroidImageInput = {
   openai: OpenAI;
   answers: SeasonalPolaroidPromptAnswers;
   primary: PetImageReference;
+  /** Free-trial scene plate, when the occasion matches a home free-trial theme. */
+  plate?: PetImageReference | null;
 };
 
 export type SeasonalPolaroidImageGenerationResult = VisualMemoryImageGenerationResult & {
-  referenceCount: 1;
+  referenceCount: 1 | 2;
+  /** True when the image followed the home free-trial plate + art-style path. */
+  trialStructure: boolean;
 };
 
-/** The Polaroid is generated from the single primary photo. */
+/** The Polaroid is generated from the primary photo, and a free-trial plate when available. */
 export async function generateSeasonalPolaroidImage({
   openai,
   answers,
   primary,
+  plate = null,
 }: SeasonalPolaroidImageInput): Promise<SeasonalPolaroidImageGenerationResult> {
-  const references = [primary];
+  const style = String(answers.themeId ?? "");
+  const occasionId = String(answers.occasionId ?? "").trim();
+  const useTrialStructure = Boolean(
+    plate
+    && isMemberPolaroidArtStyle(style)
+    && isFreeStyle(style)
+    && memberPolaroidUsesTrialPlate(occasionId),
+  );
+
+  if (useTrialStructure && plate) {
+    const result = await generatePetReferenceImage({
+      openai,
+      references: [primary, plate],
+      prompt: buildTrialPolaroidPrompt(style as FreeStyle, occasionId as TrialThemeId),
+      size: "1536x1024",
+      quality: "high",
+      logLabel: "seasonal-polaroid-trial",
+    });
+    return { ...result, referenceCount: 2, trialStructure: true };
+  }
+
   const result = await generatePetReferenceImage({
     openai,
-    references,
+    references: [primary],
     prompt: buildSeasonalPolaroidImagePrompt(answers, petIdentityPreservationPrompt()),
     size: "1024x1024",
     logLabel: "seasonal-polaroid",
   });
-  return { ...result, referenceCount: 1 };
+  return { ...result, referenceCount: 1, trialStructure: false };
 }
 
 export type SeasonalPolaroidMemoInput = {

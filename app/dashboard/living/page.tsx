@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { LivingHome } from "@/components/living-home";
-import { redirectForSelectedPet } from "@/lib/entry-branch";
+import { fallbackHomePath, redirectForSelectedPet } from "@/lib/entry-branch";
 import { loadEntryHome } from "@/lib/load-entry-home";
 import { isPetFirstArchiveEnabled, isUuid } from "@/lib/pet-first-archive";
 import type { ServerSearchParams } from "@/lib/search-params";
@@ -29,7 +29,7 @@ export default async function LivingDashboardPage({
   const selectedPetId = requested && isUuid(requested) ? requested : null;
   const home = await loadEntryHome();
   const selected = home.pets.find((pet) => pet.petId === selectedPetId) ?? null;
-  const jump = redirectForSelectedPet("living", selected);
+  const jump = redirectForSelectedPet("living", selected) ?? fallbackHomePath("living", home.pets, selected);
   if (jump) redirect(jump);
 
   return (
